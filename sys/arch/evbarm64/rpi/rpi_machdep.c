@@ -1,4 +1,4 @@
-/* $NetBSD$ */
+/*	$NetBSD$	*/
 
 /*
  * Copyright (c) 2017 Ryo Shimizu <ryo@nerv.org>
@@ -27,14 +27,11 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(1, "$NetBSD$");
+__KERNEL_RCSID(0, "$NetBSD$");
 
 #include <sys/param.h>
-#include <sys/types.h>
+#include <sys/device.h>
 
-#include <aarch64/locore.h>
+vaddr_t physical_start;
+vaddr_t physical_end;
 
-void
-bus_space_mallocok(void)
-{
-}

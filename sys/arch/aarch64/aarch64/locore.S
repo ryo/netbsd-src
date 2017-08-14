@@ -116,6 +116,18 @@ ENTRY_NP(cpu_switchto)
 END(cpu_switchto)
 
 /*
+ *	x0 = lwp
+ *	x1 = ipl
+ */
+ENTRY_NP(cpu_switchto_softint)
+//
+//XXXAARCH64
+//
+	ret
+END(cpu_switchto_softint)
+
+
+/*
  * Called at IPL_SCHED
  *	x0 = old lwp (from cpu_switchto)
  *	x1 = new lwp (from cpu_switchto)

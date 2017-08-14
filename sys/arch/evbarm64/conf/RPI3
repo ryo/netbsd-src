@@ -15,7 +15,7 @@
 # of each device driver in this file see the section 4 man page for the
 # device.
 
-include 	"arch/evbarm64/conf/std.a64emul"
+include 	"arch/evbarm64/conf/std.rpi"
 
 options 	INCLUDE_CONFIG_FILE	# embed config file in kernel binary
 

@@ -35,6 +35,7 @@ __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp
 
 #include <sys/param.h>
 #include <sys/types.h>
+#include <sys/reboot.h>
 
 #include <uvm/uvm.h>
 
@@ -94,4 +95,12 @@ cpu_startup(void)
 void
 cpu_dumpconf(void)
 {
+}
+
+void
+cpu_reboot(int howto, char *bootstr)
+{
+	// XXXAARCH64
+	panic("cpu_reboot!\n");
+	/*NOTREACHED*/
 }
