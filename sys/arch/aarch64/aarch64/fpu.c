@@ -39,9 +39,9 @@ __KERNEL_RCSID(1, "$NetBSD: fpu.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 #include <aarch64/locore.h>
 #include <aarch64/pcb.h>
 
-static void fpu_state_load(lwp_t *, u_int);
-static void fpu_state_save(lwp_t *, u_int);
-static void fpu_state_release(lwp_t *, u_int);
+static void fpu_state_load(lwp_t *, unsigned int);
+static void fpu_state_save(lwp_t *);
+static void fpu_state_release(lwp_t *);
 
 const pcu_ops_t pcu_fpu_ops = {
 	.pcu_id = PCU_FPU,
@@ -51,17 +51,17 @@ const pcu_ops_t pcu_fpu_ops = {
 };
 
 static void
-fpu_state_load(lwp_t *l, u_int flags)
+fpu_state_load(lwp_t *l, unsigned int flags)
 {
 
 }
 static void
-fpu_state_save(lwp_t *l, u_int flags)
+fpu_state_save(lwp_t *l)
 {
 
 }
 static void
-fpu_state_release(lwp_t *l, u_int flags)
+fpu_state_release(lwp_t *l)
 {
 	l->l_md.md_cpacr = CPACR_FPEN_NONE;
 	if (l == curlwp)

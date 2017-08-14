@@ -37,7 +37,8 @@
 #include <sys/types.h>
 #include <sys/pool.h>
 
-#include <uvm/pmap/pmap_pv.h>
+//XXXAARCH64
+//#include <uvm/pmap/pmap_pv.h>
 #include <uvm/uvm_pglist.h>
 
 #define PMAP_GROWKERNEL
@@ -48,7 +49,8 @@ struct pmap {
 	struct pglist pm_pglist;
 	uint16_t pm_asid;
 	uint64_t pm_ttbr;
-	pmap_pv_info_t pm_pvinfo;
+//XXXAARCH64
+//	pmap_pv_info_t pm_pvinfo;
 	struct pmap_statistics pm_stats;
 };
 
@@ -59,13 +61,19 @@ struct vm_page_md {
 #define VM_PAGE_MD_MODIFIED	0x01
 #define VM_PAGE_MD_REFERENCED	0x02
 #define VM_PAGE_MD_EXECUTABLE	0x04
-	vm_page_pv_info_t mdpg_pv;
+//XXXAARCH64
+//	vm_page_pv_info_t mdpg_pv;
 };
 
 #define	VM_MDPAGE_INIT(pg)			\
 	do {					\
 		(pg)->mdpage.mdpg_attrs = 0;	\
 		VM_MDPAGE_PV_INIT(pg);		\
+	} while (/*CONSTCOND*/ 0)
+
+/* XXXAARCH64 */
+#define	VM_MDPAGE_PV_INIT(pg)			\
+	do {					\
 	} while (/*CONSTCOND*/ 0)
 
 #elif defined(__arm__)

@@ -33,7 +33,8 @@
 
 __KERNEL_RCSID(1, "$NetBSD: cpu_machdep.c,v 1.2 2015/04/14 22:36:54 jmcneill Exp $");
 
-#include "opt_pic.h"
+//XXXAARCH64
+//#include "opt_pic.h"
 
 #include <sys/param.h>
 #include <sys/types.h>
@@ -46,6 +47,7 @@ __KERNEL_RCSID(1, "$NetBSD: cpu_machdep.c,v 1.2 2015/04/14 22:36:54 jmcneill Exp
 #include <aarch64/locore.h>
 #include <aarch64/pcb.h>
 
+int cputype;	// XXXAARCH64
 uint32_t cpu_boot_mbox;
 
 #if IPL_VM != IPL_SOFTSERIAL + 1

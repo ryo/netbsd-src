@@ -44,6 +44,11 @@ __KERNEL_RCSID(0, "$NetBSD: gic.c,v 1.31 2017/07/14 06:33:26 skrll Exp $");
 #include <sys/intr.h>
 #include <sys/proc.h>
 
+/* XXXAARCH64 */
+#ifdef __aarch64__
+#include <aarch64/locore.h>
+#endif
+
 #include <arm/armreg.h>
 #include <arm/cpufunc.h>
 #include <arm/atomic.h>

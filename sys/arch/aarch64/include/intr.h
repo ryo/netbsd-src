@@ -73,6 +73,8 @@
 #define IST_EDGE_BOTH	6
 #define IST_SOFT	7
 
+#define IST_MPSAFE	0x100	/* interrupt is MPSAFE */
+
 #include <arm/pic/picvar.h>
 
 static inline void

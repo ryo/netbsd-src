@@ -45,7 +45,8 @@ __KERNEL_RCSID(1, "$NetBSD: a64gic_mainbus.c,v 1.1 2014/08/10 05:47:37 matt Exp 
 #include <aarch64/locore.h>
 
 #include <arm/cortex/gic_reg.h>
-#include <arm/cortex/gic_var.h>
+// XXX: AARCH64
+//#include <arm/cortex/gic_var.h>
 
 static bool found;
 
@@ -86,7 +87,8 @@ a64gic_attach(device_t parent, device_t self, void *aux)
 	    || bus_space_map(memt, cbar + gicd_off, 0x1000, 0, &gicdh))
 		panic(": failed to map GIC registers\n");
 
-        armgic_common_attach(self, memt, gicch, gicdh); 
+// XXX: AARCH64
+//		armgic_common_attach(self, memt, gicch, gicdh); 
 }
  
 CFATTACH_DECL_NEW(a64gic, 0, a64gic_match, a64gic_attach, NULL, NULL);

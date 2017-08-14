@@ -1,8 +1,12 @@
 #	$NetBSD: files.aarch64,v 1.1 2014/08/10 05:47:37 matt Exp $
 
 # CPU types.
-defflag	opt_cputypes.h		CPU_CORTEXA53
-defflag	opt_cputypes.h		CPU_CORTEXA57
+defflag	opt_cputypes.h		CPU_ARMV8
+defflag	opt_cputypes.h		CPU_CORTEXA53: CPU_ARMV8
+defflag	opt_cputypes.h		CPU_CORTEXA57: CPU_ARMV8
+
+defparam opt_cpuoptions.h	ARM_HAS_VBAR
+
 
 # Board-specific bus_space(9)/bus_dma(9) definitions
 defflag opt_bus_space.h 	__BUS_SPACE_HAS_STREAM_METHODS
@@ -85,7 +89,7 @@ file	arch/aarch64/aarch64/syscall.c
 file	arch/aarch64/aarch64/trap.c
 
 file	arch/aarch64/aarch64/pmap.c
-file	uvm/pmap/pmap_pv.c
+#file	uvm/pmap/pmap_pv.c
 
 file	arch/aarch64/aarch64/aarch64_machdep.c
 #file	arch/aarch64/aarch64/cctr_machdep.c

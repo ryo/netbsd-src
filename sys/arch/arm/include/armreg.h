@@ -869,7 +869,7 @@ arm_cond_ok_p(uint32_t insn, uint32_t psr)
 }
 #endif /* !__ASSEMBLER && _KERNEL */
 
-#if !defined(__ASSEMBLER__) && !defined(_RUMPKERNEL)
+#if !defined(__ASSEMBLER__) && !defined(_RUMPKERNEL) && !defined(__aarch64__)
 #define	ARMREG_READ_INLINE(name, __insnstring)			\
 static inline uint32_t armreg_##name##_read(void)		\
 {								\
