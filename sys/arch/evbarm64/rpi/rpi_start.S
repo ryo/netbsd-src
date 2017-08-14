@@ -33,11 +33,71 @@
 
 RCSID("$NetBSD$")
 
-_C_LABEL(rpi_start):
-	nop
-	nop
-	nop
-	nop
-	nop
+#define AUX_MU_IO_REG	0x3f215040	/* Mini Uart I/O Data (8bit) */
+#define AUX_MU_IER_REG	0x3f215044	/* Mini Uart Interrupt Enable (8bit) */
+#define AUX_MU_IIR_REG	0x3f215048	/* Mini Uart Interrupt Identify (8bit) */
+#define AUX_MU_LCR_REG	0x3f21504C	/* Mini Uart Line Control (8bit) */
+#define AUX_MU_MCR_REG	0x3f215050	/* Mini Uart Modem Control (8bit) */
+#define AUX_MU_LSR_REG	0x3f215054	/* Mini Uart Line Status (8bit) */
+#define AUX_MU_MSR_REG	0x3f215058	/* Mini Uart Modem Status (8bit) */
+#define AUX_MU_SCRATCH	0x3f21505C	/* Mini Uart Scratch (8bit) */
+#define AUX_MU_CNTL_REG	0x3f215060	/* Mini Uart Extra Control (8bit) */
+#define AUX_MU_STAT_REG	0x3f215064	/* Mini Uart Extra Status (32bit) */
+#define AUX_MU_BAUD_REG	0x3f215068	/* Mini Uart Baudrate (16bit) */
 
+#define COM_DATA		AUX_MU_IO_REG
+#define COM_LSR			AUX_MU_LSR_REG
+#define COM_LSR_TXFE_BIT	5	/* Transmit fifo empty */
+
+_C_LABEL(rpi_start):
+	str	lr, [sp, #-8]!
+	bl	test
+	ldr	lr, [sp], #8
+	ret
 END(_C_LABEL(rpi_start))
+
+
+Hello:
+	.ascii	"HelloWorld\r\n\0"
+	.align 2
+
+_C_LABEL(test):
+	str	lr, [sp, #-8]!
+	adr	x0, Hello
+	bl	uartputs
+	ldr	lr, [sp], #8
+	ret
+END(_C_LABEL(test))
+
+
+	.global _C_LABEL(uartputs)
+_C_LABEL(uartputs):
+	stp	x8, lr, [sp, #-16]!
+	mov	x8, x0
+	ldrb	w0, [x8], #1
+	cbz	w0, 9f
+1:	bl	uartputc
+	ldrb	w0, [x8], #1
+	cbnz	w0, 1b
+9:	ldp	x8, lr, [sp], #16
+	ret
+END(_C_LABEL(uartputs))
+
+
+	.global _C_LABEL(uartputc)
+_C_LABEL(uartputc):
+	stp	x9, x10, [sp, #-16]!
+
+	mov	w9, #(COM_LSR & 0xffff)
+	movk	w9, #(COM_LSR >> 16), lsl #16
+1:	ldr	w10, [x9]
+	tbz	w10, #COM_LSR_TXFE_BIT, 1b
+
+	mov	w9, #(COM_DATA & 0xffff)
+	movk	w9, #(COM_DATA >> 16), lsl #16
+	and	w0, w0, #0xff
+	str	w0, [x9]
+
+	ldp	x9, x10, [sp], #16
+	ret
+END(_C_LABEL(uartputc))

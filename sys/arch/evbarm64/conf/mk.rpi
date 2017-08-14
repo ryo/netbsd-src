@@ -7,11 +7,18 @@ _OSRELEASE!=		${HOST_SH} $S/conf/osrelease.sh
 
 GENASSYM_EXTRAS+=	${THISA64}/rpi/genassym.cf
 
-KERNEL_BASE_PHYS=0x00008000
-KERNEL_BASE_VIRT=0x80008000
+KERNEL_BASE_PHYS=0x00200000
+KERNEL_BASE_VIRT=0x80200000
 
 SYSTEM_LD_TAIL_EXTRA+=; \
 	echo ${OBJCOPY} -S -O binary $@ $@.bin; \
-	${OBJCOPY} -S -O binary $@ $@.bin
+	${OBJCOPY} -S -O binary $@ $@.bin; \
+#	echo ${TOOL_GZIP} -9c $@.bin > $@.bin.gz; \
+#	${TOOL_GZIP} -9c $@.bin > $@.bin.gz; \
+#	echo ${TOOL_MKUBOOTIMAGE} ${MKUBOOTIMAGEARGS_GZ} $@.bin.gz $@.gz.ub; \
+#	${TOOL_MKUBOOTIMAGE} ${MKUBOOTIMAGEARGS_GZ} $@.bin.gz $@.gz.ub; \
+#	echo ${TOOL_MKUBOOTIMAGE} ${MKUBOOTIMAGEARGS_NONE} $@.bin $@.ub; \
+#	${TOOL_MKUBOOTIMAGE} ${MKUBOOTIMAGEARGS_NONE} $@.bin $@.ub; \
+#	echo
 
 EXTRA_KERNELS+= ${KERNELS:@.KERNEL.@${.KERNEL.}.bin@}
