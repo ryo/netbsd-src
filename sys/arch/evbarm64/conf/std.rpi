@@ -1,14 +1,22 @@
-# $NetBSD: std.a64emul,v 1.2 2016/05/05 21:14:15 rjs Exp $
+# $NetBSD$
 
-machine evbarm64 aarch64
+machine 	evbarm64 aarch64
 maxpartitions	16
 
-include "arch/evbarm64/conf/std.evbarm64"
+include 	"arch/evbarm64/conf/std.evbarm64"
 
-# Pull in RPI config definitions
+# Pull in Raspberry Pi config definitions.
 include "arch/evbarm64/conf/files.rpi"
 
 options 	PIC_MAXPICS=1
 options 	PIC_MAXSOURCES=64
 options 	PIC_MAXMAXSOURCES=64
-options		__HAVE_PIC_SET_PRIORITY
+options 	__HAVE_PIC_SET_PRIORITY
+
+
+options 	EVBARM_BOARDTYPE="rpi"
+makeoptions	BOARDMKFRAG="${THISA64}/conf/mk.rpi"
+makeoptions	LOADADDRESS="0x80008000"
+
+#options 	ARM_INTR_IMPL="<arch/arm/broadcom/bcm2835_intr.h>"
+#options 	ARM_GENERIC_TODR
