@@ -26,30 +26,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD$");
-
-#include <sys/param.h>
+#include <sys/systm.h>
+#include <sys/conf.h>
 #include <sys/device.h>
 
-vaddr_t physical_start;
-vaddr_t physical_end;
-
-
+void
+cpu_rootconf(void)
+{
+	rootconf();
+}
 
 void
-consinit(void)
+cpu_configure(void)
 {
-	static int consinit_called = 0;
-
-	if (consinit_called)
-		return;
-
-	consinit_called = 1;
-
-#ifdef CONSDEVNAME
-	// XXXAARCH64
-
-	// init uart
-#endif /* CONSDEVNAME */
+	config_rootfound("mainbus", NULL);
 }

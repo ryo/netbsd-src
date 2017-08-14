@@ -1,7 +1,10 @@
 # $NetBSD: files.evbarm64,v 1.1 2014/08/10 05:47:38 matt Exp $
 
-maxpartitions   16
-maxusers        2 16 64
+maxpartitions	16
+maxusers	2 16 64
+
+# Generic MD files
+file	arch/evbarm64/evbarm64/autoconf.c
 
 defflag	opt_plcom.h		PLCOM_DEBUG
 device	plcom { }: tty
