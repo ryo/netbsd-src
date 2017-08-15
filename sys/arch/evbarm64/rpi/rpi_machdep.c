@@ -32,6 +32,8 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <sys/param.h>
 #include <sys/device.h>
 
+#include <dev/cons.h>
+
 vaddr_t physical_start;
 vaddr_t physical_end;
 
@@ -52,4 +54,95 @@ consinit(void)
 
 	// init uart
 #endif /* CONSDEVNAME */
+}
+
+static dev_type_cninit(kcomcninit);
+static dev_type_cngetc(kcomcngetc);
+static dev_type_cnputc(kcomcnputc);
+static dev_type_cnpollc(kcomcnpollc);
+
+struct consdev kcomcons = {
+	NULL, kcomcninit, kcomcngetc, kcomcnputc, kcomcnpollc, NULL,
+	NULL, NULL, NODEV, CN_NORMAL
+};
+
+#define AUX_MU_BASE	0x3f215000
+#define AUX_MU_IO_REG	0x40	/* Mini Uart I/O Data (8bit) */
+#define AUX_MU_IER_REG	0x44	/* Mini Uart Interrupt Enable (8bit) */
+#define AUX_MU_IIR_REG	0x48	/* Mini Uart Interrupt Identify (8bit) */
+#define AUX_MU_LCR_REG	0x4C	/* Mini Uart Line Control (8bit) */
+#define AUX_MU_MCR_REG	0x50	/* Mini Uart Modem Control (8bit) */
+#define AUX_MU_LSR_REG	0x54	/* Mini Uart Line Status (8bit) */
+#define AUX_MU_MSR_REG	0x58	/* Mini Uart Modem Status (8bit) */
+#define AUX_MU_SCRATCH	0x5C	/* Mini Uart Scratch (8bit) */
+#define AUX_MU_CNTL_REG	0x60	/* Mini Uart Extra Control (8bit) */
+#define AUX_MU_STAT_REG	0x64	/* Mini Uart Extra Status (32bit) */
+#define AUX_MU_BAUD_REG	0x68	/* Mini Uart Baudrate (16bit) */
+
+#define THR		0x40	/* octet write to Tx */
+#define RBR		0x40	/* octet read to Rx */
+#define LSR		0x4C	/* line status */
+#define LSR_THRE	0x20
+#define UART_READ(r)		*(volatile uint32_t *)(uartbase + (r))
+#define UART_WRITE(r, v)	*(volatile uint32_t *)(uartbase + (r)) = (v)
+#define LSR_TXEMPTY		0x20
+#define LSR_OE			0x02
+#define LSR_RXREADY		0x01
+
+static uintptr_t uartbase = AUX_MU_BASE;
+
+static void
+kcomcninit(struct consdev *cn)
+{
+	/*
+	 * we do not touch UART operating parameters since bootloader
+	 * is supposed to have done well.
+	 */
+}
+
+static int
+kcomcngetc(dev_t dev)
+{
+	unsigned lsr;
+	int s, c;
+
+	s = splserial();
+#if 1
+	do {
+		lsr = UART_READ(LSR);
+	} while ((lsr & LSR_OE) || (lsr & LSR_RXREADY) == 0);
+#else
+    again:
+	do {
+		lsr = UART_READ(LSR);
+	} while ((lsr & LSR_RXREADY) == 0);
+	if (lsr & (LSR_BE | LSR_FE | LSR_PE)) {
+		(void)UART_READ(RBR);
+		goto again;
+	}
+#endif
+	c = UART_READ(RBR);
+	splx(s);
+	return c & 0xff;
+}
+
+static void
+kcomcnputc(dev_t dev, int c)
+{
+	unsigned lsr, timo;
+	int s;
+
+	s = splserial();
+	timo = 150000;
+	do {
+		lsr = UART_READ(LSR);
+	} while (timo-- > 0 && (lsr & LSR_TXEMPTY) == 0);
+	if (timo > 0)
+		UART_WRITE(THR, c);
+	splx(s);
+}
+
+static void
+kcomcnpollc(dev_t dev, int on)
+{
 }
