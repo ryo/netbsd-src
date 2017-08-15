@@ -55,11 +55,11 @@ RCSID("$NetBSD$")
 #define COM_LSR			AUX_MU_LSR_REG
 #define COM_LSR_TXFE_BIT	5	/* Transmit fifo empty */
 
-#define PRINT(string)	str lr,[sp,#-8]!;bl xprint;.ascii string,"\0";.align 2;ldr lr,[sp],#8
+#define PRINT(string)	stp x0,lr,[sp,#-16]!;bl xprint;.ascii string,"\0";.align 2;ldp x0,lr,[sp],#16
 
 	.global _start
 _start:
-	str	lr, [sp, #-8]!
+	stp	x0, lr, [sp, #-16]!
 
 	mov	x9, x0
 
@@ -109,7 +109,7 @@ _start:
 
 
 
-	ldr	lr, [sp], #8
+	ldp	x0, lr, [sp], #16
 	ret
 
 
@@ -173,7 +173,7 @@ END(_C_LABEL(print_x0))
 	.global _C_LABEL(uartputs)
 _C_LABEL(uartputs):
 	stp	x8, lr, [sp, #-16]!
-	str	x0, [sp, #-8]!
+	stp	x0, x1, [sp, #-16]!
 
 	mov	x8, x0
 	ldrb	w0, [x8], #1
@@ -182,7 +182,7 @@ _C_LABEL(uartputs):
 	ldrb	w0, [x8], #1
 	cbnz	w0, 1b
 9:
-	ldr	x0, [sp], #8
+	ldp	x0, x1, [sp], #16
 	ldp	x8, lr, [sp], #16
 	ret
 END(_C_LABEL(uartputs))
@@ -191,7 +191,7 @@ END(_C_LABEL(uartputs))
 	.global _C_LABEL(uartputc)
 _C_LABEL(uartputc):
 	stp	x9, x10, [sp, #-16]!
-	str	x0, [sp, #-8]!
+	stp	x0, x1, [sp, #-16]!
 
 	mov	w9, #(COM_LSR & 0xffff)
 	movk	w9, #(COM_LSR >> 16), lsl #16
@@ -203,7 +203,7 @@ _C_LABEL(uartputc):
 	and	w0, w0, #0xff
 	str	w0, [x9]
 
-	ldr	x0, [sp], #8
+	ldp	x0, x1, [sp], #16
 	ldp	x9, x10, [sp], #16
 	ret
 END(_C_LABEL(uartputc))
