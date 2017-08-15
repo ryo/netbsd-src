@@ -68,6 +68,11 @@ _start:
 	bl	print_x0
 	PRINT("\r\n")
 
+	PRINT("SP=")
+	mov	x0, sp
+	bl	print_x0
+	PRINT("\r\n")
+
 	PRINT("PC=")
 	bl	1f
 1:	mov	x0, lr
