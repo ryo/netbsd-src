@@ -60,6 +60,7 @@ ARCH_SRCS+= s_fma.S s_fmaf.S s_fmax.S s_fmaxf.S s_fmin.S s_fminf.S
 .if ${MKSOFTFLOAT} == "no"
 COMMON_SRCS+= fenv.c
 .endif
+COMMON_SRCS+= s_rintl.c
 COMMON_SRCS+= e_sqrtl.c
 COMMON_SRCS+= s_fma.c s_fmaf.c s_fmal.c
 
