@@ -46,9 +46,8 @@ userret(struct lwp *l, struct trapframe *tf)
 	mi_userret(l);
 }
 
-/*
- * to make possible fault bail logic to replace copyinout.S and fusu.S
- */
+// XXXAARCH64 might be populated in frame.h in future
+
 #define FB_X19	0
 #define FB_X20	1
 #define FB_X21	2
@@ -118,6 +117,31 @@ cpu_enable_onfault(struct faultbuf *fb)
 	curlwp->l_md.md_onfault = NULL;
 }
 
+/*
+ * kcopy(9)
+ * int kcopy(const void *src, void *dst, size_t len);
+ *
+ * copy(9)
+ * int copyin(const void *uaddr, void *kaddr, size_t len);
+ * int copyout(const void *kaddr, void *uaddr, size_t len);
+ * int copystr(const void *kfaddr, void *kdaddr, size_t len, size_t *done);
+ * int copyinstr(const void *uaddr, void *kaddr, size_t len, size_t *done);
+ * int copyoutstr(const void *kaddr, void *uaddr, size_t len, size_t *done);
+ */
+
+int
+kcopy(const void *kfaddr, void *kdaddr, size_t len)
+{
+	struct faultbuf fb;
+	int error;
+
+	if ((error = cpu_set_onfault(&fb, EFAULT)) == 0) {
+		memcpy(kdaddr, kfaddr, len);
+		cpu_unset_onfault();
+	}
+	return error;
+}
+
 int
 copyin(const void *uaddr, void *kaddr, size_t len)
 {
@@ -139,19 +163,6 @@ copyout(const void *kaddr, void *uaddr, size_t len)
 
 	if ((error = cpu_set_onfault(&fb, EFAULT)) == 0) {
 		memcpy(uaddr, kaddr, len);
-		cpu_unset_onfault();
-	}
-	return error;
-}
-
-int
-kcopy(const void *kfaddr, void *kdaddr, size_t len)
-{
-	struct faultbuf fb;
-	int error;
-
-	if ((error = cpu_set_onfault(&fb, EFAULT)) == 0) {
-		memcpy(kdaddr, kfaddr, len);
 		cpu_unset_onfault();
 	}
 	return error;
@@ -204,6 +215,20 @@ copyoutstr(const void *kaddr, void *uaddr, size_t len, size_t *done)
 	}
 	return error;
 }
+
+/*
+ * fetch(9)
+ * int fubyte(const void *base);
+ * int fusword(const void *base);
+ * int fuswintr(const void *base);
+ * long fuword(const void *base);
+ *
+ * store(9)
+ * int subyte(void *base, int c);
+ * int susword(void *base, short c);
+ * int suswintr(void *base, short c);
+ * int suword(void *base, long c);
+ */
 
 union xubuf {
 	uint8_t b[4];
