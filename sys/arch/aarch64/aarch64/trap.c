@@ -45,3 +45,52 @@ userret(struct lwp *l, struct trapframe *tf)
 {
 	mi_userret(l);
 }
+
+/*
+ * to make possible fault bail logic to replace copyinout.S and fusu.S
+ */
+#define FB_X19	0
+#define FB_X20	1
+#define FB_X21	2
+#define FB_X22	3
+#define FB_X23	4
+#define FB_X24	5
+#define FB_X25	6
+#define FB_X26	8
+#define FB_X27	9
+#define FB_X28	10
+#define FB_X29	11
+#define FB_SP	12
+#define FB_LR	13
+#define FB_MAX	14
+
+struct faultbuf {
+	register_t fb_reg[FB_MAX];
+	uint32_t fb_sr;
+};
+
+int	cpu_set_onfault(struct faultbuf *, register_t) __returns_twice;
+void	cpu_jump_onfault(struct trapframe *, const struct faultbuf *);
+void	cpu_unset_onfault(void);
+struct faultbuf *cpu_disable_onfault(void);
+void	cpu_enable_onfault(struct faultbuf *);
+
+void
+cpu_unset_onfault(void)
+{
+	curlwp->l_md.md_onfault = NULL;
+}
+
+struct faultbuf *
+cpu_disable_onfault(void)
+{
+	struct faultbuf * const fb = curlwp->l_md.md_onfault;
+	curlwp->l_md.md_onfault = NULL;
+	return fb;
+}
+
+void
+cpu_enable_onfault(struct faultbuf *fb)
+{
+	curlwp->l_md.md_onfault = NULL;
+}
