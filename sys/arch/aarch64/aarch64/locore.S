@@ -223,6 +223,11 @@ ENTRY(cpu_set_onfault)
 	mov	x0, #0
 END(cpu_set_onfault)
 
+/*
+ * setjmp(9)
+ * int setjmp(label_t *label);
+ * void longjmp(label_t *label);
+ */
 ENTRY(setjmp)
 	stp	x19, x20, [x0, #0]
 	stp	x21, x22, [x0, #16]
