@@ -478,7 +478,7 @@ static const uintmax_t
 
 /* ID_AA64PFR0_EL1: AArch64 Processor Feature Register 0 */
 static const uintmax_t
-    ID_AA64PFR0_EL1_GIC			= __BITS(24,27),	// GIC mask
+    ID_AA64PFR0_EL1_GIC			= __BITS(24,27),	// GIC CPU IF
     ID_AA64PFR0_EL1_GIC_SHIFT		= 24,
      ID_AA64PFR0_EL1_GIC_CPUIF_EN	= 1,
      ID_AA64PFR0_EL1_GIC_CPUIF_NONE	= 0,
@@ -488,18 +488,18 @@ static const uintmax_t
     ID_AA64PFR0_EL1_FP			= __BITS(19,16),	// FP
      ID_AA64PFR0_EL1_FP_IMPL		= 0x0,
      ID_AA64PFR0_EL1_FP_NONE		= 0xf,
-    ID_AA64PFR0_EL1_EL3			= __BITS(15,12),	// EP3 handling
+    ID_AA64PFR0_EL1_EL3			= __BITS(15,12),	// EL3 handling
      ID_AA64PFR0_EL1_EL3_NONE		= 0,
      ID_AA64PFR0_EL1_EL3_64		= 1,
      ID_AA64PFR0_EL1_EL3_64_32		= 2,
-    ID_AA64PFR0_EL1_EL2			= __BITS(11,8),		// EP2 handling
+    ID_AA64PFR0_EL1_EL2			= __BITS(11,8),		// EL2 handling
      ID_AA64PFR0_EL1_EL2_NONE		= 0,
      ID_AA64PFR0_EL1_EL2_64		= 1,
      ID_AA64PFR0_EL1_EL2_64_32		= 2,
-    ID_AA64PFR0_EL1_EL1			= __BITS(7,4),		// EP1 handling
+    ID_AA64PFR0_EL1_EL1			= __BITS(7,4),		// EL1 handling
      ID_AA64PFR0_EL1_EL1_64		= 1,
      ID_AA64PFR0_EL1_EL1_64_32		= 2,
-    ID_AA64PFR0_EL1_EL0			= __BITS(3,0),		// EP0 handling
+    ID_AA64PFR0_EL1_EL0			= __BITS(3,0),		// EL0 handling
      ID_AA64PFR0_EL1_EL0_64		= 1,
      ID_AA64PFR0_EL1_EL0_64_32		= 2;
 
