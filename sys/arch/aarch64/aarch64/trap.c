@@ -98,6 +98,7 @@ cpu_jump_onfault(struct trapframe *tf, const struct faultbuf *fb)
 void
 cpu_unset_onfault(void)
 {
+
 	curlwp->l_md.md_onfault = NULL;
 }
 
@@ -105,6 +106,7 @@ struct faultbuf *
 cpu_disable_onfault(void)
 {
 	struct faultbuf * const fb = curlwp->l_md.md_onfault;
+
 	curlwp->l_md.md_onfault = NULL;
 	return fb;
 }
@@ -112,10 +114,9 @@ cpu_disable_onfault(void)
 void
 cpu_enable_onfault(struct faultbuf *fb)
 {
+
 	curlwp->l_md.md_onfault = NULL;
 }
-
-#if 0
 
 int
 copyin(const void *uaddr, void *kaddr, size_t len)
@@ -306,5 +307,3 @@ suword(void *base, long c)
 	xu.l[0] = c; // { .l[0] = c }
 	return store_user_data(base, &xu, sizeof(xu.l[0])) ? 0 : -1;
 }
-
-#endif
