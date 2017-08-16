@@ -271,6 +271,34 @@ AARCH64REG_WRITE_INLINE(rvbar_el1)
 AARCH64REG_READ_INLINE(sctlr_el1)	// System Control Register
 AARCH64REG_WRITE_INLINE(sctlr_el1)
 
+static const uintmax_t
+    SCTLR_RES0		= 0xc8222400,	/* Reserved ARMv8.0, write 0 */
+    SCTLR_RES1		= 0x30d00800,	/* Reserved ARMv8.0, write 1 */
+    SCTLR_M		= __BIT(0),
+    SCTLR_A		= __BIT(1),
+    SCTLR_C		= __BIT(2),
+    SCTLR_SA		= __BIT(3),
+    SCTLR_SA0		= __BIT(4),
+    SCTLR_CP15BEN	= __BIT(5),
+    SCTLR_THEE		= __BIT(6),
+    SCTLR_ITD		= __BIT(7),
+    SCTLR_SED		= __BIT(8),
+    SCTLR_UMA		= __BIT(9),
+    SCTLR_I		= __BIT(12),
+    SCTLR_DZE		= __BIT(14),
+    SCTLR_UCT		= __BIT(15),
+    SCTLR_nTWI		= __BIT(16),
+    SCTLR_nTWE		= __BIT(18),
+    SCTLR_WXN		= __BIT(19),
+    SCTRL_IESB		= __BIT(21),
+    SCTRL_SPAN		= __BIT(23),
+    SCTLR_EOE		= __BIT(24),
+    SCTLR_EE		= __BIT(25),
+    SCTLR_UCI		= __BIT(26),
+    SCTLR_nTLSMD	= __BIT(28),
+    SCTLR_LSMAOE	= __BIT(29);
+
+
 AARCH64REG_READ_INLINE(sp_el0)		// Stack Pointer
 AARCH64REG_WRITE_INLINE(sp_el0)
 
@@ -446,6 +474,49 @@ static const uintmax_t
     CNTCTL_ISTATUS = __BIT(2),	// Interrupt Asserted
     CNTCTL_IMASK   = __BIT(1),	// Timer Interrupt is Masked
     CNTCTL_ENABLE  = __BIT(0);	// Timer Enabled
+
+
+/* ID_AA64PFR0_EL1: AArch64 Processor Feature Register 0 */
+static const uintmax_t
+    ID_AA64PFR0_EL1_GIC			= __BITS(24,27),	// GIC mask
+    ID_AA64PFR0_EL1_GIC_SHIFT		= 24,
+     ID_AA64PFR0_EL1_GIC_CPUIF_EN	= 1,
+     ID_AA64PFR0_EL1_GIC_CPUIF_NONE	= 0,
+    ID_AA64PFR0_EL1_ADVSIMD		= __BITS(23,20),	// SIMD
+     ID_AA64PFR0_EL1_ADV_SIMD_IMPL	= 0x0,
+     ID_AA64PFR0_EL1_ADV_SIMD_NONE	= 0xf,
+    ID_AA64PFR0_EL1_FP			= __BITS(19,16),	// FP
+     ID_AA64PFR0_EL1_FP_IMPL		= 0x0,
+     ID_AA64PFR0_EL1_FP_NONE		= 0xf,
+    ID_AA64PFR0_EL1_EL3			= __BITS(15,12),	// EP3 handling
+     ID_AA64PFR0_EL1_EL3_NONE		= 0,
+     ID_AA64PFR0_EL1_EL3_64		= 1,
+     ID_AA64PFR0_EL1_EL3_64_32		= 2,
+    ID_AA64PFR0_EL1_EL2			= __BITS(11,8),		// EP2 handling
+     ID_AA64PFR0_EL1_EL2_NONE		= 0,
+     ID_AA64PFR0_EL1_EL2_64		= 1,
+     ID_AA64PFR0_EL1_EL2_64_32		= 2,
+    ID_AA64PFR0_EL1_EL1			= __BITS(7,4),		// EP1 handling
+     ID_AA64PFR0_EL1_EL1_64		= 1,
+     ID_AA64PFR0_EL1_EL1_64_32		= 2,
+    ID_AA64PFR0_EL1_EL0			= __BITS(3,0),		// EP0 handling
+     ID_AA64PFR0_EL1_EL0_64		= 1,
+     ID_AA64PFR0_EL1_EL0_64_32		= 2;
+
+/* ICC_SRE_EL1: Interrupt Controller System Register Enable register */
+static const uintmax_t
+    ICC_SRE_EL1_SRE			= __BIT(0),
+    ICC_SRE_EL1_DFB			= __BIT(1),
+    ICC_SRE_EL1_DIB			= __BIT(2);
+
+/* ICC_SRE_EL2: Interrupt Controller System Register Enable register */
+static const uintmax_t
+    ICC_SRE_EL2_SRE			= __BIT(0),
+    ICC_SRE_EL2_DFB			= __BIT(1),
+    ICC_SRE_EL2_DIB			= __BIT(2),
+    ICC_SRE_EL2_EN			= __BIT(3);
+
+
 
 #elif defined(__arm__)
 
