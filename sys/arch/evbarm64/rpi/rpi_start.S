@@ -34,6 +34,7 @@
 #include "opt_ddb.h"
 
 #include <aarch64/asm.h>
+#include <aarch64/hypervisor.h>
 #include "assym.h"
 
 RCSID("$NetBSD$")
@@ -55,13 +56,26 @@ RCSID("$NetBSD$")
 #define COM_LSR			AUX_MU_LSR_REG
 #define COM_LSR_TXFE_BIT	5	/* Transmit fifo empty */
 
-#define PRINT(string)	stp x0,lr,[sp,#-16]!;bl xprint;.ascii string,"\0";.align 2;ldp x0,lr,[sp],#16
+#define PRINT(string)	stp x0,lr,[sp,#-16]!;bl xprint;.asciz string;.align 2;ldp x0,lr,[sp],#16
 
 	.global _start
 _start:
 	stp	x0, lr, [sp, #-16]!
 
 	mov	x9, x0
+
+	mrs	x0, SP_EL0
+	PRINT("SP_EL0=")
+	bl	print_x0
+	PRINT("\r\n")
+
+	mrs	x0, SP_EL1
+	PRINT("SP_EL1=")
+	bl	print_x0
+	PRINT("\r\n")
+
+	mov	x0, sp
+	msr	SP_EL1, x0
 
 	PRINT("LR=")
 	mov	x0, lr
@@ -110,17 +124,118 @@ _start:
 	PRINT("\r\n")
 
 
+	PRINT("Drop to EL1\r\n")
 
+	/* Drop to EL1 */
+	bl	drop_to_el1
 
-
+	PRINT("Drop to EL1 OK\r\n")
 
 	ldp	x0, lr, [sp], #16
 	ret
 
 
+
+/*
+ * If we are started in EL2, configure the required hypervisor
+ * registers and drop to EL1.
+ */
+drop_to_el1:
+	mrs	x1, CurrentEL
+	lsr	x1, x1, #2
+	cmp	x1, #0x2
+	b.eq	1f
+	ret
+1:
+	/* Configure the Hypervisor */
+	mov	x2, #(HCR_RW)
+	msr	hcr_el2, x2
 
+	/* Load the Virtualization Process ID Register */
+	mrs	x2, midr_el1
+	msr	vpidr_el2, x2
 
+	/* Load the Virtualization Multiprocess ID Register */
+	mrs	x2, mpidr_el1
+	msr	vmpidr_el2, x2
 
+	/* Set the bits that need to be 1 in sctlr_el1 */
+	ldr	x2, .Lsctlr_res1
+	msr	sctlr_el1, x2
+
+	/* Don't trap to EL2 for exceptions */
+	mov	x2, #CPTR_RES1
+	msr	cptr_el2, x2
+
+	/* Don't trap to EL2 for CP15 traps */
+	msr	hstr_el2, xzr
+
+	/* Enable access to the physical timers at EL1 */
+	mrs	x2, cnthctl_el2
+	orr	x2, x2, #(CNTKCTL_EL0PCTEN | CNTKCTL_EL0VCTEN)
+	msr	cnthctl_el2, x2
+
+	/* Set the counter offset to a known value */
+	msr	cntvoff_el2, xzr
+
+	/* Hypervisor trap functions */
+	adr	x2, hyp_vectors
+	msr	vbar_el2, x2
+
+	mov	x2, #(SPSR_F | SPSR_I | SPSR_A | SPSR_A64_D | SPSR_M_EL1H)
+	msr	spsr_el2, x2
+
+	/* Configure GICv3 CPU interface */
+	mrs	x2, id_aa64pfr0_el1
+	/* Extract GIC bits from the register */
+	and	x2, x2, ID_AA64PFR0_EL1_GIC
+	lsr	x2, x2, ID_AA64PFR0_EL1_GIC_SHIFT
+	/* GIC[3:0] == 0001 - GIC CPU interface via special regs. supported */
+	cmp	x2, #ID_AA64PFR0_EL1_GIC_CPUIF_EN
+	b.ne	2f
+
+	mrs	x2, icc_sre_el2
+	orr	x2, x2, #ICC_SRE_EL2_EN	/* Enable access from insecure EL1 */
+	orr	x2, x2, #ICC_SRE_EL2_SRE	/* Enable system registers */
+	msr	icc_sre_el2, x2
+2:
+
+	/* Set the address to return to our return address */
+	msr	elr_el2, x30
+	isb
+
+	eret
+
+	.align 3
+.Lsctlr_res1:
+	.quad SCTLR_RES1
+
+#define	VECT_EMPTY	\
+	.align 7;	\
+	1:	b	1b
+
+	.align 11
+hyp_vectors:
+	VECT_EMPTY	/* Synchronous EL2t */
+	VECT_EMPTY	/* IRQ EL2t */
+	VECT_EMPTY	/* FIQ EL2t */
+	VECT_EMPTY	/* Error EL2t */
+
+	VECT_EMPTY	/* Synchronous EL2h */
+	VECT_EMPTY	/* IRQ EL2h */
+	VECT_EMPTY	/* FIQ EL2h */
+	VECT_EMPTY	/* Error EL2h */
+
+	VECT_EMPTY	/* Synchronous 64-bit EL1 */
+	VECT_EMPTY	/* IRQ 64-bit EL1 */
+	VECT_EMPTY	/* FIQ 64-bit EL1 */
+	VECT_EMPTY	/* Error 64-bit EL1 */
+
+	VECT_EMPTY	/* Synchronous 32-bit EL1 */
+	VECT_EMPTY	/* IRQ 32-bit EL1 */
+	VECT_EMPTY	/* FIQ 32-bit EL1 */
+	VECT_EMPTY	/* Error 32-bit EL1 */
+
 /*
  * xprint - print strings pointed by $PC(LR)
  *          and return to the end of string.

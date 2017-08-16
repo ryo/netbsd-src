@@ -190,6 +190,24 @@ define	SPSR_M_EL1T		SPSR_M_EL1T
 define	DAIF_I			DAIF_I
 define	DAIF_F			DAIF_F
 
+define	CNTKCTL_EL0PCTEN	CNTKCTL_EL0PCTEN
+define	CNTKCTL_EL0VCTEN	CNTKCTL_EL0VCTEN
+define	SPSR_F			SPSR_F
+define	SPSR_I			SPSR_I
+define	SPSR_A			SPSR_A
+define	SPSR_A64_D		SPSR_A64_D
+define	SPSR_M_EL1H		SPSR_M_EL1H
+
+define	ID_AA64PFR0_EL1_GIC		ID_AA64PFR0_EL1_GIC
+define	ID_AA64PFR0_EL1_GIC_SHIFT	ID_AA64PFR0_EL1_GIC_SHIFT
+define	ID_AA64PFR0_EL1_GIC_CPUIF_EN	ID_AA64PFR0_EL1_GIC_CPUIF_EN
+
+define	SCTLR_RES1		SCTLR_RES1
+
+define	ICC_SRE_EL2_EN		ICC_SRE_EL2_EN
+define	ICC_SRE_EL2_SRE		ICC_SRE_EL2_SRE
+
+
 # Constants required for in_cksum() and friends.
 define	M_LEN			offsetof(struct mbuf, m_len)
 define	M_DATA			offsetof(struct mbuf, m_data)
