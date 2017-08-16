@@ -202,6 +202,12 @@ ENTRY(cpu_Debugger)
 END(cpu_Debugger)
 #endif /* DDB */
 
+/*
+ * int cpu_set_onfault(struct faultbuf *fb, register_t retval)
+ */
+ENTRY(cpu_set_onfault)
+END(cpu_set_onfault)
+
 ENTRY(setjmp)
 	stp	x19, x20, [x0, #0]
 	stp	x21, x22, [x0, #16]
