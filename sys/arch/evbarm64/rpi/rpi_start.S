@@ -64,6 +64,19 @@ _start:
 
 	mov	x9, x0
 
+	mrs	x0, SP_EL0
+	PRINT("SP_EL0=")
+	bl	print_x0
+	PRINT("\r\n")
+
+	mrs	x0, SP_EL1
+	PRINT("SP_EL1=")
+	bl	print_x0
+	PRINT("\r\n")
+
+	mov	x0, sp
+	msr	SP_EL1, x0
+
 	PRINT("LR=")
 	mov	x0, lr
 	bl	print_x0
@@ -116,7 +129,7 @@ _start:
 	/* Drop to EL1 */
 	bl	drop_to_el1
 
-	PRINT("OK\r\n")
+	PRINT("Drop to EL1 OK\r\n")
 
 	ldp	x0, lr, [sp], #16
 	ret
@@ -162,23 +175,15 @@ drop_to_el1:
 	orr	x2, x2, #(CNTKCTL_EL0PCTEN | CNTKCTL_EL0VCTEN)
 	msr	cnthctl_el2, x2
 
-	PRINT("Hello EL2\r\n");
-
 	/* Set the counter offset to a known value */
 	msr	cntvoff_el2, xzr
-
-	PRINT("A\r\n");
 
 	/* Hypervisor trap functions */
 	adr	x2, hyp_vectors
 	msr	vbar_el2, x2
 
-	PRINT("B\r\n");
-
 	mov	x2, #(SPSR_F | SPSR_I | SPSR_A | SPSR_A64_D | SPSR_M_EL1H)
 	msr	spsr_el2, x2
-
-	PRINT("C\r\n");
 
 	/* Configure GICv3 CPU interface */
 	mrs	x2, id_aa64pfr0_el1
@@ -189,21 +194,15 @@ drop_to_el1:
 	cmp	x2, #ID_AA64PFR0_EL1_GIC_CPUIF_EN
 	b.ne	2f
 
-	PRINT("D\r\n");
-
 	mrs	x2, icc_sre_el2
 	orr	x2, x2, #ICC_SRE_EL2_EN	/* Enable access from insecure EL1 */
 	orr	x2, x2, #ICC_SRE_EL2_SRE	/* Enable system registers */
 	msr	icc_sre_el2, x2
 2:
 
-	PRINT("E\r\n");
-
 	/* Set the address to return to our return address */
 	msr	elr_el2, x30
 	isb
-
-	PRINT("F\r\n");
 
 	eret
 
