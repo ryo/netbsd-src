@@ -36,6 +36,9 @@
 
 RCSID("$NetBSD: locore.S,v 1.1 2014/08/10 05:47:37 matt Exp $")
 
+// XXX:AARCH64
+lr	.req	x30
+
 /*
  * At IPL_SCHED:
  *	x0 = oldlwp (maybe be NULL)
@@ -206,6 +209,18 @@ END(cpu_Debugger)
  * int cpu_set_onfault(struct faultbuf *fb, register_t retval)
  */
 ENTRY(cpu_set_onfault)
+	mov	x9, sp
+	stp	x19, x20, [x0, #0]
+	stp	x21, x22, [x0, #16]
+	stp	x23, x24, [x0, #32]
+	stp	x25, x26, [x0, #48]
+	stp	x27, x28, [x0, #64]
+	stp	x29, x9, [x0, #80]
+	stp	lr, x1, [x0, #96]
+	mrs	x3, tpidr_el1		/* curcpu */
+	ldr	x2, [x3, #CI_CURLWP]	/* curlwp */
+	str	x0, [x2, #L_MD_ONFAULT] /* l_md.md_onfault = fb */
+	mov	x0, #0
 END(cpu_set_onfault)
 
 ENTRY(setjmp)
