@@ -243,8 +243,23 @@ static const uintmax_t
 AARCH64REG_READ_INLINE(far_el1)		// Fault Address Register
 AARCH64REG_WRITE_INLINE(far_el1)
 
-AARCH64REG_READ_INLINE(mair_el1)	// Main Id Register
+AARCH64REG_READ_INLINE(mair_el1)	// Memory Attribute Indirection Register
 AARCH64REG_WRITE_INLINE(mair_el1)
+
+static const uintmax_t
+    MAIR_ATTR0		= __BITS(7,0),
+    MAIR_ATTR1		= __BITS(15,8),
+    MAIR_ATTR2		= __BITS(23,16),
+    MAIR_ATTR3		= __BITS(31,24),
+    MAIR_ATTR4		= __BITS(39,32),
+    MAIR_ATTR5		= __BITS(47,40),
+    MAIR_ATTR6		= __BITS(55,48),
+    MAIR_ATTR7		= __BITS(63,56),
+    MAIR_DEVICE_nGnRE	= 0x00,
+    MAIR_NORMAL_NC	= 0x44,
+    MAIR_NORMAL_WT	= 0xbb,
+    MAIR_NORMAL_WB	= 0xff;
+
 
 AARCH64REG_READ_INLINE(par_el1)		// Physical Address Register
 AARCH64REG_WRITE_INLINE(par_el1)
