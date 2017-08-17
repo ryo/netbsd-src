@@ -17,7 +17,7 @@ options 	__HAVE_PIC_SET_PRIORITY
 options 	EVBARM_BOARDTYPE="rpi"
 makeoptions	BOARDMKFRAG="${THISA64}/conf/mk.rpi"
 makeoptions	LOADADDRESS="0x0000000000200000"
-makeoptions	TEXTADDR=   "0xffff000000200000"
+makeoptions	TEXTADDR=   "0xffffffc000200000"
 
 #options 	ARM_INTR_IMPL="<arch/arm/broadcom/bcm2835_intr.h>"
 #options 	ARM_GENERIC_TODR
