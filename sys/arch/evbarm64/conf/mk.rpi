@@ -7,9 +7,6 @@ _OSRELEASE!=		${HOST_SH} $S/conf/osrelease.sh
 
 GENASSYM_EXTRAS+=	${THISA64}/rpi/genassym.cf
 
-KERNEL_BASE_PHYS=0x00200000
-KERNEL_BASE_VIRT=0x80200000
-
 SYSTEM_LD_TAIL_EXTRA+=; \
 	echo ${OBJCOPY} -S -O binary $@ $@.bin; \
 	${OBJCOPY} -S -O binary $@ $@.bin; \
