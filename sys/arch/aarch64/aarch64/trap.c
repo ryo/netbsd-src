@@ -46,6 +46,16 @@ userret(struct lwp *l, struct trapframe *tf)
 	mi_userret(l);
 }
 
+void
+trap(struct trapframe *tf)
+{
+}
+
+void
+interrupt(struct trapframe *tf)
+{
+}
+
 // XXXAARCH64 might be populated in frame.h in future
 
 #define FB_X19	0

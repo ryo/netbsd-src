@@ -61,6 +61,9 @@ void	dosoftints(void);
 void	cpu_switchto_softint(struct lwp *, int);
 void	cpu_send_ipi(struct cpu_info *, int);
 
+void	trap(struct trapframe *);
+void	interrupt(struct trapframe *);
+
 extern paddr_t physical_start;
 extern paddr_t physical_end;
 
