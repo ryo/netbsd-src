@@ -5,12 +5,57 @@
 
 lr	.req	x30	/* link register */
 
+#define BAD_SYNC	1
+#define BAD_IRQ		2
+#define BAD_FIQ		3
+#define BAD_ERROR	4
+
 	 .macro	VECT_ENTRY, label
 	.align	7
 	b	\label
 	.endm
 
+	.macro	VECT_INVAL, el, cause, regsize = 64
+	.align	7
+	/* small enough to fit 32 instrunction slot */
+	stp	x0, x1, [sp, #TF_X0]
+	stp	x2, x3, [sp, #TF_X2]
+	stp	x4, x5, [sp, #TF_X4]
+	stp	x6, x7, [sp, #TF_X6]
+	stp	x8, x9, [sp, #TF_X8]
+	stp	x10, x11, [sp, #TF_X10]
+	stp	x12, x13, [sp, #TF_X12]
+	stp	x14, x15, [sp, #TF_X14]
+	stp	x16, x17, [sp, #TF_X16]
+	str	x18, [sp, #TF_X18]
+	stp	x19, x20, [sp, #TF_X19]
+	stp	x21, x22, [sp, #TF_X21]
+	stp	x23, x24, [sp, #TF_X23]
+	stp	x25, x26, [sp, #TF_X25]
+	stp	x27, x28, [sp, #TF_X27]
+	stp	x29, x30, [sp, #TF_X29]
+	.if \el == 0
+	mrs	x20, sp_el0
+	.else
+	mrs	x20, sp_el1
+	.endif
+	mrs	x21, elr_el1
+	mrs	x22, spsr_el1
+	str	x20, [sp, #TF_SP]
+	str	x21, [sp, #TF_PC]
+	str	x22, [sp, #TF_SPSR]
+	mrs	x23, esr_el1
+	mrs	x24, far_el1
+	str	x23, [sp, #TF_ESR]
+	str	x24, [sp, #TF_FAR]
+	adr	lr, exception_trap_exit
+	mov	x0, sp
+	mov	x1, #\cause
+	b	trap
+	.endm
+
 	.macro	exception_entry, el, regsize = 64
+	/* !!! will grow beyond 32 instruction vector slot size !!! */
 	.if \regsize == 32
 	mov	w0, w0			/* fill 0 in upper half of x0 */
 	.endif
@@ -47,11 +92,6 @@ lr	.req	x30	/* link register */
 	str	x24, [sp, #TF_FAR]
 	.endm
 
-	.macro invalid_entry, el, reason
-	exception_entry \el
-	mov	x1, #\reason
-	.endm
-
 	.pushsection ".entry.text", "ax"
 	.p2align 11
 ENTRY(el1_vectors)
@@ -59,34 +99,34 @@ ENTRY(el1_vectors)
  * Exception taken from current Exception Level with SP_EL1.
  * (These shouldn't happen)
  */
-	VECT_ENTRY	el1_sync_invalid	/* Synchronous EL1t */
-	VECT_ENTRY	el1_irq_invalid		/* IRQ EL1t */
-	VECT_ENTRY	el1_fiq_invalid		/* FIQ EL1t */
-	VECT_ENTRY	el1_serr_invalid	/* Error EL1t */
+	VECT_INVAL	1, BAD_SYNC		/* Synchronous EL1t */
+	VECT_INVAL	1, BAD_IRQ		/* IRQ EL1t */
+	VECT_INVAL	1, BAD_FIQ		/* FIQ EL1t */
+	VECT_INVAL	1, BAD_ERROR		/* Error EL1t */
 /*
  * Exception takend form current Exception Level with SP.
  * There are entries for exceptions caused in EL1 (kernel exceptions).
  */
 	VECT_ENTRY	el1_sync		/* Synchronous EL1h */
 	VECT_ENTRY	el1_irq			/* IRQ EL1h */
-	VECT_ENTRY	el1_fiq_invalid		/* FIQ EL1h */
-	VECT_ENTRY	el1_serr_invalid	/* Error EL1h */
+	VECT_INVAL	1, BAD_FIQ		/* FIQ EL1h */
+	VECT_INVAL	1, BAD_ERROR		/* Error EL1h */
 /*
  * Exception taken from lower Exception Level which is using AArch64
  * There are entries for exceptions caused in EL0 (native user exceptions).
  */
 	VECT_ENTRY	el0_sync		/* Synchronous 64bit EL0 */
 	VECT_ENTRY	el0_irq			/* IRQ 64bit EL0 */
-	VECT_ENTRY	el0_fiq_invalid		/* FIQ 64bit EL0 */
-	VECT_ENTRY	el0_serr_invalid	/* Error 64bit EL0 */
+	VECT_INVAL	0, BAD_FIQ		/* FIQ 64bit EL0 */
+	VECT_INVAL	0, BAD_ERROR		/* Error 64bit EL0 */
 /*
  * Exception taken from lower Exception Level which is using AArch32
  * There are entries for exceptions caused in EL0 (compat user exceptions).
  */
 	VECT_ENTRY	el0_32sync		/* Synchronous 32bit EL0 */
 	VECT_ENTRY	el0_32irq		/* IRQ 32bit EL0 */
-	VECT_ENTRY	el0_fiq_invalid		/* FIQ 32bit EL0 */
-	VECT_ENTRY	el0_serr_invalid	/* Error 32bit EL0 */
+	VECT_INVAL	0, BAD_FIQ, 32		/* FIQ 32bit EL0 */
+	VECT_INVAL	0, BAD_ERROR, 32	/* Error 32bit EL0 */
 
 ENTRY(el1_sync)
 	exception_entry 1
@@ -132,50 +172,3 @@ ENTRY(el0_32irq)
 	mov	x0, sp
 	b	interrupt
 END(el0_32irq)
-
-#define BAD_SYNC	1
-#define BAD_IRQ		2
-#define BAD_FIQ		3
-#define BAD_ERROR	4
-
-ENTRY(el1_sync_invalid)
-	invalid_entry 1, BAD_SYNC
-	adr	lr, exception_trap_exit
-	mov	x0, sp
-	b	trap
-END(el1_sync_invalid)
-
-ENTRY(el1_irq_invalid)
-	invalid_entry 1, BAD_IRQ
-	adr	lr, exception_trap_exit
-	mov	x0, sp
-	b	trap
-END(el1_irq_invalid)
-
-ENTRY(el1_fiq_invalid)
-	invalid_entry 1, BAD_FIQ
-	adr	lr, exception_trap_exit
-	mov	x0, sp
-	b	trap
-END(el1_fiq_invalid)
-
-ENTRY(el1_serr_invalid)
-	invalid_entry 1, BAD_ERROR
-	adr	lr, exception_trap_exit
-	mov	x0, sp
-	b	trap
-END(el1_serr_invalid)
-
-ENTRY(el0_fiq_invalid)
-	invalid_entry 0, BAD_FIQ
-	adr	lr, exception_trap_exit
-	mov	x0, sp
-	b	trap
-END(el0_fiq_invalid)
-
-ENTRY(el0_serr_invalid)
-	invalid_entry 0, BAD_ERROR
-	adr	lr, exception_trap_exit
-	mov	x0, sp
-	b	trap
-END(el0_serr_invalid)
