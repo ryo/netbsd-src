@@ -36,9 +36,20 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/cpu.h>
+#include <sys/proc.h>
 #include <sys/userret.h>
+#include <sys/systm.h>
+
+#include <sys/signal.h>
+#include <sys/signalvar.h>
+#include <sys/siginfo.h>
 
 #include <aarch64/locore.h>
+
+static void
+dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
+{
+}
 
 void
 userret(struct lwp *l, struct trapframe *tf)
@@ -50,15 +61,28 @@ void
 trap(struct trapframe *tf, int reason)
 {
 	struct lwp * const l = curlwp;
-	struct proc * const p = l->l_proc;
 	size_t code = tf->tf_esr & 0xffff;
+	bool usertrap_p = tf->tf_esr & 01;
+	bool ok = true;
+	ksiginfo_t ksi;
+
+	code = code;
+	dump_trapframe(tf, printf);
+
+	if (usertrap_p) {
+		if (!ok)
+			(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
+		userret(l, tf);
+	}
+	else if (!ok) {
+		dump_trapframe(tf, printf);
+		panic("%s: fatal kernel trap", __func__);
+	}
 }
 
 void
 interrupt(struct trapframe *tf)
 {
-	struct lwp * const l = curlwp;
-	struct proc * const p = l->l_proc;
 }
 
 // XXXAARCH64 might be populated in frame.h in future
