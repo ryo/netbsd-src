@@ -5,7 +5,7 @@
 
 lr	.req	x30	/* link register */
 
-	 .macro	VECT_ENTRY label
+	 .macro	VECT_ENTRY, label
 	.align	7
 	b	\label
 	.endm
@@ -47,6 +47,11 @@ lr	.req	x30	/* link register */
 	str	x24, [sp, #TF_FAR]
 	.endm
 
+	.macro invalid_entry, el, reason
+	exception_entry \el
+	mov	x1, #\reason
+	.endm
+
 	.pushsection ".entry.text", "ax"
 	.p2align 11
 ENTRY(el1_vectors)
@@ -59,7 +64,7 @@ ENTRY(el1_vectors)
 	VECT_ENTRY	el1_fiq_invalid		/* FIQ EL1t */
 	VECT_ENTRY	el1_serr_invalid	/* Error EL1t */
 /*
- * Exception takend form current Exception Level with SP_EL1.
+ * Exception takend form current Exception Level with SP.
  * There are entries for exceptions caused in EL1 (kernel exceptions).
  */
 	VECT_ENTRY	el1_sync		/* Synchronous EL1h */
@@ -83,20 +88,11 @@ ENTRY(el1_vectors)
 	VECT_ENTRY	el0_fiq_invalid		/* FIQ 32bit EL0 */
 	VECT_ENTRY	el0_serr_invalid	/* Error 32bit EL0 */
 
-ENTRY(el1_sync_invalid)
-ENTRY(el1_irq_invalid)
-ENTRY(el1_fiq_invalid)
-ENTRY(el1_serr_invalid)
-ENTRY(el0_sync_invalid)
-ENTRY(el0_irq_invalid)
-ENTRY(el0_fiq_invalid)
-ENTRY(el0_serr_invalid)
-	1:	b	1b
-
 ENTRY(el1_sync)
 	exception_entry 1
 	adr	x30, exception_trap_exit
 	mov	x0, sp
+	mvn	x1, xzr
 	b	trap
 END(el1_sync)
 
@@ -111,6 +107,7 @@ ENTRY(el0_sync)
 	exception_entry 0
 	adr	x30, exception_trap_exit
 	mov	x0, sp
+	mvn	x1, xzr
 	b	trap
 END(el0_sync)
 
@@ -125,6 +122,7 @@ ENTRY(el0_32sync)
 	exception_entry 0, 32
 	adr	x30, exception_trap_exit
 	mov	x0, sp
+	mvn	x1, xzr
 	b	trap
 END(el0_32sync)
 
@@ -134,3 +132,50 @@ ENTRY(el0_32irq)
 	mov	x0, sp
 	b	interrupt
 END(el0_32irq)
+
+#define BAD_SYNC	0
+#define BAD_IRQ		1
+#define BAD_FIQ		2
+#define BAD_ERROR	3
+
+ENTRY(el1_sync_invalid)
+	invalid_entry 1, BAD_SYNC
+	adr	lr, exception_trap_exit
+	mov	x0, sp
+	b	trap
+END(el1_sync_invalid)
+
+ENTRY(el1_irq_invalid)
+	invalid_entry 1, BAD_IRQ
+	adr	lr, exception_trap_exit
+	mov	x0, sp
+	b	trap
+END(el1_irq_invalid)
+
+ENTRY(el1_fiq_invalid)
+	invalid_entry 1, BAD_FIQ
+	adr	lr, exception_trap_exit
+	mov	x0, sp
+	b	trap
+END(el1_fiq_invalid)
+
+ENTRY(el1_serr_invalid)
+	invalid_entry 1, BAD_ERROR
+	adr	lr, exception_trap_exit
+	mov	x0, sp
+	b	trap
+END(el1_serr_invalid)
+
+ENTRY(el0_fiq_invalid)
+	invalid_entry 0, BAD_FIQ
+	adr	lr, exception_trap_exit
+	mov	x0, sp
+	b	trap
+END(el0_fiq_invalid)
+
+ENTRY(el0_serr_invalid)
+	invalid_entry 0, BAD_ERROR
+	adr	lr, exception_trap_exit
+	mov	x0, sp
+	b	trap
+END(el0_serr_invalid)
