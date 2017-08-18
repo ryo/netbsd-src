@@ -92,7 +92,7 @@ ENTRY(el1_sync)
 	exception_entry 1
 	adr	x30, exception_trap_exit
 	mov	x0, sp
-	mvn	x1, xzr
+	mov	x1, xzr
 	b	trap
 END(el1_sync)
 
@@ -107,7 +107,7 @@ ENTRY(el0_sync)
 	exception_entry 0
 	adr	x30, exception_trap_exit
 	mov	x0, sp
-	mvn	x1, xzr
+	mov	x1, xzr
 	b	trap
 END(el0_sync)
 
@@ -122,7 +122,7 @@ ENTRY(el0_32sync)
 	exception_entry 0, 32
 	adr	x30, exception_trap_exit
 	mov	x0, sp
-	mvn	x1, xzr
+	mov	x1, xzr
 	b	trap
 END(el0_32sync)
 
@@ -133,10 +133,10 @@ ENTRY(el0_32irq)
 	b	interrupt
 END(el0_32irq)
 
-#define BAD_SYNC	0
-#define BAD_IRQ		1
-#define BAD_FIQ		2
-#define BAD_ERROR	3
+#define BAD_SYNC	1
+#define BAD_IRQ		2
+#define BAD_FIQ		3
+#define BAD_ERROR	4
 
 ENTRY(el1_sync_invalid)
 	invalid_entry 1, BAD_SYNC
