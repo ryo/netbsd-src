@@ -47,13 +47,18 @@ userret(struct lwp *l, struct trapframe *tf)
 }
 
 void
-trap(struct trapframe *tf)
+trap(struct trapframe *tf, int reason)
 {
+	struct lwp * const l = curlwp;
+	struct proc * const p = l->l_proc;
+	size_t code = tf->tf_esr & 0xffff;
 }
 
 void
 interrupt(struct trapframe *tf)
 {
+	struct lwp * const l = curlwp;
+	struct proc * const p = l->l_proc;
 }
 
 // XXXAARCH64 might be populated in frame.h in future
