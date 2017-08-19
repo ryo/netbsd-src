@@ -104,7 +104,7 @@ ENTRY(el1_vectors)
 	VECT_INVAL	1, BAD_FIQ		/* FIQ EL1t */
 	VECT_INVAL	1, BAD_ERROR		/* Error EL1t */
 /*
- * Exception taken form current Exception Level with SP.
+ * Exception taken from current Exception Level with SP.
  * There are entries for exceptions caused in EL1 (kernel exceptions).
  */
 	VECT_ENTRY	el1_sync		/* Synchronous EL1h */
