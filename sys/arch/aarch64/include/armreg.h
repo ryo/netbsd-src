@@ -387,13 +387,13 @@ static const uintmax_t
      TCR_IPS_64GB   = 1,		// 36 bits  (64 GB)
      TCR_IPS_4GB    = 0,		// 32 bits   (4 GB)
     TCR_TG1	    = __BITS(31,30),	// Page Granule Size
-     TCR_TG_4KB	    = 1,		// 4KB page size
-     TCR_TG_16KB    = 2,		// 16KB page size
+     TCR_TG_16KB    = 1,		// 16KB page size
+     TCR_TG_4KB	    = 2,		// 4KB page size
      TCR_TG_64KB    = 3,		// 64KB page size
     TCR_SH1	    = __BITS(29,28),
      TCR_SH_NONE    = 0,
-     TCR_SH_OUTER   = 1,
-     TCR_SH_INNER   = 2,
+     TCR_SH_OUTER   = 2,
+     TCR_SH_INNER   = 3,
     TCR_ORGN1	    = __BITS(27,26),
      TCR_XRGN_NC    = 0,		// Non Cacheable
      TCR_XRGN_WB_WA = 1,		// WriteBack WriteAllocate
