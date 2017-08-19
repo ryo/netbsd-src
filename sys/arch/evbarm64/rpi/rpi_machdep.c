@@ -37,6 +37,17 @@ __KERNEL_RCSID(0, "$NetBSD$");
 vaddr_t physical_start;
 vaddr_t physical_end;
 
+vaddr_t initarm(void *);
+void uartputs(const char *);
+
+vaddr_t
+initarm(void *arg)
+{
+	uartputs("Hello initarm()\r\n");
+
+
+	return NULL;
+}
 
 
 void
