@@ -255,7 +255,7 @@ static const uintmax_t
     MAIR_ATTR5		= __BITS(47,40),
     MAIR_ATTR6		= __BITS(55,48),
     MAIR_ATTR7		= __BITS(63,56),
-    MAIR_DEVICE_nGnRE	= 0x00,
+    MAIR_DEVICE_nGnRnE	= 0x00,
     MAIR_NORMAL_NC	= 0x44,
     MAIR_NORMAL_WT	= 0xbb,
     MAIR_NORMAL_WB	= 0xff;
