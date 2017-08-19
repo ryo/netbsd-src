@@ -10,7 +10,7 @@ lr	.req	x30	/* link register */
 #define BAD_FIQ		3
 #define BAD_ERROR	4
 
-	 .macro	VECT_ENTRY, label
+	.macro	VECT_ENTRY, label
 	.align	7
 	b	\label
 	.endm
@@ -104,7 +104,7 @@ ENTRY(el1_vectors)
 	VECT_INVAL	1, BAD_FIQ		/* FIQ EL1t */
 	VECT_INVAL	1, BAD_ERROR		/* Error EL1t */
 /*
- * Exception takend form current Exception Level with SP.
+ * Exception taken form current Exception Level with SP.
  * There are entries for exceptions caused in EL1 (kernel exceptions).
  */
 	VECT_ENTRY	el1_sync		/* Synchronous EL1h */
