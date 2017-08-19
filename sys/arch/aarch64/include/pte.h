@@ -34,13 +34,15 @@
 
 #ifdef __aarch64__
 
+#ifndef _LOCORE
 typedef unsigned long long pt_entry_t;
+#endif /* _LOCORE */
 
 #define LX_VALID		__BIT(0)
 #define LX_TYPE			__BIT(1)
-#define LX_TYPE_BLK		__SHIFTOUT(0, LX_TYPE)
-#define LX_TYPE_TBL		__SHIFTOUT(1, LX_TYPE)
-#define L3_TYPE_PAG		__SHIFTOUT(1, LX_TYPE)
+#define LX_TYPE_BLK		__SHIFTIN(0, LX_TYPE)
+#define LX_TYPE_TBL		__SHIFTIN(1, LX_TYPE)
+#define L3_TYPE_PAG		__SHIFTIN(1, LX_TYPE)
 
 #define L1_BLK_OS		__BITS(58, 55)
 #define L1_BLK_UXN		__BIT(54)
@@ -77,43 +79,48 @@ typedef unsigned long long pt_entry_t;
 #define L3_PAG_OA_16K		__BITS(47, 14)
 #define L3_PAG_OA_64K		__BITS(47, 16)
 
-#define TCR_TBI1		__BIT(38)	// ignore Top Byte for TTBR1_EL1
-#define TCR_TBI0		__BIT(37)	// ignore Top Byte for TTBR0_EL1
-#define TCR_AS64K		__BIT(36)	// Use 64K ASIDs
-#define TCR_IPS			__BITS(34,32)	// Intermediate Phys Addr Size
-#define TCR_IPS_256TB		5		// 48 bits (256 TB)
-#define TCR_IPS_64TB		4		// 44 bits  (16 TB)
-#define TCR_IPS_4TB		3		// 42 bits  ( 4 TB)
-#define TCR_IPS_1TB		2		// 40 bits  ( 1 TB)
-#define TCR_IPS_64GB		1		// 36 bits  (64 GB)
-#define TCR_IPS_4GB		0		// 32 bits   (4 GB)
-#define TCR_TG1			__BITS(31,30)	// Page Granule Size
-#define TCR_PAGE_SIZE1(tcr)	(1L << (__SHIFTOUT(tcr, TCR_TG1) * 2 + 10))
-#define TCR_TG_4KB		1		// 4KB page size
-#define TCR_TG_16KB		2		// 16KB page size
-#define TCR_TG_64KB		3		// 64KB page size
-#define TCR_SH1			__BITS(29,28)
-#define TCR_SH_NONE		0
-#define TCR_SH_OUTER		1
-#define TCR_SH_INNER		2
-#define TCR_ORGN1		__BITS(27,26)
-#define TCR_XRGN_NC		0		// Non Cacheable
-#define TCR_XRGN_WB_WA		1		// WriteBack WriteAllocate
-#define TCR_XRGN_WT		0		// WriteThrough
-#define TCR_XRGN_WB		0		// WriteBack
-#define TCR_IRGN1		__BITS(25,24)
-#define TCR_EPD1		__BIT(23)	// Walk Disable for TTBR1_EL1
-#define TCR_A1			__BIT(22)	// ASID is in TTBR1_EL1
-#define TCR_T1SZ		__BITS(21,16)	// Size offset for TTBR1_EL1
-#define TCR_TG0			__BITS(15,14)
-#define TCR_SH0			__BITS(13,12)
-#define TCR_ORGN0		__BITS(11,10)
-#define TCR_IRGN0		__BITS(9,8)
-#define TCR_EPD0		__BIT(7)	// Walk Disable for TTBR0
-#define TCR_T0SZ		__BITS(5,0)	// Size offset for TTBR0_EL1
 
-#define TTBR_ASID		__BITS(63, 48)
-#define TTBR_BADDR		__BITS(47, 0)
+/* L0 table, 512GB block */
+#define L0_SHIFT		39
+#define L0_SIZE			(1UL << L0_SHIFT)
+#define L0_OFFSET		(L0_SIZE - 1UL)
+#define L0_FRAME		(~L0_OFFSET)
+/*      L0_BLOCK		Level 0 doesn't support block translation */
+#define L0_TABLE		(LX_VALID | LX_TYPE_TBL)
+
+/* L1 table, 1GB block */
+#define L1_SHIFT		30
+#define L1_SIZE			(1UL << L1_SHIFT)
+#define L1_OFFSET		(L1_SIZE - 1UL)
+#define L1_FRAME		(~L1_OFFSET)
+#define L1_BLOCK		(LX_VALID | LX_TYPE_BLK)
+#define L1_TABLE		(LX_VALID | LX_TYPE_TBL)
+
+/* L2 table, 2MB block */
+#define L2_SHIFT		21
+#define L2_SIZE			(1UL << L2_SHIFT)
+#define L2_OFFSET		(L2_SIZE - 1UL)
+#define L2_FRAME		(~L2_OFFSET)
+#define L2_BLOCK		(LX_VALID | LX_TYPE_BLK)
+#define L2_TABLE		(LX_VALID | LX_TYPE_TBL)
+#define L2_BLOCK_MASK		0x0000ffffffe00000UL
+
+/* L3 table, 4KB block */
+#define L3_SHIFT		12
+#define L3_SIZE			(1UL << L3_SHIFT)
+#define L3_OFFSET		(L3_SIZE - 1UL)
+#define L3_FRAME		(~L3_OFFSET)
+
+
+#define L0_ENTRIES_SHIFT	9
+#define L0_ENTRIES		(1 << L0_ENTRIES_SHIFT)
+#define L0_ADDR_MASK		(L0_ENTRIES - 1)
+
+#define Ln_ENTRIES_SHIFT	9
+#define Ln_ENTRIES		(1 << Ln_ENTRIES_SHIFT)
+#define Ln_ADDR_MASK		(Ln_ENTRIES - 1)
+#define Ln_TABLE_MASK		((1 << 12) - 1)
+
 
 #elif defined(__arm__)
 
