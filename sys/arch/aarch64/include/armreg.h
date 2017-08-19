@@ -410,6 +410,12 @@ static const uintmax_t
     TCR_EPD0	    = __BIT(7),		// Walk Disable for TTBR0
     TCR_T0SZ	    = __BITS(5,0);	// Size offset for TTBR0_EL1
 
+#ifdef MULTIPROCESSOR
+#define TCR_SMP_ATTRS		(__SHIFTIN(TCR_SH_INNER, TCR_SH0) | __SHIFTIN(TCR_SH_INNER, TCR_SH1))
+#else
+#define TCR_SMP_ATTRS		0
+#endif
+
 #define TCR_PAGE_SIZE1(tcr)	(1L << (__SHIFTOUT(tcr, TCR_TG1) * 2 + 10))
 
 AARCH64REG_READ_INLINE(tpidr_el1)	// Thread ID Register (EL1)
