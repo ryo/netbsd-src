@@ -62,6 +62,7 @@ define	__HAVE_FAST_SOFTINTS	1
 
 define	KERNBASE		VM_MIN_KERNEL_ADDRESS
 define	PCB_SIZE		sizeof(struct pcb)
+define	AARCH64_KSEG_START	AARCH64_KSEG_START
 
 #define	PV_PA			offsetof(pv_addr_t, pv_pa)
 #define	PMAP_DOMAIN_KERNEL	PMAP_DOMAIN_KERNEL
