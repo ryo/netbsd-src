@@ -199,7 +199,6 @@ virtdone:
 	/* Set up the stack */
 	adr	x25, initstack_end
 	mov	sp, x25
-	sub	sp, sp, #PCB_SIZE
 
 	/* Zero the BSS */
 	ldr	x15, .Lbss
@@ -231,6 +230,11 @@ virtdone:
 	/* trace back starts here */
 	mov	fp, #0
 	/* Branch to C code */
+
+
+	PRINT("SP=")
+	mov	x0, sp
+	bl	print_x0
 
 	PRINT("go initarm()\r\n")
 
@@ -396,6 +400,12 @@ drop_to_el1:
 	/* Set the bits that need to be 1 in sctlr_el1 */
 	ldr	x2, .Lsctlr_res1
 	msr	sctlr_el1, x2
+
+	/* enable FP */
+	mrs	x2, cpacr_el1
+	bic	x2, x2, #CPACR_FPEN
+	orr	x2, x2, #CPACR_FPEN_ALL
+	msr	cpacr_el1, x2
 
 	/* Don't trap to EL2 for exceptions */
 	mov	x2, #CPTR_RES1
@@ -906,5 +916,6 @@ init_pt_va:
 
 	.align	4
 initstack:
-	.space	(PAGE_SIZE * 4)	// XXXAARCH64
+	.space	(PAGE_SIZE * 8)	// XXXAARCH64
 initstack_end:
+	.space	PAGE_SIZE
