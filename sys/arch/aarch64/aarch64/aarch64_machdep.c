@@ -100,7 +100,7 @@ cpu_dumpconf(void)
 void
 cpu_reboot(int howto, char *bootstr)
 {
-	// XXXAARCH64
-	panic("cpu_reboot!\n");
-	/*NOTREACHED*/
+	for (;;)
+		asm("hlt #0xffff");
+
 }
