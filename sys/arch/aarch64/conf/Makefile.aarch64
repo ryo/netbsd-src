@@ -33,7 +33,12 @@ GENASSYM_CONF=	${A64}/aarch64/genassym.cf
 ## (2) compile settings
 ##
 # CPPFLAGS set by platform-specific Makefile fragment.
-CFLAGS+=	 -fomit-frame-pointer
+CFLAGS+=	-march=armv8-a+nofp+nosimd
+#CFLAGS+=	-fomit-frame-pointer
+CFLAGS+=	-fno-omit-frame-pointer
+CFLAGS+=	-mno-omit-leaf-frame-pointer
+#CFLAGS+=	-ffixed-x18
+
 
 ##
 ## (3) libkern and compat
