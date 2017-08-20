@@ -183,6 +183,8 @@ start:
 	/* Enable the mmu */
 	bl	start_mmu
 
+	bl	uart_switch_to_directmap	/* UART addr change from 0x3f215040 to 0xffff00003f215040 */
+
 	PRINT("MMU Enabled!\r\n")
 
 	/* Jump to the virtual address space */
@@ -326,40 +328,16 @@ _C_LABEL(uartputs):
 	ret
 END(_C_LABEL(uartputs))
 
-	.global _C_LABEL(vuartputc)
-_C_LABEL(vuartputc):
-	stp	x9, x10, [sp, #-16]!
-	stp	x0, x1, [sp, #-16]!
-
-	mov	x9, #(COM_LSR & 0xffff)
-	movk	x9, #(COM_LSR >> 16), lsl #16
-	movk	x9, #0xffff, lsl #32
-1:	ldr	w10, [x9]
-	tbz	w10, #COM_LSR_TXFE_BIT, 1b
-
-	mov	x9, #(COM_DATA & 0xffff)
-	movk	x9, #(COM_DATA >> 16), lsl #16
-	movk	x9, #0xffff, lsl #32
-	and	w0, w0, #0xff
-	str	w0, [x9]
-
-	ldp	x0, x1, [sp], #16
-	ldp	x9, x10, [sp], #16
-	ret
-END(_C_LABEL(vuartputc))
-
 	.global _C_LABEL(uartputc)
 _C_LABEL(uartputc):
 	stp	x9, x10, [sp, #-16]!
 	stp	x0, x1, [sp, #-16]!
 
-	mov	w9, #(COM_LSR & 0xffff)
-	movk	w9, #(COM_LSR >> 16), lsl #16
+	ldr	x9, L_COM_LSR
 1:	ldr	w10, [x9]
 	tbz	w10, #COM_LSR_TXFE_BIT, 1b
 
-	mov	w9, #(COM_DATA & 0xffff)
-	movk	w9, #(COM_DATA >> 16), lsl #16
+	ldr	x9, L_COM_DATA
 	and	w0, w0, #0xff
 	str	w0, [x9]
 
@@ -367,6 +345,30 @@ _C_LABEL(uartputc):
 	ldp	x9, x10, [sp], #16
 	ret
 END(_C_LABEL(uartputc))
+
+uart_switch_to_directmap:
+	stp	x0, x1, [sp, #-16]!
+
+	adr	x1, L_COM_DATA
+	ldr	x0, [x1]
+	movk	x0, #0xffff, lsl #48
+	str	x0, [x1]
+
+	adr	x1, L_COM_LSR
+	ldr	x0, [x1]
+	movk	x0, #0xffff, lsl #48
+	str	x0, [x1]
+
+	ldp	x9, x10, [sp], #16
+	ret
+
+	.align	3
+L_COM_DATA:
+	.quad	COM_DATA
+L_COM_LSR:
+	.quad	COM_LSR
+
+
 
 /*
  * If we are started in EL2, configure the required hypervisor
@@ -506,6 +508,7 @@ virt_map:
  *    - The Kernel L0 table             (TTBR1)
  *    - The identity (PA = VA) L1 table
  *    - The identity (PA = VA) L0 table (TTBR0)
+ *    - The KSEG L1 tables
  */
 create_pagetables:
 	/* Save the Link register */
@@ -567,6 +570,26 @@ create_pagetables:
 	mov	x6, x24
 	mov	x10, #1
 	bl	link_l0_pagetable
+
+
+
+	PRINT("Create KSEG maps\r\n")
+
+	/* Link the KSEG tables */
+	ldr	x8, =AARCH64_KSEG_START
+	adr	x9, pagetable_kseg
+#define KSEG_TABLES		1	// XXXAARCH64
+	mov	x10, #KSEG_TABLES
+	bl	link_l0_pagetable
+
+	PRINT("Create KSEG L1 table\r\n")
+	adr	x6, pagetable_kseg
+	mov	x7, #DEVICE_MEM
+	mov	x9, #0
+	mov	x8, #0
+	mov	x10, #32		// XXXAARCH64
+	bl	build_l1_block_pagetable
+
 
 	PRINT("Build the TTBR0 maps\r\n")
 
@@ -866,6 +889,12 @@ pagetable_l1_ttbr0:
 	.space	PAGE_SIZE
 pagetable_l0_ttbr0:
 	.space	PAGE_SIZE
+
+#ifdef KSEG_TABLES
+pagetable_kseg:
+	.space	PAGE_SIZE * KSEG_TABLES
+#endif
+
 pagetable_end:
 
 el2_pagetable:
