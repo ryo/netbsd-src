@@ -53,12 +53,15 @@ static struct consdev kcomcons = {
 vaddr_t
 initarm(void *arg)
 {
+	consinit();
+
+
 	uartputs("Hello initarm()\r\n");
 
-#if 1
-	cn_tab = &kcomcons;
-	(*cn_tab->cn_init)(&kcomcons);
-#endif
+
+	/* printf not work yet */
+	printf("Hello printf\n");
+
 
 	return NULL;
 }
@@ -74,11 +77,10 @@ consinit(void)
 
 	consinit_called = 1;
 
-#ifdef CONSDEVNAME
 	// XXXAARCH64
+	cn_tab = &kcomcons;
+	(*cn_tab->cn_init)(&kcomcons);
 
-	// init uart
-#endif /* CONSDEVNAME */
 }
 
 #define AUX_MU_BASE	0x3f215000
@@ -100,11 +102,7 @@ static uintptr_t uartbase;
 static void
 kcomcninit(struct consdev *cn)
 {
-	/*
-	 * we do not touch UART operating parameters since bootloader
-	 * is supposed to have done well.
-	 */
-	uartbase = AUX_MU_BASE /* + KVM device region base */;
+	uartbase = AARCH64_PA_TO_KVA(AUX_MU_BASE);
 }
 
 static int
