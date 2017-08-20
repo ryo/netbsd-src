@@ -70,6 +70,10 @@ initarm(void *arg)
 	uartputs("Hello initarm()\r\n");
 
 	printf("Hello printf. initarm=%p\n", initarm);
+	printf("Hello strings <%s>\n", "example");
+	printf("%s:%d\n", __func__, __LINE__);
+
+	panic("PANIC!");
 
 	return NULL;
 }
