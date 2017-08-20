@@ -49,6 +49,51 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 static void
 dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 {
+
+	(*pr)("trapframe @ %p:\n", tf);
+	(*pr)("esr=%#x\n", tf->tf_esr);
+	(*pr)("pc=%#16"PRIxREGISTER
+	    ", lr=%#16"PRIxREGISTER", sp=%#16"PRIxREGISTER"\n",
+	    tf->tf_pc, tf->tf_lr, tf->tf_sp);
+	(*pr)("x0=%#16"PRIxREGISTER
+	    ", x1=%#16"PRIxREGISTER
+	    ", x2=%#16"PRIxREGISTER
+	    ", x3=%#16"PRIxREGISTER"\n",
+	    tf->tf_reg[0], tf->tf_reg[1], tf->tf_reg[2], tf->tf_reg[3]);
+	(*pr)("x4=%#16"PRIxREGISTER
+	    ", x5=%#16"PRIxREGISTER
+	    ", x6=%#16"PRIxREGISTER
+	    ", x7=%#16"PRIxREGISTER"\n",
+	    tf->tf_reg[4], tf->tf_reg[5], tf->tf_reg[6], tf->tf_reg[7]);
+	(*pr)("x8=%#16"PRIxREGISTER
+	    ", x9=%#16"PRIxREGISTER
+	    ", x10=%#16"PRIxREGISTER
+	    ", x11=%#16"PRIxREGISTER"\n",
+	    tf->tf_reg[8], tf->tf_reg[9], tf->tf_reg[10], tf->tf_reg[11]);
+	(*pr)("x12=%#16"PRIxREGISTER
+	    ", x13=%#16"PRIxREGISTER
+	    ", x14=%#16"PRIxREGISTER
+	    ", x15=%#16"PRIxREGISTER"\n",
+	    tf->tf_reg[12], tf->tf_reg[13], tf->tf_reg[14], tf->tf_reg[15]);
+	(*pr)("x16=%#16"PRIxREGISTER
+	    ", x17=%#16"PRIxREGISTER
+	    ", x18=%#16"PRIxREGISTER
+	    ", x19=%#16"PRIxREGISTER"\n",
+	    tf->tf_reg[16], tf->tf_reg[17], tf->tf_reg[18], tf->tf_reg[19]);
+	(*pr)("x20=%#16"PRIxREGISTER
+	    ", x21=%#16"PRIxREGISTER
+	    ", x22=%#16"PRIxREGISTER
+	    ", x23=%#16"PRIxREGISTER"\n",
+	    tf->tf_reg[20], tf->tf_reg[21], tf->tf_reg[22], tf->tf_reg[23]);
+	(*pr)("x24=%#16"PRIxREGISTER
+	    ", x25=%#16"PRIxREGISTER
+	    ", x26=%#16"PRIxREGISTER
+	    ", x27=%#16"PRIxREGISTER"\n",
+	    tf->tf_reg[24], tf->tf_reg[25], tf->tf_reg[26], tf->tf_reg[27]);
+	(*pr)("x28=%#16"PRIxREGISTER
+	    ", x29=%#16"PRIxREGISTER
+	    ", x30=%#16"PRIxREGISTER"\n",
+	    tf->tf_reg[28], tf->tf_reg[29], tf->tf_reg[30]);
 }
 
 void
