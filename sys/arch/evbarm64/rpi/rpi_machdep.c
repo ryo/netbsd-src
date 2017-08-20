@@ -40,11 +40,25 @@ vaddr_t physical_end;
 vaddr_t initarm(void *);
 void uartputs(const char *);
 
+static dev_type_cninit(kcomcninit);
+static dev_type_cngetc(kcomcngetc);
+static dev_type_cnputc(kcomcnputc);
+static dev_type_cnpollc(kcomcnpollc);
+
+static struct consdev kcomcons = {
+	NULL, kcomcninit, kcomcngetc, kcomcnputc, kcomcnpollc, NULL,
+	NULL, NULL, NODEV, CN_NORMAL
+};
+
 vaddr_t
 initarm(void *arg)
 {
 	uartputs("Hello initarm()\r\n");
 
+#if 1
+	cn_tab = &kcomcons;
+	(*cn_tab->cn_init)(&kcomcons);
+#endif
 
 	return NULL;
 }
@@ -66,16 +80,6 @@ consinit(void)
 	// init uart
 #endif /* CONSDEVNAME */
 }
-
-static dev_type_cninit(kcomcninit);
-static dev_type_cngetc(kcomcngetc);
-static dev_type_cnputc(kcomcnputc);
-static dev_type_cnpollc(kcomcnpollc);
-
-struct consdev kcomcons = {
-	NULL, kcomcninit, kcomcngetc, kcomcnputc, kcomcnpollc, NULL,
-	NULL, NULL, NODEV, CN_NORMAL
-};
 
 #define AUX_MU_BASE	0x3f215000
 #define AUX_MU_IO_REG	0x40	/* Mini Uart I/O Data (8bit) */
@@ -100,7 +104,7 @@ struct consdev kcomcons = {
 #define LSR_OE			0x02
 #define LSR_RXREADY		0x01
 
-static uintptr_t uartbase = AUX_MU_BASE;
+static uintptr_t uartbase;
 
 static void
 kcomcninit(struct consdev *cn)
@@ -109,6 +113,7 @@ kcomcninit(struct consdev *cn)
 	 * we do not touch UART operating parameters since bootloader
 	 * is supposed to have done well.
 	 */
+	uartbase = AUX_MU_BASE /* + KVM device region base */;
 }
 
 static int
