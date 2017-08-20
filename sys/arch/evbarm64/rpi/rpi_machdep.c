@@ -34,6 +34,9 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 #include <dev/cons.h>
 
+#include <aarch64/cpu.h>
+#include <aarch64/armreg.h>
+
 vaddr_t physical_start;
 vaddr_t physical_end;
 
@@ -53,15 +56,20 @@ static struct consdev kcomcons = {
 vaddr_t
 initarm(void *arg)
 {
-	consinit();
 
+#if 1
+	// XXXAARCH64
+	static struct cpu_info xxxcpuinfo;
+	struct cpu_info *ci = &xxxcpuinfo;
+
+	reg_tpidr_el1_write(ci);	// set curcpu
+#endif
+
+	consinit();
 
 	uartputs("Hello initarm()\r\n");
 
-
-	/* printf not work yet */
-	printf("Hello printf\n");
-
+	printf("Hello printf. initarm=%p\n", initarm);
 
 	return NULL;
 }
