@@ -43,15 +43,15 @@ vaddr_t physical_end;
 vaddr_t initarm(void *);
 void uartputs(const char *);
 
-static dev_type_cninit(kcomcninit);
-static dev_type_cngetc(kcomcngetc);
-static dev_type_cnputc(kcomcnputc);
-static dev_type_cnpollc(kcomcnpollc);
+static dev_type_cngetc(konsgetc);
+static dev_type_cnputc(konsputc);
+static dev_type_cnpollc(konspollc);
 
-static struct consdev kcomcons = {
-	NULL, kcomcninit, kcomcngetc, kcomcnputc, kcomcnpollc, NULL,
+static struct consdev konsole = {
+	NULL, NULL, konsgetc, konsputc, konspollc, NULL,
 	NULL, NULL, NODEV, CN_NORMAL
 };
+static void konsinit(void);
 
 vaddr_t
 initarm(void *arg)
@@ -65,7 +65,7 @@ initarm(void *arg)
 	reg_tpidr_el1_write(ci);	// set curcpu
 #endif
 
-	consinit();
+	konsinit();
 
 	uartputs("Hello initarm()\r\n");
 
@@ -78,7 +78,6 @@ initarm(void *arg)
 	return NULL;
 }
 
-
 void
 consinit(void)
 {
@@ -88,11 +87,11 @@ consinit(void)
 		return;
 
 	consinit_called = 1;
-
-	// XXXAARCH64
-	cn_tab = &kcomcons;
-	(*cn_tab->cn_init)(&kcomcons);
-
+#if 0
+	/*
+	 * build bus_space tag to run real UART console in NetBSD way.
+	 */
+#endif
 }
 
 #define AUX_MU_BASE	0x3f215000
@@ -112,13 +111,15 @@ consinit(void)
 static uintptr_t uartbase;
 
 static void
-kcomcninit(struct consdev *cn)
+konsinit(void)
 {
+	/* make debugging aid work */
+	cn_tab = &konsole;
 	uartbase = AARCH64_PA_TO_KVA(AUX_MU_BASE);
 }
 
 static int
-kcomcngetc(dev_t dev)
+konsgetc(dev_t dev)
 {
 	unsigned lsr;
 	int s, c;
@@ -133,7 +134,7 @@ kcomcngetc(dev_t dev)
 }
 
 static void
-kcomcnputc(dev_t dev, int c)
+konsputc(dev_t dev, int c)
 {
 	unsigned lsr, timo;
 	int s;
@@ -149,6 +150,6 @@ kcomcnputc(dev_t dev, int c)
 }
 
 static void
-kcomcnpollc(dev_t dev, int on)
+konspollc(dev_t dev, int on)
 {
 }
