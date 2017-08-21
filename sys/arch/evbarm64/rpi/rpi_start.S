@@ -46,16 +46,7 @@ RCSID("$NetBSD$")
 
 //XXXAARCH64
 #define AUX_MU_IO_REG	0x3f215040	/* Mini Uart I/O Data (8bit) */
-#define AUX_MU_IER_REG	0x3f215044	/* Mini Uart Interrupt Enable (8bit) */
-#define AUX_MU_IIR_REG	0x3f215048	/* Mini Uart Interrupt Identify (8bit) */
-#define AUX_MU_LCR_REG	0x3f21504C	/* Mini Uart Line Control (8bit) */
-#define AUX_MU_MCR_REG	0x3f215050	/* Mini Uart Modem Control (8bit) */
 #define AUX_MU_LSR_REG	0x3f215054	/* Mini Uart Line Status (8bit) */
-#define AUX_MU_MSR_REG	0x3f215058	/* Mini Uart Modem Status (8bit) */
-#define AUX_MU_SCRATCH	0x3f21505C	/* Mini Uart Scratch (8bit) */
-#define AUX_MU_CNTL_REG	0x3f215060	/* Mini Uart Extra Control (8bit) */
-#define AUX_MU_STAT_REG	0x3f215064	/* Mini Uart Extra Status (32bit) */
-#define AUX_MU_BAUD_REG	0x3f215068	/* Mini Uart Baudrate (16bit) */
 
 #define COM_DATA		AUX_MU_IO_REG
 #define COM_LSR			AUX_MU_LSR_REG
@@ -64,11 +55,21 @@ RCSID("$NetBSD$")
 #define PRINT(string)	stp x0,lr,[sp,#-16]!;bl xprint;.asciz string;.align 2;ldp x0,lr,[sp],#16
 
 
-#define	VIRT_BIT	48
+#define VERBOSE_LOCORE
+//#define DEBUG_LOCORE
 
-#define	DEVICE_MEM	0
-#define	NORMAL_UNCACHED	1
-#define	NORMAL_MEM	2
+#ifdef VERBOSE_LOCORE
+#define VERBOSE(string)	PRINT(string)
+#else
+#define VERBOSE(string)
+#endif
+
+
+#define VIRT_BIT	48
+
+#define DEVICE_MEM	0
+#define NORMAL_UNCACHED	1
+#define NORMAL_MEM	2
 
 /*
  * We assume:
@@ -83,6 +84,7 @@ RCSID("$NetBSD$")
 start:
 	stp	x0, lr, [sp, #-16]!
 
+#ifdef VERBOSE_LOCORE
 	mov	x9, x0		// save x0
 
 	mrs	x0, SP_EL0
@@ -132,10 +134,10 @@ start:
 	PRINT("X5=")
 	mov	x0, x5
 	bl	print_x0
-
+#endif
 
 	/* Drop to EL1 */
-	PRINT("Drop to EL1\r\n")
+	VERBOSE("Drop to EL1\r\n")
 	bl	drop_to_el1
 
 
@@ -152,7 +154,7 @@ start:
 	msr	sctlr_el1, x2
 	isb
 
-	PRINT("MMU Disabled\r\n")
+	VERBOSE("MMU Disabled\r\n")
 
 	/* Set the context id */
 	msr	contextidr_el1, xzr
@@ -165,12 +167,12 @@ start:
 	 * x29 = PA - VA
 	 * x28 = Our physical load address
 	 */
-	PRINT("Create pagetables\r\n")
+	VERBOSE("Create pagetables\r\n")
 
 	/* Create the page tables */
 	bl	create_pagetables
 
-	PRINT("Create pagetables done\r\n")
+	VERBOSE("Create pagetables done\r\n")
 
 	/*
 	 * At this point:
@@ -178,14 +180,17 @@ start:
 	 * x26 = Kernel L1 table
 	 * x24 = TTBR1 table
 	 */
-	PRINT("Start MMU\r\n")
+	VERBOSE("Start MMU\r\n")
 
 	/* Enable the mmu */
 	bl	start_mmu
 
 	bl	uart_switch_to_directmap	/* UART addr change from 0x3f215040 to 0xffff00003f215040 */
 
-	PRINT("MMU Enabled!\r\n")
+	VERBOSE("MMU Enabled!\r\n")
+
+	VERBOSE("arm_cpuinit\r\n")
+	bl	arm_cpuinit
 
 	/* Jump to the virtual address space */
 	ldr	x15, .Lvirtdone
@@ -227,17 +232,16 @@ virtdone:
 	str	x25, [x0, 24]	/* kern_stack */
 	str	x24, [x0, 32]	/* kern_l0pt */
 
-	/* trace back starts here */
-	mov	fp, #0
+	mov	fp, #0	/* trace back starts here */
 	/* Branch to C code */
 
-
+#ifdef VERBOSE_LOCORE
 	PRINT("SP=")
 	mov	x0, sp
 	bl	print_x0
+#endif
 
-	PRINT("go initarm()\r\n")
-
+	VERBOSE("go initarm()\r\n")
 	bl	_C_LABEL(initarm)
 	/* initarm() will return the new stack pointer. */
 	mov	sp, x0
@@ -269,8 +273,8 @@ virtdone:
  *    .align    2
  *    nop                     <- return to here
  */
-	.global _C_LABEL(xprint)
-_C_LABEL(xprint):
+	.global xprint
+xprint:
 	stp	x0, x1, [sp, #-16]!
 	mov	x0, lr
 	bl	uartputs
@@ -283,11 +287,11 @@ _C_LABEL(xprint):
 
 	ldp	x0, x1, [sp], #16
 	ret
-END(_C_LABEL(xprint))
+END(xprint)
 
 
-	.global _C_LABEL(print_x0)
-_C_LABEL(print_x0):
+	.global _print_x0
+_print_x0:
 	stp	x0, lr, [sp, #-16]!
 	stp	x4, x5, [sp, #-16]!
 	stp	x6, x7, [sp, #-16]!
@@ -306,13 +310,37 @@ _C_LABEL(print_x0):
 	subs	x4, x4, #4
 	bge	1b
 
-	PRINT("\r\n")
-
 	ldp	x6, x7, [sp], #16
 	ldp	x4, x5, [sp], #16
 	ldp	x0, lr, [sp], #16
 	ret
+END(_print_x0)
+
+	.global _C_LABEL(print_x0)
+_C_LABEL(print_x0):
+	stp	x0, lr, [sp, #-16]!
+	bl	_print_x0
+	PRINT("\r\n")
+	ldp	x0, lr, [sp], #16
+	ret
 END(_C_LABEL(print_x0))
+
+print_x11:
+	stp	x0, lr, [sp, #-16]!
+	PRINT("x11=")
+	mov	x0, x11
+	bl	_print_x0
+	ldp	x0, lr, [sp], #16
+	ret
+
+print_x13:
+	stp	x0, lr, [sp, #-16]!
+	PRINT("x13=")
+	mov	x0, x13
+	bl	_print_x0
+	PRINT("\r\n")
+	ldp	x0, lr, [sp], #16
+	ret
 
 
 	.global _C_LABEL(uartputs)
@@ -372,6 +400,25 @@ L_COM_DATA:
 L_COM_LSR:
 	.quad	COM_LSR
 
+
+arm_cpuinit:
+	mrs	x1, mpidr_el1
+	and	x1, x1, #0xff	/* Aff0 = cpu id */
+	cmp	x1, #MAXCPUS
+	b.ge	arm_cpuinit_too_many_cpu
+
+	ldr	x0, .Lcpu_info_store
+	msr	tpidr_el1, x0	/* tpidr_el1 = &cpu_info_store */
+	ret
+
+arm_cpuinit_too_many_cpu:
+1:	hlt	#0xffff
+	b	1b
+	ret
+
+
+.Lcpu_info_store:
+	.quad	_C_LABEL(cpu_info_store)
 
 
 /*
@@ -539,7 +586,7 @@ create_pagetables:
 	/*
 	 * Build the TTBR1 maps.
 	 */
-	PRINT("Build the TTBR1 maps\r\n")
+	VERBOSE("Build the TTBR1 maps\r\n")
 
 	/* Find the size of the kernel */
 	mov	x6, #(KERNBASE)
@@ -551,7 +598,7 @@ create_pagetables:
 	/* Add 8 MiB for any rounding above and the module data */
 	add	x10, x10, #4
 
-	PRINT("Create the kernel space L2 table\r\n")
+	VERBOSE("Create the kernel space L2 table\r\n")
 
 	/* Create the kernel space L2 table */
 	mov	x6, x26
@@ -560,7 +607,7 @@ create_pagetables:
 	mov	x9, x28
 	bl	build_l2_block_pagetable
 
-	PRINT("Move to the l1 table\r\n")
+	VERBOSE("Move to the l1 table\r\n")
 
 	/* Move to the l1 table */
 	add	x26, x26, #PAGE_SIZE
@@ -570,7 +617,7 @@ create_pagetables:
 	mov	x6, x26
 	bl	link_l1_pagetable
 
-	PRINT("Move to the l0 table\r\n")
+	VERBOSE("Move to the l0 table\r\n")
 
 	/* Move to the l0 table */
 	add	x24, x26, #PAGE_SIZE
@@ -583,7 +630,7 @@ create_pagetables:
 
 
 
-	PRINT("Create KSEG maps\r\n")
+	VERBOSE("Create KSEG maps\r\n")
 
 	/* Link the KSEG tables */
 	ldr	x8, =AARCH64_KSEG_START
@@ -592,7 +639,7 @@ create_pagetables:
 	mov	x10, #KSEG_TABLES
 	bl	link_l0_pagetable
 
-	PRINT("Create KSEG L1 table\r\n")
+	VERBOSE("Create KSEG L1 table\r\n")
 	adr	x6, pagetable_kseg
 	mov	x7, #DEVICE_MEM
 	mov	x9, #0
@@ -601,7 +648,7 @@ create_pagetables:
 	bl	build_l1_block_pagetable
 
 
-	PRINT("Build the TTBR0 maps\r\n")
+	VERBOSE("Build the TTBR0 maps\r\n")
 
 	/*
 	 * Build the TTBR0 maps.
@@ -618,7 +665,7 @@ create_pagetables:
 	bl	build_l1_block_pagetable
 #endif
 
-	PRINT("Create the VA = PA map\r\n")
+	VERBOSE("Create the VA = PA map\r\n")
 
 	/* Create the VA = PA map */
 #if 0
@@ -634,7 +681,7 @@ create_pagetables:
 #endif
 	bl	build_l1_block_pagetable
 
-	PRINT("Move to the l0 table\r\n")
+	VERBOSE("Move to the l0 table\r\n")
 
 	/* Move to the l0 table */
 	add	x27, x27, #PAGE_SIZE
@@ -662,6 +709,28 @@ create_pagetables:
  *  x11, x12 and x13 are trashed
  */
 link_l0_pagetable:
+#ifdef DEBUG_LOCORE
+	stp	x0, lr, [sp, #-16]!
+
+	PRINT("========link_l0_pagetable\r\n")
+
+	mov	x0, x6
+	PRINT("L0 table       (x6) =")
+	bl	print_x0
+
+	mov	x0, x8
+	PRINT("Virtual Address(x8) =")
+	bl	print_x0
+
+	mov	x0, x9
+	PRINT("L1 PA          (x9) =")
+	bl	print_x0
+
+	mov	x0, x10
+	PRINT("Entry count    (x10)=")
+	bl	print_x0
+#endif /* DEBUG_LOCORE */
+
 	/*
 	 * Link an L0 -> L1 table entry.
 	 */
@@ -676,6 +745,13 @@ link_l0_pagetable:
 	lsr	x9, x9, #PGSHIFT
 1:	orr	x13, x12, x9, lsl #PGSHIFT
 
+#ifdef DEBUG_LOCORE
+	PRINT("L0 entry[")
+	bl	print_x11
+	PRINT("]=")
+	bl	print_x13
+#endif /* DEBUG_LOCORE */
+
 	/* Store the entry */
 	str	x13, [x6, x11, lsl #3]
 
@@ -684,6 +760,9 @@ link_l0_pagetable:
 	add	x9, x9, #1
 	cbnz	x10, 1b
 
+#ifdef DEBUG_LOCORE
+	ldp	x0, lr, [sp], #16
+#endif /* DEBUG_LOCORE */
 	ret
 
 /*
@@ -698,6 +777,24 @@ link_l0_pagetable:
  *  x11, x12 and x13 are trashed
  */
 link_l1_pagetable:
+#ifdef DEBUG_LOCORE
+	stp	x0, lr, [sp, #-16]!
+
+	PRINT("========link_l1_pagetable\r\n")
+
+	mov	x0, x6
+	PRINT("L1 table       (x6) =")
+	bl	print_x0
+
+	mov	x0, x8
+	PRINT("VA             (x8) =")
+	bl	print_x0
+
+	mov	x0, x9
+	PRINT("PA             (x9) =")
+	bl	print_x0
+#endif /* DEBUG_LOCORE */
+
 	/*
 	 * Link an L1 -> L2 table entry.
 	 */
@@ -712,9 +809,19 @@ link_l1_pagetable:
 	lsr	x9, x9, #PGSHIFT
 	orr	x13, x12, x9, lsl #PGSHIFT
 
+#ifdef DEBUG_LOCORE
+	PRINT("L1 entry[")
+	bl	print_x11
+	PRINT("]=")
+	bl	print_x13
+#endif /* DEBUG_LOCORE */
+
 	/* Store the entry */
 	str	x13, [x6, x11, lsl #3]
 
+#ifdef DEBUG_LOCORE
+	ldp	x0, lr, [sp], #16
+#endif
 	ret
 
 /*
@@ -727,6 +834,32 @@ link_l1_pagetable:
  *  x11, x12 and x13 are trashed
  */
 build_l1_block_pagetable:
+#ifdef DEBUG_LOCORE
+	stp	x0, lr, [sp, #-16]!
+
+	PRINT("========build_l1_block_pagetable (1G)\r\n")
+
+	mov	x0, x6
+	PRINT("L1 table       (x6) =")
+	bl	print_x0
+
+	mov	x0, x7
+	PRINT("Type           (x7) =")
+	bl	print_x0
+
+	mov	x0, x8
+	PRINT("VA start       (x8) =")
+	bl	print_x0
+
+	mov	x0, x9
+	PRINT("PA start       (x9) =")
+	bl	print_x0
+
+	mov	x0, x10
+	PRINT("Entry count    (x10)=")
+	bl	print_x0
+#endif /* DEBUG_LOCORE */
+
 	/*
 	 * Build the L1 table entry.
 	 */
@@ -748,6 +881,13 @@ build_l1_block_pagetable:
 	/* Set the physical address for this virtual address */
 1:	orr	x13, x12, x9, lsl #L1_SHIFT
 
+#ifdef DEBUG_LOCORE
+	PRINT("L1 entry[")
+	bl	print_x11
+	PRINT("]=")
+	bl	print_x13
+#endif /* DEBUG_LOCORE */
+
 	/* Store the entry */
 	str	x13, [x6, x11, lsl #3]
 
@@ -756,6 +896,9 @@ build_l1_block_pagetable:
 	add	x9, x9, #1
 	cbnz	x10, 1b
 
+#ifdef DEBUG_LOCORE
+	ldp	x0, lr, [sp], #16
+#endif /* DEBUG_LOCORE */
 	ret
 
 /*
@@ -768,6 +911,32 @@ build_l1_block_pagetable:
  *  x11, x12 and x13 are trashed
  */
 build_l2_block_pagetable:
+#ifdef DEBUG_LOCORE
+	stp	x0, lr, [sp, #-16]!
+
+	PRINT("========build_l2_block_pagetable (2M)\r\n")
+
+	mov	x0, x6
+	PRINT("L2 table   (x6) =")
+	bl	print_x0
+
+	mov	x0, x7
+	PRINT("TYPE       (x7) =")
+	bl	print_x0
+
+	mov	x0, x8
+	PRINT("VA start   (x8) =")
+	bl	print_x0
+
+	mov	x0, x9
+	PRINT("PA start   (x9) =")
+	bl	print_x0
+
+	mov	x0, x10
+	PRINT("Entry count(x10)=")
+	bl	print_x0
+#endif /* DEBUG_LOCORE */
+
 	/*
 	 * Build the L2 table entry.
 	 */
@@ -789,6 +958,13 @@ build_l2_block_pagetable:
 	/* Set the physical address for this virtual address */
 1:	orr	x13, x12, x9, lsl #L2_SHIFT
 
+#ifdef DEBUG_LOCORE
+	PRINT("L2 entry[")
+	bl	print_x11
+	PRINT("]=")
+	bl	print_x13
+#endif /* DEBUG_LOCORE */
+
 	/* Store the entry */
 	str	x13, [x6, x11, lsl #3]
 
@@ -797,6 +973,9 @@ build_l2_block_pagetable:
 	add	x9, x9, #1
 	cbnz	x10, 1b
 
+#ifdef DEBUG_LOCORE
+	ldp	x0, lr, [sp], #16
+#endif
 	ret
 
 
