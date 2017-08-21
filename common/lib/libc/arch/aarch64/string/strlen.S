@@ -96,9 +96,9 @@ ENTRY(FUNCNAME)
 #ifdef __AARCH64EL__
 	rev	x6, x6			/* convert to BE */
 #endif
-
 	clz	x6, x6			/* find null byte */
 	add	x0, x0, x6, lsr #3	/* add offset to the length */
+
 	add	x0, x0, x4		/* add end to the length */
 	sub	x0, x0, x9		/* subtract start from the length */
 #ifdef STRNLEN
