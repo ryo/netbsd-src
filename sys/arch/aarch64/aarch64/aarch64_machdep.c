@@ -96,11 +96,3 @@ void
 cpu_dumpconf(void)
 {
 }
-
-void
-cpu_reboot(int howto, char *bootstr)
-{
-	for (;;)
-		asm("hlt #0xffff");
-
-}
