@@ -205,6 +205,24 @@ ENTRY(cpu_Debugger)
 END(cpu_Debugger)
 #endif /* DDB */
 
+#ifdef MULTIPROCESSOR
+/*
+ * void
+ * cpu_spinup_trampoline(int cpu_index)
+ * {
+ *      ci := tp == cpu_info[cpu_index]
+ *      ci->ci_curlwp = ci->ci_data.ci_idlelwp;
+ *      sp := ci->ci_curlwp->l_addr + USPACE - sizeof(struct trapframe)
+ *      cpu_hatch(ci);
+ *      jump to idle_loop() to join the cpu pool.
+ * }
+ */
+ENTRY(cpu_spinup_trampoline)
+	bl	_C_LABEL(cpu_hatch)
+	b	_C_LABEL(cpu_idle)
+END(cpu_spinup_trampoline)
+#endif
+
 /*
  * int cpu_set_onfault(struct faultbuf *fb, register_t retval)
  */
