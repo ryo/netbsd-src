@@ -56,19 +56,11 @@ static void konsinit(void);
 vaddr_t
 initarm(void *arg)
 {
-
-#if 1
-	// XXXAARCH64
-	static struct cpu_info xxxcpuinfo;
-	struct cpu_info *ci = &xxxcpuinfo;
-
-	reg_tpidr_el1_write(ci);	// set curcpu
-#endif
-
 	konsinit();
 
 	uartputs("Hello initarm()\r\n");
 
+	printf("curcpu = %p\n", curcpu());
 	printf("Hello printf. initarm=%p\n", initarm);
 	printf("Hello strings <%s>\n", "example");
 	printf("%s:%d\n", __func__, __LINE__);
