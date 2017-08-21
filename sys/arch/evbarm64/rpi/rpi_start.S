@@ -407,16 +407,27 @@ arm_cpuinit:
 	cmp	x1, #MAXCPUS
 	b.ge	arm_cpuinit_too_many_cpu
 
-	ldr	x0, .Lcpu_info_store
-	msr	tpidr_el1, x0	/* tpidr_el1 = &cpu_info_store */
+#ifdef MULTIPROCESSOR
+	ldr	x0, .Lcpu_info
+	ldr	x0, [x0, x1, lsl #3]	/* x0 = cpu_info[cpuid] */
+#else
+	ldr	x0, .Lcpu_info_store	/* x0 = &cpu_info_store */
+#endif
+	msr	tpidr_el1, x0		/* tpidr_el1 = my cpu info */
 	ret
 
 arm_cpuinit_too_many_cpu:
+	PRINT("Too many CPU: MPIDR_EL1=")
+	mrs	x0, mpidr_el1
+	bl	print_x0
 1:	hlt	#0xffff
 	b	1b
 	ret
 
-
+#ifdef MULTIPROCESSOR
+.Lcpu_info:
+	.quad	_C_LABEL(cpu_info)
+#endif
 .Lcpu_info_store:
 	.quad	_C_LABEL(cpu_info_store)
 
