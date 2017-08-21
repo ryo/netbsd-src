@@ -35,6 +35,7 @@ __KERNEL_RCSID(1, "$NetBSD: cpu_machdep.c,v 1.2 2015/04/14 22:36:54 jmcneill Exp
 
 //XXXAARCH64
 //#include "opt_pic.h"
+#include "opt_multiprocessor.h"
 
 #include <sys/param.h>
 #include <sys/types.h>
@@ -47,7 +48,24 @@ __KERNEL_RCSID(1, "$NetBSD: cpu_machdep.c,v 1.2 2015/04/14 22:36:54 jmcneill Exp
 #include <aarch64/locore.h>
 #include <aarch64/pcb.h>
 
-int cputype;	// XXXAARCH64
+u_int cputype;	// XXXAARCH64
+
+/* Our exported CPU info; we can have only one. */
+struct cpu_info cpu_info_store = {
+	.ci_cpl = IPL_HIGH,
+	.ci_curlwp = &lwp0,
+};
+
+#ifdef MULTIPROCESSOR
+#define NCPUINFO	MAXCPUS
+#else
+#define NCPUINFO	1
+#endif
+
+struct cpu_info *cpu_info[NCPUINFO] = {
+	[0] = &cpu_info_store
+};
+
 uint32_t cpu_boot_mbox;
 
 #if IPL_VM != IPL_SOFTSERIAL + 1
