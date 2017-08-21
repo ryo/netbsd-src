@@ -1,4 +1,4 @@
-/*	$NetBSD: vector.S,v 1.71 2017/08/12 07:21:57 maxv Exp $	*/
+/*	$NetBSD: vector.S,v 1.73 2017/08/18 14:52:19 maxv Exp $	*/
 
 /*
  * Copyright 2002 (c) Wasabi Systems, Inc.
@@ -65,7 +65,7 @@
  */
 
 #include <machine/asm.h>
-__KERNEL_RCSID(0, "$NetBSD: vector.S,v 1.71 2017/08/12 07:21:57 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: vector.S,v 1.73 2017/08/18 14:52:19 maxv Exp $");
 
 #include "opt_ddb.h"
 #include "opt_multiprocessor.h"

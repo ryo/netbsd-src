@@ -1,4 +1,4 @@
-/*	$NetBSD: lfs_vnops.c,v 1.318 2017/07/26 16:42:37 maya Exp $	*/
+/*	$NetBSD: lfs_vnops.c,v 1.321 2017/08/20 05:37:03 maya Exp $	*/
 
 /*-
  * Copyright (c) 1999, 2000, 2001, 2002, 2003 The NetBSD Foundation, Inc.
@@ -125,7 +125,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: lfs_vnops.c,v 1.318 2017/07/26 16:42:37 maya Exp $");
+__KERNEL_RCSID(0, "$NetBSD: lfs_vnops.c,v 1.321 2017/08/20 05:37:03 maya Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_compat_netbsd.h"
@@ -374,7 +374,7 @@ lfs_makeinode(struct vattr *vap, struct vnode *dvp,
 		vrele(tvp);
 		return error;
 	}
-	lfs_mark_vnode(tvp);
+	MARK_VNODE(tvp);
 	*vpp = tvp;
 	ip = VTOI(tvp);
 	ip->i_state |= IN_ACCESS | IN_CHANGE | IN_UPDATE;
@@ -419,7 +419,7 @@ lfs_makeinode(struct vattr *vap, struct vnode *dvp,
 	DIP_ASSIGN(ip, nlink, 0);
 	ip->i_state |= IN_CHANGE;
 	/* If IN_ADIROP, account for it */
-	lfs_unmark_vnode(tvp);
+	UNMARK_VNODE(tvp);
 	vput(tvp);
 	return (error);
 }
@@ -473,7 +473,7 @@ lfs_fsync(void *v)
 	}
 
 	/*
-	 * If a vnode is bring cleaned, flush it out before we try to
+	 * If a vnode is being cleaned, flush it out before we try to
 	 * reuse it.  This prevents the cleaner from writing files twice
 	 * in the same partial segment, causing an accounting underflow.
 	 */
@@ -526,7 +526,7 @@ lfs_inactive(void *v)
 
 	KASSERT(VOP_ISLOCKED(ap->a_vp) == LK_EXCLUSIVE);
 
-	lfs_unmark_vnode(ap->a_vp);
+	UNMARK_VNODE(ap->a_vp);
 
 	/*
 	 * The Ifile is only ever inactivated on unmount.
@@ -989,7 +989,7 @@ lfs_mkdir(void *v)
 	}
 
 	tvp = *ap->a_vpp;
-	lfs_mark_vnode(tvp);
+	MARK_VNODE(tvp);
 	ip = VTOI(tvp);
 	ip->i_state |= IN_ACCESS | IN_CHANGE | IN_UPDATE;
 	ip->i_nlink = 2;
@@ -1064,7 +1064,7 @@ lfs_mkdir(void *v)
 		DIP_ASSIGN(ip, nlink, 0);
 		ip->i_state |= IN_CHANGE;
 		/* If IN_ADIROP, account for it */
-		lfs_unmark_vnode(tvp);
+		UNMARK_VNODE(tvp);
 		vput(tvp);
 	}
 
@@ -1451,11 +1451,8 @@ lfs_reclaim(void *v)
 		ip->i_state &= ~IN_PAGING;
 		TAILQ_REMOVE(&fs->lfs_pchainhd, ip, i_lfs_pchain);
 	}
-	if (vp->v_uflag & VU_DIROP) {
+	if (vp->v_uflag & VU_DIROP)
 		panic("reclaimed vnode is VU_DIROP");
-		vp->v_uflag &= ~VU_DIROP;
-		TAILQ_REMOVE(&fs->lfs_dchainhd, ip, i_lfs_dchain);
-	}
 	mutex_exit(&lfs_lock);
 
 	pool_put(&lfs_dinode_pool, ip->i_din);

@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $NetBSD: sys_info.sh,v 1.1 2016/06/04 15:27:11 agc Exp $
+# $NetBSD: sys_info.sh,v 1.4 2017/08/20 10:17:55 martin Exp $
 
 # Copyright (c) 2016 Alistair Crooks <agc@NetBSD.org>
 # All rights reserved.
@@ -107,7 +107,7 @@ getversion() {
 		sshd -V 2>&1 | awk '/OpenSSH/ { sub("_", "D-", $1); print tolower($1) }'
 		;;
 	tcsh)
-		tcsh -c 'echo $version' | awk '{ print $1 "-" $2 }'
+		grep '/tcsh' /etc/shells > /dev/null 2>&1 && tcsh --version | awk '{ print $1 "-" $2 }'
 		;;
 	unbound)
 		case $(uname -s) in
@@ -123,14 +123,19 @@ getversion() {
 }
 
 all=false
-while [ $# -gt 0 ]; do
-	case "$1" in
-	-a)	all=true ;;
-	-v)	set -x ;;
+while getopts "av" a; do
+	case "${a}" in
+	a)	all=true ;;
+	v)	set -x ;;
 	*)	break ;;
 	esac
 	shift
 done
+
+# if no arg specified, we want them all
+if [ $# -eq 0 ]; then
+	all=true
+fi
 
 # if we want to do every one, then let's get the arguments
 # not really scalable

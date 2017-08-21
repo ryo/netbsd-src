@@ -1,4 +1,4 @@
-#	$NetBSD: files.amd64,v 1.90 2017/08/01 13:47:49 maxv Exp $
+#	$NetBSD: files.amd64,v 1.92 2017/08/15 08:51:38 maxv Exp $
 #
 # new style config file for amd64 architecture
 #
@@ -43,7 +43,6 @@ file	arch/amd64/amd64/db_disasm.c		ddb
 file	arch/amd64/amd64/db_interface.c		ddb
 file	arch/amd64/amd64/db_machdep.c		ddb
 file	arch/amd64/amd64/kobj_machdep.c		modular
-file	arch/amd64/amd64/kgdb_machdep.c		kgdb
 file	kern/subr_disk_mbr.c			disk
 file	arch/amd64/amd64/gdt.c			machdep
 file	arch/amd64/amd64/machdep.c		machdep
@@ -83,10 +82,6 @@ file	dev/md_root.c			memory_disk_hooks
 #
 
 include	"dev/i2o/files.i2o"
-
-# BIOS32 routines
-define	bios32
-file	arch/amd64/amd64/bios32.c		bios32 needs-flag
 
 #
 # System bus types

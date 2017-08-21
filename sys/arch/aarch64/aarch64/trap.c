@@ -1,4 +1,4 @@
-/* $NetBSD: trap.c,v 1.1 2014/08/10 05:47:37 matt Exp $ */
+/* $NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $ */
 
 /*-
  * Copyright (c) 2014 The NetBSD Foundation, Inc.
@@ -31,7 +31,7 @@
 
 #include <sys/cdefs.h>
 
-__KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
+__KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 
 #include <sys/param.h>
 #include <sys/types.h>

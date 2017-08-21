@@ -1,4 +1,4 @@
-/*	$NetBSD: i386_trap.S,v 1.9 2017/08/12 07:07:53 maxv Exp $	*/
+/*	$NetBSD: i386_trap.S,v 1.11 2017/08/18 14:52:19 maxv Exp $	*/
 
 /*
  * Copyright 2002 (c) Wasabi Systems, Inc.
@@ -66,7 +66,7 @@
 
 #if 0
 #include <machine/asm.h>
-__KERNEL_RCSID(0, "$NetBSD: i386_trap.S,v 1.9 2017/08/12 07:07:53 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: i386_trap.S,v 1.11 2017/08/18 14:52:19 maxv Exp $");
 #endif
 
 /*

@@ -1,4 +1,4 @@
-/*	$NetBSD: audiovar.h,v 1.60 2017/07/30 00:47:48 nat Exp $	*/
+/*	$NetBSD: audiovar.h,v 1.64 2017/08/20 03:13:04 isaki Exp $	*/
 
 /*-
  * Copyright (c) 2002 The NetBSD Foundation, Inc.
@@ -113,7 +113,6 @@ struct audio_ringbuffer {
 
 struct audio_chan {
 	dev_t	dev;
-#define MIXER_INUSE	-2
 	struct virtual_channel	*vc;
 	int	chan;			/* virtual channel */
 	int	deschan;		/* desired channel for ioctls*/
@@ -122,9 +121,9 @@ struct audio_chan {
 
 struct virtual_channel {
 	u_char			sc_open;	/* multiple use device */
+#define AUOPEN_READ	0x01
+#define AUOPEN_WRITE	0x02
 	u_char			sc_mode;	/* bitmask for RECORD/PLAY */
-
-	bool			sc_blkset;	/* Blocksize has been set */
 
 	uint8_t			*sc_sil_start;	/* start of silence in buffer */
 	int			sc_sil_count;	/* # of silence bytes */
@@ -181,9 +180,8 @@ struct audio_softc {
 	void		*hw_hdl;	/* Hardware driver handle */
 	const struct audio_hw_if *hw_if; /* Hardware interface */
 	device_t	sc_dev;		/* Hardware device struct */
-	struct chan_queue sc_audiochan; /* queue of open chans */
-#define AUOPEN_READ	0x01
-#define AUOPEN_WRITE	0x02
+	struct chan_queue sc_audiochan; /* queue of open audio chans */
+	struct virtual_channel *sc_hwvc;
 
 	struct audio_encoding_set *sc_encodings;
 	struct	selinfo sc_wsel; /* write selector */
@@ -225,9 +223,9 @@ struct audio_softc {
 	 * play_thread
 	 *    sc_pr
 	 *      |
-	 *  vchan[0]->sc_pustream 	(First element in sc_audiochan)
+	 *  sc_hwvc->sc_pustream
 	 *      |
-	 *  vchan[0]->sc_mpr
+	 *  sc_hwvc->sc_mpr
 	 *      |
 	 *  hardware
 	 */
@@ -237,10 +235,10 @@ struct audio_softc {
 	/**
 	 *  hardware
 	 *      |
-	 * oc->sc_mrr		oc = sc->sc_vchan[0]
+	 * sc_hwvc->sc_mrr
 	 *      :		Transform though filters same process as each
 	 *      :		 vc to IF
-	 * oc->sc_rustream	Audio now in intermediate format (IF)
+	 * sc_hwvc->sc_rustream	Audio now in intermediate format (IF)
 	 *      |	mix_read();
 	 *    sc_rr
 	 *      |	audio_upmix	vc = sc->sc_vchan[n]

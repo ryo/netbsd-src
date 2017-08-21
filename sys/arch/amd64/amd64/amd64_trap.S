@@ -1,4 +1,4 @@
-/*	$NetBSD: amd64_trap.S,v 1.5 2017/03/24 18:03:32 maxv Exp $	*/
+/*	$NetBSD: amd64_trap.S,v 1.7 2017/08/18 14:52:19 maxv Exp $	*/
 
 /*-
  * Copyright (c) 1998, 2007, 2008 The NetBSD Foundation, Inc.
@@ -66,7 +66,7 @@
 
 #if 0
 #include <machine/asm.h>
-__KERNEL_RCSID(0, "$NetBSD: amd64_trap.S,v 1.5 2017/03/24 18:03:32 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: amd64_trap.S,v 1.7 2017/08/18 14:52:19 maxv Exp $");
 #endif
 
 /*

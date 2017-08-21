@@ -1,7 +1,7 @@
-/*	$NetBSD: kgdb_machdep.c,v 1.10 2015/11/22 13:41:24 maxv Exp $	*/
+/*	$NetBSD: kgdb_machdep.c,v 1.2 2017/08/15 08:57:19 maxv Exp $	*/
 
-/*-
- * Copyright (c) 1997 The NetBSD Foundation, Inc.
+/*
+ * Copyright (c) 1997, 2017 The NetBSD Foundation, Inc.
  * All rights reserved.
  *
  * This code is derived from software contributed to The NetBSD Foundation
@@ -56,7 +56,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: kgdb_machdep.c,v 1.10 2015/11/22 13:41:24 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: kgdb_machdep.c,v 1.2 2017/08/15 08:57:19 maxv Exp $");
 
 #include "opt_ddb.h"
 
@@ -92,11 +92,14 @@ kgdb_acc(vaddr_t va, size_t len)
 		else
 			pte = kvtopte(va);
 		if ((*pte & PG_V) == 0)
-			return (0);
-		va += PAGE_SIZE;
+			return 0;
+		if (*pte & PG_PS)
+			va = (va & PG_LGFRAME) + NBPD_L2;
+		else
+			va += PAGE_SIZE;
 	} while (va < last_va);
 
-	return (1);
+	return 1;
 }
 
 void
@@ -115,25 +118,25 @@ kgdb_signal(int type)
 {
 	switch (type) {
 	case T_NMI:
-		return (SIGINT);
+		return SIGINT;
 
 	case T_ALIGNFLT:
-		return (SIGILL);
+		return SIGILL;
 
 	case T_BPTFLT:
 	case T_TRCTRAP:
-		return (SIGTRAP);
+		return SIGTRAP;
 
 	case T_ASTFLT:
 	case T_DOUBLEFLT:
-		return (SIGEMT);
+		return SIGEMT;
 
 	case T_ARITHTRAP:
 	case T_DIVIDE:
 	case T_OFLOW:
 	case T_DNA:
 	case T_FPOPFLT:
-		return (SIGFPE);
+		return SIGFPE;
 
 	case T_PRIVINFLT:
 	case T_PROTFLT:
@@ -141,13 +144,13 @@ kgdb_signal(int type)
 	case T_TSSFLT:
 	case T_SEGNPFLT:
 	case T_STKFLT:
-		return (SIGSEGV);
+		return SIGSEGV;
 
 	case T_BOUND:
-		return (SIGURG);
+		return SIGURG;
 
 	default:
-		return (SIGEMT);
+		return SIGEMT;
 	}
 }
 
@@ -158,7 +161,7 @@ kgdb_signal(int type)
 void
 kgdb_getregs(db_regs_t *regs, kgdb_reg_t *gdb_regs)
 {
-
+#ifdef __x86_64__
 	gdb_regs[ 0] = regs->tf_rax;
 	gdb_regs[ 1] = regs->tf_rbx;
 	gdb_regs[ 2] = regs->tf_rcx;
@@ -179,6 +182,31 @@ kgdb_getregs(db_regs_t *regs, kgdb_reg_t *gdb_regs)
 	gdb_regs[17] = regs->tf_rflags;
 	gdb_regs[18] = regs->tf_cs;
 	gdb_regs[19] = regs->tf_ss;
+#else
+	gdb_regs[ 0] = regs->tf_eax;
+	gdb_regs[ 1] = regs->tf_ecx;
+	gdb_regs[ 2] = regs->tf_edx;
+	gdb_regs[ 3] = regs->tf_ebx;
+	gdb_regs[ 5] = regs->tf_ebp;
+	gdb_regs[ 6] = regs->tf_esi;
+	gdb_regs[ 7] = regs->tf_edi;
+	gdb_regs[ 8] = regs->tf_eip;
+	gdb_regs[ 9] = regs->tf_eflags;
+	gdb_regs[10] = regs->tf_cs;
+	gdb_regs[12] = regs->tf_ds;
+	gdb_regs[13] = regs->tf_es;
+	gdb_regs[14] = regs->tf_fs;
+	gdb_regs[15] = regs->tf_gs;
+
+	if (KERNELMODE(regs->tf_cs, regs->tf_eflags)) {
+		/*
+		 * Kernel mode - esp and ss not saved.
+		 */
+		gdb_regs[ 4] = (kgdb_reg_t)&regs->tf_esp; /* kernel stack
+							     pointer */
+		gdb_regs[11] = x86_getss();
+	}
+#endif
 }
 
 /*
@@ -187,7 +215,7 @@ kgdb_getregs(db_regs_t *regs, kgdb_reg_t *gdb_regs)
 void
 kgdb_setregs(db_regs_t *regs, kgdb_reg_t *gdb_regs)
 {
-
+#ifdef __x86_64__
 	regs->tf_rax = gdb_regs[ 0];
 	regs->tf_rbx = gdb_regs[ 1];
 	regs->tf_rcx = gdb_regs[ 2];
@@ -208,6 +236,28 @@ kgdb_setregs(db_regs_t *regs, kgdb_reg_t *gdb_regs)
 	regs->tf_rflags = gdb_regs[17];
 	regs->tf_cs  = gdb_regs[18];
 	regs->tf_ss  = gdb_regs[19];
+#else
+	regs->tf_eax    = gdb_regs[ 0];
+	regs->tf_ecx    = gdb_regs[ 1];
+	regs->tf_edx    = gdb_regs[ 2];
+	regs->tf_ebx    = gdb_regs[ 3];
+	regs->tf_ebp    = gdb_regs[ 5];
+	regs->tf_esi    = gdb_regs[ 6];
+	regs->tf_edi    = gdb_regs[ 7];
+	regs->tf_eip    = gdb_regs[ 8];
+	regs->tf_eflags = gdb_regs[ 9];
+	regs->tf_cs     = gdb_regs[10];
+	regs->tf_ds     = gdb_regs[12];
+	regs->tf_es     = gdb_regs[13];
+
+	if (KERNELMODE(regs->tf_cs, regs->tf_eflags) == 0) {
+		/*
+		 * Trapped in user mode - restore esp and ss.
+		 */
+		regs->tf_esp = gdb_regs[ 4];
+		regs->tf_ss  = gdb_regs[11];
+	}
+#endif
 }
 
 /*
@@ -217,7 +267,6 @@ kgdb_setregs(db_regs_t *regs, kgdb_reg_t *gdb_regs)
 void
 kgdb_connect(int verbose)
 {
-
 	if (kgdb_dev == NODEV)
 		return;
 
