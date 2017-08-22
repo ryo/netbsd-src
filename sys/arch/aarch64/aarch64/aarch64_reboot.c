@@ -145,7 +145,7 @@ docpureset(int howto)
 {
 	if ((howto & RB_POWERDOWN) == RB_POWERDOWN) {
 		if (cpu_powerdown_address) {
-			cpu_powerdown_address();
+			(*cpu_powerdown_address)();
 			printf("WARNING: powerdown failed\r\n");
 		} else {
 			printf("WARNING: powerdown not supported\r\n");
