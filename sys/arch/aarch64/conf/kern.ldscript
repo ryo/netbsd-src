@@ -17,7 +17,7 @@ SECTIONS
     *(.text.hot .text.hot.*)
     *(.stub .text.* .gnu.linkonce.t.*)
     /* .gnu.warning sections are handled specially by elf32.em.  */
-/*    . = ALIGN(0x800) */
+    /* . = ALIGN(0x800) */
     *(.vectors)
   } =0
   .rodata         : { *(.rodata .rodata.* .gnu.linkonce.r.*) }
@@ -45,10 +45,23 @@ SECTIONS
   .data           :
   {
     PROVIDE (__data_start = .);
-    *(.data .data.* .gnu.linkonce.d.*)
+    *(.data .gnu.linkonce.d.*)
     SORT(CONSTRUCTORS)
   }
   .data1          : { *(.data1) }
+
+  . = ALIGN(64);	/* COHERENCY_UNIT */
+  .data.cacheline_aligned :
+  {
+    *(.data.cacheline_aligned)
+  }
+  . = ALIGN(64);	/* COHERENCY_UNIT */
+  .data.read_mostly :
+  {
+    *(.data.read_mostly)
+  }
+  . = ALIGN(64);	/* COHERENCY_UNIT */
+
   _edata = .; PROVIDE (edata = .);
   . = .;
   __bss_start = .;
