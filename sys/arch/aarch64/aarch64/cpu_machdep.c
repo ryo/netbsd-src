@@ -51,7 +51,7 @@ __KERNEL_RCSID(1, "$NetBSD: cpu_machdep.c,v 1.2 2015/04/14 22:36:54 jmcneill Exp
 u_int cputype;	// XXXAARCH64
 
 /* Our exported CPU info; we can have only one. */
-struct cpu_info cpu_info_store = {
+struct cpu_info cpu_info_store __cacheline_aligned = {
 	.ci_cpl = IPL_HIGH,
 	.ci_curlwp = &lwp0,
 };
