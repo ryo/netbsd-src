@@ -155,12 +155,6 @@ typedef unsigned long long pt_entry_t;
 #define TCR_EPD0		__BIT(7)	/* Walk Disable for TTBR0 */
 #define TCR_T0SZ		__BITS(5,0)	/* Size offset for TTBR0_EL1 */
 
-#ifdef MULTIPROCESSOR
-#define TCR_SMP_ATTRS	\
-    (__SHIFTIN(TCR_SH_INNER, TCR_SH0) | __SHIFTIN(TCR_SH_INNER, TCR_SH1))
-#else
-#define TCR_SMP_ATTRS	0
-#endif
 
 #define TTBR_ASID		__BITS(63, 48),
 #define TTBR_BADDR		__BITS(47, 0);

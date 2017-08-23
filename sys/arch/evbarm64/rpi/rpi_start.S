@@ -189,6 +189,39 @@ start:
 
 	VERBOSE("MMU Enabled!\r\n")
 
+
+#if 0
+	/* address translation test */
+	PRINT("L_COM_DATA(V): ")
+	ldr	x0, L_COM_DATA
+	bl	print_x0
+
+	at	s1e1rql, x0
+	mrs	x0, par_el1
+	PRINT("L_COM_DATA(P): ")
+	bl	print_x0
+#endif
+
+
+#ifdef DEBUG_LOCORE
+	mrs	x0, vbar_el1
+	PRINT("VBAR_EL1=")
+	bl	print_x0
+#endif
+
+#ifdef DEBUG_LOCORE
+	mrs	x0, spsr_el1
+	PRINT("SPSR_EL1=")
+	bl	print_x0
+#endif
+
+#ifdef DEBUG_LOCORE
+	mrs	x0, daif
+	PRINT("DAIF=")
+	bl	print_x0
+#endif
+
+
 	VERBOSE("arm_cpuinit\r\n")
 	bl	arm_cpuinit
 
@@ -377,6 +410,54 @@ _C_LABEL(uartputc):
 	ldp	x9, x10, [sp], #16
 	ret
 END(_C_LABEL(uartputc))
+
+	.global _C_LABEL(uartputA)
+_C_LABEL(uartputA):
+	stp	x0, x9, [sp, #-16]!
+
+	ldr	x9, L_COM_LSR
+1:	ldr	w0, [x9]
+	tbz	w0, #COM_LSR_TXFE_BIT, 1b
+
+	ldr	x9, L_COM_DATA
+	mov	w0, #'A'
+	str	w0, [x9]
+
+	ldp	x0, x9, [sp], #16
+	ret
+END(_C_LABEL(uartputA))
+
+	.global _C_LABEL(uartputB)
+_C_LABEL(uartputB):
+	stp	x0, x9, [sp, #-16]!
+
+	ldr	x9, L_COM_LSR
+1:	ldr	w0, [x9]
+	tbz	w0, #COM_LSR_TXFE_BIT, 1b
+
+	ldr	x9, L_COM_DATA
+	mov	w0, #'B'
+	str	w0, [x9]
+
+	ldp	x0, x9, [sp], #16
+	ret
+END(_C_LABEL(uartputB))
+
+	.global _C_LABEL(uartputC)
+_C_LABEL(uartputC):
+	stp	x0, x9, [sp, #-16]!
+
+	ldr	x9, L_COM_LSR
+1:	ldr	w0, [x9]
+	tbz	w0, #COM_LSR_TXFE_BIT, 1b
+
+	ldr	x9, L_COM_DATA
+	mov	w0, #'C'
+	str	w0, [x9]
+
+	ldp	x0, x9, [sp], #16
+	ret
+END(_C_LABEL(uartputC))
 
 uart_switch_to_directmap:
 	stp	x0, x1, [sp, #-16]!
@@ -1046,16 +1127,30 @@ mair:
 		MAIR_ATTR(MAIR_NORMAL_WT, 3)
 
 tcr:
+#ifdef MULTIPROCESSOR
 	.quad (						\
 	    __SHIFTIN(64 - VIRT_BIT, TCR_T1SZ) |	\
 	    __SHIFTIN(64 - VIRT_BIT, TCR_T0SZ) |	\
-	     TCR_AS64K |				\
+	    TCR_AS64K |					\
 	    __SHIFTIN(TCR_TG_4KB, TCR_TG1) |		\
 	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_ORGN0) |	\
 	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_IRGN0) |	\
 	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_ORGN1) |	\
 	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_IRGN1) |	\
-	    TCR_SMP_ATTRS)
+	    /* for MULTIPROCESSOR */			\
+	    __SHIFTIN(TCR_SH_INNER, TCR_SH0) |		\
+	    __SHIFTIN(TCR_SH_INNER, TCR_SH1))
+#else
+	.quad (						\
+	    __SHIFTIN(64 - VIRT_BIT, TCR_T1SZ) |	\
+	    __SHIFTIN(64 - VIRT_BIT, TCR_T0SZ) |	\
+	    TCR_AS64K |					\
+	    __SHIFTIN(TCR_TG_4KB, TCR_TG1) |		\
+	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_ORGN0) |	\
+	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_IRGN0) |	\
+	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_ORGN1) |	\
+	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_IRGN1))
+#endif
 
 sctlr_set:
 	/* Bits to set */
