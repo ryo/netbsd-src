@@ -1,4 +1,4 @@
-/* $NetBSD$ */
+/* $NetBSD: vectors.S,v 1.4 2017/08/23 13:02:14 nisimura Exp $ */
 
 #include <aarch64/asm.h>
 #include "assym.h"
