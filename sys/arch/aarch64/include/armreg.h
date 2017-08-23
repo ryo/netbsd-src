@@ -314,6 +314,12 @@ static const uintmax_t
     SCTLR_LSMAOE	= __BIT(29);
 
 
+AARCH64REG_READ_INLINE(spsel)		// Stack Pointer Select
+AARCH64REG_WRITE_INLINE(spsel)
+
+static const uintmax_t
+    SPSEL_SP		= __BIT(0);	// use SP_EL0 at all exception levels
+
 AARCH64REG_READ_INLINE(sp_el0)		// Stack Pointer
 AARCH64REG_WRITE_INLINE(sp_el0)
 
@@ -375,47 +381,6 @@ static const uintmax_t
 AARCH64REG_READ_INLINE(tcr_el1)		// Translation Control Register
 AARCH64REG_WRITE_INLINE(tcr_el1)
 
-static const uintmax_t
-    TCR_TBI1	    = __BIT(38),	// ignore Top Byte for TTBR1_EL1
-    TCR_TBI0	    = __BIT(37),	// ignore Top Byte for TTBR0_EL1
-    TCR_AS64K	    = __BIT(36),	// Use 64K ASIDs
-    TCR_IPS	    = __BITS(34,32),	// Intermediate Phys Addr Size
-     TCR_IPS_256TB  = 5,		// 48 bits (256 TB)
-     TCR_IPS_64TB   = 4,		// 44 bits  (16 TB)
-     TCR_IPS_4TB    = 3,		// 42 bits  ( 4 TB)
-     TCR_IPS_1TB    = 2,		// 40 bits  ( 1 TB)
-     TCR_IPS_64GB   = 1,		// 36 bits  (64 GB)
-     TCR_IPS_4GB    = 0,		// 32 bits   (4 GB)
-    TCR_TG1	    = __BITS(31,30),	// Page Granule Size
-     TCR_TG_16KB    = 1,		// 16KB page size
-     TCR_TG_4KB	    = 2,		// 4KB page size
-     TCR_TG_64KB    = 3,		// 64KB page size
-    TCR_SH1	    = __BITS(29,28),
-     TCR_SH_NONE    = 0,
-     TCR_SH_OUTER   = 2,
-     TCR_SH_INNER   = 3,
-    TCR_ORGN1	    = __BITS(27,26),
-     TCR_XRGN_NC    = 0,		// Non Cacheable
-     TCR_XRGN_WB_WA = 1,		// WriteBack WriteAllocate
-     TCR_XRGN_WT    = 2,		// WriteThrough
-     TCR_XRGN_WB    = 3,		// WriteBack
-    TCR_IRGN1	    = __BITS(25,24),
-    TCR_EPD1	    = __BIT(23),	// Walk Disable for TTBR1_EL1
-    TCR_A1	    = __BIT(22),	// ASID is in TTBR1_EL1
-    TCR_T1SZ	    = __BITS(21,16),	// Size offset for TTBR1_EL1
-    TCR_TG0	    = __BITS(15,14),
-    TCR_SH0	    = __BITS(13,12),
-    TCR_ORGN0	    = __BITS(11,10),
-    TCR_IRGN0	    = __BITS(9,8),
-    TCR_EPD0	    = __BIT(7),		// Walk Disable for TTBR0
-    TCR_T0SZ	    = __BITS(5,0);	// Size offset for TTBR0_EL1
-
-#ifdef MULTIPROCESSOR
-#define TCR_SMP_ATTRS		(__SHIFTIN(TCR_SH_INNER, TCR_SH0) | __SHIFTIN(TCR_SH_INNER, TCR_SH1))
-#else
-#define TCR_SMP_ATTRS		0
-#endif
-
 #define TCR_PAGE_SIZE1(tcr)	(1L << (__SHIFTOUT(tcr, TCR_TG1) * 2 + 10))
 
 AARCH64REG_READ_INLINE(tpidr_el1)	// Thread ID Register (EL1)
@@ -431,10 +396,6 @@ AARCH64REG_WRITE_INLINE(ttbr0_el1)
 
 AARCH64REG_READ_INLINE(ttbr1_el1)	// Translation Table Base Register 1 EL1
 AARCH64REG_WRITE_INLINE(ttbr1_el1)
-
-static const uint64_t
-    TTBR_ASID  = __BITS(63, 48),
-    TTBR_BADDR = __BITS(47, 0);
 
 AARCH64REG_READ_INLINE(vbar_el1)	// Vector Base Address Register
 AARCH64REG_WRITE_INLINE(vbar_el1)
