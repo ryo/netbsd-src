@@ -130,23 +130,25 @@ _C_LABEL(el1_vectors):
 	VECT_INVAL	0, BAD_ERROR, 32	/* Error 32bit EL0 */
 
 _C_LABEL(el1_sync):
+	sub	sp, sp, #TF_SIZE
 	exception_entry 1
-	ldr	x30, =exception_trap_exit
+	ldr	lr, =exception_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap
 END(el1_sync)
 
 _C_LABEL(el1_irq):
+	sub	sp, sp, #TF_SIZE
 	exception_entry 1
-	ldr	x30, =exception_trap_exit
+	ldr	lr, =exception_trap_exit
 	mov	x0, sp
 	b	interrupt
 END(el1_irq)
 
 _C_LABEL(el0_sync):
 	exception_entry 0
-	ldr	x30, =exception_trap_exit
+	ldr	lr, =exception_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap
@@ -154,14 +156,14 @@ END(el0_sync)
 
 _C_LABEL(el0_irq):
 	exception_entry 0
-	ldr	x30, =exception_trap_exit
+	ldr	lr, =exception_trap_exit
 	mov	x0, sp
 	b	interrupt
 END(el0_irq)
 
 _C_LABEL(el0_32sync):
 	exception_entry 0, 32
-	ldr	x30, =exception_trap_exit
+	ldr	lr, =exception_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap
@@ -169,7 +171,7 @@ END(el0_32sync)
 
 _C_LABEL(el0_32irq):
 	exception_entry 0, 32
-	ldr	x30, =exception_trap_exit
+	ldr	lr, =exception_trap_exit
 	mov	x0, sp
 	b	interrupt
 END(el0_32irq)
