@@ -79,7 +79,7 @@ lr	.req	x30	/* link register */
 	mov	x29, xzr		/* fp pointed to user-space */
 	mrs	x20, sp_el0
 	.else
-	mrs	x20, sp_el1
+	mov	x20, sp
 	.endif
 	mrs	x21, elr_el1
 	mrs	x22, spsr_el1
