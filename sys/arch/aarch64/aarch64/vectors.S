@@ -18,6 +18,9 @@ lr	.req	x30	/* link register */
 	.macro	VECT_INVAL, el, cause, regsize = 64
 	.align	7
 	/* small enough to fit 32 instrunction slot */
+	.if \el == 1
+	sub	sp, sp, #TF_SIZE
+	.endif
 	stp	x0, x1, [sp, #TF_X0]
 	stp	x2, x3, [sp, #TF_X2]
 	stp	x4, x5, [sp, #TF_X4]
@@ -37,7 +40,7 @@ lr	.req	x30	/* link register */
 	.if \el == 0
 	mrs	x20, sp_el0
 	.else
-	mrs	x20, sp_el1
+	mov	x20, sp
 	.endif
 	mrs	x21, elr_el1
 	mrs	x22, spsr_el1
@@ -52,6 +55,7 @@ lr	.req	x30	/* link register */
 	mov	x0, sp
 	mov	x1, #\cause
 	b	trap
+	/* !!! beware about remaining slot !!! */
 	.endm
 
 	.macro	exception_entry, el, regsize = 64
