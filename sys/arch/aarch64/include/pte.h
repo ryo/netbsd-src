@@ -156,8 +156,8 @@ typedef unsigned long long pt_entry_t;
 #define TCR_T0SZ		__BITS(5,0)	/* Size offset for TTBR0_EL1 */
 
 
-#define TTBR_ASID		__BITS(63, 48),
-#define TTBR_BADDR		__BITS(47, 0);
+#define TTBR_ASID		__BITS(63, 48)
+#define TTBR_BADDR		__BITS(47, 0)
 
 
 #elif defined(__arm__)
