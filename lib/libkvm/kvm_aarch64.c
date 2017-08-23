@@ -41,6 +41,7 @@
 #include <machine/kcore.h>
 #include <machine/pte.h>
 #include <machine/vmparam.h>
+#include <machine/armreg.h>
 
 #include <limits.h>
 #include <db.h>
