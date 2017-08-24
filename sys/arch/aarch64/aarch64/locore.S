@@ -145,21 +145,26 @@ ENTRY_NP(cpu_switchto_softint)
 	mrs	x3, tpidr_el1
 	ldr	x2, [x3, #CI_CURLWP]	/* x2 := curcpu()->ci_curlwp */
 	mov	x4, sp			/* x4 := sp */
-	str	x4, [x2, #L_MD_KTF]	/* curlwp->l_md_ktf = sp; */
+	/* XXX disable interrupt XXX */
+	str	x4, [x2, #L_MD_KTF]	/* curlwp->l_md_ktf := sp */
 	str	x0, [x3, #CI_CURLWP]	/* curcpu()->ci_curlwp = softlwp; */
-	ldr	x4, [x0, #L_MD_KTF]	/* switch to softlwp's stack */
+	ldr	x4, [x0, #L_MD_KTF]	/* switch to softlwp stack */
 	mov	sp, x4			/* new sp := softlwp->l_md_ktf */
-	mov	x19, x2			/* retain curlwp in x19 */
-	mov	x20, lr			/* retain lr in x20 */
+	/* XXX enable interrupt XXX */
+	mov	x19, x2			/* x19 := pinned_lwp */
+	mov	x20, lr			/* x20 := original lr */
 
-	/* softint_dispatch(softlwp, ipl) */
+	/* softint_dispatch(pinned_lwp, ipl) */
+	mov	x0, x19
 	bl	_C_LABEL(softint_dispatch)
 
 	mrs	x3, tpidr_el1
+	/* XXX disable interrupt XXX */
 	str	x19, [x3, #CI_CURLWP]	/* curcpu()->ci_curlwp := x19 */
 	ldr	x4, [x19, #L_MD_KTF]	/* x4 := curlwp->l_md_ktf */
-	mov	sp, x4			/* restore curlwp sp */
-	mov	lr, x20			/* restore curlwp lr */
+	mov	sp, x4			/* restore pinned_lwp sp */
+	/* XXX enable interrupt XXX */
+	mov	lr, x20			/* restore pinned_lwp lr */
 	add	sp, sp, #TF_SIZE	/* unwind switchframe */
 	ret
 END(cpu_switchto_softint)
