@@ -131,6 +131,7 @@ END(cpu_switchto)
  *	unwind switchframe made on kernel stack.
  *	return to caller this time.
  * }
+ */
 ENTRY_NP(cpu_switchto_softint)
 	sub	sp, sp, #TF_SIZE
 
@@ -155,7 +156,7 @@ ENTRY_NP(softint_cleanup)
 	ldr	w2, [x3, #CI_MTX_COUNT]	/* ->ci_mtx_count */
 	add	w2, w2, #1
 	str	w2, [x3, #CI_MTX_COUNT]
-	str	wzr, [x0, #L_CTXSWITCH]	/* softlwp->l_ctxswitch = 0 */
+	str	wzr, [x0, #L_CTXSWTCH]	/* softlwp->l_ctxswtch = 0 */
 	add	sp, sp, #TF_SIZE	/* unwind switchframe */
 	ret
 END(softint_cleanup)
