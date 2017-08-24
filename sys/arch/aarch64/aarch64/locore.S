@@ -67,7 +67,7 @@ ENTRY_NP(cpu_switchto)
 	ldr	x5, [x0, #L_MD_KTF]
 	mrs	x4, tpidr_el0
 #if TF_TPIDR + 8 == TF_CHAIN
-	str	x4, x5, [sp, #TF_TPIDR]
+	stp	x4, x5, [sp, #TF_TPIDR]
 #else
 	str	x4, [sp, #TF_TPIDR]
 	str	x5, [sp, #TF_CHAIN]
@@ -92,8 +92,8 @@ ENTRY_NP(cpu_switchto)
 #if L_MD_KTF + 8 == L_MD_CPACR
 	ldp	x4, x5, [x1, #L_MD_KTF]	// get trapframe ptr and cpacr_el1
 #else
-	ldr	x4, [x0, #L_MD_KTF]	// get trapframe ptr (aka SP)
-	ldr	x5, [x0, #L_MD_CPACR]	// get cpacr_el1
+	ldr	x4, [x1, #L_MD_KTF]	// get trapframe ptr (aka SP)
+	ldr	x5, [x1, #L_MD_CPACR]	// get cpacr_el1
 #endif
 	mov	sp, x4			// restore stack pointer
 	msr	cpacr_el1, x5		// restore cpacr_el1
