@@ -133,10 +133,34 @@ END(cpu_switchto)
  * }
  */
 ENTRY_NP(cpu_switchto_softint)
-	sub	sp, sp, #TF_SIZE
+	sub	sp, sp, #TF_SIZE	/* make switchframe */
+	adr	x2, softint_cleanup
+	stp	x19, x20, [sp, #TF_X19]
+	stp	x21, x22, [sp, #TF_X21]
+	stp	x23, x24, [sp, #TF_X23]
+	stp	x25, x26, [sp, #TF_X25]
+	stp	x27, x28, [sp, #TF_X27]
+	stp	x29, x2, [sp, #TF_X29]	/* tf->lr = softint_cleanup; */
 
-	str	x30, [sp, #TF_X30]
-	add	sp, sp, #TF_SIZE
+	mrs	x3, tpidr_el1
+	ldr	x2, [x3, #CI_CURLWP]	/* x2 := curcpu()->ci_curlwp */
+	mov	x4, sp			/* x4 := sp */
+	str	x4, [x2, #L_MD_KTF]	/* curlwp->l_md_ktf = sp; */
+	str	x0, [x3, #CI_CURLWP]	/* curcpu()->ci_curlwp = softlwp; */
+	ldr	x4, [x0, #L_MD_KTF]	/* switch to softlwp's stack */
+	mov	sp, x4			/* new sp := softlwp->l_md_ktf */
+	mov	x19, x2			/* retain curlwp in x19 */
+	mov	x20, lr			/* retain lr in x20 */
+
+	/* softint_dispatch(softlwp, ipl) */
+	bl	_C_LABEL(softint_dispatch)
+
+	mrs	x3, tpidr_el1
+	str	x19, [x3, #CI_CURLWP]	/* curcpu()->ci_curlwp := x19 */
+	ldr	x4, [x19, #L_MD_KTF]	/* x4 := curlwp->l_md_ktf */
+	mov	sp, x4			/* restore curlwp sp */
+	mov	lr, x20			/* restore curlwp lr */
+	add	sp, sp, #TF_SIZE	/* unwind switchframe */
 	ret
 END(cpu_switchto_softint)
 
