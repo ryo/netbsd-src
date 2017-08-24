@@ -122,7 +122,7 @@
 #define	AARCH64_KMEMORY_BASE	AARCH64_KSEG_MASK
 #define AARCH64_KVA_P(va)	(((vaddr_t) (va) & AARCH64_KSEG_MASK) != 0)
 #define AARCH64_PA_TO_KVA(pa)	((vaddr_t) ((pa) | AARCH64_KSEG_START))
-#define AARCH64_KVA_TO_PA(va)	((paddr_t) ((pa) & ~AARCH64_KSEG_MASK))
+#define AARCH64_KVA_TO_PA(va)	((paddr_t) ((va) & ~AARCH64_KSEG_MASK))
 
 /* */
 #define VM_PHYSSEG_MAX		16              /* XXX */
