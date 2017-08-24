@@ -119,19 +119,39 @@ ENTRY_NP(cpu_switchto)
 END(cpu_switchto)
 
 /*
- *	x0 = lwp
- *	x1 = ipl
- */
+ * void
+ * cpu_switchto_softint(struct lwp *softlwp, int ipl)
+ * {
+ *	lr := softint_cleanup
+ *	build a switchframe on kernel stack.
+ *	pinned_lwp = curlwp
+ *	switch to softlwp context.
+ *	call softint_dispatch(pinned_lwp, ipl);
+ *	switch back to pinned_lwp context.
+ *	unwind switchframe made on kernel stack.
+ *	return to caller this time.
+ * }
 ENTRY_NP(cpu_switchto_softint)
-//
-//XXXAARCH64
-//
 	ret
 END(cpu_switchto_softint)
 
+/*
+ * void
+ * softint_cleanup(struct lwp *softlwp)
+ * {
+ *	cpu_switchto() bottom half arranges to start this when softlwp
+ *	kernel thread is to yield CPU for the pinned_lwp in the above.
+ *	curcpu()->ci_mtx_count += 1;
+ *	softlwp->l_ctxswtch = 0;
+ *	this returns as if softint_fastswitchto finished normally.
+ * }
+ */
+ENTRY_NP(softint_cleanup)
+	ret
+END(softint_cleanup)
 
 /*
- * Called at IPL_SCHED
+ * Called at IPL_SCHED:
  *	x0 = old lwp (from cpu_switchto)
  *	x1 = new lwp (from cpu_switchto)
  *	x27 = func
