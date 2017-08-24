@@ -132,6 +132,10 @@ aarch64_kvminit(void)
 	    atop(kernend_phys), atop(physical_end),
 	    atop(kernend_phys), atop(physical_end),
 	    VM_FREELIST_DEFAULT);
+	uvm_page_physload(
+	    atop(physical_start), atop(kernend_phys),
+	    atop(physical_start), atop(kernend_phys),
+	    VM_FREELIST_DEFAULT);
 
 
 	// XXXAARCH64: allocate ksp and return
