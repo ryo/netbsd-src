@@ -50,9 +50,9 @@ ENTRY_NP(cpu_switchto)
 	cbz	x0, .Lrestore_lwp
 
 	/*
-	 * Store the callee saved register on the stack in a trapframe
+	 * Store the callee saved register on the stack.
 	 */
-	sub	sp, sp, #TF_SIZE
+	sub	sp, sp, #TF_SIZE		/* make switchframe */
 	stp	x19, x20, [sp, #TF_X19]
 	stp	x21, x22, [sp, #TF_X21]
 	stp	x23, x24, [sp, #TF_X23]
@@ -61,8 +61,8 @@ ENTRY_NP(cpu_switchto)
 	stp	x29, x30, [sp, #TF_X29]
 
 	/*
-	 * Get the previous trapframe pointer and the user writeable Thread ID
-	 * register and save them in the trap frame.
+	 * Save the previous trapframe pointer and EL0 thread ID in the
+	 * switchframe.
 	 */
 	ldr	x5, [x0, #L_MD_KTF]
 	mrs	x4, tpidr_el0
@@ -74,7 +74,7 @@ ENTRY_NP(cpu_switchto)
 #endif
 
 	/*
-	 * Get the current stack pointer and the CPACR and save them in
+	 * Save the current stack pointer and the CPACR and save them in
 	 * old lwp md area.
 	 */
 	mov	x4, sp 
@@ -90,30 +90,30 @@ ENTRY_NP(cpu_switchto)
 
 .Lrestore_lwp:
 #if L_MD_KTF + 8 == L_MD_CPACR
-	ldp	x4, x5, [x1, #L_MD_KTF]	// get trapframe ptr and cpacr_el1
+	ldp	x4, x5, [x1, #L_MD_KTF]	/* get trapframe ptr and cpacr_el1 */
 #else
-	ldr	x4, [x1, #L_MD_KTF]	// get trapframe ptr (aka SP)
-	ldr	x5, [x1, #L_MD_CPACR]	// get cpacr_el1
+	ldr	x4, [x1, #L_MD_KTF]	/* get trapframe ptr (aka SP) */
+	ldr	x5, [x1, #L_MD_CPACR]	/* get cpacr_el1 */
 #endif
-	mov	sp, x4			// restore stack pointer
-	msr	cpacr_el1, x5		// restore cpacr_el1
+	mov	sp, x4			/* restore stack pointer */
+	msr	cpacr_el1, x5		/* restore cpacr_el1 */
 
-	ldr	x4, [sp, #TF_TPIDR]	// load user writeable thread ip reg
-	msr	tpidr_el0, x4		// restore it
+	ldr	x4, [sp, #TF_TPIDR]
+	msr	tpidr_el0, x4		/* restore EL0 thread ID */
 
-	mrs	x3, tpidr_el1		// get curcpu
-	str	x1, [x3, #CI_CURLWP]	// show as curlwp
+	mrs	x3, tpidr_el1
+	str	x1, [x3, #CI_CURLWP]	/* switch curlwp to new lwp */
 
 	/*
-	 * Restore callee save registers
+	 * Restore callee save registers.
 	 */
 	ldp	x19, x20, [sp, #TF_X19]
 	ldp	x21, x22, [sp, #TF_X21]
 	ldp	x23, x24, [sp, #TF_X23]
 	ldp	x25, x26, [sp, #TF_X25]
 	ldp	x27, x28, [sp, #TF_X27]
-	ldp	x29, x30, [sp, #TF_X29]
-	add	sp, sp, #TF_SIZE	/* pop trapframe from stack */
+	ldp	x29, lr, [sp, #TF_X29]
+	add	sp, sp, #TF_SIZE	/* unwind switchframe */
 
 	ret
 END(cpu_switchto)
