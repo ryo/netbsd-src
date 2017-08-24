@@ -36,9 +36,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 #include <aarch64/cpu.h>
 #include <aarch64/armreg.h>
-
-vaddr_t physical_start;
-vaddr_t physical_end;
+#include <aarch64/machdep.h>
 
 vaddr_t initarm(void *);
 void uartputs(const char *);
@@ -56,18 +54,23 @@ static void konsinit(void);
 vaddr_t
 initarm(void *arg)
 {
+	vaddr_t ksp;
+
 	konsinit();
 
-	uartputs("Hello initarm()\r\n");
+	// XXXAARCH64
+	physical_start = 0;
+	physical_end = physical_start + MEMSIZE * 1024 * 1024;
 
-	printf("curcpu = %p\n", curcpu());
-	printf("Hello printf. initarm=%p\n", initarm);
-	printf("Hello strings <%s>\n", "example");
-	printf("%s:%d\n", __func__, __LINE__);
+	printf("%s:%d: curcpu()=%p\n", __func__, __LINE__, curcpu());
 
-	panic("PANIC!");
+	ksp = aarch64_kvminit();	/* ksp = stack top */
+	if (ksp == 0)
+		panic("kvminit error");
 
-	return NULL;
+	ksp = cpu_proc0_init(ksp);	/* ksp = stack bottom - trapframe */
+
+	return ksp;
 }
 
 void

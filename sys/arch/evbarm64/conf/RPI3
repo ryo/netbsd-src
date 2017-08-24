@@ -26,6 +26,9 @@ maxusers 32
 # CPU Support
 options 	CPU_CORTEXA53
 
+options 	MEMSIZE=1024		# 1024Mbyte
+options 	VERBOSE_INIT_ARM
+
 # Standard system options
 options 	KTRACE			# System call tracing support
 #options 	NTP			# kernel PLL for NTP

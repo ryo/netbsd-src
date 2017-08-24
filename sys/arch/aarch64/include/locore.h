@@ -64,9 +64,6 @@ void	cpu_send_ipi(struct cpu_info *, int);
 void	trap(struct trapframe *, int);
 void	interrupt(struct trapframe *);
 
-extern paddr_t physical_start;
-extern paddr_t physical_end;
-
 extern const pcu_ops_t pcu_fpu_ops;
 
 static inline bool

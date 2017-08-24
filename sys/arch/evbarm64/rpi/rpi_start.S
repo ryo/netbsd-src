@@ -80,8 +80,8 @@ RCSID("$NetBSD$")
  */
 
 	.text
-	.global start
-start:
+	.global _start
+_start:
 	stp	x0, lr, [sp, #-16]!
 
 #ifdef VERBOSE_LOCORE

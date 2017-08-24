@@ -35,6 +35,7 @@ __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp
 
 #include <sys/param.h>
 #include <sys/types.h>
+#include <sys/kauth.h>
 
 #include <uvm/uvm.h>
 
@@ -42,6 +43,8 @@ __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp
 
 #include <aarch64/locore.h>
 #include <aarch64/vmparam.h>
+#include <aarch64/machdep.h>
+#include <aarch64/frame.h>
 
 char cpu_model[32]; 
 char machine[] = MACHINE;
@@ -67,8 +70,11 @@ mm_md_direct_mapped_phys(paddr_t pa, vaddr_t *vap)
 int
 mm_md_physacc(paddr_t pa, vm_prot_t prot) 
 {
- 
-	return (pa < ctob(physmem)) ? 0 : EFAULT;
+	if (physical_start <= pa && pa < physical_end)
+		return 0;
+
+	return kauth_authorize_machdep(kauth_cred_get(),
+	    KAUTH_MACHDEP_UNMANAGEDMEM, NULL, NULL, NULL, NULL);
 }
 
 void
@@ -89,6 +95,34 @@ cpu_startup(void)
 	printf("avail memory = %s\n", pbuf);
 
 	bus_space_mallocok();
+}
+
+vaddr_t
+cpu_proc0_init(vaddr_t ksp)
+{
+	struct lwp *l;
+	struct pcb *pcb;
+//	struct trapframe *tf;
+
+	l = &lwp0;
+
+	uvm_lwp_setuarea(&lwp0, ksp);
+	pcb = lwp_getpcb(l);
+
+	memset(pcb, 0, sizeof(*pcb));
+
+//XXXAARCH64
+//	pcb->pcb_ksp = ksp + USPACE - sizeof(struct trapframe);
+//	tf = (struct trapframe *)pcb->pcb_ksp;
+//
+//	memset(tf, 0, sizeof(*tf));
+//	lwp_settrapframe(l, tf);
+//
+//	tf->tf_spsr = SPSR_M_EL0T;
+//	return pcb->pcb_ksp
+
+///XXXAARCH64
+	return ksp + (1024 * 4);
 }
 
 void
