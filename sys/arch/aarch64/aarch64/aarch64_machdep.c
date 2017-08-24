@@ -100,7 +100,6 @@ cpu_startup(void)
 vaddr_t
 cpu_proc0_init(vaddr_t ksp)
 {
-#if 0
 	struct lwp *l;
 	struct trapframe *tf;
 
@@ -110,13 +109,10 @@ cpu_proc0_init(vaddr_t ksp)
 	tf = (struct trapframe *)(ksp + USPACE) - 1;
 	memset(tf, 0, sizeof(struct trapframe));
 	memset(lwp_getpcb(l), 0, sizeof(struct pcb));
-	memset(&l->l_md, 0, sizeof(l->l_md);
+	memset(&l->l_md, 0, sizeof(l->l_md));
 	l->l_md.md_utf = l->l_md.md_ktf = tf;
 	tf->tf_spsr = SPSR_M_EL0T;
 	return (vaddr_t)tf;
-#else
-	return ksp + (1024 * 4);
-#endif
 }
 
 void
