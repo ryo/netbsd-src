@@ -133,9 +133,7 @@
 #define ARM_ARCH_7	0
 #endif
 
-#if defined(CPU_CORTEXA35) || defined(CPU_CORTEXA53) ||			\
-    defined(CPU_CORTEXA57) || defined(CPU_CORTEXA72) ||			\
-    defined(CPU_CORTEXA73)
+#ifdef __aarch64__
 #define ARM_ARCH_8	1
 #else
 #define ARM_ARCH_8	0
@@ -184,7 +182,7 @@
  *
  *	ARM_MMU_V7		ARM v7 MMU.
  *
- *	ARM_MMU_V8		ARM v8 MMU.
+ *	ARM_MMU_V8		ARM v8 MMU. (aarch64)
  */
 #if !defined(_KERNEL_OPT) ||						\
     (defined(CPU_ARM2) || defined(CPU_ARM250) || defined(CPU_ARM3))
@@ -241,7 +239,7 @@
 #endif
 
 #if !defined(_KERNEL_OPT) ||						\
-	 defined(CPU_ARMV8)
+    defined(CPU_ARMV8)
 #define	ARM_MMU_V8		1
 #else
 #define	ARM_MMU_V8		0
