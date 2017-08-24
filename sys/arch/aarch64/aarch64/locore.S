@@ -122,8 +122,8 @@ END(cpu_switchto)
  * void
  * cpu_switchto_softint(struct lwp *softlwp, int ipl)
  * {
- *	lr := softint_cleanup
  *	build a switchframe on kernel stack.
+ *	craft TF_X30 to have softint_cleanup.
  *	pinned_lwp = curlwp
  *	switch to softlwp context.
  *	call softint_dispatch(pinned_lwp, ipl);
@@ -132,6 +132,10 @@ END(cpu_switchto)
  *	return to caller this time.
  * }
 ENTRY_NP(cpu_switchto_softint)
+	sub	sp, sp, #TF_SIZE
+
+	str	x30, [sp, #TF_X30]
+	add	sp, sp, #TF_SIZE
 	ret
 END(cpu_switchto_softint)
 
@@ -139,14 +143,20 @@ END(cpu_switchto_softint)
  * void
  * softint_cleanup(struct lwp *softlwp)
  * {
- *	cpu_switchto() bottom half arranges to start this when softlwp
+ *	cpu_switchto() bottom half arranges to start this when softlwp.
  *	kernel thread is to yield CPU for the pinned_lwp in the above.
  *	curcpu()->ci_mtx_count += 1;
  *	softlwp->l_ctxswtch = 0;
- *	this returns as if softint_fastswitchto finished normally.
+ *	this returns as if cpu_switchto_softint finished normally.
  * }
  */
 ENTRY_NP(softint_cleanup)
+	mrs	x3, tpidr_el1		/* curcpu() */
+	ldr	w2, [x3, #CI_MTX_COUNT]	/* ->ci_mtx_count */
+	add	w2, w2, #1
+	str	w2, [x3, #CI_MTX_COUNT]
+	str	wzr, [x0, #L_CTXSWITCH]	/* softlwp->l_ctxswitch = 0 */
+	add	sp, sp, #TF_SIZE	/* unwind switchframe */
 	ret
 END(softint_cleanup)
 
