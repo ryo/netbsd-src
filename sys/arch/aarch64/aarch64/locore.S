@@ -165,6 +165,7 @@ ENTRY_NP(cpu_switchto_softint)
 	mov	sp, x4			/* restore pinned_lwp sp */
 	/* XXX enable interrupt XXX */
 	mov	lr, x20			/* restore pinned_lwp lr */
+	ldp	x19, x20, [sp, #TF_X19]	/* restore x19 and x20 */
 	add	sp, sp, #TF_SIZE	/* unwind switchframe */
 	ret
 END(cpu_switchto_softint)
