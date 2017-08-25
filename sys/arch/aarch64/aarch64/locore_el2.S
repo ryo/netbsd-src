@@ -34,6 +34,17 @@
 
 RCSID("$NetBSD$")
 
+
+/* for use in #include "locore_el2.S" */
+	.text
+drop_to_el1_inline:
+	mov	x27, sp
+	mov	x28, lr
+	bl	drop_to_el1
+	mov	lr, x28
+	mov	sp, x27
+	b	drop_to_el1_inline_done
+
 	.text
 	.global drop_to_el1
 /*
@@ -142,3 +153,5 @@ hyp_vectors:
 	VECT_EMPTY	/* FIQ 32-bit EL1 */
 	VECT_EMPTY	/* Error 32-bit EL1 */
 
+drop_to_el1_inline_done:
+	nop

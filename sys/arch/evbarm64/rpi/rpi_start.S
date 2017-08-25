@@ -87,16 +87,17 @@ _start:
 #ifdef VERBOSE_LOCORE
 	mov	x9, x0		// save x0
 
+	mrs	x0, CurrentEL
+	PRINT("CurrentEL=")
+	bl	print_x0
+
+	PRINT("SP=")
+	mov	x0, sp
+	bl	print_x0
+
 	mrs	x0, SP_EL0
 	PRINT("SP_EL0=")
 	bl	print_x0
-
-	mrs	x0, SP_EL1
-	PRINT("SP_EL1=")
-	bl	print_x0
-
-	mov	x0, sp
-	msr	SP_EL1, x0
 
 	PRINT("LR=")
 	mov	x0, lr
@@ -136,10 +137,16 @@ _start:
 	bl	print_x0
 #endif
 
-	/* Drop to EL1 */
 	VERBOSE("Drop to EL1\r\n")
-	bl	drop_to_el1
+#include "aarch64/aarch64/locore_el2.S"
+	VERBOSE("Drop to EL1 DONE\r\n")
 
+
+#ifdef VERBOSE_LOCORE
+	mrs	x0, CurrentEL
+	PRINT("CurrentEL=")
+	bl	print_x0
+#endif
 
 	/* disable MMU */
 	dsb	sy
