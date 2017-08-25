@@ -65,8 +65,8 @@ RCSID("$NetBSD$")
 #endif
 
 
+#define LOCORE_EL2
 #define VIRT_BIT	48
-
 #define DEVICE_MEM	0
 #define NORMAL_UNCACHED	1
 #define NORMAL_MEM	2
@@ -137,16 +137,20 @@ _start:
 	bl	print_x0
 #endif
 
+
+#ifdef LOCORE_EL2
 	VERBOSE("Drop to EL1\r\n")
 #include "aarch64/aarch64/locore_el2.S"
 	VERBOSE("Drop to EL1 DONE\r\n")
-
 
 #ifdef VERBOSE_LOCORE
 	mrs	x0, CurrentEL
 	PRINT("CurrentEL=")
 	bl	print_x0
 #endif
+
+#endif /* LOCORE_EL2 */
+
 
 	/* disable MMU */
 	dsb	sy
