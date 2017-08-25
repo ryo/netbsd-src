@@ -38,6 +38,12 @@ RCSID("$NetBSD: locore.S,v 1.2 2017/08/16 22:49:05 nisimura Exp $")
 
 // XXX:AARCH64
 lr	.req	x30
+	.macro DISABLE_INTERRUPT
+	msr	daifset, #DAIF_I|DAIF_F		/* daif'set */
+	.endm
+	.macro ENABLE_INTERRUPT
+	msr	daifclr, #DAIF_I|DAIF_F		/* daif'clr */
+	.endm
 
 /*
  * At IPL_SCHED:
@@ -145,12 +151,12 @@ ENTRY_NP(cpu_switchto_softint)
 	mrs	x3, tpidr_el1
 	ldr	x2, [x3, #CI_CURLWP]	/* x2 := curcpu()->ci_curlwp */
 	mov	x4, sp			/* x4 := sp */
-	/* XXX disable interrupt XXX */
+	DISABLE_INTERRUPT
 	str	x4, [x2, #L_MD_KTF]	/* curlwp->l_md_ktf := sp */
 	str	x0, [x3, #CI_CURLWP]	/* curcpu()->ci_curlwp = softlwp; */
 	ldr	x4, [x0, #L_MD_KTF]	/* switch to softlwp stack */
 	mov	sp, x4			/* new sp := softlwp->l_md_ktf */
-	/* XXX enable interrupt XXX */
+	ENABLE_INTERRUPT
 	mov	x19, x2			/* x19 := pinned_lwp */
 	mov	x20, lr			/* x20 := original lr */
 
@@ -159,11 +165,11 @@ ENTRY_NP(cpu_switchto_softint)
 	bl	_C_LABEL(softint_dispatch)
 
 	mrs	x3, tpidr_el1
-	/* XXX disable interrupt XXX */
+	DISABLE_INTERRUPT
 	str	x19, [x3, #CI_CURLWP]	/* curcpu()->ci_curlwp := x19 */
 	ldr	x4, [x19, #L_MD_KTF]	/* x4 := curlwp->l_md_ktf */
 	mov	sp, x4			/* restore pinned_lwp sp */
-	/* XXX enable interrupt XXX */
+	ENABLE_INTERRUPT
 	mov	lr, x20			/* restore pinned_lwp lr */
 	ldp	x19, x20, [sp, #TF_X19]	/* restore x19 and x20 */
 	add	sp, sp, #TF_SIZE	/* unwind switchframe */
