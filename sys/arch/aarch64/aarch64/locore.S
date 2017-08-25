@@ -247,10 +247,16 @@ exception_syscall_exit:
 	ldr	x21, [sp, #TF_PC]
 #endif
 	ldr	x22, [sp, #TF_SPSR]
-	msr	sp_el0, x20
 	msr	elr_el1, x21
 	msr	spsr_el1, x22
 
+	and	x22, x22, #1
+	cbz	x22, 1f
+	/*
+	 * upon U->K return, run AST processing
+	 */
+	msr	sp_el0, x20		/* restore EL0 sp when U->K return */
+ 1:
 	ldp	x19, x20, [sp, #TF_X19]
 	ldp	x21, x22, [sp, #TF_X21]
 	ldp	x23, x24, [sp, #TF_X23]
@@ -258,10 +264,9 @@ exception_syscall_exit:
 	ldp	x27, x28, [sp, #TF_X27]
 	ldp	x29, x30, [sp, #TF_X29]
 
-	/*
-	 * Don't adjust the stack for the trapframe since we would
-	 * just add subtract it again upon exception entry.
-	 */
+	cbnz	x22, 2f
+	add	sp, sp, #TF_SIZE	/* unwind sp when K->K return */
+ 2:
 	eret
 END(exception_trap_exit)
 
