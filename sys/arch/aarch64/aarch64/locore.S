@@ -228,6 +228,7 @@ END(lwp_trampoline)
  * a syscall return.
  */
 ENTRY_NP(exception_trap_exit)
+	/* XXX critial section guarded by SR.EXL if it was MIPS XXX */
 	ldp	x0, x1, [sp, #TF_X0]
 	ldp	x2, x3, [sp, #TF_X2]
 	ldp	x4, x5, [sp, #TF_X4]
@@ -236,37 +237,35 @@ ENTRY_NP(exception_trap_exit)
 	ldp	x10, x11, [sp, #TF_X10]
 	ldp	x12, x13, [sp, #TF_X12]
 	ldp	x14, x15, [sp, #TF_X14]
-exception_syscall_exit:
 	ldp	x16, x17, [sp, #TF_X16]
 	ldr	x18, [sp, #TF_X18]
 
-#if TF_SP + 8 == TF_PC
-	ldp	x20, x21, [sp, #TF_SP]
-#else
-	ldr	x20, [sp, #TF_SP]
-	ldr	x21, [sp, #TF_PC]
-#endif
-	ldr	x22, [sp, #TF_SPSR]
-	msr	elr_el1, x21
-	msr	spsr_el1, x22
+	ldr	x20, [sp, #TF_PC]
+	ldr	x21, [sp, #TF_SPSR]
+	msr	elr_el1, x20		/* exception pc */
+	msr	spsr_el1, x21		/* exception pstate */
 
-	and	x22, x22, #1
-	cbz	x22, 1f
-	/*
-	 * upon U->K return, run AST processing
-	 */
-	msr	sp_el0, x20		/* restore EL0 sp when U->K return */
- 1:
+	and	x21, x21, #1
+	cbz	x21, .Lkernelexception
+	ldr	x22, [sp, #TF_SP]
+	msr	sp_el0, x22		/* restore EL0 stack */
+
 	ldp	x19, x20, [sp, #TF_X19]
 	ldp	x21, x22, [sp, #TF_X21]
 	ldp	x23, x24, [sp, #TF_X23]
 	ldp	x25, x26, [sp, #TF_X25]
 	ldp	x27, x28, [sp, #TF_X27]
 	ldp	x29, x30, [sp, #TF_X29]
-
-	cbnz	x22, 2f
-	add	sp, sp, #TF_SIZE	/* unwind sp when K->K return */
- 2:
+	/* EL1 sp stays at l_md_utf */
+	eret
+ .Lkernelexception:
+	ldp	x19, x20, [sp, #TF_X19]
+	ldp	x21, x22, [sp, #TF_X21]
+	ldp	x23, x24, [sp, #TF_X23]
+	ldp	x25, x26, [sp, #TF_X25]
+	ldp	x27, x28, [sp, #TF_X27]
+	ldp	x29, x30, [sp, #TF_X29]
+	add	sp, sp, #TF_SIZE	/* unwind trapframe on stack */
 	eret
 END(exception_trap_exit)
 
