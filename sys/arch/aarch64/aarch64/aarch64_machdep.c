@@ -56,6 +56,100 @@ const pcu_ops_t * const pcu_ops_md_defs[PCU_UNIT_COUNT] = {
 
 struct vm_map *phys_map;
 
+//XXXAARCH64
+vaddr_t physical_start;
+vaddr_t physical_end;
+
+extern char _start[];
+extern char etext[];
+extern char __data_start[], _edata[];
+extern char __bss_start[], __bss_end__[];
+extern char _end[];
+extern char lwp0uspace[];
+
+/*
+ * Upper region: 0xffffffffffffffff  Top of virtual memory
+ *
+ *               0xffffffffffff0000  End of KVA
+ *                                   = VM_MAX_KERNEL_ADDRESS
+ *
+ *               0xffffffc00???????  End of kernel
+ *                                   = _end[]
+ *               0xffffffc000??????  Start of kernel
+ *                                   = _start[]
+ *
+ *               0xffffffc000000000  Kernel base address & start of KVA
+ *                                   = VM_MIN_KERNEL_ADDRESS
+ *
+ *               0xffffffbfffffffff  End of direct mapped
+ *               0xffff000000000000  Start of direct mapped
+ *                                   = AARCH64_KSEG_START
+ *                                   = AARCH64_KMEMORY_BASE
+ *
+ * Hole:         0xfffeffffffffffff
+ *               0x0001000000000000
+ *
+ * Lower region: 0x0000fffffffff000  End of user address space
+ *                                   = VM_MAXUSER_ADDRESS)
+ *
+ *               0x000000000???????  End of Loaded kernel image
+ *               0x0000000000??????  Start of Loaded kernel image
+ *                                   = LOADADDRESS
+ *
+ *               0x0000000000000000  Start of user address space
+ */
+void
+initarm64()
+{
+	struct trapframe *tf;
+	psize_t memsize;
+	vaddr_t kernstart, kernend;
+	paddr_t kernstart_phys, kernend_phys;
+
+	kernstart = trunc_page((vaddr_t)_start);
+	kernend = round_page((vaddr_t)_end);
+	kernstart_phys = kernstart - VM_MIN_KERNEL_ADDRESS;
+	kernend_phys = kernend - VM_MIN_KERNEL_ADDRESS;
+
+	memsize = physical_end - physical_start;
+	physmem = memsize / PAGE_SIZE;
+
+#ifdef VERBOSE_INIT_ARM
+	printf(
+	    "%s: physical_start    = 0x%016lx\n"
+	    "%s: physical_end      = 0x%016lx\n"
+	    "%s: kernel_start_phys = 0x%016lx\n"
+	    "%s: kernel_end_phys   = 0x%016lx\n"
+	    "%s: kernel_start      = 0x%016lx\n"
+	    "%s: kernel_end        = 0x%016lx\n",
+	    __func__, physical_start,
+	    __func__, physical_end,
+	    __func__, kernstart_phys,
+	    __func__, kernend_phys,
+	    __func__, kernstart,
+	    __func__, kernend);
+#endif
+
+	uvm_md_init();
+	uvm_page_physload(
+	    atop(kernend_phys), atop(physical_end),
+	    atop(kernend_phys), atop(physical_end),
+	    VM_FREELIST_DEFAULT);
+	uvm_page_physload(
+	    atop(physical_start), atop(kernend_phys),
+	    atop(physical_start), atop(kernend_phys),
+	    VM_FREELIST_DEFAULT);
+
+	tf = (struct trapframe *)(lwp0uspace + USPACE) - 1;
+	memset(tf, 0, sizeof(struct trapframe));
+
+	uvm_lwp_setuarea(&lwp0, lwp0uspace);
+	memset(&lwp0.l_md, 0, sizeof(lwp0.l_md));
+	memset(lwp_getpcb(&lwp0), 0, sizeof(struct pcb));
+	tf->tf_spsr = SPSR_M_EL0T;
+	lwp0.l_md.md_utf = lwp0.l_md.md_ktf = tf;
+}
+
 bool
 mm_md_direct_mapped_phys(paddr_t pa, vaddr_t *vap)
 {

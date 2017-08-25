@@ -38,7 +38,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <aarch64/armreg.h>
 #include <aarch64/machdep.h>
 
-vaddr_t initarm(vaddr_t);
+void initarm(void);
 void uartputs(const char *);
 
 static dev_type_cngetc(konsgetc);
@@ -51,8 +51,8 @@ static struct consdev konsole = {
 };
 static void konsinit(void);
 
-vaddr_t
-initarm(vaddr_t ksp)
+void
+initarm(void)
 {
 	konsinit();
 
@@ -62,11 +62,7 @@ initarm(vaddr_t ksp)
 
 	printf("%s:%d: curcpu()=%p\n", __func__, __LINE__, curcpu());
 
-	/* ksp = stack top */
-	ksp = aarch64_kvminit(ksp);
-	/* ksp = stack bottom - trapframe */
-
-	return ksp;
+	initarm64();
 }
 
 void

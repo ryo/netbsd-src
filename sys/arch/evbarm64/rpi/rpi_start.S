@@ -225,9 +225,7 @@ start_done:
 # vstart is in kernel virtual address
 #
 vstart:
-	/* set temporally kernel stack */
 	adr	x0, kernelstack_bottom
-	sub	x0, x0, #1024	/* XXX: keep away trapframe */
 	mov	sp, x0
 
 #ifdef VERBOSE_LOCORE
@@ -249,11 +247,8 @@ vstart:
 	mov	fp, #0		/* trace back starts here */
 
 	VERBOSE("call initarm()\r\n")
-	adr	x0, kernelstack
 	bl	_C_LABEL(initarm)
 
-	mov	sp, x0		/* renew kernel stack pointer */
-	mov	fp, #0		/* trace back starts here */
 	bl	_C_LABEL(main)
 
 	/* We should not get here */
@@ -1015,15 +1010,15 @@ sctlr_clear:
 	.quad (SCTLR_EE | SCTLR_EOE | SCTLR_IESB | SCTLR_WXN | SCTLR_UMA | \
 	    SCTLR_ITD | SCTLR_THEE | SCTLR_CP15BEN | SCTLR_A)
 
-
 	/*
-	 * if occurs kernel stack overflow,
-	 * above locore code will be filled by stack,
-	 * and when over the address of "_start", segmentation fault
+	 * Kernel stack overflow, if ever, will destroy lower section
+	 * beyond here until writing "_start" ends up with kernel
+	 * segfault, hopefully.
 	 */
 	.align PGSHIFT
-kernelstack:
-	.space	UPAGES * PAGE_SIZE
+.globl _C_LABEL(lwp0uspace)
+_C_LABEL(lwp0uspace):
+	.space	UPAGES * PAGE_SIZE - TF_SIZE
 kernelstack_bottom:
 
 	/*
