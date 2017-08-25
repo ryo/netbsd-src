@@ -40,9 +40,8 @@ extern char *booted_kernel;
 /* from aarch64_reboot.c */
 void dumpsys(void);
 
-/* from aarch64_kvminit.c */
-vaddr_t aarch64_kvminit(vaddr_t);
-
+/* from aarch64_machdep.c */
+void initarm64(void);
 
 /* from aarch64/cpu_machdep.c */
 void dosoftints(void);
