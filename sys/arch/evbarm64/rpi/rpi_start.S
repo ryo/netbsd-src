@@ -1016,10 +1016,11 @@ sctlr_clear:
 	 * segfault, hopefully.
 	 */
 	.align PGSHIFT
-.globl _C_LABEL(lwp0uspace)
+	.global _C_LABEL(lwp0uspace)
 _C_LABEL(lwp0uspace):
 	.space	UPAGES * PAGE_SIZE - TF_SIZE
 kernelstack_bottom:
+	.space	TF_SIZE
 
 	/*
 	 * 3 initial tables (in the following order):
@@ -1027,6 +1028,7 @@ kernelstack_bottom:
 	 *           L1 for kernel
 	 *           L1 for user   (Low addresses)
 	 */
+	.align PGSHIFT
 pagetable:
 	.space	PAGE_SIZE
 pagetable_l1_ttbr1:
