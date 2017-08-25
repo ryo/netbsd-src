@@ -141,32 +141,17 @@ _start:
 	bl	drop_to_el1
 
 
-	/*
-	 * Disable the MMU. We may have entered the kernel with it on and
-	 * will need to update the tables later. If this has been set up
-	 * with anything other than a VA == PA map then this will fail,
-	 * but in this case the code to find where we are running from
-	 * would have also failed.
-	 */
+	/* disable MMU */
 	dsb	sy
-	mrs	x2, sctlr_el1
-	bic	x2, x2, SCTLR_M
-	msr	sctlr_el1, x2
+	mrs	x0, sctlr_el1
+	bic	x0, x2, SCTLR_M		/* clear MMU enable bit */
+	msr	sctlr_el1, x0
 	isb
 
-	VERBOSE("MMU Disabled\r\n")
-
-	/* Set the context id */
+	/* Set the context id = 0*/
 	msr	contextidr_el1, xzr
 
-	/* Get the virt -> phys offset */
-	bl	get_virt_delta
 
-	/*
-	 * At this point:
-	 * x29 = PA - VA
-	 * x28 = Our physical load address
-	 */
 	VERBOSE("Create pagetables\r\n")
 
 	/* Create the page tables */
@@ -180,15 +165,19 @@ _start:
 	 * x26 = Kernel L1 table
 	 * x24 = TTBR1 table
 	 */
-	VERBOSE("Start MMU\r\n")
 
-	/* Enable the mmu */
+	VERBOSE("MMU Enable...\r\n")
 	bl	start_mmu
 
-	bl	uart_switch_to_directmap	/* UART addr change from 0x3f215040 to 0xffff00003f215040 */
+	/* change UART address from 0x3f215040 to 0xffff00003f215040 */
+	bl	uart_change_to_directmap
 
 	VERBOSE("MMU Enabled!\r\n")
 
+
+	VERBOSE("Load the exception vectors\r\n")
+	ldr	x2, =el1_vectors	# el1_vectors is in kva
+	msr	vbar_el1, x2
 
 #if 0
 	/* address translation test */
@@ -199,13 +188,6 @@ _start:
 	at	s1e1rql, x0
 	mrs	x0, par_el1
 	PRINT("L_COM_DATA(P): ")
-	bl	print_x0
-#endif
-
-
-#ifdef DEBUG_LOCORE
-	mrs	x0, vbar_el1
-	PRINT("VBAR_EL1=")
 	bl	print_x0
 #endif
 
@@ -221,52 +203,21 @@ _start:
 	bl	print_x0
 #endif
 
-
-	VERBOSE("arm_cpuinit\r\n")
-	bl	arm_cpuinit
-
-	/* Jump to the virtual address space */
-	ldr	x15, .Lvirtdone
-	br	x15
+	ldr	x0, .Lvstart
+	br	x0		# jump to the kernel virtual address
 
 start_done:
 	ldp	x0, lr, [sp], #16
 	ret
 
-virtdone:
-	/* Set up the stack */
-	adr	x25, initstack_end
-	mov	sp, x25
-
-	/* Zero the BSS */
-	ldr	x15, .Lbss
-	ldr	x14, .Lend
-1:
-	str	xzr, [x15], #8
-	cmp	x15, x14
-	b.lo	1b
-
-	/* Backup the module pointer */
-	mov	x1, x0
-
-	/* Make the page table base a virtual address */
-	sub	x26, x26, x29
-	sub	x24, x24, x29
-
-	sub	sp, sp, #(64 * 4)
-	mov	x0, sp
-
-	/* Degate the delda so it is VA -> PA */
-	neg	x29, x29
-
-	str	x1,  [x0]	/* modulep */
-	str	x26, [x0, 8]	/* kern_l1pt */
-	str	x29, [x0, 16]	/* kern_delta */
-	str	x25, [x0, 24]	/* kern_stack */
-	str	x24, [x0, 32]	/* kern_l0pt */
-
-	mov	fp, #0	/* trace back starts here */
-	/* Branch to C code */
+#
+# vstart is in kernel virtual address
+#
+vstart:
+	/* set temporally kernel stack */
+	adr	x0, kernelstack_bottom
+	sub	x0, x0, #1024	/* XXX: keep away trapframe */
+	mov	sp, x0
 
 #ifdef VERBOSE_LOCORE
 	PRINT("SP=")
@@ -274,10 +225,23 @@ virtdone:
 	bl	print_x0
 #endif
 
-	VERBOSE("go initarm()\r\n")
+	/* Zero the BSS */
+	ldr	x15, .Lbss
+	ldr	x14, .Lend
+1:	str	xzr, [x15], #8
+	cmp	x15, x14
+	b.lo	1b
+
+	VERBOSE("set_cpuinfo\r\n")
+	bl	set_cpuinfo
+
+	mov	fp, #0		/* trace back starts here */
+
+	VERBOSE("call initarm()\r\n")
+	adr	x0, kernelstack
 	bl	_C_LABEL(initarm)
-	/* initarm() will return the new stack pointer. */
-	mov	sp, x0
+
+	mov	sp, x0		/* renew kernel stack pointer */
 	mov	fp, #0		/* trace back starts here */
 	bl	_C_LABEL(main)
 
@@ -285,8 +249,10 @@ virtdone:
 	brk	0
 
 	.align 3
-.Lvirtdone:
-	.quad	virtdone
+.Lvstart:
+	.quad	vstart
+.Lstart:
+	.quad	_start
 .Lbss:
 	.quad	__bss_start
 .Lend:
@@ -459,7 +425,7 @@ _C_LABEL(uartputC):
 	ret
 END(_C_LABEL(uartputC))
 
-uart_switch_to_directmap:
+uart_change_to_directmap:
 	stp	x0, x1, [sp, #-16]!
 
 	adr	x1, L_COM_DATA
@@ -482,7 +448,7 @@ L_COM_LSR:
 	.quad	COM_LSR
 
 
-arm_cpuinit:
+set_cpuinfo:
 	mrs	x1, mpidr_el1
 	and	x1, x1, #0xff	/* Aff0 = cpu id */
 	cmp	x1, #MAXCPUS
@@ -512,134 +478,6 @@ arm_cpuinit_too_many_cpu:
 .Lcpu_info_store:
 	.quad	_C_LABEL(cpu_info_store)
 
-
-/*
- * If we are started in EL2, configure the required hypervisor
- * registers and drop to EL1.
- */
-drop_to_el1:
-	mrs	x1, CurrentEL
-	lsr	x1, x1, #2
-	cmp	x1, #0x2
-	b.eq	1f
-	ret
-1:
-	/* Configure the Hypervisor */
-	mov	x2, #(HCR_RW)
-	msr	hcr_el2, x2
-
-	/* Load the Virtualization Process ID Register */
-	mrs	x2, midr_el1
-	msr	vpidr_el2, x2
-
-	/* Load the Virtualization Multiprocess ID Register */
-	mrs	x2, mpidr_el1
-	msr	vmpidr_el2, x2
-
-	/* Set the bits that need to be 1 in sctlr_el1 */
-	ldr	x2, .Lsctlr_res1
-	msr	sctlr_el1, x2
-
-	/* enable FP */
-	mrs	x2, cpacr_el1
-	bic	x2, x2, #CPACR_FPEN
-	orr	x2, x2, #CPACR_FPEN_ALL
-	msr	cpacr_el1, x2
-
-	/* Don't trap to EL2 for exceptions */
-	mov	x2, #CPTR_RES1
-	msr	cptr_el2, x2
-
-	/* Don't trap to EL2 for CP15 traps */
-	msr	hstr_el2, xzr
-
-	/* Enable access to the physical timers at EL1 */
-	mrs	x2, cnthctl_el2
-	orr	x2, x2, #(CNTHCTL_EL1PCTEN | CNTHCTL_EL1PCEN)
-	msr	cnthctl_el2, x2
-
-	/* Set the counter offset to a known value */
-	msr	cntvoff_el2, xzr
-
-	/* Hypervisor trap functions */
-	adr	x2, hyp_vectors
-	msr	vbar_el2, x2
-
-	mov	x2, #(SPSR_F | SPSR_I | SPSR_A | SPSR_A64_D | SPSR_M_EL1H)
-	msr	spsr_el2, x2
-
-	/* Configure GICv3 CPU interface */
-	mrs	x2, id_aa64pfr0_el1
-	/* Extract GIC bits from the register */
-	and	x2, x2, ID_AA64PFR0_EL1_GIC
-	lsr	x2, x2, ID_AA64PFR0_EL1_GIC_SHIFT
-	/* GIC[3:0] == 0001 - GIC CPU interface via special regs. supported */
-	cmp	x2, #ID_AA64PFR0_EL1_GIC_CPUIF_EN
-	b.ne	2f
-
-	mrs	x2, icc_sre_el2
-	orr	x2, x2, #ICC_SRE_EL2_EN	/* Enable access from insecure EL1 */
-	orr	x2, x2, #ICC_SRE_EL2_SRE	/* Enable system registers */
-	msr	icc_sre_el2, x2
-2:
-
-	/* Set the address to return to our return address */
-	msr	elr_el2, x30
-	isb
-
-	eret
-
-	.align 3
-.Lsctlr_res1:
-	.quad SCTLR_RES1
-
-#define	VECT_EMPTY	\
-	.align 7;	\
-	1:	b	1b
-
-	.align 11
-hyp_vectors:
-	VECT_EMPTY	/* Synchronous EL2t */
-	VECT_EMPTY	/* IRQ EL2t */
-	VECT_EMPTY	/* FIQ EL2t */
-	VECT_EMPTY	/* Error EL2t */
-
-	VECT_EMPTY	/* Synchronous EL2h */
-	VECT_EMPTY	/* IRQ EL2h */
-	VECT_EMPTY	/* FIQ EL2h */
-	VECT_EMPTY	/* Error EL2h */
-
-	VECT_EMPTY	/* Synchronous 64-bit EL1 */
-	VECT_EMPTY	/* IRQ 64-bit EL1 */
-	VECT_EMPTY	/* FIQ 64-bit EL1 */
-	VECT_EMPTY	/* Error 64-bit EL1 */
-
-	VECT_EMPTY	/* Synchronous 32-bit EL1 */
-	VECT_EMPTY	/* IRQ 32-bit EL1 */
-	VECT_EMPTY	/* FIQ 32-bit EL1 */
-	VECT_EMPTY	/* Error 32-bit EL1 */
-
-/*
- * Get the delta between the physical address we were loaded to and the
- * virtual address we expect to run from. This is used when building the
- * initial page table.
- */
-get_virt_delta:
-	/* Load the physical address of virt_map */
-	adr	x29, virt_map
-	/* Load the virtual address of virt_map stored in virt_map */
-	ldr	x28, [x29]
-	/* Find PA - VA as PA' = VA' - VA + PA = VA' + (PA - VA) = VA' + x29 */
-	sub	x29, x29, x28
-	/* Find the load address for the kernel */
-	mov	x28, #(KERNBASE)
-	add	x28, x28, x29
-	ret
-
-	.align 3
-virt_map:
-	.quad	virt_map
-
 /*
  * This builds the page tables containing the identity map, and the kernel
  * virtual map.
@@ -647,7 +485,6 @@ virt_map:
  * It relys on:
  *  We were loaded to an address that is on a 2MiB boundary
  *  All the memory must not cross a 1GiB boundaty
- *  x28 contains the physical address we were loaded from
  *
  * TODO: This is out of date.
  *  There are at least 5 pages before that address for the page tables
@@ -680,23 +517,34 @@ create_pagetables:
 	 */
 	VERBOSE("Build the TTBR1 maps\r\n")
 
-	/* Find the size of the kernel */
-	mov	x6, #(KERNBASE)
-	ldr	x7, .Lend
-	/* Find the end - begin */
-	sub	x8, x7, x6
-	/* Get the number of l2 pages to allocate, rounded down */
-	lsr	x10, x8, #(L2_SHIFT)
-	/* Add 8 MiB for any rounding above and the module data */
-	add	x10, x10, #4
+	/* kernelsize = _end - _start */
+	ldr	x10, .Lend
+	ldr	x0, .Lstart
+	sub	x10, x10, x0
+
+	/* round up kernelsize to L2_SIZE */
+	add	x10, x10, #L2_SIZE
+	sub	x10, x10, #1
+	lsr	x10, x10, #L2_SHIFT
 
 	VERBOSE("Create the kernel space L2 table\r\n")
 
-	/* Create the kernel space L2 table */
+	# Create the kernel space L2 table
 	mov	x6, x26
 	mov	x7, #NORMAL_MEM
-	mov	x8, #(KERNBASE & L2_BLOCK_MASK)
-	mov	x9, x28
+
+	# VA start
+	mov	x8, #(VM_MIN_KERNEL_ADDRESS & L2_BLOCK_MASK)
+
+	# PA start
+	adr	x9, _start
+	and	x9, x9, #L2_BLOCK_MASK
+
+	# kernel image load physical address is   0x???00000-
+	# kernel virtual address space is 0xffffffc000000000-
+	# kernel virtual address start is 0xffffffc0???00000-
+	add	x8, x8, x9
+
 	bl	build_l2_block_pagetable
 
 	VERBOSE("Move to the l1 table\r\n")
@@ -1073,15 +921,10 @@ build_l2_block_pagetable:
 
 /*
  * x27 = TTBR0 table
- * x26 = Kernel L1 table
  * x24 = TTBR1 table
 */
 start_mmu:
 	dsb	sy
-
-	/* Load the exception vectors */
-	ldr	x2, =el1_vectors
-	msr	vbar_el1, x2
 
 	/* Load ttbr0 and ttbr1 */
 	msr	ttbr0_el1, x27
@@ -1116,9 +959,8 @@ start_mmu:
 
 	ret
 
+
 	.align 3
-
-
 mair:
 #define MAIR_ATTR(attr, idx)	((attr) << ((idx) * 8))
 	.quad	MAIR_ATTR(MAIR_DEVICE_nGnRnE, 0) |	\
@@ -1162,12 +1004,17 @@ sctlr_clear:
 	.quad (SCTLR_EE | SCTLR_EOE | SCTLR_IESB | SCTLR_WXN | SCTLR_UMA | \
 	    SCTLR_ITD | SCTLR_THEE | SCTLR_CP15BEN | SCTLR_A)
 
-	.globl abort
-abort:
-	b abort
 
-	//.section .init_pagetable
-	.align 12 /* 4KiB aligned */
+	/*
+	 * if occurs kernel stack overflow,
+	 * above locore code will be filled by stack,
+	 * and when over the address of "_start", segmentation fault
+	 */
+	.align PGSHIFT
+kernelstack:
+	.space	UPAGES * PAGE_SIZE
+kernelstack_bottom:
+
 	/*
 	 * 3 initial tables (in the following order):
 	 *           L2 for kernel (High addresses)
@@ -1184,23 +1031,10 @@ pagetable_l1_ttbr0:
 	.space	PAGE_SIZE
 pagetable_l0_ttbr0:
 	.space	PAGE_SIZE
-
-#ifdef KSEG_TABLES
 pagetable_kseg:
 	.space	PAGE_SIZE * KSEG_TABLES
-#endif
-
 pagetable_end:
-
-el2_pagetable:
-	.space	PAGE_SIZE
 
 	.globl init_pt_va
 init_pt_va:
 	.quad pagetable		/* XXX: Keep page tables VA */
-
-	.align	4
-initstack:
-	.space	(PAGE_SIZE * 8)	// XXXAARCH64
-initstack_end:
-	.space	PAGE_SIZE

@@ -39,6 +39,8 @@ __KERNEL_RCSID(1, "$NetBSD$");
 
 #include <aarch64/vmparam.h>
 #include <aarch64/machdep.h>
+#include <aarch64/locore.h>
+#include <aarch64/pcb.h>
 
 //XXXAARCH64
 vaddr_t physical_start;
@@ -83,25 +85,13 @@ extern char _end[];
  *               0x0000000000000000  Start of user address space
  */
 vaddr_t
-aarch64_kvminit(void)
+aarch64_kvminit(vaddr_t ksp)
 {
+	struct lwp *l;
+	struct trapframe *tf;
 	psize_t memsize;
 	vaddr_t kernstart, kernend;
 	paddr_t kernstart_phys, kernend_phys;
-
-	printf("_start       = %p\n", _start);
-	printf("etext        = %p\n", etext);
-	printf("__data_start = %p\n", __data_start);
-	printf("_edata       = %p\n", _edata);
-	printf("__bss_start  = %p\n", __bss_start);
-	printf("__bss_end__  = %p\n", __bss_end__);
-	printf("_end         = %p\n", _end);
-
-//	physical_start;
-//	_start
-//	
-//
-//	physical_end;
 
 	kernstart = trunc_page((vaddr_t)_start);
 	kernend = round_page((vaddr_t)_end);
@@ -138,10 +128,15 @@ aarch64_kvminit(void)
 	    VM_FREELIST_DEFAULT);
 
 
-	// XXXAARCH64: allocate ksp and return
-	{
-		static char ksp[1024 * 8];
-		return ksp;
-	}
-}
 
+	uvm_lwp_setuarea(&lwp0, ksp);
+
+	l = &lwp0;
+	tf = (struct trapframe *)(ksp + USPACE) - 1;
+	memset(tf, 0, sizeof(struct trapframe));
+	memset(lwp_getpcb(l), 0, sizeof(struct pcb));
+	memset(&l->l_md, 0, sizeof(l->l_md));
+	l->l_md.md_utf = l->l_md.md_ktf = tf;
+	tf->tf_spsr = SPSR_M_EL0T;
+	return (vaddr_t)tf;
+}

@@ -29,15 +29,6 @@
 #ifndef _AARCH64_MACHDEP_H_
 #define _AARCH64_MACHDEP_H_
 
-/* Define SP_EL1 stack sizes in pages */
-#ifndef EL1_STACK_SIZE
-#ifdef IPKDB
-#define EL1_STACK_SIZE	2
-#else /* IPKDB */
-#define EL1_STACK_SIZE	1
-#endif /* IPKDB */
-#endif /* EL1_STACK_SIZE */
-
 extern paddr_t physical_start;
 extern paddr_t physical_end;
 
@@ -50,11 +41,10 @@ extern char *booted_kernel;
 void dumpsys(void);
 
 /* from aarch64_kvminit.c */
-vaddr_t aarch64_kvminit(void);
+vaddr_t aarch64_kvminit(vaddr_t);
 
 
 /* from aarch64/cpu_machdep.c */
 void dosoftints(void);
-vaddr_t cpu_proc0_init(vaddr_t);
 
 #endif /* _AARCH64_MACHDEP_H_ */

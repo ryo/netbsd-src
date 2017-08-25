@@ -97,24 +97,6 @@ cpu_startup(void)
 	bus_space_mallocok();
 }
 
-vaddr_t
-cpu_proc0_init(vaddr_t ksp)
-{
-	struct lwp *l;
-	struct trapframe *tf;
-
-	uvm_lwp_setuarea(&lwp0, ksp);
-
-	l = &lwp0;
-	tf = (struct trapframe *)(ksp + USPACE) - 1;
-	memset(tf, 0, sizeof(struct trapframe));
-	memset(lwp_getpcb(l), 0, sizeof(struct pcb));
-	memset(&l->l_md, 0, sizeof(l->l_md));
-	l->l_md.md_utf = l->l_md.md_ktf = tf;
-	tf->tf_spsr = SPSR_M_EL0T;
-	return (vaddr_t)tf;
-}
-
 void
 cpu_dumpconf(void)
 {
