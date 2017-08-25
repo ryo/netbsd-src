@@ -90,7 +90,6 @@ file	arch/aarch64/aarch64/pmap.c
 #file	uvm/pmap/pmap_pv.c
 
 file	arch/aarch64/aarch64/aarch64_machdep.c
-file	arch/aarch64/aarch64/aarch64_kvminit.c
 file	arch/aarch64/aarch64/aarch64_reboot.c
 #file	arch/aarch64/aarch64/cctr_machdep.c
 file	arch/aarch64/aarch64/core_machdep.c
