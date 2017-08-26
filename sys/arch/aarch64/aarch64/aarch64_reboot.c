@@ -167,7 +167,7 @@ docpureset(int howto)
 		(*cpu_reset_address)();
 
 	for (;;)
-		asm("hlt #0xffff");
+		asm("wfi");
 
 	/*NOTREACHED*/
 }
