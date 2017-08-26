@@ -60,7 +60,7 @@ struct vm_map *phys_map;
 vaddr_t physical_start;
 vaddr_t physical_end;
 
-extern char _start[];
+extern char __kernel_text[];
 extern char etext[];
 extern char __data_start[], _edata[];
 extern char __bss_start[], __bss_end__[];
@@ -76,7 +76,7 @@ extern char lwp0uspace[];
  *               0xffffffc00???????  End of kernel
  *                                   = _end[]
  *               0xffffffc000??????  Start of kernel
- *                                   = _start[]
+ *                                   = __kernel_text[]
  *
  *               0xffffffc000000000  Kernel base address & start of KVA
  *                                   = VM_MIN_KERNEL_ADDRESS
@@ -106,7 +106,7 @@ initarm64()
 	vaddr_t kernstart, kernend;
 	paddr_t kernstart_phys, kernend_phys;
 
-	kernstart = trunc_page((vaddr_t)_start);
+	kernstart = trunc_page((vaddr_t)__kernel_text);
 	kernend = round_page((vaddr_t)_end);
 	kernstart_phys = kernstart - VM_MIN_KERNEL_ADDRESS;
 	kernend_phys = kernend - VM_MIN_KERNEL_ADDRESS;
