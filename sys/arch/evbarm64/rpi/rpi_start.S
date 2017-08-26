@@ -40,10 +40,6 @@
 
 RCSID("$NetBSD$")
 
-#define __LOWEST_SET_BIT(__mask) ((((__mask) - 1) & (__mask)) ^ (__mask))
-#define __SHIFTOUT(__x, __mask) (((__x) & (__mask)) / __LOWEST_SET_BIT(__mask))
-#define __SHIFTIN(__x, __mask) ((__x) * __LOWEST_SET_BIT(__mask))
-
 //XXXAARCH64
 #define AUX_MU_IO_REG	0x3f215040	/* Mini Uart I/O Data (8bit) */
 #define AUX_MU_LSR_REG	0x3f215054	/* Mini Uart Line Status (8bit) */
@@ -52,8 +48,16 @@ RCSID("$NetBSD$")
 #define COM_LSR			AUX_MU_LSR_REG
 #define COM_LSR_TXFE_BIT	5	/* Transmit fifo empty */
 
-#define PRINT(string)	stp x0,lr,[sp,#-16]!;bl xprint;.asciz string;.align 2;ldp x0,lr,[sp],#16
+#define LOCORE_EL2
+#define VIRT_BIT	48
 
+#define MEMATTR_DEVICE		0
+#define MEMATTR_NORMAL_NC	1
+#define MEMATTR_NORMAL_WB	2
+#define MEMATTR_NORMAL_WT	3
+
+
+#define PRINT(string)	stp x0,lr,[sp,#-16]!;bl xprint;.asciz string;.align 2;ldp x0,lr,[sp],#16
 
 #define VERBOSE_LOCORE
 //#define DEBUG_LOCORE
@@ -65,29 +69,19 @@ RCSID("$NetBSD$")
 #endif
 
 
-#define LOCORE_EL2
-#define VIRT_BIT	48
-#define DEVICE_MEM	0
-#define NORMAL_UNCACHED	1
-#define NORMAL_MEM	2
+#ifdef MULTIPROCESSOR
+#error MULTIPROCESSOR NOT SUPPORTED YET
+#endif
 
-/*
- * We assume:
- *  MMU      on with an identity map, or off
- *  D-Cache: off
- *  I-Cache: on or off
- *  We are loaded at a 2MiB aligned address
- */
-
-	.text
-	.global _start
-_start:
+	.global _ASM_LABEL(start)
+_ASM_LABEL(start):
 	stp	x0, lr, [sp, #-16]!
 
-#ifdef VERBOSE_LOCORE
+#ifdef DEBUG_LOCORE
 	mov	x9, x0		// save x0
 
 	mrs	x0, CurrentEL
+	lsr	x0, x0, #2
 	PRINT("CurrentEL=")
 	bl	print_x0
 
@@ -135,72 +129,48 @@ _start:
 	PRINT("X5=")
 	mov	x0, x5
 	bl	print_x0
+
+
+	PRINT("ID_AA64MMFR0_EL1=")
+	mrs	x0, id_aa64mmfr0_el1
+	bl	print_x0
+
+	PRINT("ID_AA64MMFR1_EL1=")
+	mrs	x0, id_aa64mmfr1_el1
+	bl	print_x0
 #endif
 
 
 #ifdef LOCORE_EL2
-	VERBOSE("Drop to EL1\r\n")
+	VERBOSE("Drop to EL1...")
 #include "aarch64/aarch64/locore_el2.S"
-	VERBOSE("Drop to EL1 DONE\r\n")
+	VERBOSE("OK\r\n")
 
-#ifdef VERBOSE_LOCORE
+#ifdef DEBUG_LOCORE
 	mrs	x0, CurrentEL
+	lsr	x0, x0, #2
 	PRINT("CurrentEL=")
 	bl	print_x0
 #endif
 
 #endif /* LOCORE_EL2 */
 
+	bl	mmu_disable
 
-	/* disable MMU */
-	dsb	sy
-	mrs	x0, sctlr_el1
-	bic	x0, x2, SCTLR_M		/* clear MMU enable bit */
-	msr	sctlr_el1, x0
-	isb
+	bl	arm_boot_l0pt_init
 
-	/* Set the context id = 0*/
-	msr	contextidr_el1, xzr
-
-
-	VERBOSE("Create pagetables\r\n")
-
-	/* Create the page tables */
-	bl	create_pagetables
-
-	VERBOSE("Create pagetables done\r\n")
-
-	/*
-	 * At this point:
-	 * x27 = TTBR0 table
-	 * x26 = Kernel L1 table
-	 * x24 = TTBR1 table
-	 */
-
-	VERBOSE("MMU Enable...\r\n")
-	bl	start_mmu
+	VERBOSE("MMU Enable...")
+	bl	mmu_enable
 
 	/* change UART address from 0x3f215040 to 0xffff00003f215040 */
 	bl	uart_change_to_directmap
+	VERBOSE("OK\r\n")
 
-	VERBOSE("MMU Enabled!\r\n")
+	msr	contextidr_el1, xzr
 
-
-	VERBOSE("Load the exception vectors\r\n")
+	/* set exception vector */
 	ldr	x2, =el1_vectors	# el1_vectors is in kva
 	msr	vbar_el1, x2
-
-#if 0
-	/* address translation test */
-	PRINT("L_COM_DATA(V): ")
-	ldr	x0, L_COM_DATA
-	bl	print_x0
-
-	at	s1e1rql, x0
-	mrs	x0, par_el1
-	PRINT("L_COM_DATA(P): ")
-	bl	print_x0
-#endif
 
 #ifdef DEBUG_LOCORE
 	mrs	x0, spsr_el1
@@ -221,52 +191,49 @@ start_done:
 	ldp	x0, lr, [sp], #16
 	ret
 
-#
-# vstart is in kernel virtual address
-#
+/*
+ * vstart is in kernel virtual address
+ */
 vstart:
 	adr	x0, kernelstack_bottom
 	mov	sp, x0
 
-#ifdef VERBOSE_LOCORE
+#ifdef DEBUG_LOCORE
 	PRINT("SP=")
 	mov	x0, sp
 	bl	print_x0
 #endif
 
 	/* Zero the BSS */
-	ldr	x15, .Lbss
-	ldr	x14, .Lend
-1:	str	xzr, [x15], #8
-	cmp	x15, x14
-	b.lo	1b
+	ldr	x0, .Lbss
+	ldr	x1, .Lend
+1:	stp	xzr, xzr, [x0], #16
+	cmp	x0, x1
+	blt	1b
 
-	VERBOSE("set_cpuinfo\r\n")
 	bl	set_cpuinfo
 
-	mov	fp, #0		/* trace back starts here */
+	mov	fp, #0			/* trace back starts here */
+	bl	_C_LABEL(initarm)	/* Off we go */
+	bl	_C_LABEL(main)		/* call main()! */
 
-	VERBOSE("call initarm()\r\n")
-	bl	_C_LABEL(initarm)
+	adr	x0, .Lmainreturned
+	b	_C_LABEL(panic)
+	/* NOTREACHED */
 
-	bl	_C_LABEL(main)
-
-	/* We should not get here */
-	brk	0
+.Lmainreturned:
+	.asciz	"main() returned"
 
 	.align 3
 .Lvstart:
 	.quad	vstart
-.Lstart:
-	.quad	_start
+.Lkernel_text:
+	.global	__kernel_text
+	.quad	__kernel_text
 .Lbss:
 	.quad	__bss_start
 .Lend:
 	.quad	_end
-
-#ifdef MULTIPROCESSOR
-#error MULTIPROCESSOR NOT SUPPORTED YET
-#endif
 
 /*
  * xprint - print strings pointed by $PC(LR)
@@ -330,18 +297,16 @@ _C_LABEL(print_x0):
 	ret
 END(_C_LABEL(print_x0))
 
-print_x11:
+printn_x1:
 	stp	x0, lr, [sp, #-16]!
-	PRINT("x11=")
-	mov	x0, x11
+	mov	x0, x1
 	bl	_print_x0
 	ldp	x0, lr, [sp], #16
 	ret
 
-print_x13:
+print_x2:
 	stp	x0, lr, [sp, #-16]!
-	PRINT("x13=")
-	mov	x0, x13
+	mov	x0, x2
 	bl	_print_x0
 	PRINT("\r\n")
 	ldp	x0, lr, [sp], #16
@@ -460,481 +425,230 @@ set_cpuinfo:
 	cmp	x1, #MAXCPUS
 	b.ge	arm_cpuinit_too_many_cpu
 
-#ifdef MULTIPROCESSOR
 	ldr	x0, .Lcpu_info
 	ldr	x0, [x0, x1, lsl #3]	/* x0 = cpu_info[cpuid] */
-#else
-	ldr	x0, .Lcpu_info_store	/* x0 = &cpu_info_store */
-#endif
 	msr	tpidr_el1, x0		/* tpidr_el1 = my cpu info */
+	str	x1, [x0, #CI_CPUID]	/* ci->ci_cpuid = CPUID */
+
 	ret
 
 arm_cpuinit_too_many_cpu:
-	PRINT("Too many CPU: MPIDR_EL1=")
+	PRINT("Too many CPUs: MPIDR_EL1=")
 	mrs	x0, mpidr_el1
 	bl	print_x0
-1:	hlt	#0xffff
+1:	wfi
 	b	1b
 	ret
 
-#ifdef MULTIPROCESSOR
 .Lcpu_info:
-	.quad	_C_LABEL(cpu_info)
-#endif
-.Lcpu_info_store:
-	.quad	_C_LABEL(cpu_info_store)
+	.quad	_C_LABEL(cpu_info)	/* cpu_info[] */
 
-/*
- * This builds the page tables containing the identity map, and the kernel
- * virtual map.
- *
- * It relys on:
- *  We were loaded to an address that is on a 2MiB boundary
- *  All the memory must not cross a 1GiB boundaty
- *
- * TODO: This is out of date.
- *  There are at least 5 pages before that address for the page tables
- *   The pages used are:
- *    - The Kernel L2 table
- *    - The Kernel L1 table
- *    - The Kernel L0 table             (TTBR1)
- *    - The identity (PA = VA) L1 table
- *    - The identity (PA = VA) L0 table (TTBR0)
- *    - The KSEG L1 tables
- */
-create_pagetables:
-	/* Save the Link register */
-	mov	x5, x30
 
-	/* Clean the page table */
-	adr	x6, pagetable
-	mov	x26, x6
-	adr	x27, pagetable_end
-1:
-	stp	xzr, xzr, [x6], #16
-	stp	xzr, xzr, [x6], #16
-	stp	xzr, xzr, [x6], #16
-	stp	xzr, xzr, [x6], #16
-	cmp	x6, x27
-	b.lo	1b
+arm_boot_l0pt_init:
+	stp	x0, lr, [sp, #-16]!
 
-	/*
-	 * Build the TTBR1 maps.
-	 */
-	VERBOSE("Build the TTBR1 maps\r\n")
+	VERBOSE("Creating VA=PA tables\r\n")
+	/* VA=PA table for L0 */
+	adr	x0, ttbr0_l0table
+	mov	x1, #0
+	adr	x2, ttbr0_l1table
+	bl	l0_settable
+
+	/* VA=PA blocks */
+	adr	x0, ttbr0_l1table
+	mov	x1, #0			/* PA */
+	mov	x2, #0			/* VA */
+	mov	x3, MEMATTR_DEVICE	/* including UART */
+	mov	x4, #4			/* 4GB = whole 32bit */
+	bl	l1_setblocks
+
+	VERBOSE("Creating KSEG tables\r\n")
+	/* KSEG table for L0 */
+	adr	x0, ttbr1_l0table
+	mov	x1, #AARCH64_KSEG_START
+	adr	x2, ttbr1_l1table_kseg
+	bl	l0_settable
+
+	/* KSEG blocks */
+	adr	x0, ttbr1_l1table_kseg
+	mov	x1, #AARCH64_KSEG_START
+	adr	x2, #0
+	mov	x3, MEMATTR_DEVICE	/* for devices */
+	mov	x4, #Ln_ENTRIES		/* whole l1 table */
+	bl	l1_setblocks
+
+	VERBOSE("Creating KVA=PA tables\r\n")
+	/* KVA=PA table for L0 */
+	adr	x0, ttbr1_l0table
+	mov	x1, #VM_MIN_KERNEL_ADDRESS
+	adr	x2, ttbr1_l1table_kva
+	bl	l0_settable
+
+	/* KVA=PA table for L1 */
+	adr	x0, ttbr1_l1table_kva
+	mov	x1, #VM_MIN_KERNEL_ADDRESS
+	adr	x2, ttbr1_l2table_kva
+	bl	l1_settable
+
+	/* KVA=PA blocks */
+	adr	x0, ttbr1_l2table_kva
+	ldr	x2, .Lkernel_text	/* physical addr. before MMU */
+	and	x2, x2, #L2_BLK_OA	/* L2 block size aligned (2MB) */
+	mov	x1, #VM_MIN_KERNEL_ADDRESS
+	add	x1, x1, x2		/* add kernel load address */
+	mov	x3, MEMATTR_NORMAL_WB
 
 	/* kernelsize = _end - _start */
-	ldr	x10, .Lend
-	ldr	x0, .Lstart
-	sub	x10, x10, x0
+	ldr	x4, .Lend
+	ldr	x5, .Lkernel_text
+	sub	x4, x4, x5
 
-	/* round up kernelsize to L2_SIZE */
-	add	x10, x10, #L2_SIZE
-	sub	x10, x10, #1
-	lsr	x10, x10, #L2_SHIFT
+	/* round up kernelsize to L2_SIZE (2MB) */
+	add	x4, x4, #L2_SIZE
+	sub	x4, x4, #1
+	lsr	x4, x4, #L2_SHIFT
+	bl	l2_setblocks
 
-	VERBOSE("Create the kernel space L2 table\r\n")
-
-	# Create the kernel space L2 table
-	mov	x6, x26
-	mov	x7, #NORMAL_MEM
-
-	# VA start
-	mov	x8, #(VM_MIN_KERNEL_ADDRESS & L2_BLOCK_MASK)
-
-	# PA start
-	adr	x9, _start
-	and	x9, x9, #L2_BLOCK_MASK
-
-	# kernel image load physical address is   0x???00000-
-	# kernel virtual address space is 0xffffffc000000000-
-	# kernel virtual address start is 0xffffffc0???00000-
-	add	x8, x8, x9
-
-	bl	build_l2_block_pagetable
-
-	VERBOSE("Move to the l1 table\r\n")
-
-	/* Move to the l1 table */
-	add	x26, x26, #PAGE_SIZE
-
-	/* Link the l1 -> l2 table */
-	mov	x9, x6
-	mov	x6, x26
-	bl	link_l1_pagetable
-
-	VERBOSE("Move to the l0 table\r\n")
-
-	/* Move to the l0 table */
-	add	x24, x26, #PAGE_SIZE
-
-	/* Link the l0 -> l1 table */
-	mov	x9, x6
-	mov	x6, x24
-	mov	x10, #1
-	bl	link_l0_pagetable
-
-
-
-	VERBOSE("Create KSEG maps\r\n")
-
-	/* Link the KSEG tables */
-	ldr	x8, =AARCH64_KSEG_START
-	adr	x9, pagetable_kseg
-#define KSEG_TABLES		1	// XXXAARCH64
-	mov	x10, #KSEG_TABLES
-	bl	link_l0_pagetable
-
-	VERBOSE("Create KSEG L1 table\r\n")
-	adr	x6, pagetable_kseg
-	mov	x7, #DEVICE_MEM
-	mov	x9, #0
-	mov	x8, #0
-	mov	x10, #32		// XXXAARCH64
-	bl	build_l1_block_pagetable
-
-
-	VERBOSE("Build the TTBR0 maps\r\n")
-
-	/*
-	 * Build the TTBR0 maps.
-	 */
-	add	x27, x24, #PAGE_SIZE
-
-	mov	x6, x27		/* The initial page table */
-#if defined(SOCDEV_PA) && defined(SOCDEV_VA)
-	/* Create a table for the UART */
-	mov	x7, #DEVICE_MEM
-	mov	x8, #(SOCDEV_VA)	/* VA start */
-	mov	x9, #(SOCDEV_PA)	/* PA start */
-	mov	x10, #1
-	bl	build_l1_block_pagetable
-#endif
-
-	VERBOSE("Create the VA = PA map\r\n")
-
-	/* Create the VA = PA map */
-#if 0
-	mov	x7, #NORMAL_UNCACHED /* Uncached as it's only needed early on */
-#else
-	mov	x7, #DEVICE_MEM		// XXXAARCH64: need because include device address
-#endif
-	mov	x9, x27
-	mov	x8, x9		/* VA start (== PA start) */
-	mov	x10, #1
-#if 1
-	mov	x10, #4		// XXXAARCH64: 0x00000000-0xffffffff
-#endif
-	bl	build_l1_block_pagetable
-
-	VERBOSE("Move to the l0 table\r\n")
-
-	/* Move to the l0 table */
-	add	x27, x27, #PAGE_SIZE
-
-	/* Link the l0 -> l1 table */
-	mov	x9, x6
-	mov	x6, x27
-	mov	x10, #1
-	bl	link_l0_pagetable
-
-	/* Restore the Link register */
-	mov	x30, x5
+	ldp	x0, lr, [sp], #16
 	ret
 
 /*
- * Builds an L0 -> L1 table descriptor
- *
- * This is a link for a 512GiB block of memory with up to 1GiB regions mapped
- * within it by build_l1_block_pagetable.
- *
- *  x6  = L0 table
- *  x8  = Virtual Address
- *  x9  = L1 PA (trashed)
- *  x10 = Entry count
- *  x11, x12 and x13 are trashed
+ *	x0 = l0table
+ *	x1 = vaddr
+ *	x2 = l1table
  */
-link_l0_pagetable:
-#ifdef DEBUG_LOCORE
+l0_settable:
 	stp	x0, lr, [sp, #-16]!
 
-	PRINT("========link_l0_pagetable\r\n")
-
-	mov	x0, x6
-	PRINT("L0 table       (x6) =")
-	bl	print_x0
-
-	mov	x0, x8
-	PRINT("Virtual Address(x8) =")
-	bl	print_x0
-
-	mov	x0, x9
-	PRINT("L1 PA          (x9) =")
-	bl	print_x0
-
-	mov	x0, x10
-	PRINT("Entry count    (x10)=")
-	bl	print_x0
-#endif /* DEBUG_LOCORE */
-
-	/*
-	 * Link an L0 -> L1 table entry.
-	 */
-	/* Find the table index */
-	lsr	x11, x8, #L0_SHIFT
-	and	x11, x11, #L0_ADDR_MASK
-
-	/* Build the L0 block entry */
-	mov	x12, #L0_TABLE
-
-	/* Only use the output address bits */
-	lsr	x9, x9, #PGSHIFT
-1:	orr	x13, x12, x9, lsl #PGSHIFT
+	and	x2, x2, #~PAGE_MASK
+	orr	x2, x2, #L0_TABLE
+	and	x1, x1, #L0_ADDR_BITS
+	lsr	x1, x1, #L0_SHIFT
+	str	x2, [x0, x1, lsl #3]	/* l0table[x1] = x2 */
 
 #ifdef DEBUG_LOCORE
 	PRINT("L0 entry[")
-	bl	print_x11
+	bl printn_x1
 	PRINT("]=")
-	bl	print_x13
-#endif /* DEBUG_LOCORE */
+	bl print_x2
+#endif
 
-	/* Store the entry */
-	str	x13, [x6, x11, lsl #3]
-
-	sub	x10, x10, #1
-	add	x11, x11, #1
-	add	x9, x9, #1
-	cbnz	x10, 1b
-
-#ifdef DEBUG_LOCORE
 	ldp	x0, lr, [sp], #16
-#endif /* DEBUG_LOCORE */
 	ret
 
 /*
- * Builds an L1 -> L2 table descriptor
- *
- * This is a link for a 1GiB block of memory with up to 2MiB regions mapped
- * within it by build_l2_block_pagetable.
- *
- *  x6  = L1 table
- *  x8  = Virtual Address
- *  x9  = L2 PA (trashed)
- *  x11, x12 and x13 are trashed
+ *	x0 = l1table
+ *	x1 = vaddr
+ *	x2 = paddr
+ *	x3 = type
+ *	x4 = N entries
  */
-link_l1_pagetable:
-#ifdef DEBUG_LOCORE
+l1_setblocks:
 	stp	x0, lr, [sp, #-16]!
 
-	PRINT("========link_l1_pagetable\r\n")
+	and	x2, x2, #L1_ADDR_BITS
+	orr	x2, x2, #L1_BLOCK
+	lsl	x3, x3, #LX_BLKPAG_ATTR_INDX_SHIFT
+	orr	x2, x2, x3
+	orr	x2, x2, #LX_BLKPAG_AF
+#ifdef MULTIPROCESSOR
+	orr	x2, x2, ATTR_SH(ATTR_SH_IS)
+#endif
+	and	x1, x1, #L1_ADDR_BITS
+	lsr	x1, x1, #L1_SHIFT
+1:
+	str	x2, [x0, x1, lsl #3]	/* l1table[x1] = x2 */
+#ifdef DEBUG_LOCORE
+	PRINT("L1 entry[")
+	bl printn_x1
+	PRINT("]=")
+	bl print_x2
+#endif
+	mov	x3, #L1_SIZE
+	add	x2, x2, x3
+	add	x1, x1, #1
+	subs	x4, x4, #1
+	bne	1b
 
-	mov	x0, x6
-	PRINT("L1 table       (x6) =")
-	bl	print_x0
+	ldp	x0, lr, [sp], #16
+	ret
 
-	mov	x0, x8
-	PRINT("VA             (x8) =")
-	bl	print_x0
+/*
+ *	x0 = l1table
+ *	x1 = vaddr
+ *	x2 = l2table
+ */
+l1_settable:
+	stp	x0, lr, [sp, #-16]!
 
-	mov	x0, x9
-	PRINT("PA             (x9) =")
-	bl	print_x0
-#endif /* DEBUG_LOCORE */
-
-	/*
-	 * Link an L1 -> L2 table entry.
-	 */
-	/* Find the table index */
-	lsr	x11, x8, #L1_SHIFT
-	and	x11, x11, #Ln_ADDR_MASK
-
-	/* Build the L1 block entry */
-	mov	x12, #L1_TABLE
-
-	/* Only use the output address bits */
-	lsr	x9, x9, #PGSHIFT
-	orr	x13, x12, x9, lsl #PGSHIFT
+	and	x2, x2, #~PAGE_MASK
+	orr	x2, x2, #L1_TABLE
+	and	x1, x1, #L1_ADDR_BITS
+	lsr	x1, x1, #L1_SHIFT
+	str	x2, [x0, x1, lsl #3]	/* l1table[x1] = x2 */
 
 #ifdef DEBUG_LOCORE
 	PRINT("L1 entry[")
-	bl	print_x11
+	bl printn_x1
 	PRINT("]=")
-	bl	print_x13
-#endif /* DEBUG_LOCORE */
-
-	/* Store the entry */
-	str	x13, [x6, x11, lsl #3]
-
-#ifdef DEBUG_LOCORE
-	ldp	x0, lr, [sp], #16
+	bl print_x2
 #endif
+
+	ldp	x0, lr, [sp], #16
 	ret
 
 /*
- * Builds count 1 GiB page table entry
- *  x6  = L1 table
- *  x7  = Type (0 = Device, 1 = Normal)
- *  x8  = VA start
- *  x9  = PA start (trashed)
- *  x10 = Entry count
- *  x11, x12 and x13 are trashed
+ *	x0 = l2table
+ *	x1 = vaddr
+ *	x2 = paddr
+ *	x3 = type
+ *	x4 = N entries
  */
-build_l1_block_pagetable:
-#ifdef DEBUG_LOCORE
+l2_setblocks:
 	stp	x0, lr, [sp, #-16]!
 
-	PRINT("========build_l1_block_pagetable (1G)\r\n")
-
-	mov	x0, x6
-	PRINT("L1 table       (x6) =")
-	bl	print_x0
-
-	mov	x0, x7
-	PRINT("Type           (x7) =")
-	bl	print_x0
-
-	mov	x0, x8
-	PRINT("VA start       (x8) =")
-	bl	print_x0
-
-	mov	x0, x9
-	PRINT("PA start       (x9) =")
-	bl	print_x0
-
-	mov	x0, x10
-	PRINT("Entry count    (x10)=")
-	bl	print_x0
-#endif /* DEBUG_LOCORE */
-
-	/*
-	 * Build the L1 table entry.
-	 */
-	/* Find the table index */
-	lsr	x11, x8, #L1_SHIFT
-	and	x11, x11, #Ln_ADDR_MASK
-
-	/* Build the L1 block entry */
-	lsl	x12, x7, #2
-	orr	x12, x12, #L1_BLOCK
-	orr	x12, x12, #L1_BLK_AF
+	and	x2, x2, #L2_ADDR_BITS
+	orr	x2, x2, #L2_BLOCK
+	lsl	x3, x3, #LX_BLKPAG_ATTR_INDX_SHIFT
+	orr	x2, x2, x3
+	orr	x2, x2, #LX_BLKPAG_AF
 #ifdef MULTIPROCESSOR
-	orr	x12, x12, ATTR_SH(ATTR_SH_IS)
+	orr	x2, x2, ATTR_SH(ATTR_SH_IS)
 #endif
-
-	/* Only use the output address bits */
-	lsr	x9, x9, #L1_SHIFT
-
-	/* Set the physical address for this virtual address */
-1:	orr	x13, x12, x9, lsl #L1_SHIFT
-
-#ifdef DEBUG_LOCORE
-	PRINT("L1 entry[")
-	bl	print_x11
-	PRINT("]=")
-	bl	print_x13
-#endif /* DEBUG_LOCORE */
-
-	/* Store the entry */
-	str	x13, [x6, x11, lsl #3]
-
-	sub	x10, x10, #1
-	add	x11, x11, #1
-	add	x9, x9, #1
-	cbnz	x10, 1b
-
-#ifdef DEBUG_LOCORE
-	ldp	x0, lr, [sp], #16
-#endif /* DEBUG_LOCORE */
-	ret
-
-/*
- * Builds count 2 MiB page table entry
- *  x6  = L2 table
- *  x7  = Type (0 = Device, 1 = Normal)
- *  x8  = VA start
- *  x9  = PA start (trashed)
- *  x10 = Entry count
- *  x11, x12 and x13 are trashed
- */
-build_l2_block_pagetable:
-#ifdef DEBUG_LOCORE
-	stp	x0, lr, [sp, #-16]!
-
-	PRINT("========build_l2_block_pagetable (2M)\r\n")
-
-	mov	x0, x6
-	PRINT("L2 table   (x6) =")
-	bl	print_x0
-
-	mov	x0, x7
-	PRINT("TYPE       (x7) =")
-	bl	print_x0
-
-	mov	x0, x8
-	PRINT("VA start   (x8) =")
-	bl	print_x0
-
-	mov	x0, x9
-	PRINT("PA start   (x9) =")
-	bl	print_x0
-
-	mov	x0, x10
-	PRINT("Entry count(x10)=")
-	bl	print_x0
-#endif /* DEBUG_LOCORE */
-
-	/*
-	 * Build the L2 table entry.
-	 */
-	/* Find the table index */
-	lsr	x11, x8, #L2_SHIFT
-	and	x11, x11, #Ln_ADDR_MASK
-
-	/* Build the L2 block entry */
-	lsl	x12, x7, #2
-	orr	x12, x12, #L2_BLOCK
-	orr	x12, x12, #L2_BLKPAG_AF
-#ifdef MULTIPROCESSOR
-	orr	x12, x12, ATTR_SH(ATTR_SH_IS)
-#endif
-
-	/* Only use the output address bits */
-	lsr	x9, x9, #L2_SHIFT
-
-	/* Set the physical address for this virtual address */
-1:	orr	x13, x12, x9, lsl #L2_SHIFT
-
+	and	x1, x1, #L2_ADDR_BITS
+	lsr	x1, x1, #L2_SHIFT
+1:
+	str	x2, [x0, x1, lsl #3]	/* l2table[x1] = x2 */
 #ifdef DEBUG_LOCORE
 	PRINT("L2 entry[")
-	bl	print_x11
+	bl printn_x1
 	PRINT("]=")
-	bl	print_x13
-#endif /* DEBUG_LOCORE */
-
-	/* Store the entry */
-	str	x13, [x6, x11, lsl #3]
-
-	sub	x10, x10, #1
-	add	x11, x11, #1
-	add	x9, x9, #1
-	cbnz	x10, 1b
-
-#ifdef DEBUG_LOCORE
-	ldp	x0, lr, [sp], #16
+	bl print_x2
 #endif
+	mov	x3, #L2_SIZE
+	add	x2, x2, x3
+	add	x1, x1, #1
+	subs	x4, x4, #1
+	bne	1b
+
+	ldp	x0, lr, [sp], #16
 	ret
 
+mmu_disable:
+	dsb	sy
+	mrs	x0, sctlr_el1
+	bic	x0, x2, SCTLR_M		/* clear MMU enable bit */
+	msr	sctlr_el1, x0
+	isb
+	ret
 
-/*
- * x27 = TTBR0 table
- * x24 = TTBR1 table
-*/
-start_mmu:
+mmu_enable:
 	dsb	sy
 
-	/* Load ttbr0 and ttbr1 */
-	msr	ttbr0_el1, x27
-	msr	ttbr1_el1, x24
+	adr	x0, ttbr0_l0table
+	msr	ttbr0_el1, x0
+	adr	x0, ttbr1_l0table
+	msr	ttbr1_el1, x0
 	isb
 
 	/* Clear the Monitor Debug System control register */
@@ -943,28 +657,31 @@ start_mmu:
 	/* Invalidate the TLB */
 	tlbi	vmalle1is
 
-	ldr	x2, mair
-	msr	mair_el1, x2
+	ldr	x0, mair
+	msr	mair_el1, x0
 
 	/*
 	 * Setup TCR according to PARange bits from ID_AA64MMFR0_EL1.
 	 */
-	ldr	x2, tcr
-	mrs	x3, id_aa64mmfr0_el1
-	bfi	x2, x3, #32, #3
-	msr	tcr_el1, x2
+	ldr	x0, tcr
+#ifdef MULTIPROCESSOR
+	ldr	x1, tcr_inner_shareable
+	orr	x0, x0, x1
+#endif
+	mrs	x1, id_aa64mmfr0_el1
+	bfi	x0, x1, #32, #3
+	msr	tcr_el1, x0
 
 	/* Setup SCTLR */
-	ldr	x2, sctlr_set
-	ldr	x3, sctlr_clear
-	mrs	x1, sctlr_el1
-	bic	x1, x1, x3	/* Clear the required bits */
-	orr	x1, x1, x2	/* Set the required bits */
-	msr	sctlr_el1, x1
+	ldr	x1, sctlr_set
+	ldr	x2, sctlr_clear
+	mrs	x0, sctlr_el1
+	bic	x0, x0, x2	/* Clear the required bits */
+	orr	x0, x0, x1	/* Set the required bits (enabling MMU!) */
+	msr	sctlr_el1, x0
 	isb
 
 	ret
-
 
 	.align 3
 mair:
@@ -975,20 +692,6 @@ mair:
 		MAIR_ATTR(MAIR_NORMAL_WT, 3)
 
 tcr:
-#ifdef MULTIPROCESSOR
-	.quad (						\
-	    __SHIFTIN(64 - VIRT_BIT, TCR_T1SZ) |	\
-	    __SHIFTIN(64 - VIRT_BIT, TCR_T0SZ) |	\
-	    TCR_AS64K |					\
-	    __SHIFTIN(TCR_TG_4KB, TCR_TG1) |		\
-	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_ORGN0) |	\
-	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_IRGN0) |	\
-	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_ORGN1) |	\
-	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_IRGN1) |	\
-	    /* for MULTIPROCESSOR */			\
-	    __SHIFTIN(TCR_SH_INNER, TCR_SH0) |		\
-	    __SHIFTIN(TCR_SH_INNER, TCR_SH1))
-#else
 	.quad (						\
 	    __SHIFTIN(64 - VIRT_BIT, TCR_T1SZ) |	\
 	    __SHIFTIN(64 - VIRT_BIT, TCR_T0SZ) |	\
@@ -998,6 +701,12 @@ tcr:
 	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_IRGN0) |	\
 	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_ORGN1) |	\
 	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_IRGN1))
+
+#ifdef MULTIPROCESSOR
+tcr_inner_shareable:
+	.quad (						\
+	    __SHIFTIN(TCR_SH_INNER, TCR_SH0) |		\
+	    __SHIFTIN(TCR_SH_INNER, TCR_SH1))
 #endif
 
 sctlr_set:
@@ -1022,27 +731,24 @@ _C_LABEL(lwp0uspace):
 kernelstack_bottom:
 	.space	TF_SIZE
 
-	/*
-	 * 3 initial tables (in the following order):
-	 *           L2 for kernel (High addresses)
-	 *           L1 for kernel
-	 *           L1 for user   (Low addresses)
-	 */
 	.align PGSHIFT
-pagetable:
+/*
+ * PA == VA mapping using L1 1G block (whole 32bit)
+ */
+ttbr0_l0table:
 	.space	PAGE_SIZE
-pagetable_l1_ttbr1:
+ttbr0_l1table:
 	.space	PAGE_SIZE
-pagetable_l0_ttbr1:
-	.space	PAGE_SIZE
-pagetable_l1_ttbr0:
-	.space	PAGE_SIZE
-pagetable_l0_ttbr0:
-	.space	PAGE_SIZE
-pagetable_kseg:
-	.space	PAGE_SIZE * KSEG_TABLES
-pagetable_end:
 
-	.globl init_pt_va
-init_pt_va:
-	.quad pagetable		/* XXX: Keep page tables VA */
+/*
+ * KVA  => PA mapping using L2 2MB block (kernelsize)
+ * KSEG => PA mapping using L1 1GB block * 512
+ */
+ttbr1_l0table:
+	.space	PAGE_SIZE
+ttbr1_l1table_kseg:
+	.space	PAGE_SIZE
+ttbr1_l1table_kva:
+	.space	PAGE_SIZE
+ttbr1_l2table_kva:
+	.space	PAGE_SIZE
