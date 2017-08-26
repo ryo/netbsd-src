@@ -228,7 +228,6 @@ vstart:
 .Lvstart:
 	.quad	vstart
 .Lkernel_text:
-	.global	__kernel_text
 	.quad	__kernel_text
 .Lbss:
 	.quad	__bss_start
@@ -492,7 +491,7 @@ arm_boot_l0pt_init:
 
 	/* KVA=PA blocks */
 	adr	x0, ttbr1_l2table_kva
-	ldr	x2, .Lkernel_text	/* physical addr. before MMU */
+	adr	x2, start		/* physical addr. before MMU */
 	and	x2, x2, #L2_BLK_OA	/* L2 block size aligned (2MB) */
 	mov	x1, #VM_MIN_KERNEL_ADDRESS
 	add	x1, x1, x2		/* add kernel load address */
@@ -721,7 +720,7 @@ sctlr_clear:
 
 	/*
 	 * Kernel stack overflow, if ever, will destroy lower section
-	 * beyond here until writing "_start" ends up with kernel
+	 * beyond here until writing "start" ends up with kernel
 	 * segfault, hopefully.
 	 */
 	.align PGSHIFT
