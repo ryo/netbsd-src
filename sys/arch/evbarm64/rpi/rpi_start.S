@@ -68,11 +68,6 @@ RCSID("$NetBSD$")
 #define VERBOSE(string)
 #endif
 
-
-#ifdef MULTIPROCESSOR
-#error MULTIPROCESSOR NOT SUPPORTED YET
-#endif
-
 	.global _ASM_LABEL(start)
 _ASM_LABEL(start):
 	stp	x0, lr, [sp, #-16]!
@@ -552,7 +547,7 @@ l1_setblocks:
 	lsl	x3, x3, #LX_BLKPAG_ATTR_INDX_SHIFT
 	orr	x2, x2, x3
 	orr	x2, x2, #LX_BLKPAG_AF
-#ifdef MULTIPROCESSOR
+#if 0 /* def MULTIPROCESSOR */
 	orr	x2, x2, ATTR_SH(ATTR_SH_IS)
 #endif
 	and	x1, x1, #L1_ADDR_BITS
@@ -613,7 +608,7 @@ l2_setblocks:
 	lsl	x3, x3, #LX_BLKPAG_ATTR_INDX_SHIFT
 	orr	x2, x2, x3
 	orr	x2, x2, #LX_BLKPAG_AF
-#ifdef MULTIPROCESSOR
+#if 0 /* def MULTIPROCESSOR */
 	orr	x2, x2, ATTR_SH(ATTR_SH_IS)
 #endif
 	and	x1, x1, #L2_ADDR_BITS
@@ -665,7 +660,7 @@ mmu_enable:
 	 * Setup TCR according to PARange bits from ID_AA64MMFR0_EL1.
 	 */
 	ldr	x0, tcr
-#ifdef MULTIPROCESSOR
+#if 0 /* def MULTIPROCESSOR */
 	ldr	x1, tcr_inner_shareable
 	orr	x0, x0, x1
 #endif
@@ -703,7 +698,7 @@ tcr:
 	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_ORGN1) |	\
 	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_IRGN1))
 
-#ifdef MULTIPROCESSOR
+#if 0 /* def MULTIPROCESSOR */
 tcr_inner_shareable:
 	.quad (						\
 	    __SHIFTIN(TCR_SH_INNER, TCR_SH0) |		\
