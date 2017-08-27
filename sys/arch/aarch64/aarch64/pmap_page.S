@@ -42,7 +42,7 @@ ENTRY(pmap_zero_page)
 	mrs	x2, dczid_el0
 	tbnz	x2, #4, 2f
 
-	mov	x3, #16
+	mov	x3, #4
 	lsl	x3, x3, x2
 
 1:	dc	zva, x0
