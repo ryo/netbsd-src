@@ -99,6 +99,7 @@ define	UPAGES			UPAGES
 define	EFAULT			EFAULT
 
 define	PAGE_SIZE		PAGE_SIZE
+define	PAGE_MASK		PAGE_MASK
 define	PGSHIFT			PGSHIFT
 
 # Important offsets into the lwp and proc structs & associated constants
@@ -174,6 +175,7 @@ define	TF_SIZE			roundup(sizeof(struct trapframe), 16)
 define	CI_CURPRIORITY		offsetof(struct cpu_info, ci_schedstate.spc_curpriority)
 define	CI_CURLWP		offsetof(struct cpu_info, ci_curlwp)
 define	CI_CPL			offsetof(struct cpu_info, ci_cpl)
+define	CI_CPUID		offsetof(struct cpu_info, ci_cpuid)
 define	CI_ASTPENDING		offsetof(struct cpu_info, ci_astpending)
 define	CI_WANT_RESCHED		offsetof(struct cpu_info, ci_want_resched)
 define	CI_INTR_DEPTH		offsetof(struct cpu_info, ci_intr_depth)

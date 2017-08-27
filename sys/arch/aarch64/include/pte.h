@@ -38,50 +38,42 @@
 typedef unsigned long long pt_entry_t;
 #endif /* _LOCORE */
 
+/*
+ * translation table, block, and page descriptors
+ */
 #define LX_VALID		__BIT(0)
 #define LX_TYPE			__BIT(1)
 #define LX_TYPE_BLK		__SHIFTIN(0, LX_TYPE)
 #define LX_TYPE_TBL		__SHIFTIN(1, LX_TYPE)
 #define L3_TYPE_PAG		__SHIFTIN(1, LX_TYPE)
 
-#define L1_BLK_OS		__BITS(58, 55)
-#define L1_BLK_UXN		__BIT(54)
-#define L1_BLK_PXN		__BIT(53)
-#define L1_BLK_CONTIG		__BIT(52)
+#define LX_BLKPAG_OS		__BITS(58, 55)
+#define LX_BLKPAG_UXN		__BIT(54)	/* Unprivileged Execute Never */
+#define LX_BLKPAG_PXN		__BIT(53)	/* Privileged Execute Never */
+#define LX_BLKPAG_CONTIG	__BIT(52)	/* Hint of TLB cache */
+#define LX_BLKPAG_NG		__BIT(11)	/* Not Global */
+#define LX_BLKPAG_AF		__BIT(10)	/* Access Flag */
+#define LX_BLKPAG_SH		__BITS(9,8)	/* Shareability */
+#define  LX_BLKPAG_SH_NS	0		/* Non Shareable */
+#define  LX_BLKPAG_SH_OS	2		/* Outer Shareable */
+#define  LX_BLKPAG_SH_IS	3		/* Inner Shareable */
+#define LX_BLKPAG_AP		__BITS(7,6)
+#define  LX_BLKPAG_AP_RW_NONE	0		/* EL1:RW, EL0:None */
+#define  LX_BLKPAG_AP_RW_RW	1		/* EL1:RW, EL0:RW */
+#define  LX_BLKPAG_AP_RO_NONE	2		/* EL1:RO, EL0:None */
+#define  LX_BLKPAG_AP_RO_RW	3		/* EL1:RO, EL0:RO */
+#define LX_BLKPAG_NS		__BIT(5)
+#define LX_BLKPAG_ATTR_INDX	__BITS(4,2)	/* refer MAIR_EL1 attr<n> */
+#define LX_BLKPAG_ATTR_INDX_SHIFT	2
+
 #define L1_BLK_OA		__BITS(47, 30)	/* 1GB */
-#define L1_BLK_NG		__BIT(11)	/* Not Global */
-#define L1_BLK_AF		__BIT(10)	/* Access Flag */
-#define L1_BLK_SH		__BITS(9,8)	/* Shareability */
-#define L1_BLK_AP		__BITS(7,6)
-#define L1_BLK_NS		__BIT(5)
-#define L1_BLK_ATTR_INDX	__BITS(4,2)
-
-#define LX_TBL_NLTA_4K		__BITS(47, 12)
-#define LX_TBL_NLTA_16K		__BITS(47, 14)
-#define LX_TBL_NLTA_64K		__BITS(47, 16)
-#define L1_TBL_NS_TABLE		__BIT(63)
-#define L1_TBL_AP_TABLE		__BITS(62,61)
-#define L1_TBL_XN_TABLE		__BIT(60)
-#define L1_TBL_PXN_TABLE	__BIT(59)
-
-#define L2_BLKPAG_OS		__BITS(58, 55)
-#define L2_BLKPAG_UXN		__BIT(54)
-#define L2_BLKPAG_CONTIG	__BIT(52)
-#define L2_BLK_OA_4K		__BITS(47, 21)	/* 2MB */
-#define L2_BLK_OA_16K		__BITS(47, 25)	/* 32MB */
-#define L2_BLK_OA_64K		__BITS(47, 29)	/* 512MB */
-#define L2_BLKPAG_AF		__BIT(10)	/* Access Flag */
-#define L2_BLKPAG_SH		__BITS(9,8)	/* Shareability */
-#define L2_BLKPAG_S2AP		__BITS(7,6)
-#define L2_BLKPAG_MEM_ATTR	__BITS(5,2)
-
-#define L3_PAG_OA_4K		__BITS(47, 12)
-#define L3_PAG_OA_16K		__BITS(47, 14)
-#define L3_PAG_OA_64K		__BITS(47, 16)
+#define L2_BLK_OA		__BITS(47, 21)	/* 2MB */
+#define L3_PAG_OA		__BITS(47, 12)	/* 4KB */
 
 
 /* L0 table, 512GB block */
 #define L0_SHIFT		39
+#define L0_ADDR_BITS		__BITS(47,39)
 #define L0_SIZE			(1UL << L0_SHIFT)
 #define L0_OFFSET		(L0_SIZE - 1UL)
 #define L0_FRAME		(~L0_OFFSET)
@@ -90,6 +82,7 @@ typedef unsigned long long pt_entry_t;
 
 /* L1 table, 1GB block */
 #define L1_SHIFT		30
+#define L1_ADDR_BITS		__BITS(38,30)
 #define L1_SIZE			(1UL << L1_SHIFT)
 #define L1_OFFSET		(L1_SIZE - 1UL)
 #define L1_FRAME		(~L1_OFFSET)
@@ -98,6 +91,7 @@ typedef unsigned long long pt_entry_t;
 
 /* L2 table, 2MB block */
 #define L2_SHIFT		21
+#define L2_ADDR_BITS		__BITS(29,21)
 #define L2_SIZE			(1UL << L2_SHIFT)
 #define L2_OFFSET		(L2_SIZE - 1UL)
 #define L2_FRAME		(~L2_OFFSET)
@@ -107,6 +101,7 @@ typedef unsigned long long pt_entry_t;
 
 /* L3 table, 4KB block */
 #define L3_SHIFT		12
+#define L3_ADDR_BITS		__BITS(20,12)
 #define L3_SIZE			(1UL << L3_SHIFT)
 #define L3_OFFSET		(L3_SIZE - 1UL)
 #define L3_FRAME		(~L3_OFFSET)
@@ -121,6 +116,8 @@ typedef unsigned long long pt_entry_t;
 #define Ln_ADDR_MASK		(Ln_ENTRIES - 1)
 #define Ln_TABLE_MASK		((1 << 12) - 1)
 
+
+/* TCR_EL1 - Translation Control Register */
 #define TCR_TBI1		__BIT(38)	/* ignore Top Byte TTBR1_EL1 */
 #define TCR_TBI0		__BIT(37)	/* ignore Top Byte TTBR0_EL1 */
 #define TCR_AS64K		__BIT(36)	/* Use 64K ASIDs */
@@ -156,8 +153,9 @@ typedef unsigned long long pt_entry_t;
 #define TCR_T0SZ		__BITS(5,0)	/* Size offset for TTBR0_EL1 */
 
 
-#define TTBR_ASID		__BITS(63, 48)
-#define TTBR_BADDR		__BITS(47, 0)
+/* TTBR0_EL1, TTBR1_EL1 - Translation Table Base Register */
+#define TTBR_ASID		__BITS(63,48)
+#define TTBR_BADDR		__BITS(47,0)
 
 
 #elif defined(__arm__)
