@@ -157,6 +157,7 @@ _ASM_LABEL(start):
 
 	VERBOSE("MMU Enable...")
 	bl	mmu_enable
+	VERBOSE("OK\r\n")
 
 	msr	contextidr_el1, xzr
 
