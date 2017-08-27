@@ -102,7 +102,7 @@ konsinit(void)
 {
 	/* make debugging aid work */
 	cn_tab = &konsole;
-	uartbase = AARCH64_PA_TO_KVA(AUX_MU_BASE);
+	uartbase = AUX_MU_BASE;
 }
 
 static int

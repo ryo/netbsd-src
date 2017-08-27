@@ -51,6 +51,7 @@ RCSID("$NetBSD$")
 #define LOCORE_EL2
 #define VIRT_BIT	48
 
+/* attributes are defined in MAIR_EL1 */
 #define MEMATTR_DEVICE		0
 #define MEMATTR_NORMAL_NC	1
 #define MEMATTR_NORMAL_WB	2
@@ -156,10 +157,6 @@ _ASM_LABEL(start):
 
 	VERBOSE("MMU Enable...")
 	bl	mmu_enable
-
-	/* change UART address from 0x3f215040 to 0xffff00003f215040 */
-	bl	uart_change_to_directmap
-	VERBOSE("OK\r\n")
 
 	msr	contextidr_el1, xzr
 
@@ -331,11 +328,11 @@ _C_LABEL(uartputc):
 	stp	x9, x10, [sp, #-16]!
 	stp	x0, x1, [sp, #-16]!
 
-	ldr	x9, L_COM_LSR
+	ldr	x9, .L_COM_LSR
 1:	ldr	w10, [x9]
 	tbz	w10, #COM_LSR_TXFE_BIT, 1b
 
-	ldr	x9, L_COM_DATA
+	ldr	x9, .L_COM_DATA
 	and	w0, w0, #0xff
 	str	w0, [x9]
 
@@ -348,11 +345,11 @@ END(_C_LABEL(uartputc))
 _C_LABEL(uartputA):
 	stp	x0, x9, [sp, #-16]!
 
-	ldr	x9, L_COM_LSR
+	ldr	x9, .L_COM_LSR
 1:	ldr	w0, [x9]
 	tbz	w0, #COM_LSR_TXFE_BIT, 1b
 
-	ldr	x9, L_COM_DATA
+	ldr	x9, .L_COM_DATA
 	mov	w0, #'A'
 	str	w0, [x9]
 
@@ -364,11 +361,11 @@ END(_C_LABEL(uartputA))
 _C_LABEL(uartputB):
 	stp	x0, x9, [sp, #-16]!
 
-	ldr	x9, L_COM_LSR
+	ldr	x9, .L_COM_LSR
 1:	ldr	w0, [x9]
 	tbz	w0, #COM_LSR_TXFE_BIT, 1b
 
-	ldr	x9, L_COM_DATA
+	ldr	x9, .L_COM_DATA
 	mov	w0, #'B'
 	str	w0, [x9]
 
@@ -380,11 +377,11 @@ END(_C_LABEL(uartputB))
 _C_LABEL(uartputC):
 	stp	x0, x9, [sp, #-16]!
 
-	ldr	x9, L_COM_LSR
+	ldr	x9, .L_COM_LSR
 1:	ldr	w0, [x9]
 	tbz	w0, #COM_LSR_TXFE_BIT, 1b
 
-	ldr	x9, L_COM_DATA
+	ldr	x9, .L_COM_DATA
 	mov	w0, #'C'
 	str	w0, [x9]
 
@@ -392,26 +389,10 @@ _C_LABEL(uartputC):
 	ret
 END(_C_LABEL(uartputC))
 
-uart_change_to_directmap:
-	stp	x0, x1, [sp, #-16]!
-
-	adr	x1, L_COM_DATA
-	ldr	x0, [x1]
-	movk	x0, #0xffff, lsl #48
-	str	x0, [x1]
-
-	adr	x1, L_COM_LSR
-	ldr	x0, [x1]
-	movk	x0, #0xffff, lsl #48
-	str	x0, [x1]
-
-	ldp	x9, x10, [sp], #16
-	ret
-
 	.align	3
-L_COM_DATA:
+.L_COM_DATA:
 	.quad	COM_DATA
-L_COM_LSR:
+.L_COM_LSR:
 	.quad	COM_LSR
 
 
@@ -469,7 +450,7 @@ arm_boot_l0pt_init:
 	adr	x0, ttbr1_l1table_kseg
 	mov	x1, #AARCH64_KSEG_START
 	adr	x2, #0
-	mov	x3, MEMATTR_DEVICE	/* for devices */
+	mov	x3, MEMATTR_NORMAL_WB
 	mov	x4, #Ln_ENTRIES		/* whole l1 table */
 	bl	l1_setblocks
 
