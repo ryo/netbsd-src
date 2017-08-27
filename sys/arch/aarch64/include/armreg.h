@@ -70,85 +70,85 @@ reg_##regname##_write(uint64_t __val)			\
 /*
  * System registers available at EL0 (user)
  */
-AARCH64REG_READ_INLINE(ctr_el0)		// Cache Type Register
+AARCH64REG_READ_INLINE(ctr_el0)		/* Cache Type Register */
 
 static const uintmax_t
-   CTR_EL0_CWG_LINE	= __BITS(27,24), // Cacheback Writeback Granule
-   CTR_EL0_ERG_LINE	= __BITS(23,20), // Exclusives Reservation Granule
-   CTR_EL0_DMIN_LINE	= __BITS(19,16), // Dcache MIN LINE size (log2 - 2)
+   CTR_EL0_CWG_LINE	= __BITS(27,24), /* Cacheback Writeback Granule */
+   CTR_EL0_ERG_LINE	= __BITS(23,20), /* Exclusives Reservation Granule */
+   CTR_EL0_DMIN_LINE	= __BITS(19,16), /* Dcache MIN LINE size (log2 - 2) */
    CTR_EL0_L1IP_MASK	= __BITS(15,14),
-   CTR_EL0_L1IP_AIVIVT	= 1, // ASID-tagged Virtual Index, Virtual Tag
-   CTR_EL0_L1IP_VIPT	= 2, // Virtual Index, Physical Tag
-   CTR_EL0_L1IP_PIPT	= 3, // Physical Index, Physical Tag
-   CTR_EL0_IMIN_LINE	= __BITS(3,0); // Icache MIN LINE size (log2 - 2)
+   CTR_EL0_L1IP_AIVIVT	= 1,	/* ASID-tagged Virtual Index, Virtual Tag */
+   CTR_EL0_L1IP_VIPT	= 2,		/* Virtual Index, Physical Tag */
+   CTR_EL0_L1IP_PIPT	= 3,		/* Physical Index, Physical Tag */
+   CTR_EL0_IMIN_LINE	= __BITS(3,0);	/* Icache MIN LINE size (log2 - 2) */
 
-AARCH64REG_READ_INLINE(dczid_el0)	// Data Cache Zero ID Register
+AARCH64REG_READ_INLINE(dczid_el0)	/* Data Cache Zero ID Register */
 
 static const uintmax_t
-    DCZID_DZP = __BIT(4),	// Data Zero Prohibited
-    DCZID_BS  = __BITS(3,0);	// Block Size (log2 - 2)
+    DCZID_DZP = __BIT(4),		/* Data Zero Prohibited */
+    DCZID_BS  = __BITS(3,0);		/* Block Size (log2 - 2) */
 
-AARCH64REG_READ_INLINE(tpidrro_el0)	// Thread Pointer ID Register (RO)
+AARCH64REG_READ_INLINE(tpidrro_el0)	/* Thread Pointer ID Register (RO) */
 
-AARCH64REG_READ_INLINE(fpcr)		// Floating Point Control Register
+AARCH64REG_READ_INLINE(fpcr)		/* Floating Point Control Register */
 AARCH64REG_WRITE_INLINE(fpcr)
 
 static const uintmax_t
-    FPCR_AHP    = __BIT(26),	// Alternative Half Precision
-    FPCR_DN     = __BIT(25),	// Default Nan Control
-    FPCR_FZ     = __BIT(24),	// Flush-To-Zero
-    FPCR_RMODE  = __BITS(23,22),// Rounding Mode
-     FPCR_RN     = 0,		//  Round Nearest
-     FPCR_RP     = 1,		//  Round towards Plus infinity
-     FPCR_RM     = 2,		//  Round towards Minus infinity
-     FPCR_RZ     = 3,		//  Round towards Zero
+    FPCR_AHP    = __BIT(26),		/* Alternative Half Precision */
+    FPCR_DN     = __BIT(25),		/* Default Nan Control */
+    FPCR_FZ     = __BIT(24),		/* Flush-To-Zero */
+    FPCR_RMODE  = __BITS(23,22),	/* Rounding Mode */
+     FPCR_RN     = 0,			/*  Round Nearest */
+     FPCR_RP     = 1,			/*  Round towards Plus infinity */
+     FPCR_RM     = 2,			/*  Round towards Minus infinity */
+     FPCR_RZ     = 3,			/*  Round towards Zero */
     FPCR_STRIDE = __BITS(21,20),
     FPCR_LEN    = __BITS(18,16),
-    FPCR_IDE    = __BIT(15),	// Input Denormal Exception enable
-    FPCR_IXE    = __BIT(12),	// IneXact Exception enable
-    FPCR_UFE    = __BIT(11),	// UnderFlow Exception enable
-    FPCR_OFE    = __BIT(10),	// OverFlow Exception enable
-    FPCR_DZE    = __BIT(9),	// Divide by Zero Exception enable
-    FPCR_IOE    = __BIT(8),	// Invalid Operation Exception enable
+    FPCR_IDE    = __BIT(15),		/* Input Denormal Exception enable */
+    FPCR_IXE    = __BIT(12),		/* IneXact Exception enable */
+    FPCR_UFE    = __BIT(11),		/* UnderFlow Exception enable */
+    FPCR_OFE    = __BIT(10),		/* OverFlow Exception enable */
+    FPCR_DZE    = __BIT(9),		/* Divide by Zero Exception enable */
+    FPCR_IOE    = __BIT(8),		/* Invalid Operation Exception enable */
     FPCR_ESUM   = 0x1F00;
 
-AARCH64REG_READ_INLINE(fpsr)		// Floating Point Status Register
+AARCH64REG_READ_INLINE(fpsr)		/* Floating Point Status Register */
 AARCH64REG_WRITE_INLINE(fpsr)
 
 static const uintmax_t
-    FPSR_N32  = __BIT(31), // AARCH32 Negative
-    FPSR_Z32  = __BIT(30), // AARCH32 Zero
-    FPSR_C32  = __BIT(29), // AARCH32 Carry
-    FPSR_V32  = __BIT(28), // AARCH32 Overflow
-    FPSR_QC   = __BIT(27), // SIMD Saturation
-    FPSR_IDC  = __BIT(7), // Input Denormal Cumulative status
-    FPSR_IXC  = __BIT(4), // IneXact Cumulative status
-    FPSR_UFC  = __BIT(3), // UnderFlow Cumulative status
-    FPSR_OFC  = __BIT(2), // OverFlow Cumulative status
-    FPSR_DZC  = __BIT(1), // Divide by Zero Cumulative status
-    FPSR_IOC  = __BIT(0), // Invalid Operation Cumulative status
+    FPSR_N32  = __BIT(31),		/* AARCH32 Negative */
+    FPSR_Z32  = __BIT(30),		/* AARCH32 Zero */
+    FPSR_C32  = __BIT(29),		/* AARCH32 Carry */
+    FPSR_V32  = __BIT(28),		/* AARCH32 Overflow */
+    FPSR_QC   = __BIT(27),		/* SIMD Saturation */
+    FPSR_IDC  = __BIT(7),		/* Input Denormal Cumulative status */
+    FPSR_IXC  = __BIT(4),		/* IneXact Cumulative status */
+    FPSR_UFC  = __BIT(3),		/* UnderFlow Cumulative status */
+    FPSR_OFC  = __BIT(2),		/* OverFlow Cumulative status */
+    FPSR_DZC  = __BIT(1),		/* Divide by Zero Cumulative status */
+    FPSR_IOC  = __BIT(0),		/* Invalid Operation Cumulative status*/
     FPSR_CSUM = 0x1F;
 
-AARCH64REG_READ_INLINE(nzcv)		// condition codes
+AARCH64REG_READ_INLINE(nzcv)		/* condition codes */
 AARCH64REG_WRITE_INLINE(nzcv)
 
 static const uintmax_t
-    NZCV_N = __BIT(31), // Negative 
-    NZCV_Z = __BIT(30), // Zero
-    NZCV_C = __BIT(29), // Carry
-    NZCV_V = __BIT(28); // Overflow
+    NZCV_N = __BIT(31),			/* Negative */
+    NZCV_Z = __BIT(30),			/* Zero */
+    NZCV_C = __BIT(29),			/* Carry */
+    NZCV_V = __BIT(28);			/* Overflow */
 
-AARCH64REG_READ_INLINE(tpidr_el0)	// Thread Pointer ID Register (RW)
+AARCH64REG_READ_INLINE(tpidr_el0)	/* Thread Pointer ID Register (RW) */
 AARCH64REG_WRITE_INLINE(tpidr_el0)
 
-/* 
+/*
  * From here on, these can only be accessed at EL1 (kernel)
  */
 
 /*
  * These are readonly registers
  */
-AARCH64REG_READ_INLINE2(cbar_el1, s3_1_c15_c3_0)	 // Cortex-A57
+AARCH64REG_READ_INLINE2(cbar_el1, s3_1_c15_c3_0)	/* Cortex-A57 */
 
 static const uintmax_t CBAR_PA = __BITS(47,18);
 
@@ -179,71 +179,71 @@ AARCH64REG_READ_INLINE(revidr_el1)
 /*
  * These are read/write registers
  */
-AARCH64REG_READ_INLINE(ccselr_el1)	// Cache Size Selection Register
+AARCH64REG_READ_INLINE(ccselr_el1)	/* Cache Size Selection Register */
 AARCH64REG_WRITE_INLINE(ccselr_el1)
 
-AARCH64REG_READ_INLINE(cpacr_el1)	// Coprocessor Access Control Regiser
+AARCH64REG_READ_INLINE(cpacr_el1)	/* Coprocessor Access Control Regiser */
 AARCH64REG_WRITE_INLINE(cpacr_el1)
 
 static const uintmax_t
-    CPACR_TTA		= __BIT(28),	 // System Register Access Traps
+    CPACR_TTA		= __BIT(28),	/* System Register Access Traps */
     CPACR_FPEN		= __BITS(21,20),
     CPACR_FPEN_NONE	= __SHIFTIN(0, CPACR_FPEN),
     CPACR_FPEN_EL1	= __SHIFTIN(1, CPACR_FPEN),
     CPACR_FPEN_NONE_2	= __SHIFTIN(2, CPACR_FPEN),
     CPACR_FPEN_ALL	= __SHIFTIN(3, CPACR_FPEN);
 
-AARCH64REG_READ_INLINE(elr_el1)		// Exception Link Register
+AARCH64REG_READ_INLINE(elr_el1)		/* Exception Link Register */
 AARCH64REG_WRITE_INLINE(elr_el1)
 
-AARCH64REG_READ_INLINE(esr_el1)		// Exception Symdrone Register
+AARCH64REG_READ_INLINE(esr_el1)		/* Exception Symdrone Register */
 AARCH64REG_WRITE_INLINE(esr_el1)
 
 static const uintmax_t
-    ESR_EC = 		__BITS(31,26), // Exception Cause
-     ESR_EC_UNKOWN	= 0,	// AXX: Unknown Reason
-     ESR_EC_WFX		= 1,	// AXX: WFI or WFE instruction execution
-     ESR_EC_CP15_RT	= 3,	// A32: MCR/MRC access to CP15 !EC=0
-     ESR_EC_CP15_RRT	= 4,	// A32: MCRR/MRRC access to CP15 !EC=0
-     ESR_EC_CP14_RT	= 5,	// A32: MCR/MRC access to CP14
-     ESR_EC_CP14_DT	= 6,	// A32: LDC/STC access to CP14
-     ESR_EC_FP_ACCCES	= 7,	// AXX: Access to SIMD/FP Registers
-     ESR_EC_FPID	= 8,	// A32: MCR/MRC access to CP10 !EC=7
-     ESR_EC_CP14_RRT	= 12,	// A32: MRRC access to CP14
-     ESR_EC_ILL_STATE	= 14,	// AXX: Illegal Execution State
-     ESR_EC_SVC_A32	= 17,	// A32: SVC Instruction Execution
-     ESR_EC_HVC_A32	= 18,	// A32: HVC Instruction Execution
-     ESR_EC_SMC_A32	= 19,	// A32: SMC Instruction Execution
-     ESR_EC_SVC_A64	= 21,	// A64: SVC Instruction Execution
-     ESR_EC_HVC_A64	= 22,	// A64: HVC Instruction Execution
-     ESR_EC_SMC_A64	= 23,	// A64: SMC Instruction Execution
-     ESR_EC_SYS_REG	= 24,	// A64: MSR/MRS/SYS instruction (!EC0/1/7)
-     ESR_EC_INSN_ABT_EL0 = 32,	// AXX: Instruction Abort (EL0)
-     ESR_EC_INSN_ABT_EL1 = 33,	// AXX: Instruction Abort (EL1)
-     ESR_EC_PC_ALIGNMENT = 34,	// AXX: Misaligned PC
-     ESR_EC_DATA_ABT_EL0 = 36,	// AXX: Data Abort (EL0)
-     ESR_EC_DATA_ABT_EL1 = 37,	// AXX: Data Abort (EL1)
-     ESR_EC_SP_ALIGNMENT = 38,	// AXX: Misaligned SP
-     ESR_EC_FP_TRAP_A32 = 40,	// A32: FP Exception
-     ESR_EC_FP_TRAP_A64 = 44,	// A64: FP Exception
-     ESR_EC_SERROR	= 47,	// AXX: SError Interrupt
-     ESR_EC_BRKPNT_EL0 = 48,	// AXX: Breakpoint Exception (EL0)
-     ESR_EC_BRKPNT_EL1 = 49,	// AXX: Breakpoint Exception (EL1)
-     ESR_EC_SW_STEP_EL0 = 50,	// AXX: Software Step (EL0)
-     ESR_EC_SW_STEP_EL1 = 51,	// AXX: Software Step (EL1)
-     ESR_EC_WTCHPNT_EL0 = 52,	// AXX: Watchpoint (EL0)
-     ESR_EC_WTCHPNT_EL1 = 53,	// AXX: Watchpoint (EL1)
-     ESR_EC_BKPT_INSN_A32 = 56,	// A32: BKPT Instruction Execution
-     ESR_EC_VECTOR_CATCH = 58,	// A32: Vector Catch Exception
-     ESR_EC_BKPT_INSN_A64 = 60,	// A64: BKPT Instruction Execution
-    ESR_IL = 		__BIT(25), // Instruction Length (1=32-bit)
-    ESR_ISS = 		__BITS(24,0); // Instruction Specific Syndrome
+    ESR_EC =		__BITS(31,26),	/* Exception Cause */
+     ESR_EC_UNKOWN	= 0,	/* AXX: Unknown Reason */
+     ESR_EC_WFX		= 1,	/* AXX: WFI or WFE instruction execution */
+     ESR_EC_CP15_RT	= 3,	/* A32: MCR/MRC access to CP15 !EC=0 */
+     ESR_EC_CP15_RRT	= 4,	/* A32: MCRR/MRRC access to CP15 !EC=0 */
+     ESR_EC_CP14_RT	= 5,	/* A32: MCR/MRC access to CP14 */
+     ESR_EC_CP14_DT	= 6,	/* A32: LDC/STC access to CP14 */
+     ESR_EC_FP_ACCCES	= 7,	/* AXX: Access to SIMD/FP Registers */
+     ESR_EC_FPID	= 8,	/* A32: MCR/MRC access to CP10 !EC=7 */
+     ESR_EC_CP14_RRT	= 12,	/* A32: MRRC access to CP14 */
+     ESR_EC_ILL_STATE	= 14,	/* AXX: Illegal Execution State */
+     ESR_EC_SVC_A32	= 17,	/* A32: SVC Instruction Execution */
+     ESR_EC_HVC_A32	= 18,	/* A32: HVC Instruction Execution */
+     ESR_EC_SMC_A32	= 19,	/* A32: SMC Instruction Execution */
+     ESR_EC_SVC_A64	= 21,	/* A64: SVC Instruction Execution */
+     ESR_EC_HVC_A64	= 22,	/* A64: HVC Instruction Execution */
+     ESR_EC_SMC_A64	= 23,	/* A64: SMC Instruction Execution */
+     ESR_EC_SYS_REG	= 24,	/* A64: MSR/MRS/SYS instruction (!EC0/1/7) */
+     ESR_EC_INSN_ABT_EL0 = 32,	/* AXX: Instruction Abort (EL0) */
+     ESR_EC_INSN_ABT_EL1 = 33,	/* AXX: Instruction Abort (EL1) */
+     ESR_EC_PC_ALIGNMENT = 34,	/* AXX: Misaligned PC */
+     ESR_EC_DATA_ABT_EL0 = 36,	/* AXX: Data Abort (EL0) */
+     ESR_EC_DATA_ABT_EL1 = 37,	/* AXX: Data Abort (EL1) */
+     ESR_EC_SP_ALIGNMENT = 38,	/* AXX: Misaligned SP */
+     ESR_EC_FP_TRAP_A32 = 40,	/* A32: FP Exception */
+     ESR_EC_FP_TRAP_A64 = 44,	/* A64: FP Exception */
+     ESR_EC_SERROR	= 47,	/* AXX: SError Interrupt */
+     ESR_EC_BRKPNT_EL0 = 48,	/* AXX: Breakpoint Exception (EL0) */
+     ESR_EC_BRKPNT_EL1 = 49,	/* AXX: Breakpoint Exception (EL1) */
+     ESR_EC_SW_STEP_EL0 = 50,	/* AXX: Software Step (EL0) */
+     ESR_EC_SW_STEP_EL1 = 51,	/* AXX: Software Step (EL1) */
+     ESR_EC_WTCHPNT_EL0 = 52,	/* AXX: Watchpoint (EL0) */
+     ESR_EC_WTCHPNT_EL1 = 53,	/* AXX: Watchpoint (EL1) */
+     ESR_EC_BKPT_INSN_A32 = 56,	/* A32: BKPT Instruction Execution */
+     ESR_EC_VECTOR_CATCH = 58,	/* A32: Vector Catch Exception */
+     ESR_EC_BKPT_INSN_A64 = 60,	/* A64: BKPT Instruction Execution */
+    ESR_IL =		__BIT(25),	/* Instruction Length (1=32-bit) */
+    ESR_ISS =		__BITS(24,0);	/* Instruction Specific Syndrome */
 
 
-AARCH64REG_READ_INLINE(far_el1)		// Fault Address Register
+AARCH64REG_READ_INLINE(far_el1)		/* Fault Address Register */
 AARCH64REG_WRITE_INLINE(far_el1)
 
-AARCH64REG_READ_INLINE(mair_el1)	// Memory Attribute Indirection Register
+AARCH64REG_READ_INLINE(mair_el1) /* Memory Attribute Indirection Register */
 AARCH64REG_WRITE_INLINE(mair_el1)
 
 static const uintmax_t
@@ -255,35 +255,35 @@ static const uintmax_t
     MAIR_ATTR5		= __BITS(47,40),
     MAIR_ATTR6		= __BITS(55,48),
     MAIR_ATTR7		= __BITS(63,56),
-    MAIR_DEVICE_nGnRnE	= 0x00,
+    MAIR_DEVICE_nGnRnE	= 0x00,	/* NoGathering,NoReordering,NoEarlyWriteAck. */
     MAIR_NORMAL_NC	= 0x44,
     MAIR_NORMAL_WT	= 0xbb,
     MAIR_NORMAL_WB	= 0xff;
 
 
-AARCH64REG_READ_INLINE(par_el1)		// Physical Address Register
+AARCH64REG_READ_INLINE(par_el1)		/* Physical Address Register */
 AARCH64REG_WRITE_INLINE(par_el1)
 
 static const uintmax_t
-    PAR_ATTR		= __BITS(63,56),// F=0 memory attributes
-    PAR_PA		= __BITS(47,12),// F=0 physical address
-    PAR_NS		= __BIT(9),	// F=0 non-secure
-    PAR_S		= __BIT(9),	// F=1 failure stage
-    PAR_SHA		= __BITS(8,7),	// F=0 shareability attribute
+    PAR_ATTR		= __BITS(63,56),/* F=0 memory attributes */
+    PAR_PA		= __BITS(47,12),/* F=0 physical address */
+    PAR_NS		= __BIT(9),	/* F=0 non-secure */
+    PAR_S		= __BIT(9),	/* F=1 failure stage */
+    PAR_SHA		= __BITS(8,7),	/* F=0 shareability attribute */
      PAR_SHA_NONE	= 0,
      PAR_SHA_OUTER	= 2,
      PAR_SHA_INNER	= 3,
-    PAR_PTW		= __BIT(8),	// F=1 partial table walk
-    PAR_FST		= __BITS(6,1),	// F=1 fault status code
-    PAR_F		= __BIT(0);	// translation failed
+    PAR_PTW		= __BIT(8),	/* F=1 partial table walk */
+    PAR_FST		= __BITS(6,1),	/* F=1 fault status code */
+    PAR_F		= __BIT(0);	/* translation failed */
 
-AARCH64REG_READ_INLINE(rmr_el1)		// Reset Management Register
+AARCH64REG_READ_INLINE(rmr_el1)		/* Reset Management Register */
 AARCH64REG_WRITE_INLINE(rmr_el1)
 
-AARCH64REG_READ_INLINE(rvbar_el1)	// Reset Vector Base Address Register
+AARCH64REG_READ_INLINE(rvbar_el1)	/* Reset Vector Base Address Register */
 AARCH64REG_WRITE_INLINE(rvbar_el1)
 
-AARCH64REG_READ_INLINE(sctlr_el1)	// System Control Register
+AARCH64REG_READ_INLINE(sctlr_el1)	/* System Control Register */
 AARCH64REG_WRITE_INLINE(sctlr_el1)
 
 static const uintmax_t
@@ -314,55 +314,55 @@ static const uintmax_t
     SCTLR_LSMAOE	= __BIT(29);
 
 
-AARCH64REG_READ_INLINE(spsel)		// Stack Pointer Select
+AARCH64REG_READ_INLINE(spsel)		/* Stack Pointer Select */
 AARCH64REG_WRITE_INLINE(spsel)
 
 static const uintmax_t
-    SPSEL_SP		= __BIT(0);	// use SP_EL0 at all exception levels
+    SPSEL_SP		= __BIT(0);	/* use SP_EL0 at all exception levels */
 
-AARCH64REG_READ_INLINE(sp_el0)		// Stack Pointer
+AARCH64REG_READ_INLINE(sp_el0)		/* Stack Pointer */
 AARCH64REG_WRITE_INLINE(sp_el0)
 
-AARCH64REG_READ_INLINE(daif)		// Debug Async Irq Fiq mask register
+AARCH64REG_READ_INLINE(daif)		/* Debug Async Irq Fiq mask register */
 AARCH64REG_WRITE_INLINE(daif)
 AARCH64REG_WRITEIMM_INLINE(daifclr)
 AARCH64REG_WRITEIMM_INLINE(daifset)
 
 static const uintmax_t
-    DAIF_D = __BIT(3),	// Debug Exception Mask
-    DAIF_A = __BIT(2),	// SError Abort Mask
-    DAIF_I = __BIT(1),	// IRQ Mask
-    DAIF_F = __BIT(0);	// FIQ Mask
+    DAIF_D = __BIT(3),			/* Debug Exception Mask */
+    DAIF_A = __BIT(2),			/* SError Abort Mask */
+    DAIF_I = __BIT(1),			/* IRQ Mask */
+    DAIF_F = __BIT(0);			/* FIQ Mask */
 
-AARCH64REG_READ_INLINE(spsr_el1)	// Saved Program Status Register
+AARCH64REG_READ_INLINE(spsr_el1)	/* Saved Program Status Register */
 AARCH64REG_WRITE_INLINE(spsr_el1)
 
 static const uintmax_t
-    SPSR_NZCV	  = __BITS(31,28),	// mask of N Z C V
-     SPSR_N	  = __BIT(31),		// Negative 
-     SPSR_Z	  = __BIT(30),		// Zero
-     SPSR_C	  = __BIT(29),		// Carry
-     SPSR_V	  = __BIT(28),		// oVerflow
-    SPSR_A32_Q	  = __BIT(27),		// A32: Overflow
-    SPSR_A32_J	  = __BIT(24),		// A32: Jazelle Mode
-    SPSR_A32_IT1  = __BIT(23),		// A32: IT[1]
-    SPSR_A32_IT0  = __BIT(22),		// A32: IT[0]
-    SPSR_SS	  = __BIT(21),		// Software Step
-    SPSR_IL	  = __BIT(20),		// Instruction Length
-    SPSR_GE	  = __BITS(19,16),	// A32: SIMD GE
-    SPSR_IT7	  = __BIT(15),		// A32: IT[7]
-    SPSR_IT6	  = __BIT(14),		// A32: IT[6]
-    SPSR_IT5	  = __BIT(13),		// A32: IT[5]
-    SPSR_IT4	  = __BIT(12),		// A32: IT[4]
-    SPSR_IT3	  = __BIT(11),		// A32: IT[3]
-    SPSR_IT2	  = __BIT(10),		// A32: IT[2]
-    SPSR_A64_D	  = __BIT(9),		// A64: Debug Exception Mask
-    SPSR_A32_E	  = __BIT(9),		// A32: BE Endian Mode
-    SPSR_A	  = __BIT(8),		// Async abort (SError) Mask
-    SPSR_I	  = __BIT(7),		// IRQ Mask
-    SPSR_F	  = __BIT(6),		// FIQ Mask
-    SPSR_A32_T	  = __BIT(5),		// A32 Thumb Mode
-    SPSR_M	  = __BITS(4,0),	// Execution State
+    SPSR_NZCV	  = __BITS(31,28),	/* mask of N Z C V */
+     SPSR_N	  = __BIT(31),		/* Negative */
+     SPSR_Z	  = __BIT(30),		/* Zero */
+     SPSR_C	  = __BIT(29),		/* Carry */
+     SPSR_V	  = __BIT(28),		/* oVerflow */
+    SPSR_A32_Q	  = __BIT(27),		/* A32: Overflow */
+    SPSR_A32_J	  = __BIT(24),		/* A32: Jazelle Mode */
+    SPSR_A32_IT1  = __BIT(23),		/* A32: IT[1] */
+    SPSR_A32_IT0  = __BIT(22),		/* A32: IT[0] */
+    SPSR_SS	  = __BIT(21),		/* Software Step */
+    SPSR_IL	  = __BIT(20),		/* Instruction Length */
+    SPSR_GE	  = __BITS(19,16),	/* A32: SIMD GE */
+    SPSR_IT7	  = __BIT(15),		/* A32: IT[7] */
+    SPSR_IT6	  = __BIT(14),		/* A32: IT[6] */
+    SPSR_IT5	  = __BIT(13),		/* A32: IT[5] */
+    SPSR_IT4	  = __BIT(12),		/* A32: IT[4] */
+    SPSR_IT3	  = __BIT(11),		/* A32: IT[3] */
+    SPSR_IT2	  = __BIT(10),		/* A32: IT[2] */
+    SPSR_A64_D	  = __BIT(9),		/* A64: Debug Exception Mask */
+    SPSR_A32_E	  = __BIT(9),		/* A32: BE Endian Mode */
+    SPSR_A	  = __BIT(8),		/* Async abort (SError) Mask */
+    SPSR_I	  = __BIT(7),		/* IRQ Mask */
+    SPSR_F	  = __BIT(6),		/* FIQ Mask */
+    SPSR_A32_T	  = __BIT(5),		/* A32 Thumb Mode */
+    SPSR_M	  = __BITS(4,0),	/* Execution State */
      SPSR_M_EL3H  = 0x0d,
      SPSR_M_EL3T  = 0x0c,
      SPSR_M_EL2H  = 0x09,
@@ -378,38 +378,38 @@ static const uintmax_t
      SPSR_M_FIQ32 = 0x11,
      SPSR_M_USR32 = 0x10;
 
-AARCH64REG_READ_INLINE(tcr_el1)		// Translation Control Register
+AARCH64REG_READ_INLINE(tcr_el1)		/* Translation Control Register */
 AARCH64REG_WRITE_INLINE(tcr_el1)
 
 #define TCR_PAGE_SIZE1(tcr)	(1L << (__SHIFTOUT(tcr, TCR_TG1) * 2 + 10))
 
-AARCH64REG_READ_INLINE(tpidr_el1)	// Thread ID Register (EL1)
+AARCH64REG_READ_INLINE(tpidr_el1)	/* Thread ID Register (EL1) */
 AARCH64REG_WRITE_INLINE(tpidr_el1)
 
-AARCH64REG_WRITE_INLINE(tpidrro_el0)	// Thread ID Register (RO for EL0)
+AARCH64REG_WRITE_INLINE(tpidrro_el0)	/* Thread ID Register (RO for EL0) */
 
-AARCH64REG_READ_INLINE(ttbr0_el0)	// Translation Table Base Register 0 EL0
+AARCH64REG_READ_INLINE(ttbr0_el0) /* Translation Table Base Register 0 EL0 */
 AARCH64REG_WRITE_INLINE(ttbr0_el0)
 
-AARCH64REG_READ_INLINE(ttbr0_el1)	// Translation Table Base Register 0 EL0
+AARCH64REG_READ_INLINE(ttbr0_el1) /* Translation Table Base Register 0 EL0 */
 AARCH64REG_WRITE_INLINE(ttbr0_el1)
 
-AARCH64REG_READ_INLINE(ttbr1_el1)	// Translation Table Base Register 1 EL1
+AARCH64REG_READ_INLINE(ttbr1_el1) /* Translation Table Base Register 1 EL1 */
 AARCH64REG_WRITE_INLINE(ttbr1_el1)
 
-AARCH64REG_READ_INLINE(vbar_el1)	// Vector Base Address Register
+AARCH64REG_READ_INLINE(vbar_el1)	/* Vector Base Address Register */
 AARCH64REG_WRITE_INLINE(vbar_el1)
 
 AARCH64REG_READ_INLINE(pmccfiltr_el0)
 AARCH64REG_WRITE_INLINE(pmccfiltr_el0)
 
 static const uintmax_t
-    PMCCFILTR_P	  = __BIT(31),	 // Don't count cycles in EL1
-    PMCCFILTR_U	  = __BIT(30),	 // Don't count cycles in EL0
-    PMCCFILTR_NSK = __BIT(29),	 // Don't count cycles in NS EL1
-    PMCCFILTR_NSU = __BIT(28),	 // Don't count cycles in NS EL0
-    PMCCFILTR_NSH = __BIT(27),	 // Don't count cycles in NS EL2
-    PMCCFILTR_M	  = __BIT(26);	 // Don't count cycles in EL3
+    PMCCFILTR_P		= __BIT(31),	/* Don't count cycles in EL1 */
+    PMCCFILTR_U		= __BIT(30),	/* Don't count cycles in EL0 */
+    PMCCFILTR_NSK	= __BIT(29),	/* Don't count cycles in NS EL1 */
+    PMCCFILTR_NSU	= __BIT(28),	/* Don't count cycles in NS EL0 */
+    PMCCFILTR_NSH	= __BIT(27),	/* Don't count cycles in NS EL2 */
+    PMCCFILTR_M		= __BIT(26);	/* Don't count cycles in EL3 */
 
 AARCH64REG_READ_INLINE(pmccntr_el0)
 
@@ -419,22 +419,22 @@ AARCH64REG_READ_INLINE(cnthctl_el2)
 AARCH64REG_WRITE_INLINE(cnthctl_el2)
 
 static const uintmax_t
-    CNTHCTL_EVNTDIR  = __BIT(3),
-    CNTHCTL_EVNTEN   = __BIT(2),
-    CNTHCTL_EL1PCEN  = __BIT(1),
-    CNTHCTL_EL1PCTEN = __BIT(0);
+    CNTHCTL_EVNTDIR	= __BIT(3),
+    CNTHCTL_EVNTEN	= __BIT(2),
+    CNTHCTL_EL1PCEN	= __BIT(1),
+    CNTHCTL_EL1PCTEN	= __BIT(0);
 
 AARCH64REG_READ_INLINE(cntkctl_el1)
 AARCH64REG_WRITE_INLINE(cntkctl_el1)
 
 static const uintmax_t
-    CNTKCTL_EL0PTEN  = __BIT(9),	// EL0 access for CNTP CVAL/TVAL/CTL
-    CNTKCTL_EL0VTEN  = __BIT(8),	// EL0 access for CNTV CVAL/TVAL/CTL
-    CNTKCTL_ELNTI    = __BITS(7,4),
-    CNTKCTL_EVNTDIR  = __BIT(3),
-    CNTKCTL_EVNTEN   = __BIT(2),
-    CNTKCTL_EL0VCTEN = __BIT(1),	// EL0 access for CNTVCT and CNTFRQ
-    CNTKCTL_EL0PCTEN = __BIT(0);	// EL0 access for CNTPCT and CNTFRQ
+    CNTKCTL_EL0PTEN	= __BIT(9),	/* EL0 access for CNTP CVAL/TVAL/CTL */
+    CNTKCTL_EL0VTEN	= __BIT(8),	/* EL0 access for CNTV CVAL/TVAL/CTL */
+    CNTKCTL_ELNTI	= __BITS(7,4),
+    CNTKCTL_EVNTDIR	= __BIT(3),
+    CNTKCTL_EVNTEN	= __BIT(2),
+    CNTKCTL_EL0VCTEN	= __BIT(1),	/* EL0 access for CNTVCT and CNTFRQ */
+    CNTKCTL_EL0PCTEN	= __BIT(0);	/* EL0 access for CNTPCT and CNTFRQ */
 
 AARCH64REG_READ_INLINE(cntp_ctl_el0)
 AARCH64REG_WRITE_INLINE(cntp_ctl_el0)
@@ -462,35 +462,35 @@ AARCH64REG_READ_INLINE(cntvct_el0)
 AARCH64REG_WRITE_INLINE(cntvct_el0)
 
 static const uintmax_t
-    CNTCTL_ISTATUS = __BIT(2),	// Interrupt Asserted
-    CNTCTL_IMASK   = __BIT(1),	// Timer Interrupt is Masked
-    CNTCTL_ENABLE  = __BIT(0);	// Timer Enabled
+    CNTCTL_ISTATUS	= __BIT(2),	/* Interrupt Asserted */
+    CNTCTL_IMASK	= __BIT(1),	/* Timer Interrupt is Masked */
+    CNTCTL_ENABLE	= __BIT(0);	/* Timer Enabled */
 
 
 /* ID_AA64PFR0_EL1: AArch64 Processor Feature Register 0 */
 static const uintmax_t
-    ID_AA64PFR0_EL1_GIC			= __BITS(24,27),	// GIC CPU IF
+    ID_AA64PFR0_EL1_GIC			= __BITS(24,27), /* GIC CPU IF */
     ID_AA64PFR0_EL1_GIC_SHIFT		= 24,
      ID_AA64PFR0_EL1_GIC_CPUIF_EN	= 1,
      ID_AA64PFR0_EL1_GIC_CPUIF_NONE	= 0,
-    ID_AA64PFR0_EL1_ADVSIMD		= __BITS(23,20),	// SIMD
+    ID_AA64PFR0_EL1_ADVSIMD		= __BITS(23,20), /* SIMD */
      ID_AA64PFR0_EL1_ADV_SIMD_IMPL	= 0x0,
      ID_AA64PFR0_EL1_ADV_SIMD_NONE	= 0xf,
-    ID_AA64PFR0_EL1_FP			= __BITS(19,16),	// FP
+    ID_AA64PFR0_EL1_FP			= __BITS(19,16), /* FP */
      ID_AA64PFR0_EL1_FP_IMPL		= 0x0,
      ID_AA64PFR0_EL1_FP_NONE		= 0xf,
-    ID_AA64PFR0_EL1_EL3			= __BITS(15,12),	// EL3 handling
+    ID_AA64PFR0_EL1_EL3			= __BITS(15,12), /* EL3 handling */
      ID_AA64PFR0_EL1_EL3_NONE		= 0,
      ID_AA64PFR0_EL1_EL3_64		= 1,
      ID_AA64PFR0_EL1_EL3_64_32		= 2,
-    ID_AA64PFR0_EL1_EL2			= __BITS(11,8),		// EL2 handling
+    ID_AA64PFR0_EL1_EL2			= __BITS(11,8), /* EL2 handling */
      ID_AA64PFR0_EL1_EL2_NONE		= 0,
      ID_AA64PFR0_EL1_EL2_64		= 1,
      ID_AA64PFR0_EL1_EL2_64_32		= 2,
-    ID_AA64PFR0_EL1_EL1			= __BITS(7,4),		// EL1 handling
+    ID_AA64PFR0_EL1_EL1			= __BITS(7,4), /* EL1 handling */
      ID_AA64PFR0_EL1_EL1_64		= 1,
      ID_AA64PFR0_EL1_EL1_64_32		= 2,
-    ID_AA64PFR0_EL1_EL0			= __BITS(3,0),		// EL0 handling
+    ID_AA64PFR0_EL1_EL0			= __BITS(3,0), /* EL0 handling */
      ID_AA64PFR0_EL1_EL0_64		= 1,
      ID_AA64PFR0_EL1_EL0_64_32		= 2;
 
