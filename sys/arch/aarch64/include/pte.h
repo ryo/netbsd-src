@@ -64,7 +64,6 @@ typedef unsigned long long pt_entry_t;
 #define  LX_BLKPAG_AP_RO_RW	3		/* EL1:RO, EL0:RO */
 #define LX_BLKPAG_NS		__BIT(5)
 #define LX_BLKPAG_ATTR_INDX	__BITS(4,2)	/* refer MAIR_EL1 attr<n> */
-#define LX_BLKPAG_ATTR_INDX_SHIFT	2
 
 #define L1_BLK_OA		__BITS(47, 30)	/* 1GB */
 #define L2_BLK_OA		__BITS(47, 21)	/* 2MB */

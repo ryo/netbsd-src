@@ -52,10 +52,10 @@ RCSID("$NetBSD$")
 #define VIRT_BIT	48
 
 /* attributes are defined in MAIR_EL1 */
-#define MEMATTR_DEVICE		0
-#define MEMATTR_NORMAL_NC	1
-#define MEMATTR_NORMAL_WB	2
-#define MEMATTR_NORMAL_WT	3
+#define L2_BLKPAG_ATTR_NORMAL_WB	__SHIFTIN(0, LX_BLKPAG_ATTR_INDX)
+#define L2_BLKPAG_ATTR_NORMAL_NC	__SHIFTIN(1, LX_BLKPAG_ATTR_INDX)
+#define L2_BLKPAG_ATTR_NORMAL_WT	__SHIFTIN(2, LX_BLKPAG_ATTR_INDX)
+#define L2_BLKPAG_ATTR_DEVICE_MEM	__SHIFTIN(3, LX_BLKPAG_ATTR_INDX)
 
 
 #define PRINT(string)	stp x0,lr,[sp,#-16]!;bl xprint;.asciz string;.align 2;ldp x0,lr,[sp],#16
@@ -436,7 +436,7 @@ arm_boot_l0pt_init:
 	adr	x0, ttbr0_l1table
 	mov	x1, #0			/* PA */
 	mov	x2, #0			/* VA */
-	mov	x3, MEMATTR_DEVICE	/* including UART */
+	mov	x3, #L2_BLKPAG_ATTR_DEVICE_MEM
 	mov	x4, #4			/* 4GB = whole 32bit */
 	bl	l1_setblocks
 
@@ -451,7 +451,8 @@ arm_boot_l0pt_init:
 	adr	x0, ttbr1_l1table_kseg
 	mov	x1, #AARCH64_KSEG_START
 	adr	x2, #0
-	mov	x3, MEMATTR_NORMAL_WB
+	mov	x3, #L2_BLKPAG_ATTR_NORMAL_WB
+	orr	x3, x3, #(LX_BLKPAG_PXN|LX_BLKPAG_UXN)
 	mov	x4, #Ln_ENTRIES		/* whole l1 table */
 	bl	l1_setblocks
 
@@ -474,7 +475,7 @@ arm_boot_l0pt_init:
 	and	x2, x2, #L2_BLK_OA	/* L2 block size aligned (2MB) */
 	mov	x1, #VM_MIN_KERNEL_ADDRESS
 	add	x1, x1, x2		/* add kernel load address */
-	mov	x3, MEMATTR_NORMAL_WB
+	mov	x3, #L2_BLKPAG_ATTR_NORMAL_WB
 
 	/* kernelsize = _end - _start */
 	ldr	x4, .Lend
@@ -518,7 +519,7 @@ l0_settable:
  *	x0 = l1table
  *	x1 = vaddr
  *	x2 = paddr
- *	x3 = type
+ *	x3 = attr
  *	x4 = N entries
  */
 l1_setblocks:
@@ -526,7 +527,6 @@ l1_setblocks:
 
 	and	x2, x2, #L1_ADDR_BITS
 	orr	x2, x2, #L1_BLOCK
-	lsl	x3, x3, #LX_BLKPAG_ATTR_INDX_SHIFT
 	orr	x2, x2, x3
 	orr	x2, x2, #LX_BLKPAG_AF
 #ifdef MULTIPROCESSOR
@@ -579,7 +579,7 @@ l1_settable:
  *	x0 = l2table
  *	x1 = vaddr
  *	x2 = paddr
- *	x3 = type
+ *	x3 = attr
  *	x4 = N entries
  */
 l2_setblocks:
@@ -587,7 +587,6 @@ l2_setblocks:
 
 	and	x2, x2, #L2_ADDR_BITS
 	orr	x2, x2, #L2_BLOCK
-	lsl	x3, x3, #LX_BLKPAG_ATTR_INDX_SHIFT
 	orr	x2, x2, x3
 	orr	x2, x2, #LX_BLKPAG_AF
 #ifdef MULTIPROCESSOR
@@ -663,11 +662,11 @@ mmu_enable:
 
 	.align 3
 mair:
-#define MAIR_ATTR(attr, idx)	((attr) << ((idx) * 8))
-	.quad	MAIR_ATTR(MAIR_DEVICE_nGnRnE, 0) |	\
-		MAIR_ATTR(MAIR_NORMAL_NC, 1) |		\
-		MAIR_ATTR(MAIR_NORMAL_WB, 2) |		\
-		MAIR_ATTR(MAIR_NORMAL_WT, 3)
+	.quad (						\
+	    __SHIFTIN(MAIR_NORMAL_WB, MAIR_ATTR0) |	\
+	    __SHIFTIN(MAIR_NORMAL_NC, MAIR_ATTR1) |	\
+	    __SHIFTIN(MAIR_NORMAL_WT, MAIR_ATTR2) |	\
+	    __SHIFTIN(MAIR_DEVICE_nGnRnE, MAIR_ATTR3))
 
 tcr:
 	.quad (						\
