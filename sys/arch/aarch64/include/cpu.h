@@ -90,6 +90,7 @@ void	cpu_proc_fork(struct proc *, struct proc *);
 void	cpu_signotify(struct lwp *);
 void	cpu_need_proftick(struct lwp *l);
 void	cpu_boot_secondary_processors(void);
+#define setsoftast(ci)		atomic_or_uint(&(ci)->ci_astpending, __BIT(0))
 
 #define CPU_INFO_ITERATOR	cpuid_t
 #define CPU_INFO_FOREACH(cii, ci) \

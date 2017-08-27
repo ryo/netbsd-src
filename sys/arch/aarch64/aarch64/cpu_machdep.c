@@ -37,6 +37,8 @@ __KERNEL_RCSID(1, "$NetBSD: cpu_machdep.c,v 1.2 2015/04/14 22:36:54 jmcneill Exp
 //#include "opt_pic.h"
 #include "opt_multiprocessor.h"
 
+#define _INTR_PRIVATE
+
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/atomic.h>
@@ -281,7 +283,7 @@ cpu_need_resched(struct cpu_info *ci, int flags)
 		 * interrupt.  So give it one.
 		 */
 		if (__predict_false(ci != cur_ci))
-			cpu_send_ipi(ci, IPI_NOP);
+			intr_ipi_send(ci->ci_kcpuset, IPI_NOP);
 #endif
 		return;
 	}
@@ -296,7 +298,7 @@ cpu_need_resched(struct cpu_info *ci, int flags)
 #ifdef __HAVE_PREEMPTION
 		atomic_or_uint(&l->l_dopreempt, DOPREEMPT_ACTIVE);
 		if (ci != cur_ci) {
-                        cpu_send_ipi(ci, IPI_KPREEMPT);
+                        intr_ipi_send(ci->ci_kcpuset, IPI_KPREEMPT);
                 }
 #endif
 		return;
@@ -304,7 +306,7 @@ cpu_need_resched(struct cpu_info *ci, int flags)
 	atomic_swap_uint(&ci->ci_astpending, 1); /* force call to ast() */
 #ifdef MULTIPROCESSOR
 	if (ci != cur_ci && (flags & RESCHED_IMMED)) {
-		cpu_send_ipi(ci, IPI_AST);
+		intr_ipi_send(ci->ci_kcpuset, IPI_AST);
 	} 
 #endif
 }
@@ -395,21 +397,21 @@ xc_send_ipi(struct cpu_info *ci)
 	KASSERT(kpreempt_disabled());
 	KASSERT(curcpu() != ci);
 
-	if (ci) {
-		/* Unicast, remote CPU */
-		printf("%s: -> %s", __func__, ci->ci_data.cpu_name);
-		intr_ipi_send(ci->ci_kcpuset, IPI_XCALL);
-	} else {
-		printf("%s: -> !%s", __func__, ci->ci_data.cpu_name);
-		/* Broadcast to all but ourselves */
-		kcpuset_t *kcp;
-		kcpuset_create(&kcp, (ci != NULL));
-		KASSERT(kcp != NULL);
-		kcpuset_copy(kcp, kcpuset_running);
-		kcpuset_clear(kcp, cpu_index(ci));
-		intr_ipi_send(kcp, IPI_XCALL);
-		kcpuset_destroy(kcp);
-	}
-	printf("\n");
+	intr_ipi_send(ci != NULL ? ci->ci_kcpuset : NULL, IPI_XCALL);
+}
+
+void
+cpu_ipi(struct cpu_info *ci)
+{
+	KASSERT(kpreempt_disabled());
+	KASSERT(curcpu() != ci);
+
+	intr_ipi_send(ci != NULL ? ci->ci_kcpuset : NULL, IPI_GENERIC);
+}
+
+int
+pic_ipi_shootdown(void *arg)
+{
+	return 1;
 }
 #endif /* MULTIPROCESSOR */
