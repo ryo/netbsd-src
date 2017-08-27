@@ -196,7 +196,7 @@ start_done:
  */
 vstart:
 	adr	x0, lwp0uspace		/* a trick for large imm value */
-	add	x0, x0, #((UPAGES * PAGE_SIZE) >> 12), lsl #12
+	add	x0, x0, #UPAGES, lsl #PGSHIFT
 	sub	x0, x0, #TF_SIZE	/* lwp0space + USPACE - TF_SIZE */
 	mov	sp, x0			/* define lwp0 ksp bottom */
 
