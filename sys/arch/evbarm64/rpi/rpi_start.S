@@ -225,8 +225,10 @@ start_done:
 # vstart is in kernel virtual address
 #
 vstart:
-	adr	x0, kernelstack_bottom
-	mov	sp, x0
+	adr	x0, lwp0uspace		/* a trick for large imm value */
+	add	x0, x0, #((UPAGES * PAGE_SIZE) >> 12), lsl #12
+	sub	x0, x0, #TF_SIZE	/* lwp0space + USPACE - TF_SIZE */
+	mov	sp, x0			/* define lwp0 ksp bottom */
 
 #ifdef VERBOSE_LOCORE
 	PRINT("SP=")
