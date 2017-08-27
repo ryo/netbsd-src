@@ -728,9 +728,7 @@ sctlr_clear:
 	.align PGSHIFT
 	.global _C_LABEL(lwp0uspace)
 _C_LABEL(lwp0uspace):
-	.space	UPAGES * PAGE_SIZE - TF_SIZE
-kernelstack_bottom:
-	.space	TF_SIZE
+	.space	UPAGES * PAGE_SIZE
 
 	.align PGSHIFT
 /*
