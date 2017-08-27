@@ -547,8 +547,8 @@ l1_setblocks:
 	lsl	x3, x3, #LX_BLKPAG_ATTR_INDX_SHIFT
 	orr	x2, x2, x3
 	orr	x2, x2, #LX_BLKPAG_AF
-#if 0 /* def MULTIPROCESSOR */
-	orr	x2, x2, ATTR_SH(ATTR_SH_IS)
+#ifdef MULTIPROCESSOR
+	orr	x2, x2, #__SHIFTIN(LX_BLKPAG_SH_IS,LX_BLKPAG_SH)
 #endif
 	and	x1, x1, #L1_ADDR_BITS
 	lsr	x1, x1, #L1_SHIFT
@@ -608,8 +608,8 @@ l2_setblocks:
 	lsl	x3, x3, #LX_BLKPAG_ATTR_INDX_SHIFT
 	orr	x2, x2, x3
 	orr	x2, x2, #LX_BLKPAG_AF
-#if 0 /* def MULTIPROCESSOR */
-	orr	x2, x2, ATTR_SH(ATTR_SH_IS)
+#ifdef MULTIPROCESSOR
+	orr	x2, x2, #__SHIFTIN(LX_BLKPAG_SH_IS,LX_BLKPAG_SH)
 #endif
 	and	x1, x1, #L2_ADDR_BITS
 	lsr	x1, x1, #L2_SHIFT
@@ -660,7 +660,7 @@ mmu_enable:
 	 * Setup TCR according to PARange bits from ID_AA64MMFR0_EL1.
 	 */
 	ldr	x0, tcr
-#if 0 /* def MULTIPROCESSOR */
+#ifdef MULTIPROCESSOR
 	ldr	x1, tcr_inner_shareable
 	orr	x0, x0, x1
 #endif
@@ -698,7 +698,7 @@ tcr:
 	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_ORGN1) |	\
 	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_IRGN1))
 
-#if 0 /* def MULTIPROCESSOR */
+#ifdef MULTIPROCESSOR
 tcr_inner_shareable:
 	.quad (						\
 	    __SHIFTIN(TCR_SH_INNER, TCR_SH0) |		\
