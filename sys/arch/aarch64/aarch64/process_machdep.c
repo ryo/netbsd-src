@@ -36,9 +36,12 @@ __KERNEL_RCSID(1, "$NetBSD: process_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/ptrace.h>
+#include <sys/lwp.h>
 
-#include <aarch64/locore.h>
 #include <aarch64/pcb.h>
+#include <aarch64/frame.h>
+#include <aarch64/machdep.h>
+#include <aarch64/armreg.h>
 
 int
 process_read_regs(struct lwp *l, struct reg *regs)

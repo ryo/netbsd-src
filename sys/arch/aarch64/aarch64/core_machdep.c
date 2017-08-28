@@ -39,9 +39,10 @@ __KERNEL_RCSID(1, "$NetBSD: core_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp $"
 #include <sys/core.h>
 #include <sys/lwp.h>
 
-#include <aarch64/frame.h>
-#include <aarch64/locore.h>
 #include <aarch64/pcb.h>
+#include <aarch64/frame.h>
+#include <aarch64/machdep.h>
+#include <aarch64/armreg.h>
 
 /*
  * Write the machine-dependent part of a core dump.

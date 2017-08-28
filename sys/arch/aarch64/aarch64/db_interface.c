@@ -36,8 +36,7 @@ __KERNEL_RCSID(1, "$NetBSD: db_interface.c,v 1.1 2014/08/10 05:47:37 matt Exp $"
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <aarch64/db_machdep.h>
-#include <aarch64/locore.h>
+#include <dev/cons.h>
 
 #include <ddb/db_access.h>
 #include <ddb/db_command.h>
@@ -47,7 +46,7 @@ __KERNEL_RCSID(1, "$NetBSD: db_interface.c,v 1.1 2014/08/10 05:47:37 matt Exp $"
 #include <ddb/db_extern.h>
 #include <ddb/db_interface.h>
 
-#include <dev/cons.h>
+#include <aarch64/db_machdep.h>
 
 int db_active = 0;
 
@@ -95,7 +94,7 @@ db_write_bytes(vaddr_t addr, size_t size, const char *data)
 
 	while (size > 0) {
 		uint8_t * const dp = (void *)addr;
-		if (vtophysw(addr) == VTOPHYS_FAILED) {
+		if (vtophys(addr) == VTOPHYS_FAILED) {
 			db_printf("address %p is invalid\n", dp);
 		}
 

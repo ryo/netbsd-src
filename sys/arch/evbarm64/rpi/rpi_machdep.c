@@ -35,8 +35,9 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <dev/cons.h>
 
 #include <aarch64/cpu.h>
-#include <aarch64/armreg.h>
+#include <aarch64/frame.h>
 #include <aarch64/machdep.h>
+#include <aarch64/armreg.h>
 
 void initarm(void);
 void uartputs(const char *);

@@ -131,10 +131,9 @@ __KERNEL_RCSID(0, "$NetBSD: arm32_reboot.c,v 1.10 2015/11/11 14:50:08 jmcneill E
 #include <sys/mount.h>
 
 #include <dev/cons.h>
-
 #include <uvm/uvm_extern.h>
 
-#include <aarch64/locore.h>
+#include <aarch64/machdep.h>
 #include <aarch64/armreg.h>
 
 void (*cpu_reset_address)(void);
@@ -190,7 +189,7 @@ bootsync(void)
 		 * did not come from a user process e.g. shutdown, but must
 		 * have come from somewhere in the kernel.
 		 */
-		cpsie(DAIF_I);	/* enable IRQ */
+		reg_daifset_write(DAIF_I);	/* enable IRQ */
 		printf("Warning IRQ's disabled during boot()\n");
 	}
 
@@ -242,7 +241,7 @@ cpu_reboot(int howto, char *bootstr)
 	doshutdownhooks();
 
 	/* Make sure IRQ's are disabled */
-	cpsid(DAIF_I);
+	reg_daifclr_write(DAIF_I);
 
 	docpureset(howto);
 	__unreachable();

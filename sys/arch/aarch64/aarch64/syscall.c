@@ -38,11 +38,15 @@
 #include <sys/proc.h>
 #include <sys/reboot.h>
 #include <sys/systm.h>
+#include <sys/lwp.h>
 #include <sys/syscallvar.h>
 
 #include <uvm/uvm_extern.h>
 
-#include <aarch64/locore.h>
+#include <aarch64/userret.h>
+#include <aarch64/frame.h>
+#include <aarch64/machdep.h>
+#include <aarch64/armreg.h>
 
 #ifndef NARGREG
 #define	NARGREG		8		/* 8 args are in registers */

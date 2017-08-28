@@ -40,7 +40,7 @@ __KERNEL_RCSID(1, "$NetBSD: sig_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp $")
 #include <sys/signalvar.h>
 #include <sys/siginfo.h>
 
-#include <aarch64/locore.h>
+#include <aarch64/frame.h>
 
 void
 sendsig_siginfo(const ksiginfo_t *ksi, const sigset_t *mask)

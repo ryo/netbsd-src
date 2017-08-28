@@ -37,14 +37,15 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 #include <sys/types.h>
 #include <sys/cpu.h>
 #include <sys/proc.h>
-#include <sys/userret.h>
 #include <sys/systm.h>
 
 #include <sys/signal.h>
 #include <sys/signalvar.h>
 #include <sys/siginfo.h>
 
-#include <aarch64/locore.h>
+#include <aarch64/userret.h>
+#include <aarch64/frame.h>
+#include <aarch64/machdep.h>
 
 static void
 dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
@@ -99,6 +100,7 @@ dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 void
 userret(struct lwp *l, struct trapframe *tf)
 {
+
 	mi_userret(l);
 }
 

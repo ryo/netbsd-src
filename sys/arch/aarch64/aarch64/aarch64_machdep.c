@@ -35,16 +35,17 @@ __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp
 
 #include <sys/param.h>
 #include <sys/types.h>
+#include <sys/bus.h>
 #include <sys/kauth.h>
 
 #include <uvm/uvm.h>
-
 #include <dev/mm.h>
 
-#include <aarch64/locore.h>
-#include <aarch64/vmparam.h>
-#include <aarch64/machdep.h>
 #include <aarch64/frame.h>
+#include <aarch64/machdep.h>
+#include <aarch64/armreg.h>
+
+#include <aarch64/vmparam.h>
 
 char cpu_model[32]; 
 char machine[] = MACHINE;
@@ -194,4 +195,22 @@ cpu_startup(void)
 void
 cpu_dumpconf(void)
 {
+}
+
+static const paddr_t VTOPHYS_FAILED = (paddr_t) -1L;
+
+paddr_t
+vtophys(vaddr_t va)
+{
+	const uint64_t daif = reg_daif_read();
+	paddr_t pa;
+	/*
+	 * Use the address translation instruction to do the lookup.
+	 */
+	reg_daifset_write(DAIF_I|DAIF_F);
+	__asm __volatile("at\ts1e1r, %0" :: "r"(va));
+	pa = reg_par_el1_read();
+	pa = (pa & PAR_F) ? VTOPHYS_FAILED : (pa & PAR_PA);
+	reg_daif_write(daif);
+	return pa;
 }

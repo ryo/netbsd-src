@@ -36,14 +36,13 @@ __KERNEL_RCSID(1, "$NetBSD: db_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 #include <sys/param.h>
 #include <sys/systm.h>
 
-#include <aarch64/db_machdep.h>
-#include <aarch64/locore.h>
-
 #include <ddb/db_access.h>
 #include <ddb/db_sym.h>
 #include <ddb/db_output.h>
 #include <ddb/db_variables.h>
 #include <ddb/db_command.h>
+
+#include <aarch64/db_machdep.h>
 
 db_regs_t ddb_regs;
 

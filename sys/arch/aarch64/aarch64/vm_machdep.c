@@ -45,8 +45,10 @@ __KERNEL_RCSID(0, "$NetBSD: vm_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 
 #include <uvm/uvm_extern.h>
 
-#include <aarch64/locore.h>
 #include <aarch64/pcb.h>
+#include <aarch64/frame.h>
+#include <aarch64/machdep.h>
+#include <aarch64/armreg.h>
 
 /*
  * Special compilation symbols:

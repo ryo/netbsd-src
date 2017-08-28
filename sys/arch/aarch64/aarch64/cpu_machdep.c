@@ -45,9 +45,11 @@ __KERNEL_RCSID(1, "$NetBSD: cpu_machdep.c,v 1.2 2015/04/14 22:36:54 jmcneill Exp
 #include <sys/kmem.h>
 #include <sys/xcall.h>
 
-#include <aarch64/frame.h>
 #include <aarch64/pcb.h>
-#include <aarch64/locore.h>
+#include <aarch64/userret.h>
+#include <aarch64/frame.h>
+#include <aarch64/machdep.h>
+#include <aarch64/armreg.h>
 
 u_int cputype;	// XXXAARCH64
 

@@ -45,8 +45,9 @@ include <netinet/ip_var.h>
 
 include <uvm/uvm_extern.h>
 
-include <aarch64/locore.h>
 include <aarch64/vmparam.h>
+include <aarch64/frame.h>
+include <aarch64/armreg.h>
 
 if defined(_KERNEL_OPT)
 include "opt_multiprocessor.h"

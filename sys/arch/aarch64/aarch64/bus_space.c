@@ -32,7 +32,8 @@ __KERNEL_RCSID(1, "$NetBSD$");
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <aarch64/locore.h>
+#include <aarch64/frame.h>
+#include <aarch64/machdep.h>
 
 void
 bus_space_mallocok(void)
