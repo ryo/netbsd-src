@@ -92,9 +92,10 @@ void	cpu_need_proftick(struct lwp *l);
 void	cpu_boot_secondary_processors(void);
 #define setsoftast(ci)		atomic_or_uint(&(ci)->ci_astpending, __BIT(0))
 
+extern struct cpu_info *cpu_info[];
 #define CPU_INFO_ITERATOR	cpuid_t
 #define CPU_INFO_FOREACH(cii, ci) \
-	(cii) = 0; ((ci) = cpu_infos[cii]) != NULL; (cii)++
+	cii = 0, ci = cpu_info[0]; cii < ncpu && (ci = cpu_info[cii]) != NULL; cii++
 
 static inline void
 cpu_dosoftints(void)
