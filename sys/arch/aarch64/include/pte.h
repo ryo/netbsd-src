@@ -35,7 +35,8 @@
 #ifdef __aarch64__
 
 #ifndef _LOCORE
-typedef unsigned long long pt_entry_t;
+typedef uint64_t pd_entry_t;	/* L0(512G) / L1(1G) / L2(2M) table entry */
+typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #endif /* _LOCORE */
 
 /*
@@ -51,6 +52,8 @@ typedef unsigned long long pt_entry_t;
 #define LX_BLKPAG_UXN		__BIT(54)	/* Unprivileged Execute Never */
 #define LX_BLKPAG_PXN		__BIT(53)	/* Privileged Execute Never */
 #define LX_BLKPAG_CONTIG	__BIT(52)	/* Hint of TLB cache */
+#define LX_TBL_PA			__BITS(47, 12)
+#define LX_BLKPAG_OA		__BITS(47, 12)
 #define LX_BLKPAG_NG		__BIT(11)	/* Not Global */
 #define LX_BLKPAG_AF		__BIT(10)	/* Access Flag */
 #define LX_BLKPAG_SH		__BITS(9,8)	/* Shareability */
@@ -61,7 +64,7 @@ typedef unsigned long long pt_entry_t;
 #define  LX_BLKPAG_AP_RW_NONE	0		/* EL1:RW, EL0:None */
 #define  LX_BLKPAG_AP_RW_RW	1		/* EL1:RW, EL0:RW */
 #define  LX_BLKPAG_AP_RO_NONE	2		/* EL1:RO, EL0:None */
-#define  LX_BLKPAG_AP_RO_RW	3		/* EL1:RO, EL0:RO */
+#define  LX_BLKPAG_AP_RO_RO	3		/* EL1:RO, EL0:RO */
 #define LX_BLKPAG_NS		__BIT(5)
 #define LX_BLKPAG_ATTR_INDX	__BITS(4,2)	/* refer MAIR_EL1 attr<n> */
 
@@ -105,15 +108,9 @@ typedef unsigned long long pt_entry_t;
 #define L3_OFFSET		(L3_SIZE - 1UL)
 #define L3_FRAME		(~L3_OFFSET)
 
-
-#define L0_ENTRIES_SHIFT	9
-#define L0_ENTRIES		(1 << L0_ENTRIES_SHIFT)
-#define L0_ADDR_MASK		(L0_ENTRIES - 1)
-
 #define Ln_ENTRIES_SHIFT	9
 #define Ln_ENTRIES		(1 << Ln_ENTRIES_SHIFT)
-#define Ln_ADDR_MASK		(Ln_ENTRIES - 1)
-#define Ln_TABLE_MASK		((1 << 12) - 1)
+#define Ln_TABLE_SIZE		(8 << Ln_ENTRIES_SHIFT)
 
 
 /* TCR_EL1 - Translation Control Register */
