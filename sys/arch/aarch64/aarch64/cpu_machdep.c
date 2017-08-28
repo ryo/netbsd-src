@@ -33,8 +33,6 @@
 
 __KERNEL_RCSID(1, "$NetBSD: cpu_machdep.c,v 1.2 2015/04/14 22:36:54 jmcneill Exp $");
 
-//XXXAARCH64
-//#include "opt_pic.h"
 #include "opt_multiprocessor.h"
 
 #define _INTR_PRIVATE
@@ -47,8 +45,9 @@ __KERNEL_RCSID(1, "$NetBSD: cpu_machdep.c,v 1.2 2015/04/14 22:36:54 jmcneill Exp
 #include <sys/kmem.h>
 #include <sys/xcall.h>
 
-#include <aarch64/locore.h>
+#include <aarch64/frame.h>
 #include <aarch64/pcb.h>
+#include <aarch64/locore.h>
 
 u_int cputype;	// XXXAARCH64
 
@@ -409,9 +408,11 @@ cpu_ipi(struct cpu_info *ci)
 	intr_ipi_send(ci != NULL ? ci->ci_kcpuset : NULL, IPI_GENERIC);
 }
 
+//XXXARCH64
 int
 pic_ipi_shootdown(void *arg)
 {
+	/* may be populated in pmap.c */
 	return 1;
 }
 #endif /* MULTIPROCESSOR */
