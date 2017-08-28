@@ -122,6 +122,11 @@
 
 #define	MCLBYTES	(1 << MCLSHIFT)	/* size of a m_buf cluster */
 
+
+#ifndef MSGBUFSIZE
+#define MSGBUFSIZE	NBPG		/* default message buffer size */
+#endif
+
 #ifdef _KERNEL
 void delay(unsigned long);
 #define	DELAY(x)	delay(x)
