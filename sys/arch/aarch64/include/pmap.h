@@ -76,6 +76,31 @@ struct vm_page_md {
 	do {					\
 	} while (/*CONSTCOND*/ 0)
 
+#define l0pte_pa(pde)		((pde) & LX_TBL_PA)
+#define l0pte_index(v)		(((vaddr_t)(v) & L0_ADDR_BITS) >> L0_SHIFT)
+#define l0pte_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
+/* l0pte is always table */
+
+#define l1pte_pa(pde)		((pde) & LX_TBL_PA)
+#define l1pte_index(v)		(((vaddr_t)(v) & L1_ADDR_BITS) >> L1_SHIFT)
+#define l1pte_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
+#define l1pte_is_block(pde)	(((pde) & LX_TYPE) == LX_TYPE_BLK)
+#define l1pte_is_table(pde)	(((pde) & LX_TYPE) == LX_TYPE_TBL)
+
+#define l2pte_pa(pde)		((pde) & LX_TBL_PA)
+#define l2pte_index(v)		(((vaddr_t)(v) & L2_ADDR_BITS) >> L2_SHIFT)
+#define l2pte_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
+#define l2pte_is_block(pde)	(((pde) & LX_TYPE) == LX_TYPE_BLK)
+#define l2pte_is_table(pde)	(((pde) & LX_TYPE) == LX_TYPE_TBL)
+
+#define l3pte_pa(pde)		((pde) & LX_TBL_PA)
+#define l3pte_index(v)		(((vaddr_t)(v) & L3_ADDR_BITS) >> L3_SHIFT)
+#define l3pte_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
+#define l3pte_is_page(pde)	(((pde) & LX_TYPE) == L3_TYPE_PAG)
+/* l3pte is always page */
+
+void pmap_bootstrap(vaddr_t, vaddr_t);
+
 #elif defined(__arm__)
 
 #include <arm/pmap.h>
