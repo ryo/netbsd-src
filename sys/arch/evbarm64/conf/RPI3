@@ -19,7 +19,7 @@ include 	"arch/evbarm64/conf/std.rpi"
 
 options 	INCLUDE_CONFIG_FILE	# embed config file in kernel binary
 
-ident		"A64EMUL-$Revision: 1.8 $"
+ident		"RPi3-$Revision: 0.99 $"
 
 maxusers 32
 
