@@ -159,6 +159,7 @@ pic_ipi_ddb(void *arg)
 	kdb_trap(-1, arg);
 	return 1;
 }
+#endif
 
 #ifdef __HAVE_PREEMPTION
 int
@@ -168,7 +169,6 @@ pic_ipi_kpreempt(void *arg)
 	return 1;
 }
 #endif
-#endif /* MULTIPROCESSOR */
 
 void
 intr_cpu_init(struct cpu_info *ci)
