@@ -46,7 +46,8 @@ __KERNEL_RCSID(0, "$NetBSD: a64gtmr.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 
 #include <prop/proplib.h>
 
-#include <aarch64/locore.h>
+#include <aarch64/autoconf.h>
+#include <aarch64/armreg.h>
 #include <aarch64/dev/a64gtmr_var.h>
 
 static int gtmr_match(device_t, cfdata_t, void *);

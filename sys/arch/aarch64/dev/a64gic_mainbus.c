@@ -42,7 +42,8 @@ __KERNEL_RCSID(1, "$NetBSD: a64gic_mainbus.c,v 1.1 2014/08/10 05:47:37 matt Exp 
 #include <sys/device.h>
 #include <sys/intr.h>
 
-#include <aarch64/locore.h>
+#include <aarch64/autoconf.h>
+#include <aarch64/armreg.h>
 
 #include <arm/cortex/gic_reg.h>
 // XXX: AARCH64
