@@ -43,47 +43,6 @@
 #include <aarch64/armreg.h>
 #include <aarch64/frame.h>
 
-struct mainbus_attach_args {
-	const char *mba_name;
-	bus_space_tag_t mba_memt;
-	bus_dma_tag_t mba_dmat;
-	bus_addr_t mba_addr;
-	bus_size_t mba_size;
-	int mba_intr;
-	int mba_intrbase;
-	int mba_package;
-};
-
-void	userret(struct lwp *, struct trapframe *);
-void	lwp_trampoline(void);
-void	cpu_dosoftints(void);
-void	dosoftints(void);
-void	cpu_switchto_softint(struct lwp *, int);
-void	cpu_send_ipi(struct cpu_info *, int);
-
-void	trap(struct trapframe *, int);
-void	interrupt(struct trapframe *);
-
-extern const pcu_ops_t pcu_fpu_ops;
-
-static inline bool
-fpu_used_p(lwp_t *l)
-{
-	return pcu_valid_p(&pcu_fpu_ops, l);
-}
-
-static inline void
-fpu_discard(lwp_t *l, bool usesw)
-{
-	pcu_discard(&pcu_fpu_ops, l, usesw);
-}
-
-static inline void
-fpu_save(lwp_t *l)
-{
-	pcu_save(&pcu_fpu_ops, l);
-}
-
 static inline void cpsie(register_t psw) __attribute__((__unused__));
 static inline register_t cpsid(register_t psw) __attribute__((__unused__));
 
@@ -97,12 +56,6 @@ cpsie(register_t psw)
 	}
 }
 
-static inline void
-enable_interrupts(register_t psw)
-{
-	reg_daif_write(psw);
-}
-
 static inline register_t
 cpsid(register_t psw)
 {
@@ -113,38 +66,6 @@ cpsid(register_t psw)
 		reg_daifclr_write(psw);
 	}
 	return oldpsw;
-}
-
-static const paddr_t VTOPHYS_FAILED = (paddr_t) -1L;
-
-static inline paddr_t
-vtophys(vaddr_t va)
-{
-	const uint64_t daif = reg_daif_read();
-	/*
-	 * Use the address translation instruction to do the lookup.
-	 */
-	reg_daifset_write(DAIF_I|DAIF_F);
-	__asm __volatile("at\ts1e1r, %0" :: "r"(va));
-	paddr_t pa = reg_par_el1_read();
-	pa = (pa & PAR_F) ? VTOPHYS_FAILED : (pa & PAR_PA);
-	reg_daif_write(daif);
-	return pa;
-}
-
-static inline paddr_t
-vtophysw(vaddr_t va)
-{
-	const uint64_t daif = reg_daif_read();
-	/*
-	 * Use the address translation instruction to do the lookup.
-	 */
-	reg_daifset_write(DAIF_I|DAIF_F);
-	__asm __volatile("at\ts1e1w, %0" :: "r"(va));
-	paddr_t pa = reg_par_el1_read();
-	pa = (pa & PAR_F) ? VTOPHYS_FAILED : (pa & PAR_PA);
-	reg_daif_write(daif);
-	return pa;
 }
 
 #elif defined(__arm__)

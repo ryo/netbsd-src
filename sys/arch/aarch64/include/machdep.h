@@ -37,13 +37,37 @@ extern void (*cpu_powerdown_address)(void);
 
 extern char *booted_kernel;
 
-/* from aarch64_reboot.c */
-void dumpsys(void);
+void	lwp_trampoline(void);
+void	cpu_dosoftints(void);
+void	cpu_switchto_softint(struct lwp *, int);
+void	trap(struct trapframe *, int);
+void	interrupt(struct trapframe *);
+void	dumpsys(void);
+void	initarm64(void);
+void	dosoftints(void);
+void	bus_space_mallocok(void);
+paddr_t vtophys(vaddr_t);
 
-/* from aarch64_machdep.c */
-void initarm64(void);
+#include <sys/pcu.h>
 
-/* from aarch64/cpu_machdep.c */
-void dosoftints(void);
+extern const pcu_ops_t pcu_fpu_ops;
+
+static inline bool
+fpu_used_p(lwp_t *l)
+{
+	return pcu_valid_p(&pcu_fpu_ops, l);
+}
+
+static inline void
+fpu_discard(lwp_t *l, bool usesw)
+{
+	pcu_discard(&pcu_fpu_ops, l, usesw);
+}
+
+static inline void
+fpu_save(lwp_t *l)
+{
+	pcu_save(&pcu_fpu_ops, l);
+}
 
 #endif /* _AARCH64_MACHDEP_H_ */
