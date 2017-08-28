@@ -47,7 +47,7 @@ __KERNEL_RCSID(1, "$NetBSD: plcom_obio.c,v 1.1 2014/08/10 05:47:38 matt Exp $");
 #include <evbarm/dev/plcomreg.h>
 #include <evbarm/dev/plcomvar.h>
 
-#include <aarch64/locore.h>
+#include <aarch64/autoconf.h>
 #include <evbarm64/a64emul/obio_var.h>
 
 static int plcom_obio_match(device_t, cfdata_t, void *);
