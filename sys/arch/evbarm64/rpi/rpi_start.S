@@ -51,10 +51,11 @@ RCSID("$NetBSD$")
 #define LOCORE_EL2
 #define VIRT_BIT	48
 
-#define MEMATTR_DEVICE		0
-#define MEMATTR_NORMAL_NC	1
-#define MEMATTR_NORMAL_WB	2
-#define MEMATTR_NORMAL_WT	3
+/* attributes are defined in MAIR_EL1 */
+#define L2_BLKPAG_ATTR_NORMAL_WB	__SHIFTIN(0, LX_BLKPAG_ATTR_INDX)
+#define L2_BLKPAG_ATTR_NORMAL_NC	__SHIFTIN(1, LX_BLKPAG_ATTR_INDX)
+#define L2_BLKPAG_ATTR_NORMAL_WT	__SHIFTIN(2, LX_BLKPAG_ATTR_INDX)
+#define L2_BLKPAG_ATTR_DEVICE_MEM	__SHIFTIN(3, LX_BLKPAG_ATTR_INDX)
 
 
 #define PRINT(string)	stp x0,lr,[sp,#-16]!;bl xprint;.asciz string;.align 2;ldp x0,lr,[sp],#16
@@ -156,9 +157,6 @@ _ASM_LABEL(start):
 
 	VERBOSE("MMU Enable...")
 	bl	mmu_enable
-
-	/* change UART address from 0x3f215040 to 0xffff00003f215040 */
-	bl	uart_change_to_directmap
 	VERBOSE("OK\r\n")
 
 	msr	contextidr_el1, xzr
@@ -331,11 +329,11 @@ _C_LABEL(uartputc):
 	stp	x9, x10, [sp, #-16]!
 	stp	x0, x1, [sp, #-16]!
 
-	ldr	x9, L_COM_LSR
+	ldr	x9, .L_COM_LSR
 1:	ldr	w10, [x9]
 	tbz	w10, #COM_LSR_TXFE_BIT, 1b
 
-	ldr	x9, L_COM_DATA
+	ldr	x9, .L_COM_DATA
 	and	w0, w0, #0xff
 	str	w0, [x9]
 
@@ -348,11 +346,11 @@ END(_C_LABEL(uartputc))
 _C_LABEL(uartputA):
 	stp	x0, x9, [sp, #-16]!
 
-	ldr	x9, L_COM_LSR
+	ldr	x9, .L_COM_LSR
 1:	ldr	w0, [x9]
 	tbz	w0, #COM_LSR_TXFE_BIT, 1b
 
-	ldr	x9, L_COM_DATA
+	ldr	x9, .L_COM_DATA
 	mov	w0, #'A'
 	str	w0, [x9]
 
@@ -364,11 +362,11 @@ END(_C_LABEL(uartputA))
 _C_LABEL(uartputB):
 	stp	x0, x9, [sp, #-16]!
 
-	ldr	x9, L_COM_LSR
+	ldr	x9, .L_COM_LSR
 1:	ldr	w0, [x9]
 	tbz	w0, #COM_LSR_TXFE_BIT, 1b
 
-	ldr	x9, L_COM_DATA
+	ldr	x9, .L_COM_DATA
 	mov	w0, #'B'
 	str	w0, [x9]
 
@@ -380,11 +378,11 @@ END(_C_LABEL(uartputB))
 _C_LABEL(uartputC):
 	stp	x0, x9, [sp, #-16]!
 
-	ldr	x9, L_COM_LSR
+	ldr	x9, .L_COM_LSR
 1:	ldr	w0, [x9]
 	tbz	w0, #COM_LSR_TXFE_BIT, 1b
 
-	ldr	x9, L_COM_DATA
+	ldr	x9, .L_COM_DATA
 	mov	w0, #'C'
 	str	w0, [x9]
 
@@ -392,26 +390,10 @@ _C_LABEL(uartputC):
 	ret
 END(_C_LABEL(uartputC))
 
-uart_change_to_directmap:
-	stp	x0, x1, [sp, #-16]!
-
-	adr	x1, L_COM_DATA
-	ldr	x0, [x1]
-	movk	x0, #0xffff, lsl #48
-	str	x0, [x1]
-
-	adr	x1, L_COM_LSR
-	ldr	x0, [x1]
-	movk	x0, #0xffff, lsl #48
-	str	x0, [x1]
-
-	ldp	x9, x10, [sp], #16
-	ret
-
 	.align	3
-L_COM_DATA:
+.L_COM_DATA:
 	.quad	COM_DATA
-L_COM_LSR:
+.L_COM_LSR:
 	.quad	COM_LSR
 
 
@@ -454,7 +436,7 @@ arm_boot_l0pt_init:
 	adr	x0, ttbr0_l1table
 	mov	x1, #0			/* PA */
 	mov	x2, #0			/* VA */
-	mov	x3, MEMATTR_DEVICE	/* including UART */
+	mov	x3, #L2_BLKPAG_ATTR_DEVICE_MEM
 	mov	x4, #4			/* 4GB = whole 32bit */
 	bl	l1_setblocks
 
@@ -469,7 +451,8 @@ arm_boot_l0pt_init:
 	adr	x0, ttbr1_l1table_kseg
 	mov	x1, #AARCH64_KSEG_START
 	adr	x2, #0
-	mov	x3, MEMATTR_DEVICE	/* for devices */
+	mov	x3, #L2_BLKPAG_ATTR_NORMAL_WB
+	orr	x3, x3, #(LX_BLKPAG_PXN|LX_BLKPAG_UXN)
 	mov	x4, #Ln_ENTRIES		/* whole l1 table */
 	bl	l1_setblocks
 
@@ -492,7 +475,7 @@ arm_boot_l0pt_init:
 	and	x2, x2, #L2_BLK_OA	/* L2 block size aligned (2MB) */
 	mov	x1, #VM_MIN_KERNEL_ADDRESS
 	add	x1, x1, x2		/* add kernel load address */
-	mov	x3, MEMATTR_NORMAL_WB
+	mov	x3, #L2_BLKPAG_ATTR_NORMAL_WB
 
 	/* kernelsize = _end - _start */
 	ldr	x4, .Lend
@@ -536,7 +519,7 @@ l0_settable:
  *	x0 = l1table
  *	x1 = vaddr
  *	x2 = paddr
- *	x3 = type
+ *	x3 = attr
  *	x4 = N entries
  */
 l1_setblocks:
@@ -544,11 +527,10 @@ l1_setblocks:
 
 	and	x2, x2, #L1_ADDR_BITS
 	orr	x2, x2, #L1_BLOCK
-	lsl	x3, x3, #LX_BLKPAG_ATTR_INDX_SHIFT
 	orr	x2, x2, x3
 	orr	x2, x2, #LX_BLKPAG_AF
-#if 0 /* def MULTIPROCESSOR */
-	orr	x2, x2, ATTR_SH(ATTR_SH_IS)
+#ifdef MULTIPROCESSOR
+	orr	x2, x2, #__SHIFTIN(LX_BLKPAG_SH_IS,LX_BLKPAG_SH)
 #endif
 	and	x1, x1, #L1_ADDR_BITS
 	lsr	x1, x1, #L1_SHIFT
@@ -597,7 +579,7 @@ l1_settable:
  *	x0 = l2table
  *	x1 = vaddr
  *	x2 = paddr
- *	x3 = type
+ *	x3 = attr
  *	x4 = N entries
  */
 l2_setblocks:
@@ -605,11 +587,10 @@ l2_setblocks:
 
 	and	x2, x2, #L2_ADDR_BITS
 	orr	x2, x2, #L2_BLOCK
-	lsl	x3, x3, #LX_BLKPAG_ATTR_INDX_SHIFT
 	orr	x2, x2, x3
 	orr	x2, x2, #LX_BLKPAG_AF
-#if 0 /* def MULTIPROCESSOR */
-	orr	x2, x2, ATTR_SH(ATTR_SH_IS)
+#ifdef MULTIPROCESSOR
+	orr	x2, x2, #__SHIFTIN(LX_BLKPAG_SH_IS,LX_BLKPAG_SH)
 #endif
 	and	x1, x1, #L2_ADDR_BITS
 	lsr	x1, x1, #L2_SHIFT
@@ -660,7 +641,7 @@ mmu_enable:
 	 * Setup TCR according to PARange bits from ID_AA64MMFR0_EL1.
 	 */
 	ldr	x0, tcr
-#if 0 /* def MULTIPROCESSOR */
+#ifdef MULTIPROCESSOR
 	ldr	x1, tcr_inner_shareable
 	orr	x0, x0, x1
 #endif
@@ -681,11 +662,11 @@ mmu_enable:
 
 	.align 3
 mair:
-#define MAIR_ATTR(attr, idx)	((attr) << ((idx) * 8))
-	.quad	MAIR_ATTR(MAIR_DEVICE_nGnRnE, 0) |	\
-		MAIR_ATTR(MAIR_NORMAL_NC, 1) |		\
-		MAIR_ATTR(MAIR_NORMAL_WB, 2) |		\
-		MAIR_ATTR(MAIR_NORMAL_WT, 3)
+	.quad (						\
+	    __SHIFTIN(MAIR_NORMAL_WB, MAIR_ATTR0) |	\
+	    __SHIFTIN(MAIR_NORMAL_NC, MAIR_ATTR1) |	\
+	    __SHIFTIN(MAIR_NORMAL_WT, MAIR_ATTR2) |	\
+	    __SHIFTIN(MAIR_DEVICE_nGnRnE, MAIR_ATTR3))
 
 tcr:
 	.quad (						\
@@ -698,7 +679,7 @@ tcr:
 	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_ORGN1) |	\
 	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_IRGN1))
 
-#if 0 /* def MULTIPROCESSOR */
+#ifdef MULTIPROCESSOR
 tcr_inner_shareable:
 	.quad (						\
 	    __SHIFTIN(TCR_SH_INNER, TCR_SH0) |		\
