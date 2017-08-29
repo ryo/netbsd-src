@@ -52,7 +52,7 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define LX_BLKPAG_UXN		__BIT(54)	/* Unprivileged Execute Never */
 #define LX_BLKPAG_PXN		__BIT(53)	/* Privileged Execute Never */
 #define LX_BLKPAG_CONTIG	__BIT(52)	/* Hint of TLB cache */
-#define LX_TBL_PA			__BITS(47, 12)
+#define LX_TBL_PA		__BITS(47, 12)
 #define LX_BLKPAG_OA		__BITS(47, 12)
 #define LX_BLKPAG_NG		__BIT(11)	/* Not Global */
 #define LX_BLKPAG_AF		__BIT(10)	/* Access Flag */

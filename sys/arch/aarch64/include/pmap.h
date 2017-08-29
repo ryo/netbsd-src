@@ -36,22 +36,22 @@
 
 #include <sys/types.h>
 #include <sys/pool.h>
-
-//XXXAARCH64
-//#include <uvm/pmap/pmap_pv.h>
 #include <uvm/uvm_pglist.h>
+
+#include <aarch64/pte.h>
 
 #define PMAP_GROWKERNEL
 #define PMAP_STEAL_MEMORY
 
 struct pmap {
-	struct pool *pm_pvpool;
-	struct pglist pm_pglist;
-	uint16_t pm_asid;
-	uint64_t pm_ttbr;
-//XXXAARCH64
-//	pmap_pv_info_t pm_pvinfo;
+	kmutex_t pm_lock;
+//	struct pool *pm_pvpool;
+//	struct pglist pm_pglist;
+	pd_entry_t *pm_l0table;	/* L0 table: 512G*512 */
+	pd_entry_t *pm_l1table;	/* L1 table: 2G*512 */
 	struct pmap_statistics pm_stats;
+	unsigned int pm_refcnt;
+//	uint16_t pm_asid;
 };
 
 #define __HAVE_VM_PAGE_MD
@@ -76,28 +76,29 @@ struct vm_page_md {
 	do {					\
 	} while (/*CONSTCOND*/ 0)
 
-#define l0pte_pa(pde)		((pde) & LX_TBL_PA)
-#define l0pte_index(v)		(((vaddr_t)(v) & L0_ADDR_BITS) >> L0_SHIFT)
-#define l0pte_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
-/* l0pte is always table */
 
-#define l1pte_pa(pde)		((pde) & LX_TBL_PA)
-#define l1pte_index(v)		(((vaddr_t)(v) & L1_ADDR_BITS) >> L1_SHIFT)
-#define l1pte_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
-#define l1pte_is_block(pde)	(((pde) & LX_TYPE) == LX_TYPE_BLK)
-#define l1pte_is_table(pde)	(((pde) & LX_TYPE) == LX_TYPE_TBL)
+#define l0pde_pa(pde)		((pde) & LX_TBL_PA)
+#define l0pde_index(v)		(((vaddr_t)(v) & L0_ADDR_BITS) >> L0_SHIFT)
+#define l0pde_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
+/* l0pte always contains table entries */
 
-#define l2pte_pa(pde)		((pde) & LX_TBL_PA)
-#define l2pte_index(v)		(((vaddr_t)(v) & L2_ADDR_BITS) >> L2_SHIFT)
-#define l2pte_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
-#define l2pte_is_block(pde)	(((pde) & LX_TYPE) == LX_TYPE_BLK)
-#define l2pte_is_table(pde)	(((pde) & LX_TYPE) == LX_TYPE_TBL)
+#define l1pde_pa(pde)		((pde) & LX_TBL_PA)
+#define l1pde_index(v)		(((vaddr_t)(v) & L1_ADDR_BITS) >> L1_SHIFT)
+#define l1pde_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
+#define l1pde_is_block(pde)	(((pde) & LX_TYPE) == LX_TYPE_BLK)
+#define l1pde_is_table(pde)	(((pde) & LX_TYPE) == LX_TYPE_TBL)
+
+#define l2pde_pa(pde)		((pde) & LX_TBL_PA)
+#define l2pde_index(v)		(((vaddr_t)(v) & L2_ADDR_BITS) >> L2_SHIFT)
+#define l2pde_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
+#define l2pde_is_block(pde)	(((pde) & LX_TYPE) == LX_TYPE_BLK)
+#define l2pde_is_table(pde)	(((pde) & LX_TYPE) == LX_TYPE_TBL)
 
 #define l3pte_pa(pde)		((pde) & LX_TBL_PA)
 #define l3pte_index(v)		(((vaddr_t)(v) & L3_ADDR_BITS) >> L3_SHIFT)
 #define l3pte_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
 #define l3pte_is_page(pde)	(((pde) & LX_TYPE) == L3_TYPE_PAG)
-/* l3pte is always page */
+/* l3pte contains always page entries */
 
 void pmap_bootstrap(vaddr_t, vaddr_t);
 
