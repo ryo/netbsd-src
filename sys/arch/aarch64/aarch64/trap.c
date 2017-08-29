@@ -125,10 +125,10 @@ trap(struct trapframe *tf, int reason)
 	switch (cause) {
 	case ESR_EC_UNKOWN:
 	default:
-		causestr = "AXX: Unknown Reason";
+		causestr = "Unknown Reason";
 		break;
 	case ESR_EC_WFX:
-		causestr = "AXX: WFI or WFE instruction execution";
+		causestr = "WFI or WFE instruction execution";
 		break;
 	case ESR_EC_CP15_RT:
 		causestr = "A32: MCR/MRC access to CP15 !EC=0";
@@ -143,7 +143,7 @@ trap(struct trapframe *tf, int reason)
 		causestr = "A32: LDC/STC access to CP14";
 		break;
 	case ESR_EC_FP_ACCCES:
-		causestr = "AXX: Access to SIMD/FP Registers";
+		causestr = "Access to SIMD/FP Registers";
 		break;
 	case ESR_EC_FPID:
 		causestr = "A32: MCR/MRC access to CP10 !EC=7";
@@ -152,7 +152,7 @@ trap(struct trapframe *tf, int reason)
 		causestr = "A32: MRRC access to CP14";
 		break;
 	case ESR_EC_ILL_STATE:
-		causestr = "AXX: Illegal Execution State";
+		causestr = "Illegal Execution State";
 		break;
 	case ESR_EC_SVC_A32:
 		causestr = "A32: SVC Instruction Execution";
@@ -176,22 +176,22 @@ trap(struct trapframe *tf, int reason)
 		causestr = "A64: MSR/MRS/SYS instruction (!EC0/1/7)";
 		break;
 	case ESR_EC_INSN_ABT_EL0:
-		causestr = "AXX: Instruction Abort (EL0)";
+		causestr = "Instruction Abort (EL0)";
 		break;
 	case ESR_EC_INSN_ABT_EL1:
-		causestr = "AXX: Instruction Abort (EL1)";
+		causestr = "Instruction Abort (EL1)";
 		break;
 	case ESR_EC_PC_ALIGNMENT:
-		causestr = "AXX: Misaligned PC";
+		causestr = "Misaligned PC";
 		break;
 	case ESR_EC_DATA_ABT_EL0:
-		causestr = "AXX: Data Abort (EL0)";
+		causestr = "Data Abort (EL0)";
 		break;
 	case ESR_EC_DATA_ABT_EL1:
-		causestr = "AXX: Data Abort (EL1)";
+		causestr = "Data Abort (EL1)";
 		break;
 	case ESR_EC_SP_ALIGNMENT:
-		causestr = "AXX: Misaligned SP";
+		causestr = "Misaligned SP";
 		break;
 	case ESR_EC_FP_TRAP_A32:
 		causestr = "A32: FP Exception";
@@ -200,25 +200,25 @@ trap(struct trapframe *tf, int reason)
 		causestr = "A64: FP Exception";
 		break;
 	case ESR_EC_SERROR:
-		causestr = "AXX: SError Interrupt";
+		causestr = "SError Interrupt";
 		break;
 	case ESR_EC_BRKPNT_EL0:
-		causestr = "AXX: Breakpoint Exception (EL0)";
+		causestr = "Breakpoint Exception (EL0)";
 		break;
 	case ESR_EC_BRKPNT_EL1:
-		causestr = "AXX: Breakpoint Exception (EL1)";
+		causestr = "Breakpoint Exception (EL1)";
 		break;
 	case ESR_EC_SW_STEP_EL0:
-		causestr = "AXX: Software Step (EL0)";
+		causestr = "Software Step (EL0)";
 		break;
 	case ESR_EC_SW_STEP_EL1:
-		causestr = "AXX: Software Step (EL1)";
+		causestr = "Software Step (EL1)";
 		break;
 	case ESR_EC_WTCHPNT_EL0:
-		causestr = "AXX: Watchpoint (EL0)";
+		causestr = "Watchpoint (EL0)";
 		break;
 	case ESR_EC_WTCHPNT_EL1:
-		causestr = "AXX: Watchpoint (EL1)";
+		causestr = "Watchpoint (EL1)";
 		break;
 	case ESR_EC_BKPT_INSN_A32:
 		causestr = "A32: BKPT Instruction Execution";
@@ -232,7 +232,7 @@ trap(struct trapframe *tf, int reason)
 	}
 
 	printf("%s TRAP!\n", causestr);
-	printf(" FAR_EL1  = 0x%016"PRIxREGISTER"\n", reg_far_el1_read());
+	printf(" FAR_EL1  = 0x%016"PRIxREGISTER"\n", tf->tf_far);
 	printf(" ISS      = 0x%08x\n", (int)(code & ESR_ISS));
 	printf(" DFSC.ISS = 0x%08x\n", (int)(code & 0x3f));
 
