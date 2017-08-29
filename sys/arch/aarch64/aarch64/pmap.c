@@ -193,7 +193,7 @@ _pmap_grow_l2(pd_entry_t *l1, vaddr_t vaddr)
 		l1[l1pde_index(vaddr)] = pa |
 		    LX_BLKPAG_AF |
 #ifdef MULTIPROCESSOR
-		    __SHIFTIN(LX_BLKPAG_SH_IS,LX_BLKPAG_SH) |
+		    LX_BLKPAG_SH_IS |
 #endif
 		    LX_BLKPAG_ATTR_NORMAL_WB |
 		    LX_BLKPAG_PXN |LX_BLKPAG_UXN |
@@ -230,7 +230,7 @@ _pmap_grow_l3(pd_entry_t *l2, vaddr_t vaddr)
 		l2[l2pde_index(vaddr)] = pa |
 		    LX_BLKPAG_AF |
 #ifdef MULTIPROCESSOR
-		    __SHIFTIN(LX_BLKPAG_SH_IS,LX_BLKPAG_SH) |
+		    LX_BLKPAG_SH_IS |
 #endif
 		    LX_BLKPAG_ATTR_NORMAL_WB |
 		    LX_BLKPAG_PXN |LX_BLKPAG_UXN |
@@ -408,13 +408,11 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 		attr = 0;
 		break;
 	case VM_PROT_READ:
-		attr = LX_BLKPAG_AF |
-		    __SHIFTIN(LX_BLKPAG_AP_RO_NONE, LX_BLKPAG_AP);
+		attr = LX_BLKPAG_AF | LX_BLKPAG_AP_RO_NONE;
 		break;
 	case VM_PROT_WRITE:
 	case VM_PROT_READ|VM_PROT_WRITE:
-		attr = LX_BLKPAG_AF |
-		    __SHIFTIN(LX_BLKPAG_AP_RW_NONE, LX_BLKPAG_AP);
+		attr = LX_BLKPAG_AF | LX_BLKPAG_AP_RW_NONE;
 		break;
 	}
 
@@ -441,7 +439,7 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 
 	pte = pa | attr |
 #ifdef MULTIPROCESSOR
-	    __SHIFTIN(LX_BLKPAG_SH_IS,LX_BLKPAG_SH) |
+	    LX_BLKPAG_SH_IS |
 #endif
 	    LX_VALID | L3_TYPE_PAG;
 
@@ -449,6 +447,7 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 
 	*ptep = pte;
 
+	_pmap_tlb_flush();
 	_pmap_invalidate_page(ptep);
 	_pmap_invalidate_page(va);
 }
