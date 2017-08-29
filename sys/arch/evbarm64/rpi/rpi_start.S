@@ -530,7 +530,7 @@ l1_setblocks:
 	orr	x2, x2, x3
 	orr	x2, x2, #LX_BLKPAG_AF
 #ifdef MULTIPROCESSOR
-	orr	x2, x2, #__SHIFTIN(LX_BLKPAG_SH_IS,LX_BLKPAG_SH)
+	orr	x2, x2, #LX_BLKPAG_SH_IS
 #endif
 	and	x1, x1, #L1_ADDR_BITS
 	lsr	x1, x1, #L1_SHIFT
@@ -590,7 +590,7 @@ l2_setblocks:
 	orr	x2, x2, x3
 	orr	x2, x2, #LX_BLKPAG_AF
 #ifdef MULTIPROCESSOR
-	orr	x2, x2, #__SHIFTIN(LX_BLKPAG_SH_IS,LX_BLKPAG_SH)
+	orr	x2, x2, #LX_BLKPAG_SH_IS
 #endif
 	and	x1, x1, #L2_ADDR_BITS
 	lsr	x1, x1, #L2_SHIFT
@@ -673,17 +673,15 @@ tcr:
 	    __SHIFTIN(64 - VIRT_BIT, TCR_T1SZ) |	\
 	    __SHIFTIN(64 - VIRT_BIT, TCR_T0SZ) |	\
 	    TCR_AS64K |					\
-	    __SHIFTIN(TCR_TG_4KB, TCR_TG1) |		\
-	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_ORGN0) |	\
-	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_IRGN0) |	\
-	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_ORGN1) |	\
-	    __SHIFTIN(TCR_XRGN_WB_WA, TCR_IRGN1))
+	    TCR_TG_4KB |				\
+	    TCR_ORGN0_WB_WA |				\
+	    TCR_IRGN0_WB_WA |				\
+	    TCR_ORGN1_WB_WA |				\
+	    TCR_IRGN1_WB_WA)
 
 #ifdef MULTIPROCESSOR
 tcr_inner_shareable:
-	.quad (						\
-	    __SHIFTIN(TCR_SH_INNER, TCR_SH0) |		\
-	    __SHIFTIN(TCR_SH_INNER, TCR_SH1))
+	.quad (TCR_SH0_INNER | TCR_SH1_INNER)
 #endif
 
 sctlr_set:
