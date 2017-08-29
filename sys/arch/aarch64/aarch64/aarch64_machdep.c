@@ -43,9 +43,10 @@ __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp
 
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
-#include <aarch64/armreg.h>
-
 #include <aarch64/vmparam.h>
+#include <aarch64/armreg.h>
+#include <aarch64/pmap.h>
+#include <aarch64/pte.h>
 
 char cpu_model[32]; 
 char machine[] = MACHINE;
@@ -60,11 +61,7 @@ struct vm_map *phys_map;
 //XXXAARCH64
 vaddr_t physical_start;
 vaddr_t physical_end;
-
 extern char __kernel_text[];
-extern char etext[];
-extern char __data_start[], _edata[];
-extern char __bss_start[], __bss_end__[];
 extern char _end[];
 extern char lwp0uspace[];
 
@@ -91,7 +88,7 @@ extern char lwp0uspace[];
  *               0x0001000000000000
  *
  * Lower region: 0x0000fffffffff000  End of user address space
- *                                   = VM_MAXUSER_ADDRESS)
+ *                                   = VM_MAXUSER_ADDRESS
  *
  *               0x000000000???????  End of Loaded kernel image
  *               0x0000000000??????  Start of Loaded kernel image
@@ -100,15 +97,19 @@ extern char lwp0uspace[];
  *               0x0000000000000000  Start of user address space
  */
 void
-initarm64()
+initarm64(void)
 {
 	struct trapframe *tf;
 	psize_t memsize;
 	vaddr_t kernstart, kernend;
+	vaddr_t kernstart_l2, kernend_l2;	/* L2 table 2MB aligned */
 	paddr_t kernstart_phys, kernend_phys;
 
 	kernstart = trunc_page((vaddr_t)__kernel_text);
 	kernend = round_page((vaddr_t)_end);
+	kernstart_l2 = kernstart & -L2_SIZE;
+	kernend_l2 = (kernend + L2_SIZE - 1) & -L2_SIZE;
+
 	kernstart_phys = kernstart - VM_MIN_KERNEL_ADDRESS;
 	kernend_phys = kernend - VM_MIN_KERNEL_ADDRESS;
 
@@ -122,13 +123,17 @@ initarm64()
 	    "%s: kernel_start_phys = 0x%016lx\n"
 	    "%s: kernel_end_phys   = 0x%016lx\n"
 	    "%s: kernel_start      = 0x%016lx\n"
-	    "%s: kernel_end        = 0x%016lx\n",
+	    "%s: kernel_end        = 0x%016lx\n"
+	    "%s: kernel_start_l2   = 0x%016lx\n"
+	    "%s: kernel_end_l2     = 0x%016lx\n",
 	    __func__, physical_start,
 	    __func__, physical_end,
 	    __func__, kernstart_phys,
 	    __func__, kernend_phys,
 	    __func__, kernstart,
-	    __func__, kernend);
+	    __func__, kernend,
+	    __func__, kernstart_l2,
+	    __func__, kernend_l2);
 #endif
 
 	uvm_md_init();
@@ -140,6 +145,10 @@ initarm64()
 	    atop(physical_start), atop(kernend_phys),
 	    atop(physical_start), atop(kernend_phys),
 	    VM_FREELIST_DEFAULT);
+
+
+	pmap_bootstrap(kernend_l2, VM_MAX_KERNEL_ADDRESS);
+
 
 	tf = (struct trapframe *)(lwp0uspace + USPACE) - 1;
 	memset(tf, 0, sizeof(struct trapframe));
@@ -175,19 +184,12 @@ mm_md_physacc(paddr_t pa, vm_prot_t prot)
 void
 cpu_startup(void)
 {
-	char pbuf[sizeof("xxxx xx") + 2];
-
 	vaddr_t maxaddr, minaddr = 0;
 	phys_map = uvm_km_suballoc(kernel_map, &minaddr, &maxaddr,
 	   VM_PHYS_SIZE, 0, FALSE, NULL);
 
-	printf("%s%s%s", copyright, version, cpu_model);
-
-	format_bytes(pbuf, sizeof(pbuf), ctob(physmem));
-	printf("total memory = %s\n", pbuf);
-
-	format_bytes(pbuf, sizeof(pbuf), ctob(uvmexp.free));
-	printf("avail memory = %s\n", pbuf);
+	/* Hello! */
+	banner();
 
 	bus_space_mallocok();
 }
