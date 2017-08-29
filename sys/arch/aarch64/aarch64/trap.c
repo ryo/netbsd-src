@@ -164,16 +164,16 @@ trap(struct trapframe *tf, int reason)
 		causestr = "A32: SMC Instruction Execution";
 		break;
 	case ESR_EC_SVC_A64:
-		causestr = "A64: SVC Instruction Execution";
+		causestr = "SVC Instruction Execution";
 		break;
 	case ESR_EC_HVC_A64:
-		causestr = "A64: HVC Instruction Execution";
+		causestr = "HVC Instruction Execution";
 		break;
 	case ESR_EC_SMC_A64:
-		causestr = "A64: SMC Instruction Execution";
+		causestr = "SMC Instruction Execution";
 		break;
 	case ESR_EC_SYS_REG:
-		causestr = "A64: MSR/MRS/SYS instruction (!EC0/1/7)";
+		causestr = "MSR/MRS/SYS instruction (!EC0/1/7)";
 		break;
 	case ESR_EC_INSN_ABT_EL0:
 		causestr = "Instruction Abort (EL0)";
@@ -197,7 +197,7 @@ trap(struct trapframe *tf, int reason)
 		causestr = "A32: FP Exception";
 		break;
 	case ESR_EC_FP_TRAP_A64:
-		causestr = "A64: FP Exception";
+		causestr = "FP Exception";
 		break;
 	case ESR_EC_SERROR:
 		causestr = "SError Interrupt";
@@ -227,7 +227,7 @@ trap(struct trapframe *tf, int reason)
 		causestr = "A32: Vector Catch Exception";
 		break;
 	case ESR_EC_BKPT_INSN_A64:
-		causestr = "A64: BKPT Instruction Execution";
+		causestr = "BKPT Instruction Execution";
 		break;
 	}
 
