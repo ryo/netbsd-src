@@ -67,7 +67,8 @@ __KERNEL_RCSID(0, "$NetBSD: syscall.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 void
 cpu_spawn_return(struct lwp *l)
 {
-	userret(l, l->l_md.md_utf);
+
+	userret(l);
 }
 
 void
@@ -218,7 +219,7 @@ EMULNAME(syscall)(struct trapframe *tf)
 		}
 	}
 
-	userret(l, tf);
+	userret(l);
 }
 
 void EMULNAME(syscall_intern)(struct proc *);

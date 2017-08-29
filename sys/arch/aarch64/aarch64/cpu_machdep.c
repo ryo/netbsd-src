@@ -246,7 +246,7 @@ startlwp(void *arg)
 	KASSERT(error == 0);
 
 	kmem_free(uc, sizeof(*uc));
-	userret(l, l->l_md.md_utf);
+	userret(l);
 }
 
 void

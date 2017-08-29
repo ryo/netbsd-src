@@ -99,9 +99,14 @@ dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 }
 
 void
-userret(struct lwp *l, struct trapframe *tf)
+userret(struct lwp *l)
 {
-
+#if 0
+	/*
+	 * dump l->l_md.md_utf here if necessary. user process is about to
+	 * run with these set of registers.
+	 */
+#endif
 	mi_userret(l);
 }
 
@@ -241,7 +246,7 @@ trap(struct trapframe *tf, int reason)
 	if (usertrap_p) {
 		if (!ok)
 			(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
-		userret(l, tf);
+		userret(l);
 	}
 	else if (!ok) {
 		dump_trapframe(tf, printf);
