@@ -26,7 +26,7 @@ maxusers 32
 # CPU Support
 options 	CPU_CORTEXA53
 
-options 	MEMSIZE=1024		# 1024Mbyte
+options 	MEMSIZE=1008		# SDRAM: 0x00000000-0x3f000000
 options 	VERBOSE_INIT_ARM
 
 # Standard system options
