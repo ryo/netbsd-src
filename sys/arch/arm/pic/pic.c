@@ -206,7 +206,7 @@ intr_ipi_send(const kcpuset_t *kcp, u_long ipi)
 			sent_p = true;
 		}
 	}
-	KASSERT(cold || sent_p || arm_cpu_max == 1);
+	KASSERT(cold || sent_p);
 }
 #endif /* MULTIPROCESSOR */
 
