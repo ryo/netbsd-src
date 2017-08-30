@@ -52,10 +52,33 @@ static struct consdev konsole = {
 };
 static void konsinit(void);
 
+//XXXAARCH64
+static void
+raspi_reset(void)
+{
+#define BCM2835_WDOG_BASE	0x3f100000
+#define  BCM2835_WDOG_RSTC_REG	7	/* 0x3f10001c */
+#define  BCM2835_WDOG_RSTS_REG	8	/* 0x3f100020 */
+#define  BCM2835_WDOG_WDOG_REG	9	/* 0x3f100024 */
+#define  BCM2835_WDOG_MAGIC	0x5a000000
+	volatile uint32_t *wdog = (volatile uint32_t *)BCM2835_WDOG_BASE;
+	uint32_t v;
+
+	v = wdog[BCM2835_WDOG_RSTC_REG];
+	v &= ~0x30;
+	v |= 0x20;
+	wdog[BCM2835_WDOG_WDOG_REG] = BCM2835_WDOG_MAGIC | 50;
+	wdog[BCM2835_WDOG_RSTC_REG] = BCM2835_WDOG_MAGIC | v;
+}
+
+
 void
 initarm(void)
 {
 	konsinit();
+
+	// XXXAARCH64
+	cpu_reset_address = raspi_reset;
 
 	// XXXAARCH64
 	physical_start = 0;
