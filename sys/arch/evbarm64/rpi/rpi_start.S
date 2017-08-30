@@ -81,6 +81,19 @@ _ASM_LABEL(start):
 	PRINT("CurrentEL=")
 	bl	print_x0
 
+	cmp	x0, #2
+	bne	1f
+
+	// EL2 registers
+	mrs	x0, sctlr_el2
+	PRINT("SCTLR_EL2=")
+	bl	print_x0
+
+	mrs	x0, hcr_el2
+	PRINT("HCR_EL2=")
+	bl	print_x0
+1:
+
 	PRINT("SP=")
 	mov	x0, sp
 	bl	print_x0
