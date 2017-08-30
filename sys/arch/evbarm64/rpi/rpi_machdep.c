@@ -38,6 +38,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
 #include <aarch64/armreg.h>
+#include <aarch64/cpufunc.h>
 
 void initarm(void);
 void uartputs(const char *);
@@ -84,7 +85,7 @@ initarm(void)
 	physical_start = 0;
 	physical_end = physical_start + MEMSIZE * 1024 * 1024;
 
-	printf("%s:%d: curcpu()=%p\n", __func__, __LINE__, curcpu());
+	printf("cputype=0x%08x\n", cputype);
 
 	initarm64();
 }
