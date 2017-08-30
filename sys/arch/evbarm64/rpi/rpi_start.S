@@ -673,7 +673,7 @@ tcr:
 	    __SHIFTIN(64 - VIRT_BIT, TCR_T1SZ) |	\
 	    __SHIFTIN(64 - VIRT_BIT, TCR_T0SZ) |	\
 	    TCR_AS64K |					\
-	    TCR_TG_4KB |				\
+	    TCR_TG1_4KB | TCR_TG0_4KB |			\
 	    TCR_ORGN0_WB_WA |				\
 	    TCR_IRGN0_WB_WA |				\
 	    TCR_ORGN1_WB_WA |				\

@@ -132,20 +132,20 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define TCR_IPS_1TB	__SHIFTIN(2,TCR_IPS)	/* 40 bits  ( 1 TB) */
 #define TCR_IPS_64GB	__SHIFTIN(1,TCR_IPS)	/* 36 bits  (64 GB) */
 #define TCR_IPS_4GB	__SHIFTIN(0,TCR_IPS)	/* 32 bits   (4 GB) */
-#define TCR_TG1		__BITS(31,30)		/* Page Granule Size */
-#define TCR_TG_16KB	__SHIFTIN(1,TCR_TG1)	/* 16KB page size */
-#define TCR_TG_4KB	__SHIFTIN(2,TCR_TG1)	/* 4KB page size */
-#define TCR_TG_64KB	__SHIFTIN(3,TCR_TG1)	/* 64KB page size */
+#define TCR_TG1		__BITS(31,30)		/* TTBR1 Page Granule Size */
+#define TCR_TG1_16KB	__SHIFTIN(1,TCR_TG1)	/* 16KB page size */
+#define TCR_TG1_4KB	__SHIFTIN(2,TCR_TG1)	/* 4KB page size */
+#define TCR_TG1_64KB	__SHIFTIN(3,TCR_TG1)	/* 64KB page size */
 #define TCR_SH1		__BITS(29,28)
 #define TCR_SH1_NONE	__SHIFTIN(0,TCR_SH1)
 #define TCR_SH1_OUTER	__SHIFTIN(2,TCR_SH1)
 #define TCR_SH1_INNER	__SHIFTIN(3,TCR_SH1)
-#define TCR_ORGN1	__BITS(27,26)
+#define TCR_ORGN1	__BITS(27,26)		/* TTBR1 Outer cacheability */
 #define TCR_ORGN1_NC	__SHIFTIN(0,TCR_ORGN1)	/* Non Cacheable */
 #define TCR_ORGN1_WB_WA	__SHIFTIN(1,TCR_ORGN1)	/* WriteBack WriteAllocate */
 #define TCR_ORGN1_WT	__SHIFTIN(2,TCR_ORGN1)	/* WriteThrough */
 #define TCR_ORGN1_WB	__SHIFTIN(3,TCR_ORGN1)	/* WriteBack */
-#define TCR_IRGN1	__BITS(25,24)
+#define TCR_IRGN1	__BITS(25,24)		/* TTBR1 Inner cacheability */
 #define TCR_IRGN1_NC	__SHIFTIN(0,TCR_IRGN1)	/* Non Cacheable */
 #define TCR_IRGN1_WB_WA	__SHIFTIN(1,TCR_IRGN1)	/* WriteBack WriteAllocate */
 #define TCR_IRGN1_WT	__SHIFTIN(2,TCR_IRGN1)	/* WriteThrough */
@@ -153,17 +153,20 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define TCR_EPD1	__BIT(23)		/* Walk Disable for TTBR1_EL1 */
 #define TCR_A1		__BIT(22)		/* ASID is in TTBR1_EL1 */
 #define TCR_T1SZ	__BITS(21,16)		/* Size offset for TTBR1_EL1 */
-#define TCR_TG0		__BITS(15,14)
+#define TCR_TG0		__BITS(15,14)		/* TTBR0 Page Granule Size */
+#define TCR_TG0_16KB	__SHIFTIN(1,TCR_TG1)	/* 16KB page size */
+#define TCR_TG0_4KB	__SHIFTIN(2,TCR_TG1)	/* 4KB page size */
+#define TCR_TG0_64KB	__SHIFTIN(3,TCR_TG1)	/* 64KB page size */
 #define TCR_SH0		__BITS(13,12)
 #define TCR_SH0_NONE	__SHIFTIN(0,TCR_SH0)
 #define TCR_SH0_OUTER	__SHIFTIN(2,TCR_SH0)
 #define TCR_SH0_INNER	__SHIFTIN(3,TCR_SH0)
-#define TCR_ORGN0	__BITS(11,10)
+#define TCR_ORGN0	__BITS(11,10)		/* TTBR0 Outer cacheability */
 #define TCR_ORGN0_NC	__SHIFTIN(0,TCR_ORGN0)	/* Non Cacheable */
 #define TCR_ORGN0_WB_WA	__SHIFTIN(1,TCR_ORGN0)	/* WriteBack WriteAllocate */
 #define TCR_ORGN0_WT	__SHIFTIN(2,TCR_ORGN0)	/* WriteThrough */
 #define TCR_ORGN0_WB	__SHIFTIN(3,TCR_ORGN0)	/* WriteBack */
-#define TCR_IRGN0	__BITS(9,8)
+#define TCR_IRGN0	__BITS(9,8)		/* TTBR0 Inner cacheability */
 #define TCR_IRGN0_NC	__SHIFTIN(0,TCR_IRGN0)	/* Non Cacheable */
 #define TCR_IRGN0_WB_WA	__SHIFTIN(1,TCR_IRGN0)	/* WriteBack WriteAllocate */
 #define TCR_IRGN0_WT	__SHIFTIN(2,TCR_IRGN0)	/* WriteThrough */
