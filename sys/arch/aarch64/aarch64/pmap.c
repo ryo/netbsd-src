@@ -41,6 +41,7 @@ __KERNEL_RCSID(1, "$NetBSD: pmap.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 #include <aarch64/pmap.h>
 #include <aarch64/pte.h>
 #include <aarch64/armreg.h>
+#include <aarch64/cpufunc.h>
 
 /* memory attributes are configured MAIR_EL1 in locore */
 #define LX_BLKPAG_ATTR_NORMAL_WB	__SHIFTIN(0, LX_BLKPAG_ATTR_INDX)
@@ -60,7 +61,7 @@ vmem_t *pmap_asid_arena;
 
 vaddr_t virtual_avail, virtual_end;
 
-#define PMAP_DEBUG
+//#define PMAP_DEBUG
 
 #ifdef PMAP_DEBUG
 #define DPRINTF(format, args...)	printf(format, ## args)
@@ -68,24 +69,6 @@ vaddr_t virtual_avail, virtual_end;
 #define DPRINTF(args...)
 #endif
 
-
-
-static inline void
-_pmap_invalidate_page(vaddr_t va)
-{
-	__asm __volatile ("dsb ishst; tlbi vaae1is, %0; dsb ish; isb" : :
-	    "r" ((va >> 12) & 0xfffffffffff));
-}
-
-static inline void
-_pmap_invalidate_all(void)
-{
-#ifdef MULTIPROCESSOR
-	__asm __volatile ("dsb ishst; tlbi vmalle1is; dsb ish; isb");
-#else
-	__asm __volatile ("dsb ishst; tlbi vmalle1; dsb ish; isb");
-#endif
-}
 
 void
 pmap_bootstrap(vaddr_t vstart, vaddr_t vend)
@@ -96,7 +79,7 @@ pmap_bootstrap(vaddr_t vstart, vaddr_t vend)
 	virtual_avail = vstart;
 	virtual_end = vend;
 
-	_pmap_invalidate_all();
+	cpu_tlb_flushID();
 
 	pmap_maxkvaddr = vstart;
 
@@ -174,22 +157,22 @@ pmap_reference(struct pmap *pm)
 }
 
 static pd_entry_t *
-_pmap_grow_l2(pd_entry_t *l1, vaddr_t vaddr)
+_pmap_grow_l2(pd_entry_t *l1, vaddr_t va)
 {
 	pd_entry_t pde, *l2;
 	paddr_t pa;
 
-	KASSERT(!(AARCH64_KSEG_START <= vaddr && vaddr < AARCH64_KSEG_END));
+	KASSERT(!(AARCH64_KSEG_START <= va && va < AARCH64_KSEG_END));
 
-//	DPRINTF("%s:%d: l1=%p, vaddr=%lx\n", __func__, __LINE__, l1, vaddr);
+//	DPRINTF("%s:%d: l1=%p, va=%lx\n", __func__, __LINE__, l1, va);
 
-	if (l1pde_valid(l1[l1pde_index(vaddr)])) {
+	if (l1pde_valid(l1[l1pde_index(va)])) {
 //		DPRINTF("%s:%d: L2 table exists: L1(%p)[%016llx(idx=%d)] -> %016llx\n",
 //		    __func__, __LINE__,
-//		    l1, (vaddr & L1_ADDR_BITS), (int)l1pde_index(vaddr),
-//		    l1[l1pde_index(vaddr)]);
+//		    l1, (va & L1_ADDR_BITS), (int)l1pde_index(va),
+//		    l1[l1pde_index(va)]);
 
-		pde = l1[l1pde_index(vaddr)];
+		pde = l1[l1pde_index(va)];
 
 		KASSERT(!l1pde_is_block(pde));
 
@@ -211,12 +194,12 @@ _pmap_grow_l2(pd_entry_t *l1, vaddr_t vaddr)
 //			DPRINTF("%s:%d: new l2table(PA)=%lx (pageboot_alloc)\n", __func__, __LINE__, pa);
 		}
 
-		atomic_swap_64(&l1[l1pde_index(vaddr)], pa | L1_TABLE | LX_VALID);
+		atomic_swap_64(&l1[l1pde_index(va)], pa | L1_TABLE | LX_VALID);
 
 		DPRINTF("%s:%d: add L2 table on L1(%p)[%016llx(idx=%d)] = %016llx\n",
 		    __func__, __LINE__,
-		    l1, (vaddr & L1_ADDR_BITS), (int)l1pde_index(vaddr),
-		    l1[l1pde_index(vaddr)]);
+		    l1, (va & L1_ADDR_BITS), (int)l1pde_index(va),
+		    l1[l1pde_index(va)]);
 
 		l2 = AARCH64_PA_TO_KVA(pa);
 	}
@@ -225,22 +208,22 @@ _pmap_grow_l2(pd_entry_t *l1, vaddr_t vaddr)
 }
 
 pt_entry_t *
-_pmap_grow_l3(pd_entry_t *l2, vaddr_t vaddr)
+_pmap_grow_l3(pd_entry_t *l2, vaddr_t va)
 {
 	pd_entry_t pde, *l3;
 	paddr_t pa;
 
-	KASSERT(!(AARCH64_KSEG_START <= vaddr && vaddr < AARCH64_KSEG_END));
+	KASSERT(!(AARCH64_KSEG_START <= va && va < AARCH64_KSEG_END));
 
-//	DPRINTF("%s:%d: l2=%p, vaddr=%lx & %llx = %llx\n", __func__, __LINE__, l2, vaddr, L2_ADDR_BITS, vaddr & L2_ADDR_BITS);
+//	DPRINTF("%s:%d: l2=%p, va=%lx & %llx = %llx\n", __func__, __LINE__, l2, va, L2_ADDR_BITS, va & L2_ADDR_BITS);
 
-	if (l2pde_valid(l2[l2pde_index(vaddr)])) {
+	if (l2pde_valid(l2[l2pde_index(va)])) {
 //	DPRINTF("%s:%d: L3 table exists: L2(%p)[%016llx(idx=%d)] -> %016llx\n",
 //	    __func__, __LINE__,
-//	    l2, (vaddr & L2_ADDR_BITS), (int)l2pde_index(vaddr),
-//	    l2[l2pde_index(vaddr)]);
+//	    l2, (va & L2_ADDR_BITS), (int)l2pde_index(va),
+//	    l2[l2pde_index(va)]);
 
-		pde = l2[l2pde_index(vaddr)];
+		pde = l2[l2pde_index(va)];
 
 		KASSERT(l2pde_is_table(pde));
 
@@ -263,12 +246,12 @@ _pmap_grow_l3(pd_entry_t *l2, vaddr_t vaddr)
 //			DPRINTF("%s:%d: new l3table(PA)=%lx (pageboot_alloc)\n", __func__, __LINE__, pa);
 		}
 
-		atomic_swap_64(&l2[l2pde_index(vaddr)], pa | L2_TABLE | LX_VALID);
+		atomic_swap_64(&l2[l2pde_index(va)], pa | L2_TABLE | LX_VALID);
 
 //		DPRINTF("%s:%d: add L3 table on L2(%p)[%016llx(idx=%d)] = %016llx\n",
 //		    __func__, __LINE__,
-//		    l2, (vaddr & L2_ADDR_BITS), (int)l2pde_index(vaddr),
-//		    l2[l2pde_index(vaddr)]);
+//		    l2, (va & L2_ADDR_BITS), (int)l2pde_index(va),
+//		    l2[l2pde_index(va)]);
 
 		l3 = AARCH64_PA_TO_KVA(pa);
 	}
@@ -307,7 +290,7 @@ pmap_growkernel(vaddr_t maxkvaddr)
 		l3 = _pmap_grow_l3(l2, pmap_maxkvaddr);
 		KDASSERT(l3 != NULL);
 	}
-	_pmap_invalidate_all();
+	cpu_tlb_flushID();
 
 	splx(s);
 
@@ -414,7 +397,7 @@ _pmap_pte_lookup(vaddr_t va)
 
 		return &l3[l3pte_index(va)];
 
-	} else if ((va & AARCH64_KSEG_MASK) == AARCH64_KSEG_MASK) {
+	} else if (AARCH64_KSEG_START <= va && va < AARCH64_KSEG_END) {
 		panic("page entry is mapped in KSEG");
 	} else {
 		panic("Non kernel segment: va=0x%016lx", va);
@@ -449,11 +432,8 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 		break;
 	}
 
-	if (prot & VM_PROT_EXECUTE) {
-		// TODO invalidate icache
-		printf("XXXAARCH64: TODO: %s:%d: prot & EXECUTE. must be invalidate icache: %016lx\n", __func__, __LINE__, va);
-	}
-	attr |= (prot & VM_PROT_EXECUTE) ? 0 : (LX_BLKPAG_UXN|LX_BLKPAG_PXN);
+	if ((prot & VM_PROT_EXECUTE) != 0)
+		attr |= LX_BLKPAG_UXN | LX_BLKPAG_PXN;
 
 	switch (flags & PMAP_CACHE_MASK) {
 	case PMAP_NOCACHE:
@@ -484,7 +464,9 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 
 	atomic_swap_64(ptep, pte);
 
-	_pmap_invalidate_page(va);
+	cpu_tlb_flushID_SE(va);
+	if ((prot & VM_PROT_EXECUTE) != 0)
+		cpu_icache_sync_range(va, PAGE_SIZE);
 }
 
 void
@@ -519,7 +501,7 @@ pmap_kremove(vaddr_t va, vsize_t size)
 			continue;
 
 		atomic_swap_64(ptep, 0);
-		_pmap_invalidate_page(va);
+		cpu_tlb_flushID_SE(va);
 	}
 }
 

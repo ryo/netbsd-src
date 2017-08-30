@@ -49,7 +49,7 @@ extern u_int cputype;
 #define cpufunc_nullop()		cpufuncs.cf_nullop()
 #define cpu_setttb(p)			cpufuncs.cf_setttb(p)
 #define cpu_tlb_flushID()		cpufuncs.cf_tlb_flushID()
-#define cpu_tlb_flushID_SE(v)		cpufuncs.cf_tlb_flushID(v)
+#define cpu_tlb_flushID_SE(v)		cpufuncs.cf_tlb_flushID_SE(v)
 #define cpu_dcache_wbinv_range(v, s)	cpufuncs.cf_dcache_wbinv_range(v, s)
 #define cpu_dcache_inv_range(v, s)	cpufuncs.cf_dcache_inv_range(v, s)
 #define cpu_dcache_wb_range(v, s)	cpufuncs.cf_dcache_wb_range(v, s)
