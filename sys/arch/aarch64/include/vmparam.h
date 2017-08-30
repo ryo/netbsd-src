@@ -118,8 +118,10 @@
  * using block page table entries.
  */
 #define AARCH64_KSEG_MASK	((vaddr_t) 0xffff000000000000L)
+#define AARCH64_KSEG_SIZE	(1UL << 39)	/* 512GB */
 #define AARCH64_KSEG_START	AARCH64_KSEG_MASK
-#define	AARCH64_KMEMORY_BASE	AARCH64_KSEG_MASK
+#define AARCH64_KSEG_END	(AARCH64_KSEG_START + AARCH64_KSEG_SIZE)
+#define AARCH64_KMEMORY_BASE	AARCH64_KSEG_MASK
 #define AARCH64_KVA_P(va)	(((vaddr_t) (va) & AARCH64_KSEG_MASK) != 0)
 #define AARCH64_PA_TO_KVA(pa)	((vaddr_t) ((pa) | AARCH64_KSEG_START))
 #define AARCH64_KVA_TO_PA(va)	((paddr_t) ((va) & ~AARCH64_KSEG_MASK))
@@ -129,7 +131,7 @@
 #define VM_PHYSSEG_STRAT	VM_PSTRAT_BSEARCH
 
 #define VM_NFREELIST		2
-#define	VM_FREELIST_DEFAULT	0
+#define VM_FREELIST_DEFAULT	0
 #define VM_FREELIST_FIRST4GB	1
 
 #elif defined(__arm__)

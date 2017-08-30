@@ -37,6 +37,7 @@ __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp
 #include <sys/types.h>
 #include <sys/bus.h>
 #include <sys/kauth.h>
+#include <sys/msgbuf.h>
 
 #include <uvm/uvm.h>
 #include <dev/mm.h>
@@ -107,8 +108,8 @@ initarm64(void)
 
 	kernstart = trunc_page((vaddr_t)__kernel_text);
 	kernend = round_page((vaddr_t)_end);
-	kernstart_l2 = kernstart & -L2_SIZE;
-	kernend_l2 = (kernend + L2_SIZE - 1) & -L2_SIZE;
+	kernstart_l2 = kernstart & -L2_SIZE;		/* trunk L2_SIZE(2M) */
+	kernend_l2 = (kernend + L2_SIZE - 1) & -L2_SIZE;/* round L2_SIZE(2M) */
 
 	kernstart_phys = kernstart - VM_MIN_KERNEL_ADDRESS;
 	kernend_phys = kernend - VM_MIN_KERNEL_ADDRESS;
@@ -136,17 +137,30 @@ initarm64(void)
 	    __func__, kernend_l2);
 #endif
 
+	/*
+	 * msgbuf is always allocated from bottom of memory
+	 * against corruption by bootloader or changing kernel size.
+	 */
+	physical_end -= round_page(MSGBUFSIZE);
+	initmsgbuf(AARCH64_PA_TO_KVA(physical_end), MSGBUFSIZE);
+
+
 	uvm_md_init();
 	uvm_page_physload(
 	    atop(kernend_phys), atop(physical_end),
 	    atop(kernend_phys), atop(physical_end),
 	    VM_FREELIST_DEFAULT);
+#if 1
 	uvm_page_physload(
 	    atop(physical_start), atop(kernend_phys),
 	    atop(physical_start), atop(kernend_phys),
 	    VM_FREELIST_DEFAULT);
+#endif
 
-
+	/*
+	 * kernel image is mapped L2 table (2M*n)
+	 * virtual space start from 2MB aligned kernend
+	 */
 	pmap_bootstrap(kernend_l2, VM_MAX_KERNEL_ADDRESS);
 
 
@@ -184,7 +198,14 @@ mm_md_physacc(paddr_t pa, vm_prot_t prot)
 void
 cpu_startup(void)
 {
-	vaddr_t maxaddr, minaddr = 0;
+	vaddr_t maxaddr, minaddr;
+
+	consinit();
+
+	/*
+	 * Allocate a submap for physio.
+	 */
+	minaddr = 0;
 	phys_map = uvm_km_suballoc(kernel_map, &minaddr, &maxaddr,
 	   VM_PHYS_SIZE, 0, FALSE, NULL);
 
