@@ -449,6 +449,10 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 		break;
 	}
 
+	if (prot & VM_PROT_EXECUTE) {
+		// TODO invalidate icache
+		printf("XXXAARCH64: TODO: %s:%d: prot & EXECUTE. must be invalidate icache: %016lx\n", __func__, __LINE__, va);
+	}
 	attr |= (prot & VM_PROT_EXECUTE) ? 0 : (LX_BLKPAG_UXN|LX_BLKPAG_PXN);
 
 	switch (flags & PMAP_CACHE_MASK) {
@@ -492,8 +496,31 @@ pmap_update(struct pmap *pm)
 void
 pmap_kremove(vaddr_t va, vsize_t size)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
-	panic("%s", __func__);
+	pt_entry_t *ptep;
+	vaddr_t va_end;
+
+	DPRINTF("%s:%d: va=%016lx, size=%016lx\n", __func__, __LINE__,
+	    va, size);
+
+
+	KDASSERT((va & PGOFSET) == 0);
+	KDASSERT((size & PGOFSET) == 0);
+
+	if (AARCH64_KSEG_START <= va && va < AARCH64_KSEG_END)
+		return;
+
+	va_end = va + size;
+	KDASSERT(va >= VM_MIN_KERNEL_ADDRESS && va_end <= VM_MAX_KERNEL_ADDRESS);
+
+	for (; va < va_end; va += PAGE_SIZE) {
+		ptep = _pmap_pte_lookup(va);
+		KASSERT(ptep != NULL);
+		if (ptep == NULL)
+			continue;
+
+		atomic_swap_64(ptep, 0);
+		_pmap_invalidate_page(va);
+	}
 }
 
 struct pmap *
