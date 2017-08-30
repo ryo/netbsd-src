@@ -45,6 +45,7 @@ __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
 #include <aarch64/vmparam.h>
+#include <aarch64/cpufunc.h>
 #include <aarch64/armreg.h>
 #include <aarch64/pmap.h>
 #include <aarch64/pte.h>
@@ -105,6 +106,9 @@ initarm64(void)
 	vaddr_t kernstart, kernend;
 	vaddr_t kernstart_l2, kernend_l2;	/* L2 table 2MB aligned */
 	paddr_t kernstart_phys, kernend_phys;
+
+	if (set_cpufuncs() != 0)
+		panic("cpu not recognized!");
 
 	kernstart = trunc_page((vaddr_t)__kernel_text);
 	kernend = round_page((vaddr_t)_end);
