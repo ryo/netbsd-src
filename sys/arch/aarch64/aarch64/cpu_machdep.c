@@ -51,6 +51,12 @@ __KERNEL_RCSID(1, "$NetBSD: cpu_machdep.c,v 1.2 2015/04/14 22:36:54 jmcneill Exp
 #include <aarch64/machdep.h>
 #include <aarch64/armreg.h>
 
+#ifdef MULTIPROCESSOR
+/* for arm compatibility (referred from pic.c) */
+volatile u_int arm_cpu_hatched;
+u_int arm_cpu_max = 1;
+#endif
+
 u_int cputype;	// XXXAARCH64
 
 /* Our exported CPU info; we can have only one. */
