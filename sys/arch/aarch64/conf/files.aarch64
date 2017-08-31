@@ -71,9 +71,9 @@ attach	a64gtmr at mainbus
 file	arch/aarch64/dev/a64gtmr.c			a64gtmr
 
 # bus_space(9)
-#define	bus_space_generic
-#file	arch/aarch64/aarch64/bus_space_asm_generic.S	bus_space_generic
-#file	arch/aarch64/aarch64/bus_space_notimpl.S
+define	bus_space_generic
+file	arch/aarch64/aarch64/bus_space_asm_generic.S	bus_space_generic
+file	arch/aarch64/aarch64/bus_space_notimpl.S
 
 #file	arch/aarch64/aarch64/cpu_in_cksum.S		inet | inet6
 file	arch/aarch64/aarch64/exception.S
