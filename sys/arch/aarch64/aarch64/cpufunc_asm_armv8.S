@@ -35,12 +35,6 @@
 #include "opt_multiprocessor.h"
 #include <aarch64/asm.h>
 
-/*
- * FIXME:
- * Need big.LITTLE awareness at some point.
- * Using arm64_p[id]cache_line_size may not be the best option.
- * Need better SMP awareness.
- */
 	.text
 	.align	2
 
