@@ -43,6 +43,12 @@
 #include <aarch64/armreg.h>
 #include <aarch64/frame.h>
 
+#ifdef MULTIPROCESSOR
+/* for compatibility arch/arm */
+extern u_int arm_cpu_max;
+extern volatile u_int arm_cpu_hatched;
+#endif
+
 static inline void cpsie(register_t psw) __attribute__((__unused__));
 static inline register_t cpsid(register_t psw) __attribute__((__unused__));
 
