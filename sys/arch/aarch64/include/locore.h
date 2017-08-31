@@ -32,6 +32,14 @@
 #ifndef _AARCH64_LOCORE_H_
 #define _AARCH64_LOCORE_H_
 
+/*
+ * XXX XXX XXX
+ * This file is refered from arch/arm/ file(s) to conceal CPU design
+ * difference between legacy ARM and modern ARM like ARM64.  Used to
+ * be much larger but small enough now to discard in near future.
+ * XXX XXX XXX
+ */
+
 #ifdef __aarch64__
 
 #include <sys/types.h>
