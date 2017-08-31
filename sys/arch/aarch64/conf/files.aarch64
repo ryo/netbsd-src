@@ -80,7 +80,7 @@ file	arch/aarch64/aarch64/exception.S
 file	arch/aarch64/aarch64/idle_machdep.S
 file	arch/aarch64/aarch64/pmap_page.S
 file	arch/aarch64/aarch64/vectors.S
-file	arch/aarch64/aarch64/cpufunc_asm.S
+file	arch/aarch64/aarch64/cpufunc_asm_armv8.S
 
 file	arch/aarch64/aarch64/bus_dma.c
 file	arch/aarch64/aarch64/bus_space.c
