@@ -59,7 +59,7 @@ struct cpu_info {
 
 	uint64_t ci_lastintr;
 
-	struct cpu_info *ci_clu;	/* cluster ci_info */
+	struct cpu_info *ci_clu;	/* cluster ci PTR */
 	int ci_clusize;			/* cluster size */
 	void *ci_cacheop;		/* cache operation */
 	void *ci_tlbop;			/* TLB operation */
