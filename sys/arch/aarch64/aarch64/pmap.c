@@ -262,6 +262,7 @@ _pmap_grow_l3(pd_entry_t *l2, vaddr_t va)
 vaddr_t
 pmap_growkernel(vaddr_t maxkvaddr)
 {
+	struct pmap *kpm = pmap_kernel();
 	pd_entry_t *l2;
 	pt_entry_t *l3;
 	int s;
@@ -271,9 +272,11 @@ pmap_growkernel(vaddr_t maxkvaddr)
 	    maxkvaddr, pmap_maxkvaddr);
 
 	s = splvm();
+	mutex_enter(&kpm->pm_lock);
 
 	if (maxkvaddr <= pmap_maxkvaddr) {
 		DPRINTF("%s: no need to expand l1/l2 table\n", __func__);
+		mutex_exit(&kpm->pm_lock);
 		splx(s);
 		return pmap_maxkvaddr;
 	}
@@ -292,6 +295,7 @@ pmap_growkernel(vaddr_t maxkvaddr)
 	}
 	cpu_tlb_flushID();
 
+	mutex_exit(&kpm->pm_lock);
 	splx(s);
 
 
@@ -305,6 +309,8 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 {
 	paddr_t pa;
 
+	mutex_enter(&pm->pm_lock);
+
 	if (VM_MIN_KERNEL_ADDRESS <= va && va < VM_MAX_KERNEL_ADDRESS) {
 		pd_entry_t pde, *l2, *l3;
 		pt_entry_t pte;
@@ -313,8 +319,9 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 		 * traverse L0 -> L1 -> L2 -> L3 table
 		 */
 		pde = pmap_kernel()->pm_l1table[l1pde_index(va)];
-		if (!l1pde_valid(pde))
-			return false;
+		if (!l1pde_valid(pde)) {
+			goto notfound;
+		}
 		if (l1pde_is_block(pde)) {
 			pa = l1pde_pa(pde) + (va & L1_OFFSET);
 			goto found;
@@ -325,7 +332,7 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 		l2 = AARCH64_PA_TO_KVA(l1pde_pa(pde));
 		pde = l2[l2pde_index(va)];
 		if (!l2pde_valid(pde))
-			return false;
+			goto notfound;
 		if (l2pde_is_block(pde)) {
 			pa = l2pde_pa(pde) + (va & L2_OFFSET);
 			goto found;
@@ -336,7 +343,7 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 		l3 = AARCH64_PA_TO_KVA(l2pde_pa(pde));
 		pte = l3[l3pte_index(va)];
 		if (!l3pte_valid(pte))
-			return false;
+			goto notfound;
 
 		KASSERT(l3pte_is_page(pte));
 
@@ -346,10 +353,13 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 		pa = AARCH64_KVA_TO_PA(va);
 
 	} else {
+ notfound:
+		mutex_exit(&pm->pm_lock);
 		return false;
 	}
 
  found:
+	mutex_exit(&pm->pm_lock);
 	if (pap != NULL)
 		*pap = pa;
 
@@ -406,34 +416,51 @@ _pmap_pte_lookup(vaddr_t va)
 	return NULL;
 }
 
+static pt_entry_t
+_pmap_pte_update_prot(pt_entry_t pte, vm_prot_t prot)
+{
+	pte &= ~LX_BLKPAG_AF;
+	pte &= ~LX_BLKPAG_AP;
+	switch (prot & (VM_PROT_READ|VM_PROT_WRITE)) {
+	case 0:
+	default:
+		break;
+	case VM_PROT_READ:
+		pte |= LX_BLKPAG_AF;
+		pte |= LX_BLKPAG_AP_RO_RO;
+		break;
+	case VM_PROT_WRITE:
+	case VM_PROT_READ|VM_PROT_WRITE:
+		pte |= LX_BLKPAG_AF;
+		pte |= LX_BLKPAG_AP_RW_RW;
+		break;
+	}
+
+	if ((prot & VM_PROT_EXECUTE) == 0)
+		pte |= (LX_BLKPAG_UXN|LX_BLKPAG_PXN);
+	else
+		pte &= ~(LX_BLKPAG_UXN|LX_BLKPAG_PXN);
+
+	return pte;
+}
+
 void
 pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 {
+	struct pmap *kpm = pmap_kernel();
 	pt_entry_t *ptep, pte, attr;
 
 	DPRINTF("%s:%d: va=%016lx, pa=%016lx, prot=%08x, flags=%08x\n", __func__, __LINE__,
 	    va, pa, prot, flags);
 
-	ptep = _pmap_pte_lookup(va);
-	if (ptep == NULL)
-		panic("%s: cannot lookup L3 PTE: 0x%016lx\n", __func__, va);
+	mutex_enter(&kpm->pm_lock);
 
-	switch (prot & (VM_PROT_READ|VM_PROT_WRITE)) {
-	case 0:
-	default:
-		attr = 0;
-		break;
-	case VM_PROT_READ:
-		attr = LX_BLKPAG_AF | LX_BLKPAG_AP_RO_NONE;
-		break;
-	case VM_PROT_WRITE:
-	case VM_PROT_READ|VM_PROT_WRITE:
-		attr = LX_BLKPAG_AF | LX_BLKPAG_AP_RW_NONE;
-		break;
+	ptep = _pmap_pte_lookup(va);
+	if (ptep == NULL) {
+		panic("%s: cannot lookup L3 PTE: 0x%016lx\n", __func__, va);
 	}
 
-	if ((prot & VM_PROT_EXECUTE) != 0)
-		attr |= LX_BLKPAG_UXN | LX_BLKPAG_PXN;
+	attr = _pmap_pte_update_prot(0, prot);
 
 	switch (flags & PMAP_CACHE_MASK) {
 	case PMAP_NOCACHE:
@@ -467,19 +494,23 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 	cpu_tlb_flushID_SE(va);
 	if ((prot & VM_PROT_EXECUTE) != 0)
 		cpu_icache_sync_range(va, PAGE_SIZE);
+
+	mutex_exit(&kpm->pm_lock);
 }
 
 void
 pmap_update(struct pmap *pm)
 {
 //	DPRINTF("%s:%d\n", __func__, __LINE__);
+	/* nothing to do */
 }
 
 void
 pmap_kremove(vaddr_t va, vsize_t size)
 {
+	struct pmap *kpm = pmap_kernel();
 	pt_entry_t *ptep;
-	vaddr_t va_end;
+	vaddr_t eva;
 
 	DPRINTF("%s:%d: va=%016lx, size=%016lx\n", __func__, __LINE__,
 	    va, size);
@@ -491,10 +522,11 @@ pmap_kremove(vaddr_t va, vsize_t size)
 	if (AARCH64_KSEG_START <= va && va < AARCH64_KSEG_END)
 		return;
 
-	va_end = va + size;
-	KDASSERT(va >= VM_MIN_KERNEL_ADDRESS && va_end <= VM_MAX_KERNEL_ADDRESS);
+	eva = va + size;
+	KDASSERT(VM_MIN_KERNEL_ADDRESS <= va && eva <= VM_MAX_KERNEL_ADDRESS);
 
-	for (; va < va_end; va += PAGE_SIZE) {
+	mutex_enter(&kpm->pm_lock);
+	for (; va < eva; va += PAGE_SIZE) {
 		ptep = _pmap_pte_lookup(va);
 		KASSERT(ptep != NULL);
 		if (ptep == NULL)
@@ -503,6 +535,62 @@ pmap_kremove(vaddr_t va, vsize_t size)
 		atomic_swap_64(ptep, 0);
 		cpu_tlb_flushID_SE(va);
 	}
+	mutex_exit(&kpm->pm_lock);
+}
+
+void
+pmap_protect(struct pmap *pm, vaddr_t sva, vaddr_t eva, vm_prot_t prot)
+{
+	pt_entry_t *ptep, pte;
+	vaddr_t va;
+	bool is_kva;
+
+	DPRINTF("%s:%d: sva=%016lx, eva=%016lx, prot=%08x\n", __func__, __LINE__,
+	    sva, eva, prot);
+
+	if ((prot & VM_PROT_READ) == VM_PROT_NONE) {
+		pmap_remove(pm, sva, eva);
+		return;
+	}
+
+	/* check W^X */
+	if ((prot & (VM_PROT_WRITE|VM_PROT_EXECUTE)) ==
+	    (VM_PROT_WRITE|VM_PROT_EXECUTE)) {
+		panic("%s:%d: W^X: sva=%016lx, eva=%016lx, prot=%08x\n", __func__, __LINE__, sva, eva, prot);
+		return;
+	}
+
+	if (prot == VM_PROT_NONE) {
+		pmap_remove(pm, sva, eva);
+		return;
+	}
+
+	KDASSERT((sva & PAGE_MASK) == 0);
+	KDASSERT((eva & PAGE_MASK) == 0);
+
+#if 1
+	//XXXAARCH64
+	is_kva = (pm == pmap_kernel());
+	if (!is_kva)
+		panic("%s:%d: not support user process pmap\n", __func__, __LINE__);
+#endif
+
+	mutex_enter(&pm->pm_lock);
+
+	for (va = sva; va < eva; va += PAGE_SIZE) {
+		ptep = _pmap_pte_lookup(va);
+		KASSERT(ptep != NULL);
+		if (ptep == NULL)
+			continue;
+
+		pte = *ptep;
+		pte = _pmap_pte_update_prot(pte, prot);
+		atomic_swap_64(ptep, pte);
+
+		cpu_tlb_flushID_SE(va);
+	}
+
+	mutex_exit(&pm->pm_lock);
 }
 
 struct pmap *
@@ -521,10 +609,7 @@ pmap_destroy(struct pmap *pm)
 	DPRINTF("%s:%d\n", __func__, __LINE__);
 	panic("%s", __func__);
 
-	if (__predict_true(pm->pm_refcnt == 1))
-		refcnt = pm->pm_refcnt = 0;
-	else
-		refcnt = atomic_dec_uint_nv(&pm->pm_refcnt);
+	refcnt = atomic_dec_uint_nv(&pm->pm_refcnt);
 
 	if (refcnt > 0) {
 		// no need to destroy
@@ -572,13 +657,6 @@ pmap_remove(struct pmap *pm, vaddr_t sva, vaddr_t eva)
 
 void
 pmap_remove_all(struct pmap *pm)
-{
-	DPRINTF("%s:%d\n", __func__, __LINE__);
-	panic("%s", __func__);
-}
-
-void
-pmap_protect(struct pmap *pm, vaddr_t sva, vaddr_t eva, vm_prot_t prot)
 {
 	DPRINTF("%s:%d\n", __func__, __LINE__);
 	panic("%s", __func__);
