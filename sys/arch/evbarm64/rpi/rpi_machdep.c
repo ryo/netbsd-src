@@ -85,9 +85,9 @@ initarm(void)
 	physical_start = 0;
 	physical_end = physical_start + MEMSIZE * 1024 * 1024;
 
-	printf("cputype=0x%08x\n", cputype);
-
 	initarm64();
+
+	printf("cputype=0x%08x\n", cputype);
 }
 
 void
