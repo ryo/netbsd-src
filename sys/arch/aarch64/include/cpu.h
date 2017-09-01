@@ -53,11 +53,16 @@ struct cpu_info {
 	struct cpu_data ci_data;
 	device_t ci_dev;
 	cpuid_t ci_cpuid;
-	cpuid_t ci_gicid;		// used for IPIs
+	cpuid_t ci_gicid;		/* used for IPIs */
 	struct lwp *ci_curlwp;
 	struct lwp *ci_softlwps[SOFTINT_COUNT];
 
 	uint64_t ci_lastintr;
+
+	struct cpu_info *ci_clu;	/* cluster ci_info */
+	int ci_clusize;			/* cluster size */
+	void *ci_cacheop;		/* cache operation */
+	void *ci_tlbop;			/* TLB operation */
 
 	int ci_mtx_oldspl;
 	int ci_mtx_count;
