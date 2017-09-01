@@ -218,10 +218,10 @@ _pmap_grow_l3(pd_entry_t *l2, vaddr_t va)
 //	DPRINTF("%s:%d: l2=%p, va=%lx & %llx = %llx\n", __func__, __LINE__, l2, va, L2_ADDR_BITS, va & L2_ADDR_BITS);
 
 	if (l2pde_valid(l2[l2pde_index(va)])) {
-//	DPRINTF("%s:%d: L3 table exists: L2(%p)[%016llx(idx=%d)] -> %016llx\n",
-//	    __func__, __LINE__,
-//	    l2, (va & L2_ADDR_BITS), (int)l2pde_index(va),
-//	    l2[l2pde_index(va)]);
+//		DPRINTF("%s:%d: L3 table exists: L2(%p)[%016llx(idx=%d)] -> %016llx\n",
+//		    __func__, __LINE__,
+//		    l2, (va & L2_ADDR_BITS), (int)l2pde_index(va),
+//		    l2[l2pde_index(va)]);
 
 		pde = l2[l2pde_index(va)];
 
@@ -276,9 +276,7 @@ pmap_growkernel(vaddr_t maxkvaddr)
 
 	if (maxkvaddr <= pmap_maxkvaddr) {
 		DPRINTF("%s: no need to expand l1/l2 table\n", __func__);
-		mutex_exit(&kpm->pm_lock);
-		splx(s);
-		return pmap_maxkvaddr;
+		goto done;
 	}
 
 	KDASSERT(maxkvaddr <= virtual_end);
@@ -295,9 +293,9 @@ pmap_growkernel(vaddr_t maxkvaddr)
 	}
 	cpu_tlb_flushID();
 
+ done:
 	mutex_exit(&kpm->pm_lock);
 	splx(s);
-
 
 	DPRINTF("%s: done: pmap_maxkvaddr=%16lx\n", __func__, pmap_maxkvaddr);
 
