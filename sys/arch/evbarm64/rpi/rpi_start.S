@@ -62,6 +62,7 @@ RCSID("$NetBSD$")
 
 #define VERBOSE_LOCORE
 //#define DEBUG_LOCORE
+//#define DEBUG_MMU
 
 #ifdef VERBOSE_LOCORE
 #define VERBOSE(string)	PRINT(string)
@@ -72,6 +73,17 @@ RCSID("$NetBSD$")
 	.global _ASM_LABEL(start)
 _ASM_LABEL(start):
 	stp	x0, lr, [sp, #-16]!
+
+#if 0 // experimental test
+	adr	x0, start
+
+	bl	print_x0
+	ldr	x9, [x0, #1]!
+	bl	print_x0
+
+
+	b	start_done
+#endif
 
 #ifdef DEBUG_LOCORE
 	mov	x9, x0		// save x0
@@ -93,6 +105,10 @@ _ASM_LABEL(start):
 	PRINT("HCR_EL2=")
 	bl	print_x0
 1:
+
+	mrs	x0, daif
+	PRINT("DAIF=")
+	bl	print_x0
 
 	PRINT("SP=")
 	mov	x0, sp
@@ -163,6 +179,16 @@ _ASM_LABEL(start):
 #endif
 
 #endif /* LOCORE_EL2 */
+
+	/* any exception not masked */
+	mov	x0, #0
+	msr	daif, x0
+
+#ifdef DEBUG_LOCORE
+	mrs	x0, daif
+	PRINT("DAIF=")
+	bl	print_x0
+#endif
 
 	bl	mmu_disable
 
@@ -518,7 +544,7 @@ l0_settable:
 	lsr	x1, x1, #L0_SHIFT
 	str	x2, [x0, x1, lsl #3]	/* l0table[x1] = x2 */
 
-#ifdef DEBUG_LOCORE
+#ifdef DEBUG_MMU
 	PRINT("L0 entry[")
 	bl printn_x1
 	PRINT("]=")
@@ -549,7 +575,7 @@ l1_setblocks:
 	lsr	x1, x1, #L1_SHIFT
 1:
 	str	x2, [x0, x1, lsl #3]	/* l1table[x1] = x2 */
-#ifdef DEBUG_LOCORE
+#ifdef DEBUG_MMU
 	PRINT("L1 entry[")
 	bl printn_x1
 	PRINT("]=")
@@ -578,7 +604,7 @@ l1_settable:
 	lsr	x1, x1, #L1_SHIFT
 	str	x2, [x0, x1, lsl #3]	/* l1table[x1] = x2 */
 
-#ifdef DEBUG_LOCORE
+#ifdef DEBUG_MMU
 	PRINT("L1 entry[")
 	bl printn_x1
 	PRINT("]=")
@@ -609,7 +635,7 @@ l2_setblocks:
 	lsr	x1, x1, #L2_SHIFT
 1:
 	str	x2, [x0, x1, lsl #3]	/* l2table[x1] = x2 */
-#ifdef DEBUG_LOCORE
+#ifdef DEBUG_MMU
 	PRINT("L2 entry[")
 	bl printn_x1
 	PRINT("]=")
