@@ -746,3 +746,199 @@ pmap_phys_address(paddr_t cookie)
 	DPRINTF("%s:%d\n", __func__, __LINE__);
 	return cookie;
 }
+
+
+#ifdef MORE_DEBUG
+/*
+ * Test ref/modify handling.  */
+void pmap_testout(void);
+
+void
+pmap_testout(void)
+{
+	vaddr_t va;
+	volatile int *loc;
+	int val = 0;
+	paddr_t pa;
+	struct vm_page *pg;
+	int ref, mod;
+
+	/* Allocate a page */
+	va = (vaddr_t)(VM_MAX_KERNEL_ADDRESS - PAGE_SIZE);
+	KASSERT(va != 0);
+	loc = (int*)va;
+
+	pmap_extract(pmap_kernel(), va, &pa);
+	pg = PHYS_TO_VM_PAGE(pa);
+	pmap_kenter_pa(va, pa, VM_PROT_ALL, VM_PROT_ALL);
+	pmap_update(pmap_kernel());
+
+	/* Now clear reference and modify */
+	ref = pmap_clear_reference(pg);
+	mod = pmap_clear_modify(pg);
+	printf("Clearing page va %p pa %lx: ref %d, mod %d\n",
+	       (void *)(u_long)va, (long)pa,
+	       ref, mod);
+
+	/* Check it's properly cleared */
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("Checking cleared page: ref %d, mod %d\n",
+	       ref, mod);
+
+	/* Reference page */
+	val = *loc;
+
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("Referenced page: ref %d, mod %d val %x\n",
+	       ref, mod, val);
+
+	/* Now clear reference and modify */
+	ref = pmap_clear_reference(pg);
+	mod = pmap_clear_modify(pg);
+	printf("Clearing page va %p pa %lx: ref %d, mod %d\n",
+	       (void *)(u_long)va, (long)pa,
+	       ref, mod);
+
+	/* Modify page */
+	*loc = 1;
+
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("Modified page: ref %d, mod %d\n",
+	       ref, mod);
+
+	/* Now clear reference and modify */
+	ref = pmap_clear_reference(pg);
+	mod = pmap_clear_modify(pg);
+	printf("Clearing page va %p pa %lx: ref %d, mod %d\n",
+	       (void *)(u_long)va, (long)pa,
+	       ref, mod);
+
+	/* Check it's properly cleared */
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("Checking cleared page: ref %d, mod %d\n",
+	       ref, mod);
+
+	/* Modify page */
+	*loc = 1;
+
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("Modified page: ref %d, mod %d\n",
+	       ref, mod);
+
+	/* Check pmap_protect() */
+	pmap_protect(pmap_kernel(), va, va+1, VM_PROT_READ);
+	pmap_update(pmap_kernel());
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("pmap_protect(VM_PROT_READ): ref %d, mod %d\n",
+	       ref, mod);
+
+	/* Now clear reference and modify */
+	ref = pmap_clear_reference(pg);
+	mod = pmap_clear_modify(pg);
+	printf("Clearing page va %p pa %lx: ref %d, mod %d\n",
+	       (void *)(u_long)va, (long)pa,
+	       ref, mod);
+
+	/* Modify page */
+	pmap_kenter_pa(va, pa, VM_PROT_ALL, VM_PROT_ALL);
+	pmap_update(pmap_kernel());
+	*loc = 1;
+
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("Modified page: ref %d, mod %d\n",
+	       ref, mod);
+
+	/* Check pmap_protect() */
+	pmap_protect(pmap_kernel(), va, va+1, VM_PROT_NONE);
+	pmap_update(pmap_kernel());
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("pmap_protect(VM_PROT_READ): ref %d, mod %d\n",
+	       ref, mod);
+
+	/* Now clear reference and modify */
+	ref = pmap_clear_reference(pg);
+	mod = pmap_clear_modify(pg);
+	printf("Clearing page va %p pa %lx: ref %d, mod %d\n",
+	       (void *)(u_long)va, (long)pa,
+	       ref, mod);
+
+	/* Modify page */
+	pmap_kenter_pa(va, pa, VM_PROT_ALL, VM_PROT_ALL);
+	pmap_update(pmap_kernel());
+	*loc = 1;
+
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("Modified page: ref %d, mod %d\n",
+	       ref, mod);
+
+	/* Check pmap_pag_protect() */
+	pmap_page_protect(pg, VM_PROT_READ);
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("pmap_protect(): ref %d, mod %d\n",
+	       ref, mod);
+
+	/* Now clear reference and modify */
+	ref = pmap_clear_reference(pg);
+	mod = pmap_clear_modify(pg);
+	printf("Clearing page va %p pa %lx: ref %d, mod %d\n",
+	       (void *)(u_long)va, (long)pa,
+	       ref, mod);
+
+	/* Modify page */
+	pmap_kenter_pa(va, pa, VM_PROT_ALL, VM_PROT_ALL);
+	pmap_update(pmap_kernel());
+	*loc = 1;
+
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("Modified page: ref %d, mod %d\n",
+	       ref, mod);
+
+	/* Check pmap_pag_protect() */
+	pmap_page_protect(pg, VM_PROT_NONE);
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("pmap_protect(): ref %d, mod %d\n",
+	       ref, mod);
+
+	/* Now clear reference and modify */
+	ref = pmap_clear_reference(pg);
+	mod = pmap_clear_modify(pg);
+	printf("Clearing page va %p pa %lx: ref %d, mod %d\n",
+	       (void *)(u_long)va, (long)pa,
+	       ref, mod);
+
+	/* Unmap page */
+	pmap_kremove(va, va+1);
+	pmap_update(pmap_kernel());
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("Unmapped page: ref %d, mod %d\n", ref, mod);
+
+	/* Now clear reference and modify */
+	ref = pmap_clear_reference(pg);
+	mod = pmap_clear_modify(pg);
+	printf("Clearing page va %p pa %lx: ref %d, mod %d\n",
+	       (void *)(u_long)va, (long)pa, ref, mod);
+
+	/* Check it's properly cleared */
+	ref = pmap_is_referenced(pg);
+	mod = pmap_is_modified(pg);
+	printf("Checking cleared page: ref %d, mod %d\n",
+	       ref, mod);
+
+	pmap_kremove(va, va+1);
+	pmap_update(pmap_kernel());
+	/* pmap_free_page(pa, cpus_active); */
+}
+#endif
