@@ -279,7 +279,7 @@ ENTRY_NP(generic_bs_rr_8_swap)
 	ret
 END(generic_bs_rr_8_swap)
 
-/* generic_bs_sm_1(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
+/* void generic_bs_sm_1(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
 ENTRY_NP(generic_bs_sm_1)
 	cbz	x4, 9f
 1:
@@ -291,7 +291,10 @@ ENTRY_NP(generic_bs_sm_1)
 	ret
 END(generic_bs_sm_1)
 
-/* generic_bs_sm_2(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
+/* void generic_bs_sm_2(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
+/* void generic_bs_sm_2_swap(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
+ENTRY_NP(generic_bs_sm_2_swap)
+	rev16	w3, w3
 ENTRY_NP(generic_bs_sm_2)
 	cbz	x4, 9f
 1:
@@ -302,8 +305,12 @@ ENTRY_NP(generic_bs_sm_2)
 9:
 	ret
 END(generic_bs_sm_2)
+END(generic_bs_sm_2_swap)
 
-/* generic_bs_sm_4(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
+/* void generic_bs_sm_4(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
+/* void generic_bs_sm_4_swap(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
+ENTRY_NP(generic_bs_sm_4_swap)
+	rev32	x3, x3
 ENTRY_NP(generic_bs_sm_4)
 	cbz	x4, 9f
 1:
@@ -314,8 +321,12 @@ ENTRY_NP(generic_bs_sm_4)
 9:
 	ret
 END(generic_bs_sm_4)
+END(generic_bs_sm_4_swap)
 
-/* generic_bs_sm_8(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
+/* void generic_bs_sm_8(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
+/* void generic_bs_sm_8_swap(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
+ENTRY_NP(generic_bs_sm_8_swap)
+	rev	x3, x3
 ENTRY_NP(generic_bs_sm_8)
 	cbz	x4, 9f
 1:
@@ -326,44 +337,6 @@ ENTRY_NP(generic_bs_sm_8)
 9:
 	ret
 END(generic_bs_sm_8)
-
-/* generic_bs_sm_2_swap(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
-ENTRY_NP(generic_bs_sm_2_swap)
-	cbz	x4, 9f
-	rev16	w3, w3
-1:
-	subs	x4, x4, #1
-	strh	w3, [x1, x2]
-	b.ne	1b
-	dsb	sy
-9:
-	ret
-END(generic_bs_sm_2_swap)
-
-/* generic_bs_sm_4_swap(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
-ENTRY_NP(generic_bs_sm_4_swap)
-	cbz	x4, 9f
-	rev32	x3, x3
-1:
-	subs	x4, x4, #1
-	str	x3, [x1, x2]
-	b.ne	1b
-	dsb	sy
-9:
-	ret
-END(generic_bs_sm_4_swap)
-
-/* generic_bs_sm_8_swap(x0:x, x1:addr, x2:offset, x3:data, x4:count) */
-ENTRY_NP(generic_bs_sm_8_swap)
-	cbz	x4, 9f
-	rev	x3, x3
-1:
-	subs	x4, x4, #1
-	str	x3, [x1, x2]
-	b.ne	1b
-	dsb	sy
-9:
-	ret
 END(generic_bs_sm_8_swap)
 
 /* void generic_bs_w_1(x0:x, x1:addr, x2:offset, x3:data) */
@@ -406,7 +379,7 @@ ENTRY_NP(generic_bs_w_8)
 END(generic_bs_w_8)
 END(generic_bs_w_8_swap)
 
-/* generic_bs_wm_1(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
+/* void generic_bs_wm_1(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
 ENTRY_NP(generic_bs_wm_1)
 	cbz	x4, 9f
 1:
@@ -419,7 +392,7 @@ ENTRY_NP(generic_bs_wm_1)
 	ret
 END(generic_bs_wm_1)
 
-/* generic_bs_wm_2(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
+/* void generic_bs_wm_2(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
 ENTRY_NP(generic_bs_wm_2)
 	cbz	x4, 9f
 1:
@@ -432,7 +405,7 @@ ENTRY_NP(generic_bs_wm_2)
 	ret
 END(generic_bs_wm_2)
 
-/* generic_bs_wm_4(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
+/* void generic_bs_wm_4(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
 ENTRY_NP(generic_bs_wm_4)
 	cbz	x4, 9f
 1:
@@ -445,7 +418,7 @@ ENTRY_NP(generic_bs_wm_4)
 	ret
 END(generic_bs_wm_4)
 
-/* generic_bs_wm_8(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
+/* void generic_bs_wm_8(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
 ENTRY_NP(generic_bs_wm_8)
 	cbz	x4, 9f
 1:
@@ -458,7 +431,7 @@ ENTRY_NP(generic_bs_wm_8)
 	ret
 END(generic_bs_wm_8)
 
-/* generic_bs_wm_2_swap(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
+/* void generic_bs_wm_2_swap(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
 ENTRY_NP(generic_bs_wm_2_swap)
 	cbz	x4, 9f
 1:
@@ -472,7 +445,7 @@ ENTRY_NP(generic_bs_wm_2_swap)
 	ret
 END(generic_bs_wm_2_swap)
 
-/* generic_bs_wm_4_swap(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
+/* void generic_bs_wm_4_swap(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
 ENTRY_NP(generic_bs_wm_4_swap)
 	cbz	x4, 9f
 1:
@@ -486,7 +459,7 @@ ENTRY_NP(generic_bs_wm_4_swap)
 	ret
 END(generic_bs_wm_4_swap)
 
-/* generic_bs_wm_8_swap(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
+/* void generic_bs_wm_8_swap(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
 ENTRY_NP(generic_bs_wm_8_swap)
 	cbz	x4, 9f
 1:
@@ -500,7 +473,7 @@ ENTRY_NP(generic_bs_wm_8_swap)
 	ret
 END(generic_bs_wm_8_swap)
 
-/* generic_bs_wr_1(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
+/* void generic_bs_wr_1(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
 ENTRY_NP(generic_bs_wr_1)
 	cbz	x4, 9f
 	add	x8, x1, x2
@@ -514,7 +487,7 @@ ENTRY_NP(generic_bs_wr_1)
 	ret
 END(generic_bs_wr_1)
 
-/* generic_bs_wr_2(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
+/* void generic_bs_wr_2(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
 ENTRY_NP(generic_bs_wr_2)
 	cbz	x4, 9f
 	add	x8, x1, x2
@@ -528,7 +501,7 @@ ENTRY_NP(generic_bs_wr_2)
 	ret
 END(generic_bs_wr_2)
 
-/* generic_bs_wr_4(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
+/* void generic_bs_wr_4(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
 ENTRY_NP(generic_bs_wr_4)
 	cbz	x4, 9f
 	add	x8, x1, x2
@@ -542,7 +515,7 @@ ENTRY_NP(generic_bs_wr_4)
 	ret
 END(generic_bs_wr_4)
 
-/* generic_bs_wr_8(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
+/* void generic_bs_wr_8(x0:x, x1:addr, x2:offset, x3:datap, x4:count) */
 ENTRY_NP(generic_bs_wr_8)
 	cbz	x4, 9f
 	add	x8, x1, x2
