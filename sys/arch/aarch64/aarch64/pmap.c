@@ -76,20 +76,24 @@ vaddr_t virtual_avail, virtual_end;
 void
 pmap_bootstrap(vaddr_t vstart, vaddr_t vend)
 {
-	struct pmap *kpm = pmap_kernel();
-	pd_entry_t *l0;
+	struct pmap *kpm;
+	pd_entry_t *l0, l1;
+	vaddr_t va;
 
 	virtual_avail = vstart;
 	virtual_end = vend;
+	pmap_maxkvaddr = vstart;
 
 	cpu_tlb_flushID();
 
-	pmap_maxkvaddr = vstart;
-
+	va = vstart;
+	l0 = AARCH64_PA_TO_KVA(reg_ttbr1_el1_read());
+	l1 = AARCH64_PA_TO_KVA(l0pde_pa(l0[l0pde_index(va)]));
 	memset(&kernel_pmap, 0, sizeof(kernel_pmap));
+	kpm = pmap_kernel();
 	kpm->pm_refcnt = 1;
-	kpm->pm_l0table = l0 = AARCH64_PA_TO_KVA(reg_ttbr1_el1_read());
-	kpm->pm_l1table = AARCH64_PA_TO_KVA(l0pde_pa(l0[l0pde_index(vstart)]));
+	kpm->pm_l0table = l0;
+	kpm->pm_l1table = l1;
 	mutex_init(&kpm->pm_lock, MUTEX_DEFAULT, IPL_NONE);
 }
 
