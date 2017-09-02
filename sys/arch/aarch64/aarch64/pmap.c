@@ -43,6 +43,9 @@ __KERNEL_RCSID(1, "$NetBSD: pmap.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 #include <aarch64/armreg.h>
 #include <aarch64/cpufunc.h>
 
+#define TBIS(va)	cpu_tlb_flushID_SE(va)
+#define TBIA()		cpu_tlb_flushID()
+
 /* memory attributes are configured MAIR_EL1 in locore */
 #define LX_BLKPAG_ATTR_NORMAL_WB	__SHIFTIN(0, LX_BLKPAG_ATTR_INDX)
 #define LX_BLKPAG_ATTR_NORMAL_NC	__SHIFTIN(1, LX_BLKPAG_ATTR_INDX)
@@ -84,7 +87,7 @@ pmap_bootstrap(vaddr_t vstart, vaddr_t vend)
 	virtual_end = vend;
 	pmap_maxkvaddr = vstart;
 
-	cpu_tlb_flushID();
+	TBIA();
 
 	va = vstart;
 	l0 = AARCH64_PA_TO_KVA(reg_ttbr1_el1_read());
@@ -289,7 +292,7 @@ pmap_growkernel(vaddr_t maxkvaddr)
 		l3 = _pmap_grow_l3(l2, pmap_maxkvaddr);
 		KDASSERT(l3 != NULL);
 	}
-	cpu_tlb_flushID();
+	TBIA();
 
  done:
 	mutex_exit(&kpm->pm_lock);
@@ -487,7 +490,7 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 
 	atomic_swap_64(ptep, pte);
 
-	cpu_tlb_flushID_SE(va);
+	TBIS(va);
 	if ((prot & VM_PROT_EXECUTE) != 0)
 		cpu_icache_sync_range(va, PAGE_SIZE);
 
@@ -527,7 +530,7 @@ pmap_kremove(vaddr_t va, vsize_t size)
 			continue;
 
 		atomic_swap_64(ptep, 0);
-		cpu_tlb_flushID_SE(va);
+		TBIS(va);
 	}
 	mutex_exit(&kpm->pm_lock);
 }
@@ -580,7 +583,7 @@ pmap_protect(struct pmap *pm, vaddr_t sva, vaddr_t eva, vm_prot_t prot)
 		pte = _pmap_pte_update_prot(pte, prot);
 		atomic_swap_64(ptep, pte);
 
-		cpu_tlb_flushID_SE(va);
+		TBIS(va);
 	}
 
 	mutex_exit(&pm->pm_lock);
