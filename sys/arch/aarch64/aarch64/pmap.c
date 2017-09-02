@@ -144,17 +144,14 @@ pmap_steal_memory(vsize_t size, vaddr_t *vstartp, vaddr_t *vendp)
 	/* Steal pages */
 	pa = ptoa(uvm_physseg_get_avail_start(bank));
 	va = AARCH64_PA_TO_KVA(pa);
+	uvm_physseg_unplug(atop(pa), npage);
 
 //	DPRINTF("pa=0x%016lx-0x%016lx: va=0x%016lx\n", pa, pa + npage * PAGE_SIZE, va);
 
-	uvm_physseg_unplug(atop(pa), npage);
-
-#if 1
-	for (; npage > 0; npage--, pa += PAGE_SIZE)
+	while (npage > 0) {
 		pmap_zero_page(pa);
-#else
-	memset(va, 0, npage * PAGE_SIZE);
-#endif
+		npage--; pa += PAGE_SIZE;
+	}
 
 	return va;
 }
