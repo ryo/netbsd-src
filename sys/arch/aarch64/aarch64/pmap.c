@@ -64,8 +64,11 @@ vaddr_t virtual_avail, virtual_end;
 //#define PMAP_DEBUG
 
 #ifdef PMAP_DEBUG
-#define DPRINTF(format, args...)	printf(format, ## args)
+#define DMARK()				printf("%s:%d\n", __func__, __LINE__)
+#define DPRINTF(format, args...)	printf("%s:%d: " format , \
+						__func__, __LINE__, args)
 #else
+#define DMARK()
 #define DPRINTF(args...)
 #endif
 
@@ -93,7 +96,7 @@ pmap_bootstrap(vaddr_t vstart, vaddr_t vend)
 void
 pmap_init(void)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 
 	pmap_asid_arena = vmem_create("asid", 0, 65536, 1, NULL, NULL,
 	    NULL, 2, VM_SLEEP, IPL_VM);
@@ -115,8 +118,7 @@ pmap_steal_memory(vsize_t size, vaddr_t *vstartp, vaddr_t *vendp)
 	psize_t bank_npage;
 	uvm_physseg_t bank;
 
-//	DPRINTF("%s:%d: size=%lu, *vstartp=%lx, *vendp=%lx\n", __func__, __LINE__,
-//	    size, *vstartp, *vendp);
+//	DPRINTF("size=%lu, *vstartp=%lx, *vendp=%lx\n", size, *vstartp, *vendp);
 
 	size = round_page(size);
 	npage = atop(size);
@@ -136,7 +138,7 @@ pmap_steal_memory(vsize_t size, vaddr_t *vstartp, vaddr_t *vendp)
 	pa = ptoa(uvm_physseg_get_avail_start(bank));
 	va = AARCH64_PA_TO_KVA(pa);
 
-//	DPRINTF("%s:%d: pa=0x%016lx-0x%016lx: va=0x%016lx\n", __func__, __LINE__, pa, pa + npage * PAGE_SIZE, va);
+//	DPRINTF("pa=0x%016lx-0x%016lx: va=0x%016lx\n", pa, pa + npage * PAGE_SIZE, va);
 
 	uvm_physseg_unplug(atop(pa), npage);
 
@@ -164,11 +166,10 @@ _pmap_grow_l2(pd_entry_t *l1, vaddr_t va)
 
 	KASSERT(!(AARCH64_KSEG_START <= va && va < AARCH64_KSEG_END));
 
-//	DPRINTF("%s:%d: l1=%p, va=%lx\n", __func__, __LINE__, l1, va);
+//	DPRINTF("l1=%p, va=%lx\n", l1, va);
 
 	if (l1pde_valid(l1[l1pde_index(va)])) {
-//		DPRINTF("%s:%d: L2 table exists: L1(%p)[%016llx(idx=%d)] -> %016llx\n",
-//		    __func__, __LINE__,
+//		DPRINTF("L2 table exists: L1(%p)[%016llx(idx=%d)] -> %016llx\n",
 //		    l1, (va & L1_ADDR_BITS), (int)l1pde_index(va),
 //		    l1[l1pde_index(va)]);
 
@@ -187,23 +188,22 @@ _pmap_grow_l2(pd_entry_t *l1, vaddr_t va)
 			if (pg == NULL)
 				panic("%s: cannot allocate L2 table", __func__);
 			pa = VM_PAGE_TO_PHYS(pg);
-//			DPRINTF("%s:%d: new l2table(PA)=%lx (pagealloc)\n", __func__, __LINE__, pa);
+//			DPRINTF("new l2table(PA)=%lx (pagealloc)\n", pa);
 		} else {
 			/* XXX: uvm_pageboot_alloc() returns AARCH64 KSEG address */
 			pa = AARCH64_KVA_TO_PA(uvm_pageboot_alloc(Ln_TABLE_SIZE));
-//			DPRINTF("%s:%d: new l2table(PA)=%lx (pageboot_alloc)\n", __func__, __LINE__, pa);
+//			DPRINTF("new l2table(PA)=%lx (pageboot_alloc)\n", pa);
 		}
 
 		atomic_swap_64(&l1[l1pde_index(va)], pa | L1_TABLE | LX_VALID);
 
-		DPRINTF("%s:%d: add L2 table on L1(%p)[%016llx(idx=%d)] = %016llx\n",
-		    __func__, __LINE__,
-		    l1, (va & L1_ADDR_BITS), (int)l1pde_index(va),
-		    l1[l1pde_index(va)]);
+//		DPRINTF("add L2 table on L1(%p)[%016llx(idx=%d)] = %016llx\n",
+//		    l1, (va & L1_ADDR_BITS), (int)l1pde_index(va),
+//		    l1[l1pde_index(va)]);
 
 		l2 = AARCH64_PA_TO_KVA(pa);
 	}
-//	DPRINTF("%s:%d: l2=%16llx\n", __func__, __LINE__, l2);
+//	DPRINTF("l2=%p\n", l2);
 	return l2;
 }
 
@@ -215,11 +215,10 @@ _pmap_grow_l3(pd_entry_t *l2, vaddr_t va)
 
 	KASSERT(!(AARCH64_KSEG_START <= va && va < AARCH64_KSEG_END));
 
-//	DPRINTF("%s:%d: l2=%p, va=%lx & %llx = %llx\n", __func__, __LINE__, l2, va, L2_ADDR_BITS, va & L2_ADDR_BITS);
+//	DPRINTF("l2=%p, va=%lx & %llx = %llx\n", l2, va, L2_ADDR_BITS, va & L2_ADDR_BITS);
 
 	if (l2pde_valid(l2[l2pde_index(va)])) {
-//		DPRINTF("%s:%d: L3 table exists: L2(%p)[%016llx(idx=%d)] -> %016llx\n",
-//		    __func__, __LINE__,
+//		DPRINTF("L3 table exists: L2(%p)[%016llx(idx=%d)] -> %016llx\n",
 //		    l2, (va & L2_ADDR_BITS), (int)l2pde_index(va),
 //		    l2[l2pde_index(va)]);
 
@@ -239,23 +238,22 @@ _pmap_grow_l3(pd_entry_t *l2, vaddr_t va)
 			if (pg == NULL)
 				panic("%s: cannot allocate L3 table", __func__);
 			pa = VM_PAGE_TO_PHYS(pg);
-//			DPRINTF("%s:%d: new l3table(PA)=%lx (pagealloc)\n", __func__, __LINE__, pa);
+//			DPRINTF("new l3table(PA)=%lx (pagealloc)\n", pa);
 		} else {
 			/* XXX: uvm_pageboot_alloc() returns AARCH64 KSEG address */
 			pa = AARCH64_KVA_TO_PA(uvm_pageboot_alloc(Ln_TABLE_SIZE));
-//			DPRINTF("%s:%d: new l3table(PA)=%lx (pageboot_alloc)\n", __func__, __LINE__, pa);
+//			DPRINTF("new l3table(PA)=%lx (pageboot_alloc)\n", pa);
 		}
 
 		atomic_swap_64(&l2[l2pde_index(va)], pa | L2_TABLE | LX_VALID);
 
-//		DPRINTF("%s:%d: add L3 table on L2(%p)[%016llx(idx=%d)] = %016llx\n",
-//		    __func__, __LINE__,
+//		DPRINTF("add L3 table on L2(%p)[%016llx(idx=%d)] = %016llx\n",
 //		    l2, (va & L2_ADDR_BITS), (int)l2pde_index(va),
 //		    l2[l2pde_index(va)]);
 
 		l3 = AARCH64_PA_TO_KVA(pa);
 	}
-//	DPRINTF("%s:%d: l3=%16llx\n", __func__, __LINE__, l3);
+//	DPRINTF("l3=%p\n", l3);
 	return l3;
 }
 
@@ -267,23 +265,21 @@ pmap_growkernel(vaddr_t maxkvaddr)
 	pt_entry_t *l3;
 	int s;
 
-	DPRINTF("%s:%d: maxkvaddr=%16lx, pmap_maxkvaddrr=%16lx\n",
-	    __func__, __LINE__,
+	DPRINTF("maxkvaddr=%16lx, pmap_maxkvaddrr=%16lx\n",
 	    maxkvaddr, pmap_maxkvaddr);
 
 	s = splvm();
 	mutex_enter(&kpm->pm_lock);
 
 	if (maxkvaddr <= pmap_maxkvaddr) {
-		DPRINTF("%s: no need to expand l1/l2 table\n", __func__);
+		DPRINTF("no need to expand l1/l2 table%s", "\n");
 		goto done;
 	}
 
 	KDASSERT(maxkvaddr <= virtual_end);
 
 	for (; pmap_maxkvaddr < maxkvaddr; pmap_maxkvaddr += L2_SIZE) {
-//		DPRINTF("%s: growing pmap_maxkvaddr=%16lx\n", __func__,
-//		    pmap_maxkvaddr);
+//		DPRINTF("growing pmap_maxkvaddr=%16lx\n",  pmap_maxkvaddr);
 
 		l2 = _pmap_grow_l2(pmap_kernel()->pm_l1table, pmap_maxkvaddr);
 		KDASSERT(l2 != NULL);
@@ -297,7 +293,7 @@ pmap_growkernel(vaddr_t maxkvaddr)
 	mutex_exit(&kpm->pm_lock);
 	splx(s);
 
-	DPRINTF("%s: done: pmap_maxkvaddr=%16lx\n", __func__, pmap_maxkvaddr);
+	DPRINTF("done: pmap_maxkvaddr=%16lx\n", pmap_maxkvaddr);
 
 	return pmap_maxkvaddr;
 }
@@ -448,7 +444,7 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 	struct pmap *kpm = pmap_kernel();
 	pt_entry_t *ptep, pte, attr;
 
-	DPRINTF("%s:%d: va=%016lx, pa=%016lx, prot=%08x, flags=%08x\n", __func__, __LINE__,
+	DPRINTF("va=%016lx, pa=%016lx, prot=%08x, flags=%08x\n",
 	    va, pa, prot, flags);
 
 	mutex_enter(&kpm->pm_lock);
@@ -485,7 +481,7 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 #endif
 	    LX_VALID | L3_TYPE_PAG;
 
-	DPRINTF("%s: ptep=%p, pte=0x%016llx\n", __func__, ptep, pte);
+	DPRINTF("ptep=%p, pte=0x%016llx\n", ptep, pte);
 
 	atomic_swap_64(ptep, pte);
 
@@ -499,7 +495,7 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 void
 pmap_update(struct pmap *pm)
 {
-//	DPRINTF("%s:%d\n", __func__, __LINE__);
+//	DMARK();
 	/* nothing to do */
 }
 
@@ -510,9 +506,7 @@ pmap_kremove(vaddr_t va, vsize_t size)
 	pt_entry_t *ptep;
 	vaddr_t eva;
 
-	DPRINTF("%s:%d: va=%016lx, size=%016lx\n", __func__, __LINE__,
-	    va, size);
-
+	DPRINTF("va=%016lx, size=%016lx\n", va, size);
 
 	KDASSERT((va & PGOFSET) == 0);
 	KDASSERT((size & PGOFSET) == 0);
@@ -543,8 +537,7 @@ pmap_protect(struct pmap *pm, vaddr_t sva, vaddr_t eva, vm_prot_t prot)
 	vaddr_t va;
 	bool is_kva;
 
-	DPRINTF("%s:%d: sva=%016lx, eva=%016lx, prot=%08x\n", __func__, __LINE__,
-	    sva, eva, prot);
+	DPRINTF("sva=%016lx, eva=%016lx, prot=%08x\n", sva, eva, prot);
 
 	if ((prot & VM_PROT_READ) == VM_PROT_NONE) {
 		pmap_remove(pm, sva, eva);
@@ -594,7 +587,7 @@ pmap_protect(struct pmap *pm, vaddr_t sva, vaddr_t eva, vm_prot_t prot)
 struct pmap *
 pmap_create(void)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 	panic("%s", __func__);
 	return NULL;
 }
@@ -604,7 +597,7 @@ pmap_destroy(struct pmap *pm)
 {
 	unsigned int refcnt;
 
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 	panic("%s", __func__);
 
 	refcnt = atomic_dec_uint_nv(&pm->pm_refcnt);
@@ -625,7 +618,7 @@ pmap_destroy(struct pmap *pm)
 long
 pmap_resident_count(struct pmap *pm)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 	panic("%s", __func__);
 	return pm->pm_stats.resident_count;
 }
@@ -633,7 +626,7 @@ pmap_resident_count(struct pmap *pm)
 long
 pmap_wired_count(struct pmap *pm)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 	panic("%s", __func__);
 	return pm->pm_stats.wired_count;
 }
@@ -641,7 +634,7 @@ pmap_wired_count(struct pmap *pm)
 int
 pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 	panic("%s", __func__);
 	return 0;
 }
@@ -649,21 +642,21 @@ pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 void
 pmap_remove(struct pmap *pm, vaddr_t sva, vaddr_t eva)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 	panic("%s", __func__);
 }
 
 void
 pmap_remove_all(struct pmap *pm)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 	panic("%s", __func__);
 }
 
 void
 pmap_unwire(struct pmap *pm, vaddr_t va)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 	panic("%s", __func__);
 }
 
@@ -671,28 +664,28 @@ void
 pmap_copy(struct pmap *dst_map, struct pmap *src_map, vaddr_t dst_addr,
     vsize_t len, vaddr_t src_addr)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 	panic("%s", __func__);
 }
 
 void
 pmap_activate(struct lwp *l)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 	panic("%s", __func__);
 }
 
 void
 pmap_deactivate(struct lwp *l)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 	panic("%s", __func__);
 }
 
 void
 pmap_page_protect(struct vm_page *pg, vm_prot_t prot)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 	panic("%s", __func__);
 }
 
@@ -702,7 +695,7 @@ pmap_clear_modify(struct vm_page *pg)
 	struct vm_page_md * const mdpg = VM_PAGE_TO_MD(pg);
 	const bool rv = (mdpg->mdpg_attrs & VM_PAGE_MD_MODIFIED) != 0;
 
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 
 	mdpg->mdpg_attrs &= ~VM_PAGE_MD_MODIFIED;
 	return rv;
@@ -714,7 +707,7 @@ pmap_clear_reference(struct vm_page *pg)
 	struct vm_page_md * const mdpg = VM_PAGE_TO_MD(pg);
 	const bool rv = (mdpg->mdpg_attrs & VM_PAGE_MD_REFERENCED) != 0;
 
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 
 	mdpg->mdpg_attrs &= ~VM_PAGE_MD_REFERENCED;
 	return rv;
@@ -725,7 +718,7 @@ pmap_is_modified(struct vm_page *pg)
 {
 	struct vm_page_md * const mdpg = VM_PAGE_TO_MD(pg);
 
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 
 	return (mdpg->mdpg_attrs & VM_PAGE_MD_MODIFIED) != 0;
 }
@@ -735,7 +728,7 @@ pmap_is_referenced(struct vm_page *pg)
 {
 	struct vm_page_md * const mdpg = VM_PAGE_TO_MD(pg);
 
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 
 	return (mdpg->mdpg_attrs & VM_PAGE_MD_REFERENCED) != 0;
 }
@@ -743,7 +736,7 @@ pmap_is_referenced(struct vm_page *pg)
 paddr_t
 pmap_phys_address(paddr_t cookie)
 {
-	DPRINTF("%s:%d\n", __func__, __LINE__);
+	DMARK();
 	return cookie;
 }
 
