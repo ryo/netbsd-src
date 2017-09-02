@@ -165,19 +165,17 @@ pmap_reference(struct pmap *pm)
 static pd_entry_t *
 _pmap_grow_l2(pd_entry_t *l1, vaddr_t va)
 {
-	pd_entry_t pde, *l2;
+	pd_entry_t *l2, pde;
 	paddr_t pa;
 
 	KASSERT(!(AARCH64_KSEG_START <= va && va < AARCH64_KSEG_END));
 
 //	DPRINTF("l1=%p, va=%lx\n", l1, va);
 
-	if (l1pde_valid(l1[l1pde_index(va)])) {
+	pde = l1[l1pde_index(va)];
+	if (l1pde_valid(pde)) {
 //		DPRINTF("L2 table exists: L1(%p)[%016llx(idx=%d)] -> %016llx\n",
-//		    l1, (va & L1_ADDR_BITS), (int)l1pde_index(va),
-//		    l1[l1pde_index(va)]);
-
-		pde = l1[l1pde_index(va)];
+//		    l1, (va & L1_ADDR_BITS), (int)l1pde_index(va), l1[pde]);
 
 		KASSERT(!l1pde_is_block(pde));
 
