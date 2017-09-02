@@ -200,8 +200,7 @@ _pmap_grow_l2(pd_entry_t *l1, vaddr_t va)
 		atomic_swap_64(&l1[l1pde_index(va)], pa | L1_TABLE | LX_VALID);
 
 //		DPRINTF("add L2 table on L1(%p)[%016llx(idx=%d)] = %016llx\n",
-//		    l1, (va & L1_ADDR_BITS), (int)l1pde_index(va),
-//		    l1[l1pde_index(va)]);
+//		    l1, (va & L1_ADDR_BITS), (int)l1pde_index(va), pde);
 
 		l2 = AARCH64_PA_TO_KVA(pa);
 	}
