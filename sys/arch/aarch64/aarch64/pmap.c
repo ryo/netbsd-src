@@ -43,8 +43,8 @@ __KERNEL_RCSID(1, "$NetBSD: pmap.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 #include <aarch64/armreg.h>
 #include <aarch64/cpufunc.h>
 
-#define TBIS(va)	cpu_tlb_flushID_SE(va)
-#define TBIA()		cpu_tlb_flushID()
+void TBIS(vaddr_t);
+void TBIA(void);
 
 /* memory attributes are configured MAIR_EL1 in locore */
 #define LX_BLKPAG_ATTR_NORMAL_WB	__SHIFTIN(0, LX_BLKPAG_ATTR_INDX)
@@ -745,6 +745,24 @@ pmap_phys_address(paddr_t cookie)
 	return cookie;
 }
 
+//XXXARCH64 will rethink in future
+void
+TBIS(vaddr_t va)
+{
+
+	va = (va >> 12) << 12; /* VA[55:12] */
+	__asm __volatile("dsb ishst; tlbi vaae1is,%0; dsb ish; isb" :: "r"(va));
+}
+
+void
+TBIA(void)
+{
+#ifdef MULTIPROCESSOR
+	__asm __volatile("dsb ishst; tlbi vmalle1is; dsb ish; isb");
+#else
+	__asm __volatile("dsb ishst; tlbi vmalle1;   dsb ish; isb");
+#endif
+}
 
 #ifdef MORE_DEBUG
 /*
