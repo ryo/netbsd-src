@@ -165,7 +165,7 @@ pmap_reference(struct pmap *pm)
 static pd_entry_t *
 _pmap_grow_l2(pd_entry_t *l1, vaddr_t va)
 {
-	pd_entry_t *l2, pde;
+	pd_entry_t pde, *l2;
 	paddr_t pa;
 
 	KASSERT(!(AARCH64_KSEG_START <= va && va < AARCH64_KSEG_END));
@@ -175,7 +175,7 @@ _pmap_grow_l2(pd_entry_t *l1, vaddr_t va)
 	pde = l1[l1pde_index(va)];
 	if (l1pde_valid(pde)) {
 //		DPRINTF("L2 table exists: L1(%p)[%016llx(idx=%d)] -> %016llx\n",
-//		    l1, (va & L1_ADDR_BITS), (int)l1pde_index(va), l1[pde]);
+//		    l1, (va & L1_ADDR_BITS), (int)l1pde_index(va), pde);
 
 		KASSERT(!l1pde_is_block(pde));
 
@@ -219,12 +219,10 @@ _pmap_grow_l3(pd_entry_t *l2, vaddr_t va)
 
 //	DPRINTF("l2=%p, va=%lx & %llx = %llx\n", l2, va, L2_ADDR_BITS, va & L2_ADDR_BITS);
 
-	if (l2pde_valid(l2[l2pde_index(va)])) {
+	pde = l2[l2pde_index(va)];
+	if (l2pde_valid(pde)) {
 //		DPRINTF("L3 table exists: L2(%p)[%016llx(idx=%d)] -> %016llx\n",
-//		    l2, (va & L2_ADDR_BITS), (int)l2pde_index(va),
-//		    l2[l2pde_index(va)]);
-
-		pde = l2[l2pde_index(va)];
+//		    l2, (va & L2_ADDR_BITS), (int)l2pde_index(va), pde);
 
 		KASSERT(l2pde_is_table(pde));
 
@@ -250,8 +248,7 @@ _pmap_grow_l3(pd_entry_t *l2, vaddr_t va)
 		atomic_swap_64(&l2[l2pde_index(va)], pa | L2_TABLE | LX_VALID);
 
 //		DPRINTF("add L3 table on L2(%p)[%016llx(idx=%d)] = %016llx\n",
-//		    l2, (va & L2_ADDR_BITS), (int)l2pde_index(va),
-//		    l2[l2pde_index(va)]);
+//		    l2, (va & L2_ADDR_BITS), (int)l2pde_index(va), pde);
 
 		l3 = AARCH64_PA_TO_KVA(pa);
 	}
