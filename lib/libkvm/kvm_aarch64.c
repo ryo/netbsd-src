@@ -94,15 +94,15 @@ lose:
 	u_int page_shift;
 
 	switch (tg1) {
-	case TCR_TG0_4KB:
+	case TCR_TG1_4KB:
 		va_bits = t1siz + 36;
 		page_shift = 12;
 		break;
-	case TCR_TG0_16KB:
+	case TCR_TG1_16KB:
 		va_bits = 48;
 		page_shift = 14;
 		break;
-	case TCR_TG0_64KB:
+	case TCR_TG1_64KB:
 		va_bits = t1siz + 38;
 		page_shift = 16;
 		break;
