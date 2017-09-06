@@ -1,4 +1,4 @@
-/*	$NetBSD: locore.S,v 1.126 2017/08/10 12:49:11 maxv Exp $	*/
+/*	$NetBSD: locore.S,v 1.128 2017/08/31 10:30:58 maxv Exp $	*/
 
 /*
  * Copyright-o-rama!
@@ -328,6 +328,7 @@
 	.globl	_C_LABEL(bootinfo)
 	.globl	_C_LABEL(biosbasemem)
 	.globl	_C_LABEL(biosextmem)
+	.globl	do_sysret
 
 	.type	_C_LABEL(tablesize), @object
 _C_LABEL(tablesize):	.long	TABLESIZE
@@ -1264,28 +1265,19 @@ IDTVEC(syscall)
 
 	movq	$2,TF_ERR(%rsp)		/* syscall instruction size */
 	movq	$T_ASTFLT,TF_TRAPNO(%rsp)
-
-	movw	%es,TF_ES(%rsp)
-	sti
-	INTR_SAVE_GPRS
-	movw	%fs,TF_FS(%rsp)
-	movw	%gs,TF_GS(%rsp)
-	movw	$(LSEL(LUDATA_SEL, SEL_UPL)),TF_DS(%rsp)
 #else
 	/* Xen already switched to kernel stack */
-	pushq	%rsi
-	STI(si)
-	popq	%rsi
 	addq	$0x10,%rsp	/* gap to match cs:rip */
 	pushq	$2		/* error code */
 	pushq	$T_ASTFLT
 	subq	$TF_REGSIZE,%rsp
+#endif
 	INTR_SAVE_GPRS
+	movw	%es,TF_ES(%rsp)
 	movw	%fs,TF_FS(%rsp)
 	movw	%gs,TF_GS(%rsp)
-	movw	%es,TF_ES(%rsp)
 	movw	$(LSEL(LUDATA_SEL, SEL_UPL)),TF_DS(%rsp)
-#endif
+	STI(si)
 
 do_syscall:
 	movq	CPUVAR(CURLWP),%r14
@@ -1322,6 +1314,7 @@ do_syscall:
 	movq	TF_RIP(%rsp),%rcx	/* %rip for sysret */
 	movq	TF_RFLAGS(%rsp),%r11	/* %flags for sysret */
 	movq	TF_RSP(%rsp),%rsp
+do_sysret:
 	sysretq
 #else
 	addq	$TF_RIP,%rsp

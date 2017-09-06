@@ -1,4 +1,4 @@
-.\" $NetBSD: module.7,v 1.5 2015/09/22 08:29:30 wiz Exp $
+.\" $NetBSD: module.7,v 1.7 2017/08/31 08:36:32 wiz Exp $
 .\"
 .\" Copyright (c) 2010 The NetBSD Foundation, Inc.
 .\" All rights reserved.
@@ -24,7 +24,7 @@
 .\" ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 .\" POSSIBILITY OF SUCH DAMAGE.
 .\"
-.Dd September 22, 2015
+.Dd August 31, 2017
 .Dt MODULE 7
 .Os
 .Sh NAME
@@ -105,8 +105,10 @@ Alternate system security models also may be loaded using
 The common build tool of
 .Nx ,
 .Dq build.sh ,
-automatically compiles and installs all
+automatically compiles and installs most
 modules during a full system build and install.
+(The exceptions are some modules from external sources which, due to
+licensing concerns, can be built only as separately-loaded modules.)
 However, sometimes it is useful to update only modules.
 The following example demonstrates one way to do this.
 It is assumed that the source code is under
@@ -126,6 +128,14 @@ make clean
 make
 make install
 .Ed
+.Pp
+Alternatively, the
+.Dq build.sh
+tool can be used to build only the modules.
+.Bd -literal -offset indent
+cd /usr/src
+\&./build.sh -O /usr/obj -T /usr/tools modules
+.Ed
 .Sh SEE ALSO
 .Xr modctl 2 ,
 .Xr modload 8 ,
@@ -137,7 +147,7 @@ The
 .Nm
 facility was designed to be similar in functionality
 to the loadable kernel modules facility provided by
-.Tn "SunOS 4.1.3" .
+SunOS 4.1.3.
 The old
 .Dv LKM
 interface was replaced by

@@ -1,4 +1,4 @@
-/*	$NetBSD: radeonfb.c,v 1.90 2017/08/11 22:59:05 macallan Exp $ */
+/*	$NetBSD: radeonfb.c,v 1.92 2017/08/25 22:45:33 macallan Exp $ */
 
 /*-
  * Copyright (c) 2006 Itronix Inc.
@@ -70,7 +70,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: radeonfb.c,v 1.90 2017/08/11 22:59:05 macallan Exp $");
+__KERNEL_RCSID(0, "$NetBSD: radeonfb.c,v 1.92 2017/08/25 22:45:33 macallan Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -120,13 +120,16 @@ static uintmax_t radeonfb_getprop_num(struct radeonfb_softc *, const char *,
 static int radeonfb_getclocks(struct radeonfb_softc *);
 static int radeonfb_gettmds(struct radeonfb_softc *);
 static int radeonfb_calc_dividers(struct radeonfb_softc *, uint32_t,
-    uint32_t *, uint32_t *);
+    uint32_t *, uint32_t *, int);
+/* flags for radeonfb_calc_dividers */
+#define NO_ODD_FBDIV	1
+    
 static int radeonfb_getconnectors(struct radeonfb_softc *);
 static const struct videomode *radeonfb_modelookup(const char *);
 static void radeonfb_init_screen(void *, struct vcons_screen *, int, long *);
 static void radeonfb_pllwriteupdate(struct radeonfb_softc *, int);
 static void radeonfb_pllwaitatomicread(struct radeonfb_softc *, int);
-static void radeonfb_program_vclk(struct radeonfb_softc *, int, int);
+static void radeonfb_program_vclk(struct radeonfb_softc *, int, int, int);
 static void radeonfb_modeswitch(struct radeonfb_display *);
 static void radeonfb_setcrtc(struct radeonfb_display *, int);
 static void radeonfb_init_misc(struct radeonfb_softc *);
@@ -416,7 +419,7 @@ static const struct {
 	{ RADEON_R200,	{{15000, 0xa1b}, {-1, 0xa3f}}},
 	{ RADEON_RV250,	{{15500, 0x81b}, {-1, 0x83f}}},
 	{ RADEON_RS300, {{0, 0}}},
-	{ RADEON_RV280,	{{13000, 0x400f4}, {15000, 0x400f7}}},
+	{ RADEON_RV280,	{{13000, 0x400f4}, {15000, 0x400f7}, {-1, 0x40111}}},
 	{ RADEON_R300,	{{-1, 0xb01cb}}},
 	{ RADEON_R350,	{{-1, 0xb01cb}}},
 	{ RADEON_RV350,	{{15000, 0xb0155}, {-1, 0xb01cb}}},
@@ -572,9 +575,6 @@ radeonfb_attach(device_t parent, device_t dev, void *aux)
 	PRINTREG(RADEON_CRTC2_GEN_CNTL);
 	PRINTREG(RADEON_DISP_OUTPUT_CNTL);
 	PRINTREG(RADEON_DAC_CNTL2);
-	PRINTREG(RADEON_FP_GEN_CNTL);
-	PRINTREG(RADEON_FP2_GEN_CNTL);
-
 	PRINTREG(RADEON_BIOS_4_SCRATCH);
 	PRINTREG(RADEON_FP_GEN_CNTL);
 	sc->sc_fp_gen_cntl = GET32(sc, RADEON_FP_GEN_CNTL);
@@ -583,9 +583,12 @@ radeonfb_attach(device_t parent, device_t dev, void *aux)
 	PRINTREG(RADEON_TMDS_TRANSMITTER_CNTL);
 	PRINTREG(RADEON_TMDS_PLL_CNTL);
 	PRINTREG(RADEON_LVDS_GEN_CNTL);
-	PRINTREG(RADEON_FP_HORZ_STRETCH);
-	PRINTREG(RADEON_FP_VERT_STRETCH);
-
+	PRINTREG(RADEON_DISP_HW_DEBUG);
+	PRINTREG(RADEON_PIXCLKS_CNTL);
+	PRINTREG(RADEON_CRTC_H_SYNC_STRT_WID);
+	PRINTREG(RADEON_FP_H_SYNC_STRT_WID);
+	PRINTREG(RADEON_CRTC2_H_SYNC_STRT_WID);
+	PRINTREG(RADEON_FP_H2_SYNC_STRT_WID);
 	if (IS_RV100(sc))
 		PUT32(sc, RADEON_TMDS_PLL_CNTL, 0xa27);
 
@@ -707,11 +710,29 @@ radeonfb_attach(device_t parent, device_t dev, void *aux)
 				      RADEON_FP_SEL_CRTC1,
 				    ~RADEON_FP_SEL_MASK);
 			}
+		case RADEON_TMDS_EXT:
+			/* point FP2 at the CRTC this port uses */
+			DPRINTF(("%s: plugging external TMDS into CRTC %d\n",
+			    __func__, sc->sc_ports[i].rp_number));
+			if (IS_R300(sc)) {
+				PATCH32(sc, RADEON_FP2_GEN_CNTL,
+				    sc->sc_ports[i].rp_number ?
+				      R200_FP2_SOURCE_SEL_CRTC2 :
+				      R200_FP2_SOURCE_SEL_CRTC1,
+				    ~R200_FP2_SOURCE_SEL_CRTC2);
+			} else {
+				PATCH32(sc, RADEON_FP2_GEN_CNTL,
+				    sc->sc_ports[i].rp_number ?
+				      RADEON_FP2_SRC_SEL_CRTC2 :
+				      RADEON_FP2_SRC_SEL_CRTC1,
+				    ~RADEON_FP2_SRC_SEL_CRTC2);
+			}
 		}
 	}
 	PRINTREG(RADEON_DAC_CNTL2);
 	PRINTREG(RADEON_DISP_HW_DEBUG);
 
+	PRINTREG(RADEON_DAC_CNTL);
 	/* other DAC programming */
 	v = GET32(sc, RADEON_DAC_CNTL);
 	v &= (RADEON_DAC_RANGE_CNTL_MASK | RADEON_DAC_BLANKING);
@@ -1023,6 +1044,10 @@ radeonfb_attach(device_t parent, device_t dev, void *aux)
 	PRINTREG(RADEON_DAC_CNTL2);
 	PRINTREG(RADEON_FP_GEN_CNTL);
 	PRINTREG(RADEON_FP2_GEN_CNTL);
+	PRINTREG(RADEON_TMDS_CNTL);
+	PRINTREG(RADEON_TMDS_TRANSMITTER_CNTL);
+	PRINTREG(RADEON_TMDS_PLL_CNTL);
+	PRINTREG(RADEON_PIXCLKS_CNTL);
 
 	return;
 
@@ -1607,7 +1632,7 @@ dontprobe:
 
 int
 radeonfb_calc_dividers(struct radeonfb_softc *sc, uint32_t dotclock,
-    uint32_t *postdivbit, uint32_t *feedbackdiv)
+    uint32_t *postdivbit, uint32_t *feedbackdiv, int flags)
 {
 	int		i;
 	uint32_t	outfreq;
@@ -1615,6 +1640,7 @@ radeonfb_calc_dividers(struct radeonfb_softc *sc, uint32_t dotclock,
 
 	DPRINTF(("dot clock: %u\n", dotclock));
 	for (i = 0; (div = radeonfb_dividers[i].divider) != 0; i++) {
+		if ((flags & NO_ODD_FBDIV) && ((div & 1) != 0)) continue;
 		outfreq = div * dotclock;
 		if ((outfreq >= sc->sc_minpll) &&
 		    (outfreq <= sc->sc_maxpll)) {
@@ -1739,6 +1765,13 @@ radeonfb_getconnectors(struct radeonfb_softc *sc)
 			if (conn == RADEON_CONN_NONE)
 				continue;	/* no connector */
 
+
+
+			/* 
+			 * XXX
+			 * both Mac Mini variants have both outputs wired to 
+			 * the same connector and share the DDC lines
+			 */ 
 			if ((found > 0) &&
 			    (sc->sc_ports[port].rp_ddc_type == ddc)) {
 				/* duplicate entry for same connector */
@@ -1780,18 +1813,24 @@ nobios:
 		    "dvi-external", &dvi_ext);
 		if (dvi_ext) {
 			sc->sc_ports[0].rp_mon_type = RADEON_MT_UNKNOWN;
-			sc->sc_ports[0].rp_ddc_type = RADEON_DDC_DVI;
-			sc->sc_ports[0].rp_dac_type = RADEON_DAC_TVDAC;
+			sc->sc_ports[0].rp_ddc_type = RADEON_DDC_CRT2;
+			sc->sc_ports[0].rp_dac_type = RADEON_DAC_PRIMARY;
 			sc->sc_ports[0].rp_conn_type = RADEON_CONN_DVI_I;
-			sc->sc_ports[0].rp_tmds_type = RADEON_TMDS_EXT;
-			sc->sc_ports[0].rp_number = 1;
+			sc->sc_ports[0].rp_tmds_type = RADEON_TMDS_EXT;	/* output to fp2 */
+			sc->sc_ports[0].rp_number = 0;
+			sc->sc_ports[1].rp_mon_type = RADEON_MT_UNKNOWN;
+			sc->sc_ports[1].rp_ddc_type = RADEON_DDC_NONE;
+			sc->sc_ports[1].rp_dac_type = RADEON_DAC_UNKNOWN;
+			sc->sc_ports[1].rp_conn_type = RADEON_CONN_NONE;
+			sc->sc_ports[1].rp_tmds_type = RADEON_TMDS_UNKNOWN;
+			sc->sc_ports[1].rp_number = 1;
 		} else	if (dvi_int) {
 			sc->sc_ports[0].rp_mon_type = RADEON_MT_UNKNOWN;
-			sc->sc_ports[0].rp_ddc_type = RADEON_DDC_DVI;
-			sc->sc_ports[0].rp_dac_type = RADEON_DAC_TVDAC;
+			sc->sc_ports[0].rp_ddc_type = RADEON_DDC_CRT2;
+			sc->sc_ports[0].rp_dac_type = RADEON_DAC_PRIMARY;
 			sc->sc_ports[0].rp_conn_type = RADEON_CONN_DVI_I;
 			sc->sc_ports[0].rp_tmds_type = RADEON_TMDS_INT;
-			sc->sc_ports[0].rp_number = 1;
+			sc->sc_ports[0].rp_number = 0;
 		} else if IS_MOBILITY(sc) {
 			/* default, port 0 = internal TMDS, port 1 = CRT */
 			sc->sc_ports[0].rp_mon_type = RADEON_MT_UNKNOWN;
@@ -1990,13 +2029,13 @@ radeonfb_pllwaitatomicread(struct radeonfb_softc *sc, int crtc)
 }
 
 void
-radeonfb_program_vclk(struct radeonfb_softc *sc, int dotclock, int crtc)
+radeonfb_program_vclk(struct radeonfb_softc *sc, int dotclock, int crtc, int flags)
 {
 	uint32_t	pbit = 0;
 	uint32_t	feed = 0;
 	uint32_t	data, refdiv, div0;
 
-	radeonfb_calc_dividers(sc, dotclock, &pbit, &feed);
+	radeonfb_calc_dividers(sc, dotclock, &pbit, &feed, flags);
 
 	if (crtc == 0) {
 
@@ -2159,6 +2198,21 @@ radeonfb_modeswitch(struct radeonfb_display *dp)
 	for (i = 0; i < dp->rd_ncrtcs; i++)
 		radeonfb_setcrtc(dp, i);
 
+#if 0
+	/*
+	 * DVO chip voodoo from xf86-video-radeon
+	 * apparently this is needed for some powerbooks with DVI outputs
+	 */
+
+	uint8_t data[5][2] = {{0x8, 0x030}, {0x9, 0}, {0xa, 0x90}, {0xc, 0x89}, {0x8, 0x3b}};
+	int n = 0;
+	iic_acquire_bus(&sc->sc_i2c[0].ric_controller, 0);
+	for (i = 0; i < 5; i++)
+		n += iic_exec(&sc->sc_i2c[0].ric_controller, I2C_OP_WRITE, 0x38, data[i], 2, NULL, 0, 0);
+	iic_release_bus(&sc->sc_i2c[0].ric_controller, 0);
+	printf("n = %d\n", n);
+#endif
+
 	/* activate the display */
 	radeonfb_blank(dp, 0);
 }
@@ -2166,7 +2220,7 @@ radeonfb_modeswitch(struct radeonfb_display *dp)
 void
 radeonfb_setcrtc(struct radeonfb_display *dp, int index)
 {
-	int			crtc;
+	int			crtc, flags = 0;
 	struct videomode	*mode;
 	struct radeonfb_softc	*sc;
 	struct radeonfb_crtc	*cp;
@@ -2183,6 +2237,12 @@ radeonfb_setcrtc(struct radeonfb_display *dp, int index)
 	uint32_t		pitch;
 
 	sc = dp->rd_softc;
+
+	if ((sc->sc_ports[index].rp_tmds_type == RADEON_TMDS_INT) ||
+	    (sc->sc_ports[index].rp_tmds_type == RADEON_TMDS_EXT)) {
+		flags |= NO_ODD_FBDIV;
+	}
+
 	cp = &dp->rd_crtcs[index];
 	crtc = cp->rc_number;
 	mode = &cp->rc_videomode;
@@ -2200,6 +2260,7 @@ radeonfb_setcrtc(struct radeonfb_display *dp, int index)
 		hsyncstrt = RADEON_CRTC_H_SYNC_STRT_WID;
 		vtotaldisp = RADEON_CRTC_V_TOTAL_DISP;
 		vsyncstrt = RADEON_CRTC_V_SYNC_STRT_WID;
+		/* should probably leave those alone on non-LVDS */
 		fpvsyncstrt = RADEON_FP_V_SYNC_STRT_WID;
 		fphsyncstrt = RADEON_FP_H_SYNC_STRT_WID;
 		fpvtotaldisp = RADEON_FP_CRTC_V_TOTAL_DISP;
@@ -2213,8 +2274,9 @@ radeonfb_setcrtc(struct radeonfb_display *dp, int index)
 		vsyncstrt = RADEON_CRTC2_V_SYNC_STRT_WID;
 		fpvsyncstrt = RADEON_FP_V2_SYNC_STRT_WID;
 		fphsyncstrt = RADEON_FP_H2_SYNC_STRT_WID;
-		fpvtotaldisp = RADEON_FP_CRTC2_V_TOTAL_DISP;
-		fphtotaldisp = RADEON_FP_CRTC2_H_TOTAL_DISP;
+		/* XXX these registers don't seem to exist */
+		fpvtotaldisp = 0;//RADEON_FP_CRTC2_V_TOTAL_DISP;
+		fphtotaldisp = 0;//RADEON_FP_CRTC2_H_TOTAL_DISP;
 		break;
 	default:
 		panic("Bad CRTC!");
@@ -2271,9 +2333,10 @@ radeonfb_setcrtc(struct radeonfb_display *dp, int index)
 	v |= (mode->htotal / 8) - 1;
 	PUT32(sc, htotaldisp, v);
 	DPRINTF(("CRTC%s_H_TOTAL_DISP = %08x\n", crtc ? "2" : "", v));
-	PUT32(sc, fphtotaldisp, v);
-	DPRINTF(("FP_H%s_TOTAL_DISP = %08x\n", crtc ? "2" : "", v));
-
+	if (fphtotaldisp) {
+		PUT32(sc, fphtotaldisp, v);
+		DPRINTF(("FP_H%s_TOTAL_DISP = %08x\n", crtc ? "2" : "", v));
+	}
 	/*
 	 * H_SYNC_STRT_WID
 	 */
@@ -2283,8 +2346,10 @@ radeonfb_setcrtc(struct radeonfb_display *dp, int index)
 		v |= RADEON_CRTC_H_SYNC_POL;
 	PUT32(sc, hsyncstrt, v);
 	DPRINTF(("CRTC%s_H_SYNC_STRT_WID = %08x\n", crtc ? "2" : "", v));
-	PUT32(sc, fphsyncstrt, v);
-	DPRINTF(("FP_H%s_SYNC_STRT_WID = %08x\n", crtc ? "2" : "", v));
+	if (fphsyncstrt) {
+		PUT32(sc, fphsyncstrt, v);
+		DPRINTF(("FP_H%s_SYNC_STRT_WID = %08x\n", crtc ? "2" : "", v));
+	}
 
 	/*
 	 * V_TOTAL_DISP
@@ -2293,8 +2358,10 @@ radeonfb_setcrtc(struct radeonfb_display *dp, int index)
 	v |= (mode->vtotal - 1);
 	PUT32(sc, vtotaldisp, v);
 	DPRINTF(("CRTC%s_V_TOTAL_DISP = %08x\n", crtc ? "2" : "", v));
-	PUT32(sc, fpvtotaldisp, v);
-	DPRINTF(("FP_V%s_TOTAL_DISP = %08x\n", crtc ? "2" : "", v));
+	if (fpvtotaldisp) {
+		PUT32(sc, fpvtotaldisp, v);
+		DPRINTF(("FP_V%s_TOTAL_DISP = %08x\n", crtc ? "2" : "", v));
+	}
 
 	/*
 	 * V_SYNC_STRT_WID
@@ -2305,10 +2372,12 @@ radeonfb_setcrtc(struct radeonfb_display *dp, int index)
 		v |= RADEON_CRTC_V_SYNC_POL;
 	PUT32(sc, vsyncstrt, v);
 	DPRINTF(("CRTC%s_V_SYNC_STRT_WID = %08x\n", crtc ? "2" : "", v));
-	PUT32(sc, fpvsyncstrt, v);
-	DPRINTF(("FP_V%s_SYNC_STRT_WID = %08x\n", crtc ? "2" : "", v));
+	if (fpvsyncstrt) {
+		PUT32(sc, fpvsyncstrt, v);
+		DPRINTF(("FP_V%s_SYNC_STRT_WID = %08x\n", crtc ? "2" : "", v));
+	}
 
-	radeonfb_program_vclk(sc, mode->dot_clock, crtc);
+	radeonfb_program_vclk(sc, mode->dot_clock, crtc, flags);
 
 	switch (crtc) {
 	case 0:
@@ -2613,7 +2682,6 @@ radeonfb_putpal(struct radeonfb_display *dp, int idx, int r, int g, int b)
 	/* initialize the palette for every CRTC used by this display */
 	for (cc = 0; cc < dp->rd_ncrtcs; cc++) {
 		crtc = dp->rd_crtcs[cc].rc_number;
-		//DPRINTF(("%s: doing crtc %d %d\n", __func__, cc, crtc));
 
 		if (crtc)
 			SET32(sc, RADEON_DAC_CNTL2, RADEON_DAC2_PALETTE_ACC_CTL);

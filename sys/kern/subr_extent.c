@@ -1,4 +1,4 @@
-/*	$NetBSD: subr_extent.c,v 1.81 2017/07/24 19:56:07 skrll Exp $	*/
+/*	$NetBSD: subr_extent.c,v 1.84 2017/08/24 17:18:55 kre Exp $	*/
 
 /*-
  * Copyright (c) 1996, 1998, 2007 The NetBSD Foundation, Inc.
@@ -34,7 +34,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: subr_extent.c,v 1.81 2017/07/24 19:56:07 skrll Exp $");
+__KERNEL_RCSID(0, "$NetBSD: subr_extent.c,v 1.84 2017/08/24 17:18:55 kre Exp $");
 
 #ifdef _KERNEL
 #ifdef _KERNEL_OPT
@@ -65,6 +65,8 @@ __KERNEL_RCSID(0, "$NetBSD: subr_extent.c,v 1.81 2017/07/24 19:56:07 skrll Exp $
 #include <stdio.h>
 #include <string.h>
 
+static inline void no_op(void) { return; }
+
 /*
  * Use multi-line #defines to avoid screwing up the kernel tags file;
  * without this, ctags produces a tags file where panic() shows up
@@ -82,17 +84,18 @@ pool_get(pool, flags)		kmem_alloc((pool)->pr_size,0)
 pool_put(pool, rp)		kmem_free(rp,0)
 #define	\
 panic(a ...)			printf(a)
-#define	mutex_init(a, b, c)
-#define	mutex_destroy(a)
-#define	mutex_enter(l)
-#define	mutex_exit(l)
-#define	cv_wait(cv, lock)
-#define	cv_broadcast(cv)
-#define	cv_init(a, b)
-#define	cv_destroy(a)
+#define	mutex_init(a, b, c)	no_op()
+#define	mutex_destroy(a)	no_op()
+#define	mutex_enter(l)		no_op()
+#define	mutex_exit(l)		no_op()
+#define	cv_wait(cv, lock)	no_op()
+#define	cv_broadcast(cv)	no_op()
+#define	cv_init(a, b)		no_op()
+#define	cv_destroy(a)		no_op()
 #define	KMEM_IS_RUNNING			(1)
 #define	IPL_VM				(0)
 #define	MUTEX_DEFAULT			(0)
+#define	KASSERT(exp)
 #endif
 
 static struct pool expool;
@@ -131,7 +134,8 @@ extent_alloc_region_descriptor(struct extent *ex, int flags)
 	if (ex->ex_flags & EXF_FIXED) {
 		struct extent_fixed *fex = (struct extent_fixed *)ex;
 
-		mutex_enter(&ex->ex_lock);
+		if (!(ex->ex_flags & EXF_EARLY))
+			mutex_enter(&ex->ex_lock);
 		for (;;) {
 			if ((rp = LIST_FIRST(&fex->fex_freelist)) != NULL) {
 				/*
@@ -141,17 +145,21 @@ extent_alloc_region_descriptor(struct extent *ex, int flags)
 				 * need to remember that information.
 				 */
 				LIST_REMOVE(rp, er_link);
-				mutex_exit(&ex->ex_lock);
+				if (!(ex->ex_flags & EXF_EARLY))
+					mutex_exit(&ex->ex_lock);
 				return (rp);
 			}
 			if (flags & EX_MALLOCOK) {
-				mutex_exit(&ex->ex_lock);
+				if (!(ex->ex_flags & EXF_EARLY))
+					mutex_exit(&ex->ex_lock);
 				goto alloc;
 			}
 			if ((flags & EX_WAITOK) == 0) {
-				mutex_exit(&ex->ex_lock);
+				if (!(ex->ex_flags & EXF_EARLY))
+					mutex_exit(&ex->ex_lock);
 				return (NULL);
 			}
+			KASSERT(mutex_owned(&ex->ex_lock));
 			ex->ex_flwanted = true;
 			if ((flags & EX_CATCH) != 0)
 				error = cv_wait_sig(&ex->ex_cv, &ex->ex_lock);
@@ -206,8 +214,10 @@ extent_free_region_descriptor(struct extent *ex, struct extent_region *rp)
 		}
 
  wake_em_up:
-		ex->ex_flwanted = false;
-		cv_broadcast(&ex->ex_cv);
+		if (!(ex->ex_flags & EXF_EARLY)) {
+			ex->ex_flwanted = false;
+			cv_broadcast(&ex->ex_cv);
+		}
 		return;
 	}
 
@@ -297,6 +307,8 @@ extent_create(const char *name, u_long start, u_long end,
 		ex->ex_flags |= EXF_FIXED;
 	if (flags & EX_NOCOALESCE)
 		ex->ex_flags |= EXF_NOCOALESCE;
+	if (flags & EX_EARLY)
+		ex->ex_flags |= EXF_EARLY;
 	return (ex);
 }
 
@@ -507,7 +519,8 @@ extent_alloc_region(struct extent *ex, u_long start, u_long size, int flags)
 		return (ENOMEM);
 	}
 
-	mutex_enter(&ex->ex_lock);
+	if (!(ex->ex_flags & EXF_EARLY))
+		mutex_enter(&ex->ex_lock);
  alloc_start:
 
 	/*
@@ -545,6 +558,7 @@ extent_alloc_region(struct extent *ex, u_long start, u_long size, int flags)
 			 * do so.
 			 */
 			if (flags & EX_WAITSPACE) {
+				KASSERT(!(ex->ex_flags & EXF_EARLY));
 				if ((flags & EX_CATCH) != 0)
 					error = cv_wait_sig(&ex->ex_cv,
 					    &ex->ex_lock);
@@ -556,7 +570,8 @@ extent_alloc_region(struct extent *ex, u_long start, u_long size, int flags)
 					goto alloc_start;
 				mutex_exit(&ex->ex_lock);
 			} else {
-				mutex_exit(&ex->ex_lock);
+				if (!(ex->ex_flags & EXF_EARLY))
+					mutex_exit(&ex->ex_lock);
 				error = EAGAIN;
 			}
 			extent_free_region_descriptor(ex, myrp);
@@ -576,7 +591,8 @@ extent_alloc_region(struct extent *ex, u_long start, u_long size, int flags)
 	 * at the beginning of the region list.  Insert ourselves.
 	 */
 	extent_insert_and_optimize(ex, start, size, flags, last, myrp);
-	mutex_exit(&ex->ex_lock);
+	if (!(ex->ex_flags & EXF_EARLY))
+		mutex_exit(&ex->ex_lock);
 	return (0);
 }
 
@@ -1042,7 +1058,8 @@ extent_free(struct extent *ex, u_long start, u_long size, int flags)
 			return (ENOMEM);
 	}
 
-	mutex_enter(&ex->ex_lock);
+	if (!(ex->ex_flags & EXF_EARLY))
+		mutex_enter(&ex->ex_lock);
 
 	/*
 	 * Find region and deallocate.  Several possibilities:
@@ -1125,7 +1142,8 @@ extent_free(struct extent *ex, u_long start, u_long size, int flags)
 	}
 
 	/* Region not found, or request otherwise invalid. */
-	mutex_exit(&ex->ex_lock);
+	if (!(ex->ex_flags & EXF_EARLY))
+		mutex_exit(&ex->ex_lock);
 	extent_print(ex);
 	printf("extent_free: start 0x%lx, end 0x%lx\n", start, end);
 	panic("extent_free: region not found");
@@ -1133,8 +1151,10 @@ extent_free(struct extent *ex, u_long start, u_long size, int flags)
  done:
 	if (nrp != NULL)
 		extent_free_region_descriptor(ex, nrp);
-	cv_broadcast(&ex->ex_cv);
-	mutex_exit(&ex->ex_lock);
+	if (!(ex->ex_flags & EXF_EARLY)) {
+		cv_broadcast(&ex->ex_cv);
+		mutex_exit(&ex->ex_lock);
+	}
 	return (0);
 }
 

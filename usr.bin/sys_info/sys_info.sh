@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $NetBSD: sys_info.sh,v 1.8 2017/08/23 01:17:46 kre Exp $
+# $NetBSD: sys_info.sh,v 1.13 2017/08/27 20:40:22 wiz Exp $
 
 # Copyright (c) 2016 Alistair Crooks <agc@NetBSD.org>
 # All rights reserved.
@@ -26,8 +26,7 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-SYS_INFO_VERSION=$( D="\$Date: 2017/08/23 01:17:46 $"; set -f;
-			IFS=" /"; set -- $D; printf %s "$2$3$4" )
+SYS_INFO_VERSION=20170824
 
 PATH=$(sysctl -n user.cs_path)
 export PATH
@@ -103,8 +102,7 @@ run() {
 getversion() {
 	case "$1" in
 	'')
-		# arriving here implies all==true, not possible otherwise
-		;&
+		$all || return 0 ;&
 	awk)
 		run "awk --version | awk '{ print \$1 \"-\" \$3 }'"
 		$all || return 0 ;&
@@ -186,6 +184,11 @@ getversion() {
 	openssl)
 		run "openssl version 2>/dev/null | awk '{ print tolower(\$1) \"-\" \$2 }'"
 		$all || return 0 ;&
+	pkg_info|pkg_install)
+		if which_prog infopath pkg_info; then
+			run "printf 'pkg_install-%s\n' \$(${infopath} -V)"
+		fi
+		$all || return 0 ;&
 	sh)
 		run "set -- \$NETBSD_SHELL; case \"\$1+\$2\" in *+BUILD*) ;; +) set -- ancient;; *) set -- \"\$1\";;esac; printf 'sh-%s\\n' \$1\${2:+-\${2#BUILD:}}"
 		$all || return 0 ;&
@@ -198,8 +201,6 @@ getversion() {
 	tcsh)
 		if which_prog tcshpath tcsh; then
 			run "${tcshpath} --version | awk '{ print \$1 \"-\" \$2 }'"
-		else
-			$all || printf >&2 '%s\n' "tcsh: not found"
 		fi
 		$all || return 0 ;&
 	tzdata)
@@ -222,6 +223,9 @@ getversion() {
 	xz)
 		run "xz --version | awk '{ print \$1 \"-\" \$4; exit }'"
 		$all || return 0 ;&
+	yacc)
+		run "yacc -V | sed -e 's| ||g'"
+		$all || return 0 ;&
 
 	'')			# never matches
 		;;		# but terminates ;& sequence
@@ -240,7 +244,7 @@ while getopts "L:P:v" a; do
 	L)	LIBRARY_PATH=${OPTARG};;
 	P)	PATH=${OPTARG};;
 	\?)	printf >&2 '%s\n' \
-		    "Usage: $0 [-P path] [-L libdirs] [-v] [system...]"
+		    "Usage: $0 [-v] [-L lib-path] [-P path] [component ...]"
 		exit 2
 	esac
 done
@@ -250,8 +254,6 @@ if [ $# -eq 0 ]; then
 	set -- ''
 	all=true
 else
-	# note this deletes any attempt to use '' as an arg.
-	set -- $( printf '%s\n' "$@" | sort -u )
 	all=false
 fi
 

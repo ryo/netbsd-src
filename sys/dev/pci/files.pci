@@ -1,4 +1,4 @@
-#	$NetBSD: files.pci,v 1.389 2017/08/02 08:39:14 cherry Exp $
+#	$NetBSD: files.pci,v 1.391 2017/09/05 08:01:43 skrll Exp $
 #
 # Config file and device description for machine-independent PCI code.
 # Included by ports that need it.  Requires that the SCSI files be
@@ -635,6 +635,7 @@ file	dev/pci/usb_pci.c		ehci_pci | ehci_cardbus
 # xHCI USB controller
 attach	xhci at pci with xhci_pci
 file	dev/pci/xhci_pci.c		xhci_pci
+defflag	opt_xhci_pci.h			XHCI_DISABLE_MSI
 
 # OHCI IEEE 1394 controller
 attach	fwohci at pci with fwohci_pci
@@ -680,6 +681,8 @@ file	dev/pci/ixgbe/ixgbe_mbx.c	ixg | ixv
 file	dev/pci/ixgbe/ixgbe_osdep.c	ixg | ixv
 file	dev/pci/ixgbe/ixgbe_phy.c	ixg | ixv
 file	dev/pci/ixgbe/ixgbe_vf.c	ixg | ixv
+file	dev/pci/ixgbe/if_bypass.c	ixg | ixv
+file	dev/pci/ixgbe/if_fdir.c		ixg | ixv
 
 # This appears to be the driver for virtual instances of i82599.
 device	ixv: ether, ifnet, arp

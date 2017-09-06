@@ -1,4 +1,4 @@
-/* $NetBSD: wsconsio.h,v 1.119 2017/06/11 03:55:56 nat Exp $ */
+/* $NetBSD: wsconsio.h,v 1.121 2017/08/31 19:55:43 jmcneill Exp $ */
 
 /*
  * Copyright (c) 1996, 1997 Christopher G. Demetriou.  All rights reserved.

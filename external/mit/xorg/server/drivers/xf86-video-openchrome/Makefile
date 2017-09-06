@@ -1,28 +1,31 @@
-#	$NetBSD: Makefile,v 1.10 2016/08/21 12:39:17 joerg Exp $
+#	$NetBSD: Makefile,v 1.12 2017/09/01 14:38:23 christos Exp $
 
 DRIVER=		xf86-video-openchrome
 DRIVER_NAME=	openchrome_drv
 
 SRCS=	\
 	via_3d.c \
-	via_exa.c \
-	via_exa_h2.c \
-	via_exa_h6.c \
-	via_bandwidth.c \
+	via_analog.c \
 	via_ch7xxx.c \
 	via_display.c \
 	via_driver.c \
+	via_exa.c \
+	via_exa_h2.c \
+	via_exa_h6.c \
+	via_fp.c \
 	via_i2c.c \
 	via_id.c \
-	via_lvds.c \
 	via_memcpy.c \
 	via_memmgr.c \
 	via_outputs.c \
-	via_xv_overlay.c \
 	via_ums.c \
+	via_sii164.c \
+	via_tmds.c \
+	via_tv.c \
 	via_vgahw.c \
-	via_xv.c \
-	via_vt162x.c
+	via_vt162x.c \
+	via_xv_overlay.c \
+	via_xv.c
 
 # DRI
 SRCS+=	\
@@ -42,6 +45,7 @@ CPPFLAGS+=	-DHAVE_CONFIG_H -I${X11SRCDIR.${DRIVER}}/../include
 
 # XXX
 COPTS.via_dri.c+= -Wno-error
+COPTS.via_display.c+= -Wno-error=stack-protector
 .if ${HAVE_GCC:U0} > 48
 COPTS.via_driver.c+=	${${ACTIVE_CC} == "gcc":? -Wno-error=discarded-qualifiers :}
 COPTS.via_lvds.c+=	${${ACTIVE_CC} == "gcc":? -Wno-error=discarded-qualifiers :}

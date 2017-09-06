@@ -1,4 +1,4 @@
-/* $NetBSD: memset.S,v 1.1 2014/08/10 05:47:35 matt Exp $ */
+/* $NetBSD: memset.S,v 1.2 2017/08/29 15:00:23 ryo Exp $ */
 
 /*-
  * Copyright (c) 2014 The NetBSD Foundation, Inc.

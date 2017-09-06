@@ -1,4 +1,4 @@
-/*      $NetBSD: wdc_xsurf.c,v 1.2 2012/11/21 22:37:03 rkujawa Exp $ */
+/*      $NetBSD: wdc_xsurf.c,v 1.4 2017/09/04 17:26:06 phx Exp $ */
 
 /*-
  * Copyright (c) 2012 The NetBSD Foundation, Inc.
@@ -73,8 +73,6 @@ struct wdc_xsurf_port {
 };
 
 struct wdc_xsurf_softc {
-	device_t		sc_dev;	
-
 	struct wdc_softc 	sc_wdcdev;
 	struct ata_channel 	*sc_chanarray[WDC_XSURF_CHANNELS];
 	struct wdc_xsurf_port	sc_ports[WDC_XSURF_CHANNELS];
@@ -92,7 +90,7 @@ void		wdc_xsurf_attach_channel(struct wdc_xsurf_softc *, int);
 void		wdc_xsurf_map_channel(struct wdc_xsurf_softc *, int);
 int		wdc_xsurf_intr(void *arg);
 
-CFATTACH_DECL_NEW(wdc_xsurf, sizeof(struct wdc_softc),
+CFATTACH_DECL_NEW(wdc_xsurf, sizeof(struct wdc_xsurf_softc),
     wdc_xsurf_match, wdc_xsurf_attach, NULL, NULL);
 
 static const unsigned int wdc_xsurf_wdr_offsets[] = {
@@ -123,7 +121,6 @@ wdc_xsurf_attach(device_t parent, device_t self, void *aux)
 	aprint_naive("\n");
 	xsb_aa = aux;
 	sc = device_private(self);
-	sc->sc_dev = self;
 
 	sc->sc_bst.base = xsb_aa->xaa_base;
 	sc->sc_bst.absm = &amiga_bus_stride_1swap;
@@ -158,6 +155,12 @@ wdc_xsurf_attach(device_t parent, device_t self, void *aux)
 void
 wdc_xsurf_attach_channel(struct wdc_xsurf_softc *sc, int chnum)
 {
+#ifdef WDC_XSURF_DEBUG
+	device_t self;
+
+	self = sc->sc_wdcdev.sc_atac.atac_dev;
+#endif /* WDC_XSURF_DEBUG */
+
 	sc->sc_chanarray[chnum] = &sc->sc_ports[chnum].channel;
 	memset(&sc->sc_ports[chnum],0,sizeof(struct wdc_xsurf_port));
 	sc->sc_ports[chnum].channel.ch_channel = chnum;
@@ -170,7 +173,7 @@ wdc_xsurf_attach_channel(struct wdc_xsurf_softc *sc, int chnum)
 	wdcattach(&sc->sc_ports[chnum].channel);
 
 #ifdef WDC_XSURF_DEBUG
-	aprint_normal_dev(sc->sc_dev, "done init for channel %d\n", chnum);
+	aprint_normal_dev(self, "done init for channel %d\n", chnum);
 #endif /* WDC_XSURF_DEBUG */
 }
 

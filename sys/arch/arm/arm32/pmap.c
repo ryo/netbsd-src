@@ -1,4 +1,4 @@
-/*	$NetBSD: pmap.c,v 1.352 2017/07/27 10:56:42 skrll Exp $	*/
+/*	$NetBSD: pmap.c,v 1.356 2017/09/02 12:24:39 skrll Exp $	*/
 
 /*
  * Copyright 2003 Wasabi Systems, Inc.
@@ -217,7 +217,7 @@
 
 #include <arm/locore.h>
 
-__KERNEL_RCSID(0, "$NetBSD: pmap.c,v 1.352 2017/07/27 10:56:42 skrll Exp $");
+__KERNEL_RCSID(0, "$NetBSD: pmap.c,v 1.356 2017/09/02 12:24:39 skrll Exp $");
 
 //#define PMAP_DEBUG
 #ifdef PMAP_DEBUG
@@ -1937,8 +1937,7 @@ pmap_vac_me_user(struct vm_page_md *md, paddr_t pa, pmap_t pm, vaddr_t va)
 			/* Writable mappings */
 			if (pv->pv_flags & PVF_WRITE)
 				++writable;
-		} else
-		if (pv->pv_flags & PVF_WRITE)
+		} else if (pv->pv_flags & PVF_WRITE)
 			other_writable = 1;
 	}
 
@@ -1971,10 +1970,8 @@ pmap_vac_me_user(struct vm_page_md *md, paddr_t pa, pmap_t pm, vaddr_t va)
 
 			if ((va != pv->pv_va || pm != pv->pv_pmap)
 			    && l2pte_valid_p(opte)) {
-#ifdef PMAP_CACHE_VIVT
 				pmap_cache_wbinv_page(pv->pv_pmap, pv->pv_va,
 				    true, pv->pv_flags);
-#endif
 				pmap_tlb_flush_SE(pv->pv_pmap, pv->pv_va,
 				    pv->pv_flags);
 			}
@@ -1983,8 +1980,7 @@ pmap_vac_me_user(struct vm_page_md *md, paddr_t pa, pmap_t pm, vaddr_t va)
 			PTE_SYNC_CURRENT(pv->pv_pmap, ptep);
 		}
 		cpu_cpwait();
-	} else
-	if (entries > cacheable_entries) {
+	} else if (entries > cacheable_entries) {
 		/*
 		 * Turn cacheing back on for some pages.  If it is a kernel
 		 * page, only do so if there are no other writable pages.
@@ -2427,8 +2423,7 @@ pmap_clearbit(struct vm_page_md *md, paddr_t pa, u_int maskbits)
 					npte |= pte_l2_s_cache_mode;
 					pv->pv_flags &= ~PVF_NC;
 				}
-			} else
-			if (l2pte_writable_p(opte)) {
+			} else if (l2pte_writable_p(opte)) {
 				/*
 				 * Entry is writable/cacheable: check if pmap
 				 * is current if it is flush it, otherwise it
@@ -3591,7 +3586,7 @@ pmap_remove(pmap_t pm, vaddr_t sva, vaddr_t eva)
 	pmap_release_pmap_lock(pm);
 }
 
-#if defined(PMAP_CACHE_VIPT) && !defined(ARM_MMU_EXTENDED)
+#if !defined(ARM_MMU_EXTENDED)
 static struct pv_entry *
 pmap_kremove_pg(struct vm_page *pg, vaddr_t va)
 {
@@ -3599,7 +3594,9 @@ pmap_kremove_pg(struct vm_page *pg, vaddr_t va)
 	paddr_t pa = VM_PAGE_TO_PHYS(pg);
 	struct pv_entry *pv;
 
+#ifdef PMAP_CACHE_VIPT
 	KASSERT(arm_cache_prefer_mask == 0 || md->pvh_attrs & (PVF_COLORED|PVF_NC));
+#endif
 	KASSERT((md->pvh_attrs & PVF_KMPAGE) == 0);
 	KASSERT(pmap_page_locked_p(md));
 
@@ -3617,16 +3614,18 @@ pmap_kremove_pg(struct vm_page *pg, vaddr_t va)
 		if (SLIST_EMPTY(&md->pvh_list)) {
 			md->pvh_attrs &= ~PVF_EXEC;
 			PMAPCOUNT(exec_discarded_kremove);
+#ifdef PMAP_CACHE_VIPT
 		} else {
 			pmap_syncicache_page(md, pa);
 			PMAPCOUNT(exec_synced_kremove);
+#endif
 		}
 	}
 	pmap_vac_me_harder(md, pa, pmap_kernel(), 0);
 
 	return pv;
 }
-#endif /* PMAP_CACHE_VIPT && !ARM_MMU_EXTENDED */
+#endif /* !ARM_MMU_EXTENDED */
 
 /*
  * pmap_kenter_pa: enter an unmanaged, wired kernel mapping
@@ -3638,15 +3637,10 @@ pmap_kremove_pg(struct vm_page *pg, vaddr_t va)
 void
 pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 {
-#ifdef PMAP_CACHE_VIVT
-	struct vm_page *pg = (flags & PMAP_KMPAGE) ? PHYS_TO_VM_PAGE(pa) : NULL;
-#endif
-#ifdef PMAP_CACHE_VIPT
 	struct vm_page *pg = PHYS_TO_VM_PAGE(pa);
 	struct vm_page *opg;
 #ifndef ARM_MMU_EXTENDED
 	struct pv_entry *pv = NULL;
-#endif
 #endif
 	struct vm_page_md *md = pg != NULL ? VM_PAGE_TO_MD(pg) : NULL;
 
@@ -3681,12 +3675,13 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 		l2b->l2b_occupancy += PAGE_SIZE / L2_S_SIZE;
 	} else {
 		PMAPCOUNT(kenter_remappings);
-#ifdef PMAP_CACHE_VIPT
 		opg = PHYS_TO_VM_PAGE(l2pte_pa(opte));
-#if !defined(ARM_MMU_EXTENDED) || defined(DIAGNOSTIC)
 		struct vm_page_md *omd __diagused = VM_PAGE_TO_MD(opg);
+		if (opg
+#ifdef PMAP_CACHE_VIPT
+		    && arm_cache_prefer_mask != 0
 #endif
-		if (opg && arm_cache_prefer_mask != 0) {
+		    && true) {
 			KASSERT(opg != pg);
 			KASSERT((omd->pvh_attrs & PVF_KMPAGE) == 0);
 			KASSERT((flags & PMAP_KMPAGE) == 0);
@@ -3696,7 +3691,6 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 			pmap_release_page_lock(omd);
 #endif
 		}
-#endif
 		if (l2pte_valid_p(opte)) {
 			l2pte_reset(ptep);
 			PTE_SYNC(ptep);
@@ -3755,8 +3749,14 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 			md->pvh_attrs |= PVF_KMPAGE;
 #endif
 			atomic_inc_32(&pmap_kmpages);
+		} else if (false
 #if defined(PMAP_CACHE_VIPT) && !defined(ARM_MMU_EXTENDED)
-		} else if (arm_cache_prefer_mask != 0) {
+		    || arm_cache_prefer_mask != 0
+#elif defined(PMAP_CACHE_VIVT)
+ 		    || true
+#endif
+		    || false) {
+#if !defined(ARM_MMU_EXTENDED)
 			if (pv == NULL) {
 				pv = pool_get(&pmap_pv_pool, PR_NOWAIT);
 				KASSERT(pv != NULL);
@@ -3773,13 +3773,13 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 			pmap_release_page_lock(md);
 #endif
 		}
-#if defined(PMAP_CACHE_VIPT) && !defined(ARM_MMU_EXTENDED)
+#if !defined(ARM_MMU_EXTENDED)
 	} else {
 		if (pv != NULL)
 			pool_put(&pmap_pv_pool, pv);
 #endif
 	}
-#if defined(PMAP_CACHE_VIPT) && !defined(ARM_MMU_EXTENDED)
+#if !defined(ARM_MMU_EXTENDED)
 	KASSERT(md == NULL || !pmap_page_locked_p(md));
 #endif
 	if (pmap_initialized) {
@@ -3837,8 +3837,14 @@ pmap_kremove(vaddr_t va, vsize_t len)
 					}
 #endif
 					atomic_dec_32(&pmap_kmpages);
+				} else if (false
 #if defined(PMAP_CACHE_VIPT) && !defined(ARM_MMU_EXTENDED)
-				} else if (arm_cache_prefer_mask != 0) {
+				    || arm_cache_prefer_mask != 0
+#elif defined(PMAP_CACHE_VIVT)
+				    || true
+#endif
+				    || false) {
+#if !defined(ARM_MMU_EXTENDED)
 					pmap_acquire_page_lock(omd);
 					pool_put(&pmap_pv_pool,
 					    pmap_kremove_pg(opg, va));
@@ -5071,11 +5077,11 @@ pmap_update(pmap_t pm)
 		pmap_md_pdetab_activate(pm, curlwp);
 	}
 
-#if defined(MULTIPROCESSOR)
-	armreg_bpiallis_write(0);
-#else
-	armreg_bpiall_write(0);
-#endif
+	if (arm_has_mpext_p)
+		armreg_bpiallis_write(0);
+	else
+		armreg_bpiall_write(0);
+
 	kpreempt_enable();
 
 	KASSERTMSG(pm == pmap_kernel()
@@ -7526,6 +7532,15 @@ pmap_pte_init_armv7(void)
 	} else if (__SHIFTOUT(armreg_mmfr2_read(), __BITS(12,15)) >= 2) {
 		arm_has_tlbiasid_p = true;
 	}
+
+	/*
+	 * Check the MPIDR to see if this CPU supports MP extensions.
+	 */
+#ifdef MULTIPROCESSOR
+	arm_has_mpext_p = (armreg_mpidr_read() & (MPIDR_MP|MPIDR_U)) == MPIDR_MP;
+#else
+	arm_has_mpext_p = false;
+#endif
 
 	pte_l1_s_prot_u = L1_S_PROT_U_armv7;
 	pte_l1_s_prot_w = L1_S_PROT_W_armv7;

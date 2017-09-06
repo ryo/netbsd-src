@@ -1,4 +1,4 @@
-/* $NetBSD: locore.S,v 1.3 2017/08/25 21:43:49 nisimura Exp $ */
+/* $NetBSD: locore.S,v 1.4 2017/08/25 22:23:59 nisimura Exp $ */
 
 /*-
  * Copyright (c) 2014 The NetBSD Foundation, Inc.
@@ -34,7 +34,7 @@
 
 #include "opt_ddb.h"
 
-RCSID("$NetBSD: locore.S,v 1.3 2017/08/25 21:43:49 nisimura Exp $")
+RCSID("$NetBSD: locore.S,v 1.4 2017/08/25 22:23:59 nisimura Exp $")
 
 // XXX:AARCH64
 lr	.req	x30

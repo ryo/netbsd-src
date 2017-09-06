@@ -1,9 +1,10 @@
-#	$NetBSD: Makefile,v 1.3 2013/06/03 20:23:39 mrg Exp $
+#	$NetBSD: Makefile,v 1.5 2017/08/29 15:50:57 maya Exp $
 
 .include <bsd.own.mk>
 
 .PATH:	${X11SRCDIR.fontconfig}/conf.d
 FONTCONFIG_LINKS= \
+	10-hinting-slight.conf \
 	10-scale-bitmap-fonts.conf \
 	20-unhint-small-vera.conf \
 	30-urw-aliases.conf \
@@ -17,6 +18,7 @@ FONTCONFIG_LINKS= \
 	65-fonts-persian.conf \
 	65-nonlatin.conf \
 	69-unifont.conf \
+	70-no-bitmaps.conf \
 	80-delicious.conf \
 	90-synthetic.conf
 

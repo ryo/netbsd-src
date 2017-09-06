@@ -1,5 +1,5 @@
 #
-#	$NetBSD: SUNXI,v 1.22 2017/08/13 18:27:48 jmcneill Exp $
+#	$NetBSD: SUNXI,v 1.26 2017/08/29 09:55:25 jmcneill Exp $
 #
 #	Allwinner sunxi family
 #
@@ -8,6 +8,23 @@ include	"arch/evbarm/conf/std.sunxi"
 include	"arch/evbarm/conf/GENERIC.common"
 
 makeoptions	DTS="
+	sun5i-a13-difrnce-dit4350.dts
+	sun5i-a13-empire-electronix-d709.dts
+	sun5i-a13-empire-electronix-m712.dts
+	sun5i-a13-hsg-h702.dts
+	sun5i-a13-inet-98v-rev2.dts
+	sun5i-a13-licheepi-one.dts
+	sun5i-a13-olinuxino-micro.dts
+	sun5i-a13-olinuxino.dts
+	sun5i-a13-q8-tablet.dts
+	sun5i-a13-utoo-p66.dts
+
+	sun5i-gr8-evb.dts
+	sun5i-gr8-chip-pro.dts
+
+	sun5i-r8-chip.dts
+	sun5i-r8-pocketchip.dts
+
 	sun6i-a31-app4-evb1.dts
 	sun6i-a31-colombus.dts
 	sun6i-a31-hummingbird.dts
@@ -32,6 +49,8 @@ makeoptions	DTS="
 "
 
 options 	CPU_CORTEXA7
+options 	CPU_CORTEXA8
+options 	SOC_SUN5I_A13
 options 	SOC_SUN6I_A31
 options 	SOC_SUN8I_A83T
 options 	SOC_SUN8I_H3
@@ -65,6 +84,7 @@ cpu*		at cpus?
 psci*		at fdt?
 
 # Clock and reset controllers
+sun5ia13ccu*	at fdt? pass 4		# A13 CCU
 sun6ia31ccu*	at fdt? pass 4		# A31 CCU
 sun8ia83tccu*	at fdt? pass 4		# A83T CCU
 sun8ih3ccu*	at fdt? pass 4		# H3 CCU
@@ -81,6 +101,7 @@ gpioleds*	at fdt?
 # Timer
 gtmr*		at fdt? pass 1		# ARM Generic Timer
 armgtmr0	at gtmr?
+sunxitimer*	at fdt? 		# Allwinner async timer
 
 # Watchdog
 sunxiwdt*	at fdt?			# Allwinner watchdog
@@ -88,11 +109,13 @@ sunxiwdt*	at fdt?			# Allwinner watchdog
 # Interrupt controller
 gic*		at fdt? pass 1		# GIC
 armgic0		at gic?
+sunxiintc*	at fdt? pass 1		# Allwinner INTC
 
 # Memory controller
 
 # DMA controller
-sun6idma*	at fdt?			# DMA controller
+sun4idma*	at fdt?			# DMA controller (sun4i)
+sun6idma*	at fdt?			# DMA controller (sun6i)
 
 # Clock and Reset controller
 
@@ -114,6 +137,9 @@ sunxitwi*	at fdt?			# TWI
 options 	GTTWSI_ALLWINNER	# XXX this should be a driver flag
 sunxirsb*	at fdt?			# P2WI/RSB
 iic*		at i2cbus?
+tcakp*		at iic?			# TI TCA8418 Keypad Scan IC
+wskbd*		at tcakp? console ?
+axp20x*		at iic?			# AXP209 Power Management IC
 
 # RTC
 sunxirtc*	at fdt?			# RTC
@@ -132,6 +158,29 @@ ld1		at sdmmc1
 ld2		at sdmmc2
 ld3		at sdmmc3
 ld*		at sdmmc?
+
+# Display
+genfb*		at fdt?
+wsdisplay*	at genfb?
+options 	VCONS_DRAW_INTR
+options 	WSEMUL_VT100
+options 	WS_DEFAULT_FG=WSCOL_WHITE
+options 	WS_DEFAULT_BG=WSCOL_BLACK
+options 	WS_KERNEL_FG=WSCOL_GREEN
+options 	WS_KERNEL_BG=WSCOL_BLACK
+options 	WSDISPLAY_COMPAT_PCVT
+options 	WSDISPLAY_COMPAT_SYSCONS
+options 	WSDISPLAY_COMPAT_USL
+options 	WSDISPLAY_COMPAT_RAWKBD
+options 	WSDISPLAY_DEFAULTSCREENS=4
+
+# Touch Screen controller
+sunxits*	at fdt?			# Touch Screen controller
+wsmouse*	at sunxits? mux 0
+
+# wscons pseudo-devices
+pseudo-device	wsfont
+pseudo-device	wsmux
 
 # USB 2.0
 sunxiusbphy*	at fdt?	pass 9		# USB PHY

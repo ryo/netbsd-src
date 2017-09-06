@@ -1,4 +1,4 @@
-/* $NetBSD: t_mincore.c,v 1.11 2017/05/23 16:01:46 christos Exp $ */
+/* $NetBSD: t_mincore.c,v 1.13 2017/09/01 16:51:58 kre Exp $ */
 
 /*-
  * Copyright (c) 2011 The NetBSD Foundation, Inc.
@@ -59,7 +59,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <sys/cdefs.h>
-__RCSID("$NetBSD: t_mincore.c,v 1.11 2017/05/23 16:01:46 christos Exp $");
+__RCSID("$NetBSD: t_mincore.c,v 1.13 2017/09/01 16:51:58 kre Exp $");
 
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -80,6 +80,10 @@ static const char	path[] = "mincore";
 static size_t		check_residency(void *, size_t);
 
 #define ATF_REQUIRE_STRERROR(a) ATF_REQUIRE_MSG(a, " (%s)", strerror(errno))
+
+#ifndef PROT_MPROTECT
+# define PROT_MPROTECT(flags)	(0)
+#endif
 
 static size_t
 check_residency(void *addr, size_t npgs)
@@ -231,7 +235,8 @@ ATF_TC_BODY(mincore_resid, tc)
 		    resident, npgs);
 
 	addr2 = mmap(NULL, npgs * page, PROT_READ, MAP_ANON, -1, (off_t)0);
-	addr3 = mmap(NULL, npgs * page, PROT_NONE, MAP_ANON, -1, (off_t)0);
+	addr3 = mmap(NULL, npgs * page, PROT_MPROTECT(PROT_READ) | PROT_NONE,
+	    MAP_ANON, -1, (off_t)0);
 
 	if (addr2 == MAP_FAILED || addr3 == MAP_FAILED)
 		atf_tc_skip("could not mmap more anonymous test pages with "

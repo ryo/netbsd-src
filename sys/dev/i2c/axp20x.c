@@ -1,7 +1,7 @@
-/* $NetBSD: axp20x.c,v 1.5 2017/05/14 11:39:17 tnn Exp $ */
+/* $NetBSD: axp20x.c,v 1.7 2017/08/29 10:10:54 jmcneill Exp $ */
 
 /*-
- * Copyright (c) 2014 Jared D. McNeill <jmcneill@invisible.ca>
+ * Copyright (c) 2014-2017 Jared McNeill <jmcneill@invisible.ca>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,8 +26,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "opt_fdt.h"
+
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: axp20x.c,v 1.5 2017/05/14 11:39:17 tnn Exp $");
+__KERNEL_RCSID(0, "$NetBSD: axp20x.c,v 1.7 2017/08/29 10:10:54 jmcneill Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -40,6 +42,10 @@ __KERNEL_RCSID(0, "$NetBSD: axp20x.c,v 1.5 2017/05/14 11:39:17 tnn Exp $");
 #include <dev/i2c/axp20xvar.h>
 
 #include <dev/sysmon/sysmonvar.h>
+
+#ifdef FDT
+#include <dev/fdt/fdtvar.h>
+#endif
 
 #define AXP_INPUT_STATUS	0x00
 #define AXP_INPUT_STATUS_AC_PRESENT	__BIT(7)
@@ -98,6 +104,9 @@ static int ldo4_mvV[] = {
 #define AXP_LDO3_TRACK			__BIT(7)
 #define AXP_LDO3_VOLT_MASK		__BITS(0,6)
 #define AXP_LDO3_VOLT_SHIFT		0
+
+#define	AXP_SHUTDOWN		0x32
+#define	AXP_SHUTDOWN_CTRL	__BIT(7)
 
 #define AXP_BKUP_CTRL			0x35
 #define AXP_BKUP_CTRL_ENABLE		__BIT(7)
@@ -180,6 +189,7 @@ struct axp20x_softc {
 	device_t	sc_dev;
 	i2c_tag_t	sc_i2c;
 	i2c_addr_t	sc_addr;
+	int		sc_phandle;
 
 	uint8_t 	sc_inputstatus;
 	uint8_t 	sc_powermode;
@@ -195,12 +205,26 @@ static void	axp20x_sensors_refresh(struct sysmon_envsys *, envsys_data_t *);
 static int	axp20x_read(struct axp20x_softc *, uint8_t, uint8_t *, size_t, int);
 static int	axp20x_write(struct axp20x_softc *, uint8_t, uint8_t *, size_t, int);
 
+#ifdef FDT
+static void	axp20x_fdt_attach(struct axp20x_softc *);
+#endif
+
 CFATTACH_DECL_NEW(axp20x, sizeof(struct axp20x_softc),
     axp20x_match, axp20x_attach, NULL, NULL);
+
+static const char * compatible[] = {
+	"x-powers,axp209",
+	NULL
+};
 
 static int
 axp20x_match(device_t parent, cfdata_t match, void *aux)
 {
+	struct i2c_attach_args * const ia = aux;
+
+	if (ia->ia_name != NULL)
+		return iic_compat_match(ia, compatible);
+
 	return 1;
 }
 
@@ -216,6 +240,7 @@ axp20x_attach(device_t parent, device_t self, void *aux)
 	sc->sc_dev = self;
 	sc->sc_i2c = ia->ia_tag;
 	sc->sc_addr = ia->ia_addr;
+	sc->sc_phandle = ia->ia_cookie;
 
 	error = axp20x_read(sc, AXP_INPUT_STATUS,
 	    &sc->sc_inputstatus, 1, I2C_F_POLL);
@@ -386,6 +411,10 @@ axp20x_attach(device_t parent, device_t self, void *aux)
 			);
 		}
 	}
+
+#ifdef FDT
+	axp20x_fdt_attach(sc);
+#endif
 }
 
 static void
@@ -602,3 +631,33 @@ axp20x_set_dcdc(device_t dev, int dcdc, int mvolt, bool poll)
 		return EINVAL;
 	}
 }
+
+void
+axp20x_poweroff(device_t dev)
+{
+	struct axp20x_softc * const sc = device_private(dev);
+	uint8_t reg = AXP_SHUTDOWN_CTRL;
+
+	if (axp20x_write(sc, AXP_SHUTDOWN, &reg, 1, I2C_F_POLL) != 0)
+		device_printf(dev, "WARNING: poweroff failed\n");
+}
+
+#ifdef FDT
+static void
+axp20x_fdt_poweroff(device_t dev)
+{
+	delay(1000000);
+	axp20x_poweroff(dev);
+}
+
+static struct fdtbus_power_controller_func axp20x_fdt_power_funcs = {
+	.poweroff = axp20x_fdt_poweroff,
+};
+
+static void
+axp20x_fdt_attach(struct axp20x_softc *sc)
+{
+	fdtbus_register_power_controller(sc->sc_dev, sc->sc_phandle,
+	    &axp20x_fdt_power_funcs);
+}
+#endif /* FDT */
