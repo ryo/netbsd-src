@@ -271,7 +271,7 @@ END(exception_trap_exit)
 
 #ifdef DDB
 ENTRY(cpu_Debugger)
-	brk	#0xffff
+	brk	#0
 	ret
 END(cpu_Debugger)
 #endif /* DDB */
