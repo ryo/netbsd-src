@@ -45,7 +45,6 @@ void	interrupt(struct trapframe *);
 void	dumpsys(void);
 void	initarm64(void);
 void	dosoftints(void);
-void	bus_space_mallocok(void);
 paddr_t vtophys(vaddr_t);
 
 #include <sys/pcu.h>
