@@ -233,14 +233,14 @@ trap(struct trapframe *tf, int reason)
 
 	printf("%s TRAP!\n", causestr);
 	printf(" FAR_EL1  = 0x%016"PRIxREGISTER"\n", tf->tf_far);
-	printf(" ISS      = 0x%08x\n", (int)(code & ESR_ISS));
+	printf("      ISS = 0x%08x\n", (int)(code & ESR_ISS));
 	printf(" DFSC.ISS = 0x%08x\n", (int)(code & 0x3f));
 
 	dump_trapframe(tf, printf);
 
 #if 1 //XXXAARCH64
-	for (;;)
-		asm("wfi");
+	void cpu_reboot(int, char *);
+	cpu_reboot(0, NULL);
 #endif
 
 	if (usertrap_p) {
