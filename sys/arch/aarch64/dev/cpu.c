@@ -29,19 +29,19 @@
 #include <sys/cdefs.h>
 __KERNEL_RCSID(1, "$NetBSD$");
 
+#include "locators.h"
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/device.h>
 
-struct cpu_attach_args {
-	const char *caa_name;
-};
+#include <aarch64/armreg.h>
+#include <aarch64/cpuvar.h>
 
 static int cpu_match(device_t, cfdata_t, void *);
 static void cpu_attach(device_t, device_t, void *);
-//static int cpu_print(void *, const char *);
 
-CFATTACH_DECL_NEW(cpu_cpucore, 0,
+CFATTACH_DECL_NEW(cpu_cpunode, 0,
     cpu_match, cpu_attach, NULL, NULL);
 
 static int
@@ -56,12 +56,3 @@ cpu_attach(device_t parent, device_t self, void *aux)
 	aprint_naive("\n");
 	aprint_normal("\n");
 }
-
-//XXXAARCH64
-#if 0
-static int
-cpu_print(void *aux, const char *cpu)
-{
-	return UNCONF;
-}
-#endif

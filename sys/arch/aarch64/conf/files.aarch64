@@ -44,13 +44,9 @@ device	cpunode { [core = -1] }
 attach	cpunode at mainbus with cpunode_mainbus
 file	arch/aarch64/dev/cpunode.c			cpunode_mainbus
 
-device	cpucore { [thread = -1] }
-attach	cpucore at cpunode with cpucore_cpunode
-file	arch/aarch64/dev/cpucore.c			cpucore_cpunode
-
 device	cpu
-attach	cpu at cpucore with cpu_cpucore
-file	arch/aarch64/dev/cpu.c				cpu_cpucore
+attach	cpu at cpunode with cpu_cpunode
+file	arch/aarch64/dev/cpu.c				cpu_cpunode
 
 defparam opt_arm_intr_impl.h		PIC_MAXPICS
 					PIC_MAXSOURCES

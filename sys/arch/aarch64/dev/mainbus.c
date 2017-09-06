@@ -33,9 +33,7 @@ __KERNEL_RCSID(1, "$NetBSD$");
 #include <sys/systm.h>
 #include <sys/device.h>
 
-struct mainbus_attach_args {
-	const char *ma_name;
-};
+#include <aarch64/autoconf.h>
 
 static int mainbus_match(device_t, cfdata_t, void *);
 static void mainbus_attach(device_t, device_t, void *);
@@ -54,22 +52,24 @@ mainbus_match(device_t parent, cfdata_t cf, void *aux)
 static void
 mainbus_attach(device_t parent, device_t self, void *aux)
 {
+	struct mainbus_attach_args mba;
+
 	aprint_naive("\n");
 	aprint_normal("\n");
 
-	config_search_ia(mainbus_search, self, "mainbus", NULL);
+	config_search_ia(mainbus_search, self, "mainbus", &mba);
 }
 
 static int
 mainbus_search(device_t parent, cfdata_t cf, const int *ldesc, void *aux)
 {
-	struct mainbus_attach_args ma;
+	struct mainbus_attach_args *mba = aux;
 	bool tryagain;
 
 	do {
 		tryagain = 0;
-		if (config_match(parent, cf, &ma) > 0) {
-			config_attach(parent, cf, &ma, mainbus_print);
+		if (config_match(parent, cf, &mba) > 0) {
+			config_attach(parent, cf, &mba, mainbus_print);
 #ifdef MULTIPROCESSOR
 			tryagain = (cf->cf_fstate == FSTATE_STAR);
 #endif
@@ -84,4 +84,3 @@ mainbus_print(void *aux, const char *mainbus)
 {
 	return UNCONF;
 }
-

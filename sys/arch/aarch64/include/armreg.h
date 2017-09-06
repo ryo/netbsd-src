@@ -179,6 +179,16 @@ AARCH64REG_READ_INLINE(revidr_el1)
 /*
  * These are read/write registers
  */
+AARCH64REG_READ_INLINE2(l2ctlr_el1, s3_1_c11_c0_2)  /* Cortex-A53,57,72,73 */
+AARCH64REG_WRITE_INLINE2(l2ctlr_el1, s3_1_c11_c0_2) /* Cortex-A53,57,72,73 */
+
+static const uintmax_t
+    L2CTLR_NUMOFCORE		= __BITS(25,24),/* Number of cores */
+    L2CTLR_CPUCACHEPROT		= __BIT(22),	/* CPU Cache Protection */
+    L2CTLR_SCUL2CACHEPROT	= __BIT(21),	/* SCU-L2 Cache Protection */
+    L2CTLR_L2_INPUT_LATENCY	= __BIT(5),	/* L2 Data RAM input latency */
+    L2CTLR_L2_OUTPUT_LATENCY	= __BIT(0);	/* L2 Data RAM output latency */
+
 AARCH64REG_READ_INLINE(ccselr_el1)	/* Cache Size Selection Register */
 AARCH64REG_WRITE_INLINE(ccselr_el1)
 

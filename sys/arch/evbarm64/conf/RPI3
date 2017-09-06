@@ -19,7 +19,7 @@ include 	"arch/evbarm64/conf/std.rpi"
 
 options 	INCLUDE_CONFIG_FILE	# embed config file in kernel binary
 
-#ident		"RPi3-$Revision: 0.99 $"
+#ident		"RPI3-$Revision$"
 
 maxusers 32
 
@@ -176,8 +176,7 @@ config		netbsd	root on ? type ?
 
 mainbus0 at	root
 cpunode*	at	mainbus0
-cpucore*	at	cpunode? core ?
-cpu*		at	cpucore? thread ?
+cpu*		at	cpunode?
 a64gic*		at	mainbus0
 a64gtmr*	at	mainbus0
 
