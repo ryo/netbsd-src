@@ -41,12 +41,6 @@ extern uint32_t cputype;
 int
 set_cpufuncs(void)
 {
-	//
-	// XXXAARCH64
-	// Every items maybe different from each cpu-node. (e.g., big.LITTLE?)
-	// curcpu()->cpufuncs.cf_*() should be used.
-	//
-
 	/* misc */
 	cpufuncs.cf_nullop = aarch64_nullop;
 	cpufuncs.cf_id = aarch64_cpuid;
