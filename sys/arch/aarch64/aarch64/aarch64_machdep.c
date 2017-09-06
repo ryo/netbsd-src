@@ -224,8 +224,6 @@ cpu_dumpconf(void)
 {
 }
 
-static const paddr_t VTOPHYS_FAILED = (paddr_t) -1L;
-
 paddr_t
 vtophys(vaddr_t va)
 {

@@ -36,7 +36,8 @@ __KERNEL_RCSID(1, "$NetBSD: db_interface.c,v 1.1 2014/08/10 05:47:37 matt Exp $"
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <dev/cons.h>
+#include <aarch64/db_machdep.h>
+#include <aarch64/machdep.h>
 
 #include <ddb/db_access.h>
 #include <ddb/db_command.h>
@@ -46,7 +47,7 @@ __KERNEL_RCSID(1, "$NetBSD: db_interface.c,v 1.1 2014/08/10 05:47:37 matt Exp $"
 #include <ddb/db_extern.h>
 #include <ddb/db_interface.h>
 
-#include <aarch64/db_machdep.h>
+#include <dev/cons.h>
 
 int db_active = 0;
 
@@ -125,3 +126,18 @@ db_write_bytes(vaddr_t addr, size_t size, const char *data)
 		data += 1;
 	}
 }
+
+db_addr_t
+db_branch_taken(db_expr_t inst, db_addr_t pc, db_regs_t *regs)
+{
+	// XXXAARCH64
+	return pc + 4;
+}
+
+bool
+db_inst_unconditional_flow_transfer(db_expr_t inst)
+{
+	// XXXAARCH64
+	return false;
+}
+

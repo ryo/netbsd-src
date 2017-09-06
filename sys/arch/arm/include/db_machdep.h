@@ -31,6 +31,8 @@
 #ifndef	_ARM_DB_MACHDEP_H_
 #define	_ARM_DB_MACHDEP_H_
 
+#if defined(__arm__)
+
 /*
  * Machine-dependent defines for new kernel debugger.
  */
@@ -138,4 +140,11 @@ typedef register_t	kgdb_reg_t;
  */
 extern volatile struct cpu_info *db_onproc;
 extern volatile struct cpu_info *db_newcpu;
+
+#elif defined(__aarch64__)
+
+#include <aarch64/db_machdep.h>
+
+#endif
+
 #endif	/* _ARM_DB_MACHDEP_H_ */
