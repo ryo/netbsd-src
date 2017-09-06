@@ -1,6 +1,6 @@
 # $NetBSD: majors.aarch64,v 1.2 2015/04/23 23:22:51 pgoyette Exp $
 #
-# Device majors for arm32
+# Device majors for aarch64
 #
 
 device-major	mem		char 0
