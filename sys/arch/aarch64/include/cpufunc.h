@@ -32,42 +32,75 @@
 #ifdef _KERNEL
 
 struct cpu_functions {
+	/* misc */
+	uint32_t (*cf_id)(void);
 	void (*cf_nullop)(void);
+
+	/* TLB op */
 	void (*cf_setttb)(paddr_t);
 	void (*cf_tlb_flushID)(void);
 	void (*cf_tlb_flushID_SE)(vaddr_t);
+
+	/* cache op */
+	int (*cf_dcache_size)(void);
+	int (*cf_icache_size)(void);
 	void (*cf_icache_sync_range)(vaddr_t, vsize_t);
 	void (*cf_idcache_wbinv_range)(vaddr_t, vsize_t);
 	void (*cf_dcache_wbinv_range)(vaddr_t, vsize_t);
 	void (*cf_dcache_inv_range)(vaddr_t, vsize_t);
 	void (*cf_dcache_wb_range)(vaddr_t, vsize_t);
+	void (*cf_sdcache_wbinv_range)(vaddr_t, paddr_t, vsize_t);
+	void (*cf_sdcache_inv_range)(vaddr_t, paddr_t, vsize_t);
+	void (*cf_sdcache_wb_range)(vaddr_t, paddr_t, vsize_t);
+
+	/* others */
+	void (*cf_drain_writebuf)(void);
 };
 
 extern struct cpu_functions cpufuncs;
 extern u_int cputype;
 
-#define cpufunc_nullop()		cpufuncs.cf_nullop()
-#define cpu_setttb(p)			cpufuncs.cf_setttb(p)
-#define cpu_tlb_flushID()		cpufuncs.cf_tlb_flushID()
-#define cpu_tlb_flushID_SE(v)		cpufuncs.cf_tlb_flushID_SE(v)
-#define cpu_dcache_wbinv_range(v, s)	cpufuncs.cf_dcache_wbinv_range(v, s)
-#define cpu_dcache_inv_range(v, s)	cpufuncs.cf_dcache_inv_range(v, s)
-#define cpu_dcache_wb_range(v, s)	cpufuncs.cf_dcache_wb_range(v, s)
-#define cpu_idcache_wbinv_range(v, s)	cpufuncs.cf_idcache_wbinv_range(v, s)
-#define cpu_icache_sync_range(v, s)	cpufuncs.cf_icache_sync_range(v, s)
+/* misc */
+#define cpufunc_nullop(args...)		cpufuncs.cf_nullop(args)
+#define cpufunc_id(args...)		cpufuncs.cf_id(args)
+/* TLB op */
+#define cpu_setttb(args...)		cpufuncs.cf_setttb(args)
+#define cpu_tlb_flushID(args...)	cpufuncs.cf_tlb_flushID(args)
+#define cpu_tlb_flushID_SE(args...)	cpufuncs.cf_tlb_flushID_SE(args)
+/* cache op */
+#define cpu_icache_size(args...)	cpufuncs.cf_dcache_size(args)
+#define cpu_dcache_size(args...)	cpufuncs.cf_icache_size(args)
+#define cpu_dcache_wbinv_range(args...)	cpufuncs.cf_dcache_wbinv_range(args)
+#define cpu_dcache_inv_range(args...)	cpufuncs.cf_dcache_inv_range(args)
+#define cpu_dcache_wb_range(args...)	cpufuncs.cf_dcache_wb_range(args)
+#define cpu_idcache_wbinv_range(args...) cpufuncs.cf_idcache_wbinv_range(args)
+#define cpu_icache_sync_range(args...)	cpufuncs.cf_icache_sync_range(args)
+#define cpu_sdcache_wbinv_range(args...) cpufuncs.cf_sdcache_wbinv_range(args)
+#define cpu_sdcache_inv_range(args...)	cpufuncs.cf_sdcache_inv_range(args)
+#define cpu_sdcache_wb_range(args...)	cpufuncs.cf_sdcache_wb_range(args)
+/* others */
+#define cpu_drain_writebuf(args...)	cpufuncs.cf_drain_writebuf(args)
+
 
 int set_cpufuncs(void);
 
 /* cpufunc_asm.S */
 void aarch64_nullop(void);
+uint32_t aarch64_cpuid(void);
 void aarch64_setttb(paddr_t);
 void aarch64_tlb_flushID(void);
 void aarch64_tlb_flushID_SE(vaddr_t);
+int aarch64_dcache_size(void);
+int aarch64_icache_size(void);
 void aarch64_icache_sync_range(vaddr_t, vsize_t);
 void aarch64_idcache_wbinv_range(vaddr_t, vsize_t);
 void aarch64_dcache_wbinv_range(vaddr_t, vsize_t);
 void aarch64_dcache_inv_range(vaddr_t, vsize_t);
 void aarch64_dcache_wb_range(vaddr_t, vsize_t);
+void aarch64_sdcache_wbinv_range(vaddr_t, paddr_t, vsize_t);
+void aarch64_sdcache_inv_range(vaddr_t, paddr_t, vsize_t);
+void aarch64_sdcache_wb_range(vaddr_t, paddr_t, vsize_t);
+void aarch64_drain_writebuf(void);
 
 #endif /* _KERNEL */
 #endif /* _AARCH64_CPUFUNC_H_ */

@@ -79,14 +79,41 @@
 	ret
 .endm
 
+
 ENTRY(aarch64_nullop)
 	ret
 END(aarch64_nullop)
 
+ENTRY(aarch64_cpuid)
+	mrs	x0, midr_el1
+	ret
+END(aarch64_cpuid)
+
+/*
+ * int aarch64_dcache_size(void)
+ */
+ENTRY(aarch64_dcache_size)
+	mrs	x0, ctr_el0
+	ubfx	x0, x0, #16, #4		/* x0 = D cache shift */
+	mov	x1, #4
+	lsl	x0, x1, x0		/* x0 = D cache line size */
+	ret
+END(aarch64_dcache_size)
+
+/*
+ * int aarch64_icache_size(void)
+ */
+ENTRY(aarch64_icache_size)
+	mrs	x0, ctr_el0
+	ubfx	x0, x0, #16, #4		/* x0 = I cache shift */
+	mov	x1, #4
+	lsl	x0, x1, x0		/* x0 = I cache line size */
+	ret
+END(aarch64_icache_size)
+
 /*
  * Generic functions to read/modify/write the internal coprocessor registers
  */
-
 ENTRY(aarch64_setttb)
 	dsb	ish
 	msr	ttbr0_el1, x0
@@ -153,3 +180,8 @@ END(aarch64_idcache_wbinv_range)
 ENTRY(aarch64_icache_sync_range)
 	cache_handle_range	dcop = cvau, ic = 1, icop = ivau
 END(aarch64_icache_sync_range)
+
+ENTRY(aarch64_drain_writebuf)
+	dsb	sy
+	ret
+END(aarch64_drain_writebuf)
