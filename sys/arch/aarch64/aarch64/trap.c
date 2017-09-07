@@ -37,9 +37,10 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 #include <sys/types.h>
 #include <sys/cpu.h>
 #include <sys/proc.h>
+#include <sys/atomic.h>
 #include <sys/systm.h>
 
-#include <uvm/uvm_extern.h>
+#include <uvm/uvm.h>
 
 #include <sys/signal.h>
 #include <sys/signalvar.h>
@@ -48,6 +49,8 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 #include <aarch64/userret.h>
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
+#include <aarch64/pmap.h>
+#include <aarch64/pte.h>
 #include <aarch64/armreg.h>
 
 static const char * const causenames[] = {
@@ -226,6 +229,7 @@ struct faultbuf *cpu_disable_onfault(void);
 void	cpu_enable_onfault(struct faultbuf *);
 
 bool	pagefault(struct trapframe *, ksiginfo_t *ksi);
+bool	pagefault_refmod(struct trapframe *, struct pmap *);
 void	trap_ksi_init(ksiginfo_t *, int, int, vaddr_t, register_t);
 #define ESR_ELx_WNR	(1U<<6)
 
@@ -253,6 +257,13 @@ pagefault(struct trapframe *tf, ksiginfo_t *ksi)
 		uvm_grow(p, addr);
 		return true;	/* address space growth handled */
 	}
+
+	/* page refereced/page modified tracking */
+	error = pagefault_refmod(tf, map->pmap);
+	if (error)
+		return true;
+
+	/* genuine page fault plus faultbail path */
 	fb = cpu_disable_onfault();
 	error = uvm_fault(map, addr, ftype);
 	cpu_enable_onfault(fb);
@@ -264,6 +275,26 @@ pagefault(struct trapframe *tf, ksiginfo_t *ksi)
 	if (fb == NULL)
 		return false;
 	cpu_jump_onfault(tf, fb);
+	return true;
+}
+
+bool
+pagefault_refmod(struct trapframe *tf, struct pmap *pmap)
+{
+	intptr_t addr = trunc_page(tf->tf_far);
+	struct vm_page *pg;
+	struct vm_page_md *mdpg;
+	u_int attr;
+	paddr_t pa;
+
+	pa = addr;
+	pg = PHYS_TO_VM_PAGE(pa);
+	attr = 0;
+	attr |= VM_PAGE_MD_REFERENCED;
+	attr |= VM_PAGE_MD_MODIFIED;
+
+	mdpg = VM_PAGE_TO_MD(pg);
+	atomic_or_uint(&mdpg->mdpg_attrs, attr);
 	return true;
 }
 
