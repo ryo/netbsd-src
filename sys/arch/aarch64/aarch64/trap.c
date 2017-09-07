@@ -258,7 +258,7 @@ pagefault(struct trapframe *tf, ksiginfo_t *ksi)
 		return true;	/* address space growth handled */
 	}
 
-	/* page refereced/page modified tracking */
+	/* page reference/page modified tracking */
 	error = pagefault_refmod(tf, map->pmap);
 	if (error)
 		return true;
