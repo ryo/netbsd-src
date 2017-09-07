@@ -88,6 +88,15 @@ _ASM_LABEL(start):
 #ifdef DEBUG_LOCORE
 	mov	x9, x0		// save x0
 
+	mrs	x0, mpidr_el1
+	PRINT("MPIDR_EL1=")
+	bl	print_x0
+
+	mrs	x0, S3_1_C11_C0_2
+	PRINT("L2CTLR_EL1=")
+	bl	print_x0
+
+
 	mrs	x0, CurrentEL
 	lsr	x0, x0, #2
 	PRINT("CurrentEL=")
