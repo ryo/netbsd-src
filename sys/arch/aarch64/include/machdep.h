@@ -37,14 +37,21 @@ extern void (*cpu_powerdown_address)(void);
 
 extern char *booted_kernel;
 
-void	lwp_trampoline(void);
-void	cpu_dosoftints(void);
-void	cpu_switchto_softint(struct lwp *, int);
-void	trap(struct trapframe *, int);
-void	interrupt(struct trapframe *);
-void	dumpsys(void);
-void	initarm64(void);
-void	dosoftints(void);
+void lwp_trampoline(void);
+void cpu_dosoftints(void);
+void cpu_switchto_softint(struct lwp *, int);
+void trap_el1_bad(struct trapframe *);
+void trap_el1_sync(struct trapframe *);
+void trap_el0_bad(struct trapframe *);
+void trap_el0_sync(struct trapframe *);
+void trap_el0_error(struct trapframe *);
+void trap_el0_32sync(struct trapframe *);
+void trap_el0_32error(struct trapframe *);
+
+void interrupt(struct trapframe *);
+void dumpsys(void);
+void initarm64(void);
+void dosoftints(void);
 paddr_t vtophys(vaddr_t);
 #define VTOPHYS_FAILED	((paddr_t)-1L)
 

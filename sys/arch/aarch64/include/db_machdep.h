@@ -70,9 +70,8 @@
 #include <aarch64/frame.h>
 
 typedef long long int db_expr_t;
-#define DDB_EXPR_FMT "llx"
+#define DDB_EXPR_FMT "ll"
 typedef uintptr_t db_addr_t;
-#define DDB_ADDR_FMT PRIxPTR
 
 #define BKPT_ADDR(addr)		(addr)
 #define BKPT_SIZE		4
@@ -84,6 +83,7 @@ extern db_regs_t ddb_regs;
 #define DDB_REGS		(&ddb_regs)
 #define PC_REGS(tf)		((tf)->tf_pc)
 
+int kdb_trap(int type, struct trapframe *);
 #define DB_TRAP_UNKNOWN		0
 #define DB_TRAP_BREAKPOINT	1
 #define DB_TRAP_BKPT_INSN	2

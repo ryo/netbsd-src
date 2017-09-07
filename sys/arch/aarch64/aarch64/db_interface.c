@@ -49,8 +49,6 @@ __KERNEL_RCSID(1, "$NetBSD: db_interface.c,v 1.1 2014/08/10 05:47:37 matt Exp $"
 
 #include <dev/cons.h>
 
-int db_active = 0;
-
 void
 db_read_bytes(vaddr_t addr, size_t size, char *data)
 {

@@ -54,7 +54,11 @@ lr	.req	x30	/* link register */
 	ldr	lr, =exception_trap_exit
 	mov	x0, sp
 	mov	x1, #\cause
-	b	trap
+	.if \el == 1
+	b	trap_el1_bad
+	.else
+	b	trap_el0_bad
+	.endif
 	/* !!! beware about remaining slot !!! */
 	.endm
 
@@ -123,7 +127,7 @@ _C_LABEL(el1_vectors):
 	VECT_ENTRY	el0_sync		/* Synchronous 64bit EL0 */
 	VECT_ENTRY	el0_irq			/* IRQ 64bit EL0 */
 	VECT_INVAL	0, BAD_FIQ		/* FIQ 64bit EL0 */
-	VECT_INVAL	0, BAD_ERROR		/* Error 64bit EL0 */
+	VECT_ENTRY	el0_error		/* Error 64bit EL0 */
 /*
  * Exception taken from lower Exception Level which is using AArch32
  * There are entries for exceptions caused in EL0 (compat user exceptions).
@@ -131,7 +135,7 @@ _C_LABEL(el1_vectors):
 	VECT_ENTRY	el0_32sync		/* Synchronous 32bit EL0 */
 	VECT_ENTRY	el0_32irq		/* IRQ 32bit EL0 */
 	VECT_INVAL	0, BAD_FIQ, 32		/* FIQ 32bit EL0 */
-	VECT_INVAL	0, BAD_ERROR, 32	/* Error 32bit EL0 */
+	VECT_ENTRY	el0_32error		/* Error 32bit EL0 */
 
 _C_LABEL(el1_sync):
 	sub	sp, sp, #TF_SIZE
@@ -139,7 +143,7 @@ _C_LABEL(el1_sync):
 	ldr	lr, =exception_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
-	b	trap
+	b	trap_el1_sync
 END(el1_sync)
 
 _C_LABEL(el1_irq):
@@ -155,7 +159,7 @@ _C_LABEL(el0_sync):
 	ldr	lr, =exception_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
-	b	trap
+	b	trap_el0_sync
 END(el0_sync)
 
 _C_LABEL(el0_irq):
@@ -165,12 +169,20 @@ _C_LABEL(el0_irq):
 	b	interrupt
 END(el0_irq)
 
+_C_LABEL(el0_error):
+	exception_entry 0
+	ldr	lr, =exception_trap_exit
+	mov	x0, sp
+	mov	x1, xzr
+	b	trap_el0_error
+END(el0_sync)
+
 _C_LABEL(el0_32sync):
 	exception_entry 0, 32
 	ldr	lr, =exception_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
-	b	trap
+	b	trap_el0_32sync
 END(el0_32sync)
 
 _C_LABEL(el0_32irq):
@@ -178,4 +190,11 @@ _C_LABEL(el0_32irq):
 	ldr	lr, =exception_trap_exit
 	mov	x0, sp
 	b	interrupt
+END(el0_32irq)
+
+_C_LABEL(el0_32error):
+	exception_entry 0, 32
+	ldr	lr, =exception_trap_exit
+	mov	x0, sp
+	b	trap_el0_32error
 END(el0_32irq)
