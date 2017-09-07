@@ -51,7 +51,7 @@ lr	.req	x30	/* link register */
 	mrs	x24, far_el1
 	str	x23, [sp, #TF_ESR]
 	str	x24, [sp, #TF_FAR]
-	ldr	lr, =exception_trap_exit
+	adr	lr, exception_trap_exit
 	mov	x0, sp
 	mov	x1, #\cause
 	.if \el == 1
@@ -100,9 +100,9 @@ lr	.req	x30	/* link register */
 	str	x24, [sp, #TF_FAR]
 	.endm
 
-	.pushsection ".vectors", "ax"
+	.text
+	.align 11
 	.global _C_LABEL(el1_vectors)
-	.p2align 11
 _C_LABEL(el1_vectors):
 /*
  * Exception taken from current Exception Level with SP_EL1.
@@ -140,7 +140,7 @@ _C_LABEL(el1_vectors):
 _C_LABEL(el1_sync):
 	sub	sp, sp, #TF_SIZE
 	exception_entry 1
-	ldr	lr, =exception_trap_exit
+	adr	lr, exception_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_el1_sync
@@ -149,14 +149,14 @@ END(el1_sync)
 _C_LABEL(el1_irq):
 	sub	sp, sp, #TF_SIZE
 	exception_entry 1
-	ldr	lr, =exception_trap_exit
+	adr	lr, exception_trap_exit
 	mov	x0, sp
 	b	interrupt
 END(el1_irq)
 
 _C_LABEL(el0_sync):
 	exception_entry 0
-	ldr	lr, =exception_trap_exit
+	adr	lr, exception_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_el0_sync
@@ -164,14 +164,14 @@ END(el0_sync)
 
 _C_LABEL(el0_irq):
 	exception_entry 0
-	ldr	lr, =exception_trap_exit
+	adr	lr, exception_trap_exit
 	mov	x0, sp
 	b	interrupt
 END(el0_irq)
 
 _C_LABEL(el0_error):
 	exception_entry 0
-	ldr	lr, =exception_trap_exit
+	adr	lr, exception_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_el0_error
@@ -179,7 +179,7 @@ END(el0_sync)
 
 _C_LABEL(el0_32sync):
 	exception_entry 0, 32
-	ldr	lr, =exception_trap_exit
+	adr	lr, exception_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_el0_32sync
@@ -187,14 +187,14 @@ END(el0_32sync)
 
 _C_LABEL(el0_32irq):
 	exception_entry 0, 32
-	ldr	lr, =exception_trap_exit
+	adr	lr, exception_trap_exit
 	mov	x0, sp
 	b	interrupt
 END(el0_32irq)
 
 _C_LABEL(el0_32error):
 	exception_entry 0, 32
-	ldr	lr, =exception_trap_exit
+	adr	lr, exception_trap_exit
 	mov	x0, sp
 	b	trap_el0_32error
 END(el0_32irq)
