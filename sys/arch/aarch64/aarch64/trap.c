@@ -48,6 +48,44 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 #include <aarch64/machdep.h>
 #include <aarch64/armreg.h>
 
+static const char * const causenames[] = {
+	[ESR_EC_UNKNOWN] = "Unknown Reason",
+	[ESR_EC_WFX] = "WFI or WFE instruction execution",
+	[ESR_EC_CP15_RT] = "A32: MCR/MRC access to CP15 !EC=0",
+	[ESR_EC_CP15_RRT] = "A32: MCRR/MRRC access to CP15 !EC=0",
+	[ESR_EC_CP14_RT] = "A32: MCR/MRC access to CP14",
+	[ESR_EC_CP14_DT] = "A32: LDC/STC access to CP14",
+	[ESR_EC_FP_ACCCES] = "Access to SIMD/FP Registers",
+	[ESR_EC_FPID] = "A32: MCR/MRC access to CP10 !EC=7",
+	[ESR_EC_CP14_RRT] = "A32: MRRC access to CP14",
+	[ESR_EC_ILL_STATE] = "Illegal Execution State",
+	[ESR_EC_SVC_A32] = "A32: SVC Instruction Execution",
+	[ESR_EC_HVC_A32] = "A32: HVC Instruction Execution",
+	[ESR_EC_SMC_A32] = "A32: SMC Instruction Execution",
+	[ESR_EC_SVC_A64] = "SVC Instruction Execution",
+	[ESR_EC_HVC_A64] = "HVC Instruction Execution",
+	[ESR_EC_SMC_A64] = "SMC Instruction Execution",
+	[ESR_EC_SYS_REG] = "MSR/MRS/SYS instruction (!EC0/1/7)",
+	[ESR_EC_INSN_ABT_EL0] = "Instruction Abort (EL0)",
+	[ESR_EC_INSN_ABT_EL1] = "Instruction Abort (EL1)",
+	[ESR_EC_PC_ALIGNMENT] = "Misaligned PC",
+	[ESR_EC_DATA_ABT_EL0] = "Data Abort (EL0)",
+	[ESR_EC_DATA_ABT_EL1] = "Data Abort (EL1)",
+	[ESR_EC_SP_ALIGNMENT] = "Misaligned SP",
+	[ESR_EC_FP_TRAP_A32] = "A32: FP Exception",
+	[ESR_EC_FP_TRAP_A64] = "FP Exception",
+	[ESR_EC_SERROR] = "SError Interrupt",
+	[ESR_EC_BRKPNT_EL0] = "Breakpoint Exception (EL0)",
+	[ESR_EC_BRKPNT_EL1] = "Breakpoint Exception (EL1)",
+	[ESR_EC_SW_STEP_EL0] = "Software Step (EL0)",
+	[ESR_EC_SW_STEP_EL1] = "Software Step (EL1)",
+	[ESR_EC_WTCHPNT_EL0] = "Watchpoint (EL0)",
+	[ESR_EC_WTCHPNT_EL1] = "Watchpoint (EL1)",
+	[ESR_EC_BKPT_INSN_A32] = "A32: BKPT Instruction Execution",
+	[ESR_EC_VECTOR_CATCH] = "A32: Vector Catch Exception",
+	[ESR_EC_BKPT_INSN_A64] = "BKPT Instruction Execution",
+};
+
 static void
 dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 {
@@ -122,115 +160,11 @@ trap(struct trapframe *tf, int reason)
 	bool ok = true;
 
 	cause = __SHIFTOUT(tf->tf_esr, ESR_EC);
-	switch (cause) {
-	case ESR_EC_UNKOWN:
-	default:
-		causestr = "Unknown Reason";
-		break;
-	case ESR_EC_WFX:
-		causestr = "WFI or WFE instruction execution";
-		break;
-	case ESR_EC_CP15_RT:
-		causestr = "A32: MCR/MRC access to CP15 !EC=0";
-		break;
-	case ESR_EC_CP15_RRT:
-		causestr = "A32: MCRR/MRRC access to CP15 !EC=0";
-		break;
-	case ESR_EC_CP14_RT:
-		causestr = "A32: MCR/MRC access to CP14";
-		break;
-	case ESR_EC_CP14_DT:
-		causestr = "A32: LDC/STC access to CP14";
-		break;
-	case ESR_EC_FP_ACCCES:
-		causestr = "Access to SIMD/FP Registers";
-		break;
-	case ESR_EC_FPID:
-		causestr = "A32: MCR/MRC access to CP10 !EC=7";
-		break;
-	case ESR_EC_CP14_RRT:
-		causestr = "A32: MRRC access to CP14";
-		break;
-	case ESR_EC_ILL_STATE:
-		causestr = "Illegal Execution State";
-		break;
-	case ESR_EC_SVC_A32:
-		causestr = "A32: SVC Instruction Execution";
-		break;
-	case ESR_EC_HVC_A32:
-		causestr = "A32: HVC Instruction Execution";
-		break;
-	case ESR_EC_SMC_A32:
-		causestr = "A32: SMC Instruction Execution";
-		break;
-	case ESR_EC_SVC_A64:
-		causestr = "SVC Instruction Execution";
-		break;
-	case ESR_EC_HVC_A64:
-		causestr = "HVC Instruction Execution";
-		break;
-	case ESR_EC_SMC_A64:
-		causestr = "SMC Instruction Execution";
-		break;
-	case ESR_EC_SYS_REG:
-		causestr = "MSR/MRS/SYS instruction (!EC0/1/7)";
-		break;
-	case ESR_EC_INSN_ABT_EL0:
-		causestr = "Instruction Abort (EL0)";
-		break;
-	case ESR_EC_INSN_ABT_EL1:
-		causestr = "Instruction Abort (EL1)";
-		break;
-	case ESR_EC_PC_ALIGNMENT:
-		causestr = "Misaligned PC";
-		break;
-	case ESR_EC_DATA_ABT_EL0:
-		causestr = "Data Abort (EL0)";
-		break;
-	case ESR_EC_DATA_ABT_EL1:
-		causestr = "Data Abort (EL1)";
-		break;
-	case ESR_EC_SP_ALIGNMENT:
-		causestr = "Misaligned SP";
-		break;
-	case ESR_EC_FP_TRAP_A32:
-		causestr = "A32: FP Exception";
-		break;
-	case ESR_EC_FP_TRAP_A64:
-		causestr = "FP Exception";
-		break;
-	case ESR_EC_SERROR:
-		causestr = "SError Interrupt";
-		break;
-	case ESR_EC_BRKPNT_EL0:
-		causestr = "Breakpoint Exception (EL0)";
-		break;
-	case ESR_EC_BRKPNT_EL1:
-		causestr = "Breakpoint Exception (EL1)";
-		break;
-	case ESR_EC_SW_STEP_EL0:
-		causestr = "Software Step (EL0)";
-		break;
-	case ESR_EC_SW_STEP_EL1:
-		causestr = "Software Step (EL1)";
-		break;
-	case ESR_EC_WTCHPNT_EL0:
-		causestr = "Watchpoint (EL0)";
-		break;
-	case ESR_EC_WTCHPNT_EL1:
-		causestr = "Watchpoint (EL1)";
-		break;
-	case ESR_EC_BKPT_INSN_A32:
-		causestr = "A32: BKPT Instruction Execution";
-		break;
-	case ESR_EC_VECTOR_CATCH:
-		causestr = "A32: Vector Catch Exception";
-		break;
-	case ESR_EC_BKPT_INSN_A64:
-		causestr = "BKPT Instruction Execution";
-		break;
-	}
-
+	if (cause > ESR_EC_BKPT_INSN_A64)
+		cause = ESR_EC_UNKNOWN;
+	causestr = causenames[cause];
+	if (causestr == NULL)
+		causestr = causenames[ESR_EC_UNKNOWN];
 	printf("%s TRAP!\n", causestr);
 	printf(" FAR_EL1  = 0x%016"PRIxREGISTER"\n", tf->tf_far);
 	printf(" ISS      = 0x%08x\n", (int)(code & ESR_ISS));
