@@ -39,6 +39,8 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 #include <sys/proc.h>
 #include <sys/systm.h>
 
+#include <uvm/uvm_extern.h>
+
 #include <sys/signal.h>
 #include <sys/signalvar.h>
 #include <sys/siginfo.h>
@@ -148,6 +150,8 @@ userret(struct lwp *l)
 	mi_userret(l);
 }
 
+#define USERMODE(esr)	((esr)&01)
+
 void
 trap(struct trapframe *tf, int reason)
 {
@@ -156,7 +160,7 @@ trap(struct trapframe *tf, int reason)
 	ksiginfo_t ksi;
 	int cause;
 	const char *causestr;
-	bool usertrap_p = tf->tf_esr & 01;
+	bool usertrap_p = USERMODE(tf->tf_esr);
 	bool ok = true;
 
 	cause = __SHIFTOUT(tf->tf_esr, ESR_EC);
@@ -220,6 +224,60 @@ void	cpu_jump_onfault(struct trapframe *, const struct faultbuf *);
 void	cpu_unset_onfault(void);
 struct faultbuf *cpu_disable_onfault(void);
 void	cpu_enable_onfault(struct faultbuf *);
+
+bool	pagefault(struct trapframe *, ksiginfo_t *ksi);
+void	trap_ksi_init(ksiginfo_t *, int, int, vaddr_t, register_t);
+#define ESR_ELx_WNR	(1U<<6)
+
+bool
+pagefault(struct trapframe *tf, ksiginfo_t *ksi)
+{
+	int cause = __SHIFTOUT(tf->tf_esr, ESR_EC);
+	intptr_t addr = trunc_page(tf->tf_far);
+	struct proc *p = curlwp->l_proc;
+	struct vm_map *map = (addr >= 0) ? &p->p_vmspace->vm_map : kernel_map;
+	vm_prot_t ftype;
+	struct faultbuf *fb;
+	int error, minor;
+
+	ftype = VM_PROT_READ |
+		(tf->tf_esr & ESR_ELx_WNR) ? VM_PROT_WRITE : 0;
+	if (USERMODE(tf->tf_esr)) {
+		error = uvm_fault(&p->p_vmspace->vm_map, addr, ftype);
+		if (error != 0) {
+			minor = (error == EACCES) ? SEGV_ACCERR : SEGV_MAPERR;
+			trap_ksi_init(ksi, SIGSEGV, minor,
+			    (intptr_t)tf->tf_far, cause);
+			return false;
+		}
+		uvm_grow(p, addr);
+		return true;	/* address space growth handled */
+	}
+	fb = cpu_disable_onfault();
+	error = uvm_fault(map, addr, ftype);
+	cpu_enable_onfault(fb);
+	if (error == 0) {
+		if (map != kernel_map)
+			uvm_grow(p, addr);
+		return true; 	/* address space growth handled */
+	}
+	if (fb == NULL)
+		return false;
+	cpu_jump_onfault(tf, fb);
+	return true;
+}
+
+void
+trap_ksi_init(ksiginfo_t *ksi, int signo, int code, vaddr_t addr,
+    register_t cause)
+{
+
+	KSI_INIT_TRAP(ksi);
+	ksi->ksi_signo = signo;
+	ksi->ksi_code = code;
+	ksi->ksi_addr = (void *)addr;
+	ksi->ksi_trap = cause;
+}
 
 void
 cpu_jump_onfault(struct trapframe *tf, const struct faultbuf *fb)
