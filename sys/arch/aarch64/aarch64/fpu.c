@@ -92,6 +92,7 @@ fpu_state_load(lwp_t *l, unsigned int flags)
 	"msr fpcr, x8;"
 	"msr fpsr, x9" :: "r"(fp));
 
+	/* turn off FP again */
 	reg_cpacr_el1_write(CPACR_FPEN_NONE);
 }
 
