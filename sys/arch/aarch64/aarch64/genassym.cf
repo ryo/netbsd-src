@@ -48,6 +48,7 @@ include <uvm/uvm_extern.h>
 include <aarch64/vmparam.h>
 include <aarch64/frame.h>
 include <aarch64/armreg.h>
+include <aarch64/bus_space_defs.h>
 
 if defined(_KERNEL_OPT)
 include "opt_multiprocessor.h"
@@ -251,6 +252,9 @@ define	SCTLR_LSMAOE		SCTLR_LSMAOE
 define	ICC_SRE_EL2_EN		ICC_SRE_EL2_EN
 define	ICC_SRE_EL2_SRE		ICC_SRE_EL2_SRE
 
+
+# for bus_space_asm
+define	BS_STRIDE		offsetof(struct bus_space, bs_stride)
 
 # Constants required for in_cksum() and friends.
 define	M_LEN			offsetof(struct mbuf, m_len)
