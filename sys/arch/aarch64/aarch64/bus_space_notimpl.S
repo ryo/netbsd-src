@@ -32,27 +32,25 @@
 	.global _C_LABEL(func)					;	\
 _C_LABEL(func):							;	\
 	mov	x2, x0						;	\
-	adr	x1, 2f						;	\
-	adr	x0, 1f						;	\
+	adr	x1, 1f						;	\
+	adr	x0, .Lnotimpl_msg				;	\
 	b	_C_LABEL(panic)					;	\
-1:	.asciz	"bus_space_%s() is not implemented on this tag: %p";	\
-2:	.asciz	methodstr					;	\
+1:	.asciz	methodstr					;	\
 	.align	2
 
+.Lnotimpl_msg:
+	.asciz	"bus_space_%s() is not implemented on this tag: %p";	\
+
+
 /* misc */
-NOT_IMPL(bs_notimpl_mmap, "mmap")
-
-/* peek */
-NOT_IMPL(bs_notimpl_pe_1, "peek_1")
-NOT_IMPL(bs_notimpl_pe_2, "peek_2")
-NOT_IMPL(bs_notimpl_pe_4, "peek_4")
-NOT_IMPL(bs_notimpl_pe_8, "peek_8")
-
-/* poke */
-NOT_IMPL(bs_notimpl_po_1, "poke_1")
-NOT_IMPL(bs_notimpl_po_2, "poke_2")
-NOT_IMPL(bs_notimpl_po_4, "poke_4")
-NOT_IMPL(bs_notimpl_po_8, "poke_8")
+NOT_IMPL(bs_map, "map")
+NOT_IMPL(bs_unmap, "unmap")
+NOT_IMPL(bs_subregion, "subregion")
+NOT_IMPL(bs_alloc, "alloc")
+NOT_IMPL(bs_free, "free")
+NOT_IMPL(bs_vaddr, "vaddr")
+NOT_IMPL(bs_mmap, "mmap")
+NOT_IMPL(bs_barrier, "barrier")
 
 /* read */
 NOT_IMPL(bs_notimpl_r_1, "read_1")
@@ -107,3 +105,51 @@ NOT_IMPL(bs_notimpl_c_1, "copy_region_1")
 NOT_IMPL(bs_notimpl_c_2, "copy_region_2")
 NOT_IMPL(bs_notimpl_c_4, "copy_region_4")
 NOT_IMPL(bs_notimpl_c_8, "copy_region_8")
+
+/* peek */
+NOT_IMPL(bs_notimpl_pe_1, "peek_1")
+NOT_IMPL(bs_notimpl_pe_2, "peek_2")
+NOT_IMPL(bs_notimpl_pe_4, "peek_4")
+NOT_IMPL(bs_notimpl_pe_8, "peek_8")
+
+/* poke */
+NOT_IMPL(bs_notimpl_po_1, "poke_1")
+NOT_IMPL(bs_notimpl_po_2, "poke_2")
+NOT_IMPL(bs_notimpl_po_4, "poke_4")
+NOT_IMPL(bs_notimpl_po_8, "poke_8")
+
+/* read_stream */
+NOT_IMPL(bs_r_1_s, "read_stream_1")
+NOT_IMPL(bs_r_2_s, "read_stream_2")
+NOT_IMPL(bs_r_4_s, "read_stream_4")
+NOT_IMPL(bs_r_8_s, "read_stream_8")
+
+/* write_stream */
+NOT_IMPL(bs_w_1_s, "write_stream_1")
+NOT_IMPL(bs_w_2_s, "write_stream_2")
+NOT_IMPL(bs_w_4_s, "write_stream_4")
+NOT_IMPL(bs_w_8_s, "write_stream_8")
+
+/* read_region_stream */
+NOT_IMPL(bs_rr_1_s, "read_region_stream_1")
+NOT_IMPL(bs_rr_2_s, "read_region_stream_2")
+NOT_IMPL(bs_rr_4_s, "read_region_stream_4")
+NOT_IMPL(bs_rr_8_s, "read_region_stream_8")
+
+/* write_region_stream */
+NOT_IMPL(bs_wr_1_s, "write_region_stream_1")
+NOT_IMPL(bs_wr_2_s, "write_region_stream_2")
+NOT_IMPL(bs_wr_4_s, "write_region_stream_4")
+NOT_IMPL(bs_wr_8_s, "write_region_stream_8")
+
+/* read_multi_stream */
+NOT_IMPL(bs_rm_1_s, "read_multi_stream_1")
+NOT_IMPL(bs_rm_2_s, "read_multi_stream_2")
+NOT_IMPL(bs_rm_4_s, "read_multi_stream_4")
+NOT_IMPL(bs_rm_8_s, "read_multi_stream_8")
+
+/* write_multi_stream */
+NOT_IMPL(bs_wm_1_s, "write_multi_stream_1")
+NOT_IMPL(bs_wm_2_s, "write_multi_stream_2")
+NOT_IMPL(bs_wm_4_s, "write_multi_stream_4")
+NOT_IMPL(bs_wm_8_s, "write_multi_stream_8")

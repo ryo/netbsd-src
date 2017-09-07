@@ -72,7 +72,7 @@ file	arch/aarch64/dev/a64gtmr.c			a64gtmr
 
 # bus_space(9)
 define	bus_space_generic
-file	arch/aarch64/aarch64/bus_space_asm_generic.S	bus_space_generic
+file	arch/aarch64/aarch64/bus_space_asm_generic.S	# bus_space_generic
 file	arch/aarch64/aarch64/bus_space_notimpl.S
 
 #file	arch/aarch64/aarch64/cpu_in_cksum.S		inet | inet6
@@ -120,4 +120,4 @@ file	arch/aarch64/aarch64/netbsd32_machdep.c		compat_netbsd32
 #file	arch/aarch64/aarch64/linux_syscall.c	compat_linux
 #file	arch/aarch64/aarch64/linux_trap.c	compat_linux
 
-include "arch/arm/conf/majors.arm32"
+include "arch/aarch64/conf/majors.aarch64"

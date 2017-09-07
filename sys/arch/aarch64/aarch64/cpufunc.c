@@ -41,17 +41,33 @@ extern uint32_t cputype;
 int
 set_cpufuncs(void)
 {
-	cputype = reg_midr_el1_read();
-
+	/* misc */
 	cpufuncs.cf_nullop = aarch64_nullop;
+	cpufuncs.cf_id = aarch64_cpuid;
+
+	/* TLB op */
 	cpufuncs.cf_setttb = aarch64_setttb;
 	cpufuncs.cf_tlb_flushID = aarch64_tlb_flushID;
 	cpufuncs.cf_tlb_flushID_SE = aarch64_tlb_flushID_SE;
+
+	/* cache op */
+	cpufuncs.cf_dcache_size = aarch64_dcache_size;
+	cpufuncs.cf_icache_size = aarch64_icache_size;
 	cpufuncs.cf_icache_sync_range = aarch64_icache_sync_range;
 	cpufuncs.cf_idcache_wbinv_range = aarch64_idcache_wbinv_range;
 	cpufuncs.cf_dcache_wbinv_range = aarch64_dcache_wbinv_range;
 	cpufuncs.cf_dcache_inv_range = aarch64_dcache_inv_range;
 	cpufuncs.cf_dcache_wb_range = aarch64_dcache_wb_range;
+	cpufuncs.cf_sdcache_wbinv_range = (void *)aarch64_nullop;
+	cpufuncs.cf_sdcache_wb_range = (void *)aarch64_nullop;
+	cpufuncs.cf_sdcache_inv_range = (void *)aarch64_nullop;
+
+	/* others */
+	cpufuncs.cf_drain_writebuf = aarch64_drain_writebuf;
+
+
+	/* XXX: for compatible arm */
+	cputype = cpufunc_id();
 
 	return 0;
 }
