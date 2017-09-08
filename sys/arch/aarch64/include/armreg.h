@@ -391,7 +391,7 @@ static const uintmax_t
 AARCH64REG_READ_INLINE(tcr_el1)		/* Translation Control Register */
 AARCH64REG_WRITE_INLINE(tcr_el1)
 
-#define TCR_PAGE_SIZE1(tcr)	(1L << (__SHIFTOUT(tcr, TCR_TG1) * 2 + 10))
+#define TCR_PAGE_SIZE1(tcr)	(1L << ((1L << __SHIFTOUT(tcr, TCR_TG1)) + 8))
 
 AARCH64REG_READ_INLINE(tpidr_el1)	/* Thread ID Register (EL1) */
 AARCH64REG_WRITE_INLINE(tpidr_el1)
