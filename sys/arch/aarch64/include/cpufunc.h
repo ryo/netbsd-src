@@ -29,6 +29,8 @@
 #ifndef _AARCH64_CPUFUNC_H_
 #define _AARCH64_CPUFUNC_H_
 
+#ifdef __aarch64__
+
 #ifdef _KERNEL
 
 struct cpu_functions {
@@ -103,4 +105,11 @@ void aarch64_sdcache_wb_range(vaddr_t, paddr_t, vsize_t);
 void aarch64_drain_writebuf(void);
 
 #endif /* _KERNEL */
+
+#elif defined(__arm__)
+
+#include <arm/cpufunc.h>
+
+#endif /* __aarch64__/__arm__ */
+
 #endif /* _AARCH64_CPUFUNC_H_ */

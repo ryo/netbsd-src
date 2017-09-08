@@ -42,11 +42,20 @@
 
 #ifdef _KERNEL_OPT
 #include "opt_multiprocessor.h"
+#include "opt_arm_intr_impl.h"
 #endif
 
 #ifdef MULTIPROCESSOR
 #define __HAVE_PREEMPTION	1
 #endif
+
+
+#ifdef ARM_INTR_IMPL
+#include ARM_INTR_IMPL
+#else
+#error ARM_INTR_IMPL not defined.
+#endif
+
 
 /* Interrupt priority "levels". */
 #define	IPL_NONE	0		/* nothing */

@@ -1,0 +1,44 @@
+#	$NetBSD: files.bcm2835,v 1.28 2017/07/30 23:48:32 jmcneill Exp $
+#
+# Configuration info for Broadcom BCM2835 ARM Peripherals
+#
+
+defflag	opt_bcm283x.h			BCM2836
+
+include "arch/arm/pic/files.pic"
+
+define bcmmboxbus { }
+
+file	arch/aarch64/broadcom/bcm2835_dma.c
+
+# OBIO just an attach point
+device	obio { [addr=-1], [size=0], [intr=-1]
+	     } : bus_space_generic, pic, pic_splfuncs
+attach	obio at mainbus
+file	arch/aarch64/broadcom/bcm2835_obio.c	obio needs-count
+
+# OBIO files
+file	arch/aarch64/broadcom/bcm2835_space.c	obio
+
+# ARMv7 Generic Timer
+device	armgtmr
+attach	armgtmr at obio
+file	arch/arm/cortex/gtmr.c			armgtmr
+
+# Interrupt Controller (BCM2835_ARMICU_BASE) #, pic_splfuncs
+device	bcmicu: pic, pic_splfuncs
+attach	bcmicu at obio with bcmicu
+file	arch/arm/broadcom/bcm2835_intr.c	bcmicu
+
+# System Timer (BCM2835_TIMER_BASE)
+device	bcmtmr
+attach	bcmtmr at obio with bcmtmr_amba
+file	arch/arm/broadcom/bcm2835_tmr.c		bcmtmr & !bcm2836
+
+# UART Interface (BCM2835_UART0_BASE)
+attach	plcom at obio with bcmplcom
+file	arch/arm/broadcom/bcm2835_plcom.c	bcmplcom
+
+# AUX UART (BCM2835_AUX_UART_BASE)
+attach	com at obio with bcmcom
+file	arch/arm/broadcom/bcm2835_com.c		bcmcom

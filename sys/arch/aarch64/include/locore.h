@@ -33,11 +33,8 @@
 #define _AARCH64_LOCORE_H_
 
 /*
- * XXX XXX XXX
- * This file is refered from arch/arm/ file(s) to conceal CPU design
- * difference between legacy ARM and modern ARM like ARM64.  Used to
- * be much larger but small enough now to discard in near future.
- * XXX XXX XXX
+ * This file is referred from arch/arm/ file(s) to conceal difference
+ * between ARM and AARCH64.
  */
 
 #ifdef __aarch64__
@@ -52,10 +49,15 @@
 #include <aarch64/frame.h>
 
 #ifdef MULTIPROCESSOR
+// XXXAARCH64
 /* for compatibility arch/arm */
 extern u_int arm_cpu_max;
 extern volatile u_int arm_cpu_hatched;
 #endif
+
+/* for compatibility arch/arm */
+#define I32_bit	DAIF_I
+#define F32_bit	DAIF_F
 
 static inline void cpsie(register_t psw) __attribute__((__unused__));
 static inline register_t cpsid(register_t psw) __attribute__((__unused__));

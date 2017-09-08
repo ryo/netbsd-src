@@ -85,6 +85,12 @@ _ASM_LABEL(start):
 	b	start_done
 #endif
 
+	b	0f
+	nop
+	nop
+	nop
+0:
+
 #ifdef DEBUG_LOCORE
 	mov	x9, x0		// save x0
 

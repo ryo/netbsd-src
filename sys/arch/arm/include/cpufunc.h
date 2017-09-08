@@ -42,6 +42,8 @@
 #ifndef _ARM_CPUFUNC_H_
 #define _ARM_CPUFUNC_H_
 
+#ifdef __arm__
+
 #ifdef _KERNEL
 
 #include <sys/types.h>
@@ -445,6 +447,12 @@ void set_stackptr	(u_int, u_int);
 u_int get_stackptr	(u_int);
 
 #endif /* _KERNEL || _KMEMUSER */
+
+#elif defined(__aarch64__)
+
+#include <aarch64/cpufunc.h>
+
+#endif /* __arm__/__aarch64__ */
 
 #endif	/* _ARM_CPUFUNC_H_ */
 

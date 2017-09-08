@@ -102,6 +102,19 @@ struct vm_page_md {
 
 void pmap_bootstrap(vaddr_t, vaddr_t);
 
+
+/* devmap */
+struct pmap_devmap {
+	vaddr_t pd_va;		/* virtual address */
+	paddr_t pd_pa;		/* physical address */
+	psize_t pd_size;	/* size of region */
+	vm_prot_t pd_prot;	/* protection code */
+	int pd_cache;		/* cache attributes */
+};
+void pmap_devmap_register(const struct pmap_devmap *);
+const struct pmap_devmap *pmap_devmap_find_pa(paddr_t, psize_t);
+const struct pmap_devmap *pmap_devmap_find_va(vaddr_t, vsize_t);
+
 #elif defined(__arm__)
 
 #include <arm/pmap.h>

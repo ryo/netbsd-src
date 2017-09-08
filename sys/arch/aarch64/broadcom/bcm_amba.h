@@ -1,9 +1,7 @@
 /*	$NetBSD: bcm_amba.h,v 1.1 2012/07/26 06:21:57 skrll Exp $	*/
 
-#ifndef _ARM_BROADCOM_BCM_AMBA_H_
-#define _ARM_BROADCOM_BCM_AMBA_H_
-
-#ifdef __arm__
+#ifndef _AARCH64_BROADCOM_BCM_AMBA_H_
+#define _AARCH64_BROADCOM_BCM_AMBA_H_
 
 /* Broadcom AMBA AXI Peripheral Bus */
 
@@ -25,13 +23,7 @@ struct ambadev_locators {
 };
 
 extern struct bus_space bcm2835_bs_tag;
-extern struct arm32_bus_dma_tag bcm2835_bus_dma_tag;
+extern struct aarch64_bus_dma_tag bcm2835_bus_dma_tag;
 // extern const struct ambadev_locators *md_ambadev_locs;
 
-#elif defined(__aarch64__)
-
-#include <aarch64/broadcom/bcm_amba.h>
-
-#endif /* __arm__/__aarch64__ */
-
-#endif /* _ARM_BROADCOM_BCM_AMBA_H_ */
+#endif /* _AARCH64_BROADCOM_BCM_AMBA_H_ */

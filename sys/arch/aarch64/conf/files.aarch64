@@ -5,7 +5,17 @@ defflag	opt_cputypes.h		CPU_ARMV8
 defflag	opt_cputypes.h		CPU_CORTEXA53: CPU_ARMV8
 defflag	opt_cputypes.h		CPU_CORTEXA57: CPU_ARMV8
 
-defparam opt_cpuoptions.h	ARM_HAS_VBAR
+defparam opt_cpuoptions.h	ARM_HAS_VBAR	# XXXAARCH64
+
+# Interrupt implementation header definition.
+defparam opt_arm_intr_impl.h	ARM_INTR_IMPL
+
+# ARM-specific debug options (for compat arch/arm/*)
+defflag opt_arm_debug.h		ARM_LOCK_CAS_DEBUG
+defflag opt_arm_debug.h		VERBOSE_INIT_ARM
+
+# Timer options
+defflag opt_arm_timer.h		__HAVE_GENERIC_CPU_INITCLOCKS
 
 
 # Board-specific bus_space(9)/bus_dma(9) definitions
@@ -47,24 +57,6 @@ file	arch/aarch64/dev/cpunode.c			cpunode_mainbus
 device	cpu
 attach	cpu at cpunode with cpu_cpunode
 file	arch/aarch64/dev/cpu.c				cpu_cpunode
-
-defparam opt_arm_intr_impl.h		PIC_MAXPICS
-					PIC_MAXSOURCES
-					PIC_MAXMAXSOURCES
-defflag opt_arm_intr_impl.h		__HAVE_PIC_SET_PRIORITY
-
-define	pic
-file	arch/arm/pic/pic.c
-file	arch/arm/pic/pic_splfuncs.c
-
-device	a64gic: pic
-attach	a64gic at mainbus
-file	arch/arm/cortex/gic.c				a64gic
-file	arch/aarch64/dev/a64gic_mainbus.c		a64gic
-
-device	a64gtmr
-attach	a64gtmr at mainbus
-file	arch/aarch64/dev/a64gtmr.c			a64gtmr
 
 # bus_space(9)
 define	bus_space_generic

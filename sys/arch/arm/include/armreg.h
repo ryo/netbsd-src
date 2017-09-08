@@ -39,6 +39,8 @@
 #ifndef _ARM_ARMREG_H
 #define _ARM_ARMREG_H
 
+#ifdef __arm__
+
 /*
  * ARM Process Status Register
  *
@@ -869,7 +871,7 @@ arm_cond_ok_p(uint32_t insn, uint32_t psr)
 }
 #endif /* !__ASSEMBLER && _KERNEL */
 
-#if !defined(__ASSEMBLER__) && !defined(_RUMPKERNEL) && !defined(__aarch64__)
+#if !defined(__ASSEMBLER__) && !defined(_RUMPKERNEL)
 #define	ARMREG_READ_INLINE(name, __insnstring)			\
 static inline uint32_t armreg_##name##_read(void)		\
 {								\
@@ -1078,5 +1080,11 @@ ARMREG_READ_INLINE(sheeva_xctrl, "p15,1,%0,c15,c1,0") /* Sheeva eXtra Control re
 ARMREG_WRITE_INLINE(sheeva_xctrl, "p15,1,%0,c15,c1,0") /* Sheeva eXtra Control register */
 
 #endif /* !__ASSEMBLER__ */
+
+#elif defined(__aarch64__)
+
+#include <aarch64/armreg.h>
+
+#endif /* __arm__/__aarch64__ */
 
 #endif	/* _ARM_ARMREG_H */

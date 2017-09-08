@@ -48,6 +48,8 @@
 #ifndef _ARM_LOCORE_H_
 #define _ARM_LOCORE_H_
 
+#ifdef __arm__
+
 #ifdef _KERNEL_OPT
 #include "opt_cpuoptions.h"
 #include "opt_cputypes.h"
@@ -319,5 +321,11 @@ bool	vfp_used_p(const lwp_t *);
 extern const pcu_ops_t arm_vfp_ops;
 
 #endif	/* !_LOCORE */
+
+#elif defined(__aarch64__)
+
+#include <aarch64/locore.h>
+
+#endif /* __arm__/__aarch64__ */
 
 #endif /* !_ARM_LOCORE_H_ */

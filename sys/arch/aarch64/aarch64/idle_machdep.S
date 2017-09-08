@@ -30,9 +30,14 @@
  */
 
 #include <aarch64/asm.h>
-#include "assym.h"
-
 RCSID("$NetBSD: idle_machdep.S,v 1.1 2014/08/10 05:47:37 matt Exp $");
+
+#include "assym.h"
+#include "opt_arm_intr_impl.h"
+
+#ifdef ARM_INTR_IMPL
+#include ARM_INTR_IMPL
+#endif
 
 ENTRY(cpu_idle)
 	sub	sp, sp, #TF_SIZE		// allocate trapfame
@@ -53,7 +58,12 @@ ENTRY(cpu_idle)
 	mov	x4, #SPSR_M_EL1T		// what our spsr should be
 	str	x2, [sp, #TF_SPSR]
 
+#ifdef ARM_IRQ_HANDLER
+	bl	ARM_IRQ_HANDLER
+#else
+	/* default armgic */
 	bl	armgic_irq_handler		// process irq
+#endif
 
 	mrs	x1, tpidr_el1			// get curcpu()
 	str	w28, [x1, #CI_INTR_DEPTH]	// restore intr depth

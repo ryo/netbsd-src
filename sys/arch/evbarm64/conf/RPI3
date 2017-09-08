@@ -175,10 +175,27 @@ config		netbsd	root on ? type ?
 #config		netbsd	root on ? type nfs
 
 mainbus0 at	root
-cpunode*	at	mainbus0
-cpu*		at	cpunode?
-a64gic*		at	mainbus0
-a64gtmr*	at	mainbus0
+cpunode*	at mainbus0
+cpu*		at cpunode?
+
+
+# OBIO
+obio0		at mainbus?
+
+# Interrupt Controller
+bcmicu0		at obio?
+
+# System timer
+bcmtmr0		at obio?
+
+## PL011 uart
+#plcom0		at obio?
+
+# AUX UART
+com0		at obio?
+
+
+
 
 #
 # accept filters

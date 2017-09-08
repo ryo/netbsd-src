@@ -1,4 +1,4 @@
-/*	$NetBSD: bcm2835var.h,v 1.2 2015/02/28 09:34:34 skrll Exp $	*/
+/*	$NetBSD: bcm2835_dma.c,v 1.2 2012/09/18 05:47:27 matt Exp $	*/
 
 /*-
  * Copyright (c) 2012 The NetBSD Foundation, Inc.
@@ -29,29 +29,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	_ARM_BROADCOM_BCM2835_VAR_H_
-#define	_ARM_BROADCOM_BCM2835_VAR_H_
+#include <sys/cdefs.h>
+__KERNEL_RCSID(0, "$NetBSD: bcm2835_dma.c,v 1.2 2012/09/18 05:47:27 matt Exp $");
 
-#ifdef __arm__
+#define _AARCH64_BUS_DMA_PRIVATE
 
-#include <sys/types.h>
+#include <sys/param.h>
 #include <sys/bus.h>
 
-extern struct bus_space bcm2835_bs_tag;
-extern struct bus_space bcm2835_a4x_bs_tag;
-extern struct arm32_bus_dma_tag bcm2835_bus_dma_tag;
-
-extern bus_space_tag_t al_iot;
-extern bus_space_handle_t al_ioh;
-
-bus_dma_tag_t bcm2835_bus_dma_init(struct arm32_bus_dma_tag *);
-
-void bcm2836_cpu_hatch(struct cpu_info *);
-
-#elif defined(__aarch64__)
-
-#include <aarch64/broadcom/bcm2835var.h>
-
-#endif /* __arm__/__aarch64__ */
-
-#endif	/* _ARM_BROADCOM_BCM2835_VAR_H_ */
+struct aarch64_bus_dma_tag bcm2835_bus_dma_tag = {
+	_BUS_DMAMAP_FUNCS,
+	_BUS_DMAMEM_FUNCS,
+	_BUS_DMATAG_FUNCS,
+};

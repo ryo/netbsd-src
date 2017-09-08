@@ -3,12 +3,5 @@
 file	arch/evbarm64/rpi/rpi_machdep.c
 file	kern/subr_disk_mbr.c
 
-#device obio { [addr=-1], [size=-1], [intr=-1] }
-#attach obio at mainbus with obio_mainbus
-#file	arch/evbarm64/rpi/obio_mainbus.c	obio_mainbus
-#
-#attach sm at mainbus with sm_mainbus
-#file	arch/evbarm64/rpi/sm_mainbus.c	sm_mainbus
-#
-#attach plcom at obio with plcom_obio
-#file	arch/evbarm64/rpi/plcom_obio.c	plcom_obio
+# CPU support and integrated peripherals
+include "arch/aarch64/broadcom/files.bcm2835"

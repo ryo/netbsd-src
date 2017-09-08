@@ -48,6 +48,8 @@
 #ifndef _ARM_CPU_H_
 #define _ARM_CPU_H_
 
+#ifdef __arm__
+
 /*
  * User-visible definitions
  */
@@ -325,5 +327,11 @@ void	cpu_attach(device_t, cpuid_t);
 #endif /* !_LOCORE */
 
 #endif /* _KERNEL */
+
+#elif defined(__aarch64__)
+
+#include <aarch64/cpu.h>
+
+#endif /* __arm__/__aarch64__ */
 
 #endif /* !_ARM_CPU_H_ */

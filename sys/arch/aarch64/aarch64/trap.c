@@ -33,6 +33,8 @@
 
 __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 
+#include "opt_arm_intr_impl.h"
+
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/cpu.h>
@@ -43,6 +45,16 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 #include <sys/siginfo.h>
 #ifdef KDB
 #include <sys/kdb.h>
+#endif
+
+#ifdef ARM_INTR_IMPL
+#include ARM_INTR_IMPL
+#else
+#error ARM_INTR_IMPL not defined
+#endif
+
+#ifndef ARM_IRQ_HANDLER
+#error ARM_IRQ_HANDLER not defined
 #endif
 
 #include <aarch64/userret.h>
@@ -257,6 +269,11 @@ trap_el0_32error(struct trapframe *tf)
 void
 interrupt(struct trapframe *tf)
 {
+	struct cpu_info * const ci = curcpu();
+
+	ci->ci_intr_depth++;
+	ARM_IRQ_HANDLER(tf);
+	ci->ci_intr_depth--;
 }
 
 // XXXAARCH64 might be populated in frame.h in future
