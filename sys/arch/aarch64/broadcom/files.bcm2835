@@ -10,6 +10,7 @@ include "arch/arm/pic/files.pic"
 define bcmmboxbus { }
 
 file	arch/aarch64/broadcom/bcm2835_dma.c
+file	arch/arm/broadcom/bcm2835_mbox_subr.c
 
 # OBIO just an attach point
 device	obio { [addr=-1], [size=0], [intr=-1]
@@ -30,10 +31,25 @@ device	bcmicu: pic, pic_splfuncs
 attach	bcmicu at obio with bcmicu
 file	arch/arm/broadcom/bcm2835_intr.c	bcmicu
 
+# VC Mailbox (BCM2835_ARMMBOX_BASE)
+device	bcmmbox: bcmmboxbus
+attach	bcmmbox at obio with bcmmbox
+file	arch/arm/broadcom/bcm2835_mbox.c	bcmmbox
+
 # System Timer (BCM2835_TIMER_BASE)
 device	bcmtmr
 attach	bcmtmr at obio with bcmtmr_amba
 file	arch/arm/broadcom/bcm2835_tmr.c		bcmtmr & !bcm2836
+
+# Power Management, Reset Controller, and Watchdog (BCM2835_PM_BASE)
+device	bcmpm: sysmon_wdog
+attach	bcmpm at obio with bcmpm_amba
+file	arch/arm/broadcom/bcm2835_pm.c		bcmpm
+
+# Random number generator (BCM2835_RNG_BASE)
+device	bcmrng
+attach	bcmrng at obio with bcmrng_amba
+file	arch/arm/broadcom/bcm2835_rng.c		bcmrng
 
 # UART Interface (BCM2835_UART0_BASE)
 attach	plcom at obio with bcmplcom
@@ -42,3 +58,63 @@ file	arch/arm/broadcom/bcm2835_plcom.c	bcmplcom
 # AUX UART (BCM2835_AUX_UART_BASE)
 attach	com at obio with bcmcom
 file	arch/arm/broadcom/bcm2835_com.c		bcmcom
+
+# External Mass Media Controller (BCM2835_EMMC_BASE)
+attach	sdhc at obio with bcmemmc
+file	arch/arm/broadcom/bcm2835_emmc.c	bcmemmc
+
+# SD Host Controller (BCM2835_SDHOST_BASE)
+device	sdhost: sdmmcbus
+attach	sdhost at obio with bcmsdhost
+file	arch/arm/broadcom/bcm2835_sdhost.c	bcmsdhost	needs-flag
+
+# DMA Controller (BCM2835_DMA0_BASE)
+device	bcmdmac
+attach	bcmdmac at obio with bcmdmac_amba
+file	arch/arm/broadcom/bcm2835_dmac.c	bcmdmac		needs-flag
+
+# USB (BCM2835_USB_BASE)
+attach dwctwo at obio with bcmdwctwo
+file	arch/arm/broadcom/bcm2835_dwctwo.c	bcmdwctwo	needs-flag
+
+# GPIO misc. functions
+define	bcm2835_gpio_subr
+file	arch/arm/broadcom/bcm2835_gpio_subr.c	bcm2835_gpio_subr
+
+# SPI controller (BCM2835_SPI0_BASE)
+device	bcmspi: spibus, bcm2835_gpio_subr
+attach	bcmspi at obio
+file	arch/arm/broadcom/bcm2835_spi.c		bcmspi	needs-flag
+
+# BSC (I2C) controller (BCM2835_BSC[01]_BASE)
+device	bsciic: i2cbus, bcm2835_gpio_subr
+attach	bsciic at obio
+file	arch/arm/broadcom/bcm2835_bsc.c		bsciic	needs-flag
+
+# Generic framebuffer console driver
+attach	genfb at obio with bcmgenfb: edid
+file	arch/arm/broadcom/bcm2835_genfb.c	bcmgenfb	needs-flag
+
+# VCHIQ
+include "external/bsd/vchiq/conf/files.vchiq"
+
+# VC audio
+device	vcaudio: audiobus, auconv, mulaw, aurateconv, auvolconv
+attach	vcaudio at vchiqbus
+file	arch/arm/broadcom/bcm2835_vcaudio.c	vcaudio
+
+# GPIO
+device	bcmgpio: gpiobus
+attach	bcmgpio at obio
+file	arch/arm/broadcom/bcm2835_gpio.c
+
+# Clock Manager (BCM2835_CM_BASE)
+device	bcmcm
+attach	bcmcm at obio with bcmcm_amba
+file	arch/arm/broadcom/bcm2835_cm.c		bcmcm		needs-flag
+
+# PWM Controller (BCM2835_PWM_BASE)
+device	bcmpwm
+attach	bcmpwm at obio with bcmpwm_amba
+file	arch/arm/broadcom/bcm2835_pwm.c		bcmpwm		needs-flag
+
