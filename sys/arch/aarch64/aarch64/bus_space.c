@@ -43,9 +43,10 @@ __KERNEL_RCSID(1, "$NetBSD$");
 
 /* Prototypes for all the bus_space structure functions */
 bs_protos(generic)
+bs_protos(generic_dsb)
 bs_protos(aarch64_generic)
 
-struct aarch64_bus_space aarch64_generic_bs_tag = {
+struct bus_space aarch64_generic_bs_tag = {
 	.bs_stride = 0,
 	.bs_flags = 0,
 
@@ -111,6 +112,360 @@ struct aarch64_bus_space aarch64_generic_bs_tag = {
 	.bs_sm_2 = generic_bs_sm_2,
 	.bs_sm_4 = generic_bs_sm_4,
 	.bs_sm_8 = generic_bs_sm_8,
+
+	/* peek */
+	.bs_pe_1 = aarch64_generic_bs_pe_1,
+	.bs_pe_2 = aarch64_generic_bs_pe_2,
+	.bs_pe_4 = aarch64_generic_bs_pe_4,
+	.bs_pe_8 = aarch64_generic_bs_pe_8,
+
+	/* poke */
+	.bs_po_1 = aarch64_generic_bs_po_1,
+	.bs_po_2 = aarch64_generic_bs_po_2,
+	.bs_po_4 = aarch64_generic_bs_po_4,
+	.bs_po_8 = aarch64_generic_bs_po_8,
+
+#ifdef __BUS_SPACE_HAS_STREAM_METHODS
+	/* read stream */
+	.bs_r_1_s = generic_bs_r_1,
+	.bs_r_2_s = generic_bs_r_2,
+	.bs_r_4_s = generic_bs_r_4,
+	.bs_r_8_s = generic_bs_r_8,
+
+	/* write stream */
+	.bs_w_1_s = generic_bs_w_1,
+	.bs_w_2_s = generic_bs_w_2,
+	.bs_w_4_s = generic_bs_w_4,
+	.bs_w_8_s = generic_bs_w_8,
+
+	/* read region stream */
+	.bs_rr_1_s = generic_bs_rr_1,
+	.bs_rr_2_s = generic_bs_rr_2,
+	.bs_rr_4_s = generic_bs_rr_4,
+	.bs_rr_8_s = generic_bs_rr_8,
+
+	/* write region stream */
+	.bs_wr_1_s = generic_bs_wr_1,
+	.bs_wr_2_s = generic_bs_wr_2,
+	.bs_wr_4_s = generic_bs_wr_4,
+	.bs_wr_8_s = generic_bs_wr_8,
+
+	/* read multi stream */
+	.bs_rm_1_s = generic_bs_rm_1,
+	.bs_rm_2_s = generic_bs_rm_2,
+	.bs_rm_4_s = generic_bs_rm_4,
+	.bs_rm_8_s = generic_bs_rm_8,
+
+	/* write multi stream */
+	.bs_wm_1_s = generic_bs_wm_1,
+	.bs_wm_2_s = generic_bs_wm_2,
+	.bs_wm_4_s = generic_bs_wm_4,
+	.bs_wm_8_s = generic_bs_wm_8,
+#endif
+};
+
+struct bus_space aarch64_generic_dsb_bs_tag = {
+	.bs_stride = 0,
+	.bs_flags = 0,
+
+	.bs_map = aarch64_generic_bs_map,
+	.bs_unmap = aarch64_generic_bs_unmap,
+	.bs_subregion = aarch64_generic_bs_subregion,
+	.bs_alloc = aarch64_generic_bs_alloc,
+	.bs_free = aarch64_generic_bs_free,
+	.bs_vaddr = aarch64_generic_bs_vaddr,
+	.bs_mmap = aarch64_generic_bs_mmap,
+	.bs_barrier = aarch64_generic_bs_barrier,
+
+	/* read */
+	.bs_r_1 = generic_dsb_bs_r_1,
+	.bs_r_2 = generic_dsb_bs_r_2,
+	.bs_r_4 = generic_dsb_bs_r_4,
+	.bs_r_8 = generic_dsb_bs_r_8,
+
+	/* write */
+	.bs_w_1 = generic_dsb_bs_w_1,
+	.bs_w_2 = generic_dsb_bs_w_2,
+	.bs_w_4 = generic_dsb_bs_w_4,
+	.bs_w_8 = generic_dsb_bs_w_8,
+
+	/* read region */
+	.bs_rr_1 = generic_dsb_bs_rr_1,
+	.bs_rr_2 = generic_dsb_bs_rr_2,
+	.bs_rr_4 = generic_dsb_bs_rr_4,
+	.bs_rr_8 = generic_dsb_bs_rr_8,
+
+	/* write region */
+	.bs_wr_1 = generic_dsb_bs_wr_1,
+	.bs_wr_2 = generic_dsb_bs_wr_2,
+	.bs_wr_4 = generic_dsb_bs_wr_4,
+	.bs_wr_8 = generic_dsb_bs_wr_8,
+
+	/* copy region */
+	.bs_c_1 = generic_dsb_bs_c_1,
+	.bs_c_2 = generic_dsb_bs_c_2,
+	.bs_c_4 = generic_dsb_bs_c_4,
+	.bs_c_8 = generic_dsb_bs_c_8,
+
+	/* set region */
+	.bs_sr_1 = generic_dsb_bs_sr_1,
+	.bs_sr_2 = generic_dsb_bs_sr_2,
+	.bs_sr_4 = generic_dsb_bs_sr_4,
+	.bs_sr_8 = generic_dsb_bs_sr_8,
+
+	/* read multi */
+	.bs_rm_1 = generic_dsb_bs_rm_1,
+	.bs_rm_2 = generic_dsb_bs_rm_2,
+	.bs_rm_4 = generic_dsb_bs_rm_4,
+	.bs_rm_8 = generic_dsb_bs_rm_8,
+
+	/* write multi */
+	.bs_wm_1 = generic_dsb_bs_wm_1,
+	.bs_wm_2 = generic_dsb_bs_wm_2,
+	.bs_wm_4 = generic_dsb_bs_wm_4,
+	.bs_wm_8 = generic_dsb_bs_wm_8,
+
+	/* set multi */
+	.bs_sm_1 = generic_dsb_bs_sm_1,
+	.bs_sm_2 = generic_dsb_bs_sm_2,
+	.bs_sm_4 = generic_dsb_bs_sm_4,
+	.bs_sm_8 = generic_dsb_bs_sm_8,
+
+	/* peek */
+	.bs_pe_1 = aarch64_generic_bs_pe_1,
+	.bs_pe_2 = aarch64_generic_bs_pe_2,
+	.bs_pe_4 = aarch64_generic_bs_pe_4,
+	.bs_pe_8 = aarch64_generic_bs_pe_8,
+
+	/* poke */
+	.bs_po_1 = aarch64_generic_bs_po_1,
+	.bs_po_2 = aarch64_generic_bs_po_2,
+	.bs_po_4 = aarch64_generic_bs_po_4,
+	.bs_po_8 = aarch64_generic_bs_po_8,
+
+#ifdef __BUS_SPACE_HAS_STREAM_METHODS
+	/* read stream */
+	.bs_r_1_s = generic_bs_r_1,
+	.bs_r_2_s = generic_bs_r_2,
+	.bs_r_4_s = generic_bs_r_4,
+	.bs_r_8_s = generic_bs_r_8,
+
+	/* write stream */
+	.bs_w_1_s = generic_bs_w_1,
+	.bs_w_2_s = generic_bs_w_2,
+	.bs_w_4_s = generic_bs_w_4,
+	.bs_w_8_s = generic_bs_w_8,
+
+	/* read region stream */
+	.bs_rr_1_s = generic_bs_rr_1,
+	.bs_rr_2_s = generic_bs_rr_2,
+	.bs_rr_4_s = generic_bs_rr_4,
+	.bs_rr_8_s = generic_bs_rr_8,
+
+	/* write region stream */
+	.bs_wr_1_s = generic_bs_wr_1,
+	.bs_wr_2_s = generic_bs_wr_2,
+	.bs_wr_4_s = generic_bs_wr_4,
+	.bs_wr_8_s = generic_bs_wr_8,
+
+	/* read multi stream */
+	.bs_rm_1_s = generic_bs_rm_1,
+	.bs_rm_2_s = generic_bs_rm_2,
+	.bs_rm_4_s = generic_bs_rm_4,
+	.bs_rm_8_s = generic_bs_rm_8,
+
+	/* write multi stream */
+	.bs_wm_1_s = generic_bs_wm_1,
+	.bs_wm_2_s = generic_bs_wm_2,
+	.bs_wm_4_s = generic_bs_wm_4,
+	.bs_wm_8_s = generic_bs_wm_8,
+#endif
+};
+
+struct bus_space aarch64_generic_a4x_bs_tag = {
+	.bs_stride = 2,
+	.bs_flags = 0,
+
+	.bs_map = aarch64_generic_bs_map,
+	.bs_unmap = aarch64_generic_bs_unmap,
+	.bs_subregion = aarch64_generic_bs_subregion,
+	.bs_alloc = aarch64_generic_bs_alloc,
+	.bs_free = aarch64_generic_bs_free,
+	.bs_vaddr = aarch64_generic_bs_vaddr,
+	.bs_mmap = aarch64_generic_bs_mmap,
+	.bs_barrier = aarch64_generic_bs_barrier,
+
+	/* read */
+	.bs_r_1 = generic_bs_r_1,
+	.bs_r_2 = generic_bs_r_2,
+	.bs_r_4 = generic_bs_r_4,
+	.bs_r_8 = generic_bs_r_8,
+
+	/* write */
+	.bs_w_1 = generic_bs_w_1,
+	.bs_w_2 = generic_bs_w_2,
+	.bs_w_4 = generic_bs_w_4,
+	.bs_w_8 = generic_bs_w_8,
+
+	/* read region */
+	.bs_rr_1 = generic_bs_rr_1,
+	.bs_rr_2 = generic_bs_rr_2,
+	.bs_rr_4 = generic_bs_rr_4,
+	.bs_rr_8 = generic_bs_rr_8,
+
+	/* write region */
+	.bs_wr_1 = generic_bs_wr_1,
+	.bs_wr_2 = generic_bs_wr_2,
+	.bs_wr_4 = generic_bs_wr_4,
+	.bs_wr_8 = generic_bs_wr_8,
+
+	/* copy region */
+	.bs_c_1 = generic_bs_c_1,
+	.bs_c_2 = generic_bs_c_2,
+	.bs_c_4 = generic_bs_c_4,
+	.bs_c_8 = generic_bs_c_8,
+
+	/* set region */
+	.bs_sr_1 = generic_bs_sr_1,
+	.bs_sr_2 = generic_bs_sr_2,
+	.bs_sr_4 = generic_bs_sr_4,
+	.bs_sr_8 = generic_bs_sr_8,
+
+	/* read multi */
+	.bs_rm_1 = generic_bs_rm_1,
+	.bs_rm_2 = generic_bs_rm_2,
+	.bs_rm_4 = generic_bs_rm_4,
+	.bs_rm_8 = generic_bs_rm_8,
+
+	/* write multi */
+	.bs_wm_1 = generic_bs_wm_1,
+	.bs_wm_2 = generic_bs_wm_2,
+	.bs_wm_4 = generic_bs_wm_4,
+	.bs_wm_8 = generic_bs_wm_8,
+
+	/* set multi */
+	.bs_sm_1 = generic_bs_sm_1,
+	.bs_sm_2 = generic_bs_sm_2,
+	.bs_sm_4 = generic_bs_sm_4,
+	.bs_sm_8 = generic_bs_sm_8,
+
+	/* peek */
+	.bs_pe_1 = aarch64_generic_bs_pe_1,
+	.bs_pe_2 = aarch64_generic_bs_pe_2,
+	.bs_pe_4 = aarch64_generic_bs_pe_4,
+	.bs_pe_8 = aarch64_generic_bs_pe_8,
+
+	/* poke */
+	.bs_po_1 = aarch64_generic_bs_po_1,
+	.bs_po_2 = aarch64_generic_bs_po_2,
+	.bs_po_4 = aarch64_generic_bs_po_4,
+	.bs_po_8 = aarch64_generic_bs_po_8,
+
+#ifdef __BUS_SPACE_HAS_STREAM_METHODS
+	/* read stream */
+	.bs_r_1_s = generic_bs_r_1,
+	.bs_r_2_s = generic_bs_r_2,
+	.bs_r_4_s = generic_bs_r_4,
+	.bs_r_8_s = generic_bs_r_8,
+
+	/* write stream */
+	.bs_w_1_s = generic_bs_w_1,
+	.bs_w_2_s = generic_bs_w_2,
+	.bs_w_4_s = generic_bs_w_4,
+	.bs_w_8_s = generic_bs_w_8,
+
+	/* read region stream */
+	.bs_rr_1_s = generic_bs_rr_1,
+	.bs_rr_2_s = generic_bs_rr_2,
+	.bs_rr_4_s = generic_bs_rr_4,
+	.bs_rr_8_s = generic_bs_rr_8,
+
+	/* write region stream */
+	.bs_wr_1_s = generic_bs_wr_1,
+	.bs_wr_2_s = generic_bs_wr_2,
+	.bs_wr_4_s = generic_bs_wr_4,
+	.bs_wr_8_s = generic_bs_wr_8,
+
+	/* read multi stream */
+	.bs_rm_1_s = generic_bs_rm_1,
+	.bs_rm_2_s = generic_bs_rm_2,
+	.bs_rm_4_s = generic_bs_rm_4,
+	.bs_rm_8_s = generic_bs_rm_8,
+
+	/* write multi stream */
+	.bs_wm_1_s = generic_bs_wm_1,
+	.bs_wm_2_s = generic_bs_wm_2,
+	.bs_wm_4_s = generic_bs_wm_4,
+	.bs_wm_8_s = generic_bs_wm_8,
+#endif
+};
+
+struct bus_space aarch64_generic_a4x_dsb_bs_tag = {
+	.bs_stride = 2,
+	.bs_flags = 0,
+
+	.bs_map = aarch64_generic_bs_map,
+	.bs_unmap = aarch64_generic_bs_unmap,
+	.bs_subregion = aarch64_generic_bs_subregion,
+	.bs_alloc = aarch64_generic_bs_alloc,
+	.bs_free = aarch64_generic_bs_free,
+	.bs_vaddr = aarch64_generic_bs_vaddr,
+	.bs_mmap = aarch64_generic_bs_mmap,
+	.bs_barrier = aarch64_generic_bs_barrier,
+
+	/* read */
+	.bs_r_1 = generic_dsb_bs_r_1,
+	.bs_r_2 = generic_dsb_bs_r_2,
+	.bs_r_4 = generic_dsb_bs_r_4,
+	.bs_r_8 = generic_dsb_bs_r_8,
+
+	/* write */
+	.bs_w_1 = generic_dsb_bs_w_1,
+	.bs_w_2 = generic_dsb_bs_w_2,
+	.bs_w_4 = generic_dsb_bs_w_4,
+	.bs_w_8 = generic_dsb_bs_w_8,
+
+	/* read region */
+	.bs_rr_1 = generic_dsb_bs_rr_1,
+	.bs_rr_2 = generic_dsb_bs_rr_2,
+	.bs_rr_4 = generic_dsb_bs_rr_4,
+	.bs_rr_8 = generic_dsb_bs_rr_8,
+
+	/* write region */
+	.bs_wr_1 = generic_dsb_bs_wr_1,
+	.bs_wr_2 = generic_dsb_bs_wr_2,
+	.bs_wr_4 = generic_dsb_bs_wr_4,
+	.bs_wr_8 = generic_dsb_bs_wr_8,
+
+	/* copy region */
+	.bs_c_1 = generic_dsb_bs_c_1,
+	.bs_c_2 = generic_dsb_bs_c_2,
+	.bs_c_4 = generic_dsb_bs_c_4,
+	.bs_c_8 = generic_dsb_bs_c_8,
+
+	/* set region */
+	.bs_sr_1 = generic_dsb_bs_sr_1,
+	.bs_sr_2 = generic_dsb_bs_sr_2,
+	.bs_sr_4 = generic_dsb_bs_sr_4,
+	.bs_sr_8 = generic_dsb_bs_sr_8,
+
+	/* read multi */
+	.bs_rm_1 = generic_dsb_bs_rm_1,
+	.bs_rm_2 = generic_dsb_bs_rm_2,
+	.bs_rm_4 = generic_dsb_bs_rm_4,
+	.bs_rm_8 = generic_dsb_bs_rm_8,
+
+	/* write multi */
+	.bs_wm_1 = generic_dsb_bs_wm_1,
+	.bs_wm_2 = generic_dsb_bs_wm_2,
+	.bs_wm_4 = generic_dsb_bs_wm_4,
+	.bs_wm_8 = generic_dsb_bs_wm_8,
+
+	/* set multi */
+	.bs_sm_1 = generic_dsb_bs_sm_1,
+	.bs_sm_2 = generic_dsb_bs_sm_2,
+	.bs_sm_4 = generic_dsb_bs_sm_4,
+	.bs_sm_8 = generic_dsb_bs_sm_8,
 
 	/* peek */
 	.bs_pe_1 = aarch64_generic_bs_pe_1,
@@ -229,7 +584,7 @@ int
 aarch64_generic_bs_subregion(void *t, bus_space_handle_t bsh, bus_size_t offset,
     bus_size_t size, bus_space_handle_t *nbshp)
 {
-	*nbshp = bsh + offset;
+	*nbshp = bsh + (offset << ((struct bus_space *)t)->bs_stride);
 	return 0;
 }
 
@@ -259,7 +614,7 @@ aarch64_generic_bs_mmap(void *t, bus_addr_t bpa, off_t offset, int prot, int fla
 		bus_flags |= AARCH64_MMAP_WRITECOMBINE;
 #endif
 
-	return (atop(bpa + offset) | bus_flags);
+	return (atop(bpa + (offset << ((struct bus_space *)t)->bs_stride)) | bus_flags);
 }
 
 int
@@ -284,10 +639,10 @@ aarch64_generic_bs_pe_1(void *t, bus_space_handle_t bsh, bus_size_t offset, uint
 	int error;
 
 	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
-		*datap = generic_bs_r_1(t, bsh, offset);
+		*datap = generic_dsb_bs_r_1(t, bsh, offset);
 	return error;
 #else
-	*datap = generic_bs_r_1(t, bsh, offset);
+	*datap = generic_dsb_bs_r_1(t, bsh, offset);
 	return 0;
 #endif
 }
@@ -300,10 +655,10 @@ aarch64_generic_bs_pe_2(void *t, bus_space_handle_t bsh, bus_size_t offset, uint
 	int error;
 
 	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
-		*datap = generic_bs_r_2(t, bsh, offset);
+		*datap = generic_dsb_bs_r_2(t, bsh, offset);
 	return error;
 #else
-	*datap = generic_bs_r_2(t, bsh, offset);
+	*datap = generic_dsb_bs_r_2(t, bsh, offset);
 	return 0;
 #endif
 }
@@ -316,10 +671,10 @@ aarch64_generic_bs_pe_4(void *t, bus_space_handle_t bsh, bus_size_t offset, uint
 	int error;
 
 	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
-		*datap = generic_bs_r_4(t, bsh, offset);
+		*datap = generic_dsb_bs_r_4(t, bsh, offset);
 	return error;
 #else
-	*datap = generic_bs_r_4(t, bsh, offset);
+	*datap = generic_dsb_bs_r_4(t, bsh, offset);
 	return 0;
 #endif
 }
@@ -332,10 +687,10 @@ aarch64_generic_bs_pe_8(void *t, bus_space_handle_t bsh, bus_size_t offset, uint
 	int error;
 
 	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
-		*datap = generic_bs_r_8(t, bsh, offset);
+		*datap = generic_dsb_bs_r_8(t, bsh, offset);
 	return error;
 #else
-	*datap = generic_bs_r_8(t, bsh, offset);
+	*datap = generic_dsb_bs_r_8(t, bsh, offset);
 	return 0;
 #endif
 }
@@ -348,10 +703,10 @@ aarch64_generic_bs_po_1(void *t, bus_space_handle_t bsh, bus_size_t offset, uint
 	int error;
 
 	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
-		generic_bs_w_1(t, bsh, offset, data);
+		generic_dsb_bs_w_1(t, bsh, offset, data);
 	return error;
 #else
-	generic_bs_w_1(t, bsh, offset, data);
+	generic_dsb_bs_w_1(t, bsh, offset, data);
 	return 0;
 #endif
 }
@@ -364,10 +719,10 @@ aarch64_generic_bs_po_2(void *t, bus_space_handle_t bsh, bus_size_t offset, uint
 	int error;
 
 	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
-		generic_bs_w_2(t, bsh, offset, data);
+		generic_dsb_bs_w_2(t, bsh, offset, data);
 	return error;
 #else
-	generic_bs_w_2(t, bsh, offset, data);
+	generic_dsb_bs_w_2(t, bsh, offset, data);
 	return 0;
 #endif
 }
@@ -380,10 +735,10 @@ aarch64_generic_bs_po_4(void *t, bus_space_handle_t bsh, bus_size_t offset, uint
 	int error;
 
 	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
-		generic_bs_w_4(t, bsh, offset, data);
+		generic_dsb_bs_w_4(t, bsh, offset, data);
 	return error;
 #else
-	generic_bs_w_4(t, bsh, offset, data);
+	generic_dsb_bs_w_4(t, bsh, offset, data);
 	return 0;
 #endif
 }
@@ -396,10 +751,10 @@ aarch64_generic_bs_po_8(void *t, bus_space_handle_t bsh, bus_size_t offset, uint
 	int error;
 
 	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
-		generic_bs_w_8(t, bsh, offset, data);
+		generic_dsb_bs_w_8(t, bsh, offset, data);
 	return error;
 #else
-	generic_bs_w_8(t, bsh, offset, data);
+	generic_dsb_bs_w_8(t, bsh, offset, data);
 	return 0;
 #endif
 }
