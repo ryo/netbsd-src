@@ -53,6 +53,8 @@ static struct consdev konsole = {
 };
 static void konsinit(void);
 
+uint64_t uboot_args[4] = { 0 };	/* filled in by rpi_start.S (not in bss) */
+
 //XXXAARCH64
 static void
 raspi_reset(void)

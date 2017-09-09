@@ -60,37 +60,41 @@ file	arch/aarch64/dev/cpu.c				cpu_cpunode
 
 # bus_space(9)
 define	bus_space_generic
+file	arch/aarch64/aarch64/bus_space.c
 file	arch/aarch64/aarch64/bus_space_asm_generic.S	# bus_space_generic
 file	arch/aarch64/aarch64/bus_space_notimpl.S
-
-#file	arch/aarch64/aarch64/cpu_in_cksum.S		inet | inet6
-file	arch/aarch64/aarch64/exception.S
-file	arch/aarch64/aarch64/idle_machdep.S
-file	arch/aarch64/aarch64/pmap_page.S
-file	arch/aarch64/aarch64/vectors.S
-file	arch/aarch64/aarch64/cpufunc_asm_armv8.S
-
 file	arch/aarch64/aarch64/bus_dma.c
-file	arch/aarch64/aarch64/bus_space.c
-file	arch/aarch64/aarch64/syscall.c
-file	arch/aarch64/aarch64/trap.c
 
-file	arch/aarch64/aarch64/pmap.c
-#file	uvm/pmap/pmap_pv.c
-
+# Standard files
 file	arch/aarch64/aarch64/aarch64_machdep.c
 file	arch/aarch64/aarch64/aarch64_reboot.c
-#file	arch/aarch64/aarch64/cctr_machdep.c
 file	arch/aarch64/aarch64/core_machdep.c
+file	arch/aarch64/aarch64/cpu_in_cksum.S		(inet | inet6) & cpu_in_cksum
 file	arch/aarch64/aarch64/cpu_machdep.c
+file	arch/aarch64/aarch64/cpuswitch.S
 file	arch/aarch64/aarch64/cpufunc.c
+file	arch/aarch64/aarch64/cpufunc_asm_armv8.S
 file	arch/aarch64/aarch64/exec_machdep.c
+file	arch/aarch64/aarch64/idle_machdep.S
 file	arch/aarch64/aarch64/kobj_machdep.c		modular
 file	arch/aarch64/aarch64/process_machdep.c
 file	arch/aarch64/aarch64/procfs_machdep.c		procfs
 file	arch/aarch64/aarch64/sig_machdep.c
 file	arch/aarch64/aarch64/sys_machdep.c
+file	arch/aarch64/aarch64/syscall.c
+file	arch/aarch64/aarch64/trap.c
+file	arch/aarch64/aarch64/vectors.S
 file	arch/aarch64/aarch64/vm_machdep.c
+
+# pmap
+file	arch/aarch64/aarch64/pmap.c
+file	arch/aarch64/aarch64/pmap_page.S
+#file	uvm/pmap/pmap_pvt.c
+
+# cyclecounter
+#file	arch/aarch64/aarch64/cctr_machdep.c
+#file	kern/kern_cctr.c
+
 
 # NetBSD 32-bit binary compatibility
 include "compat/netbsd32/files.netbsd32"

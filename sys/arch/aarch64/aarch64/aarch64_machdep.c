@@ -30,8 +30,9 @@
  */
 
 #include <sys/cdefs.h>
-
 __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
+
+#include "opt_arm_debug.h"
 
 #include <sys/param.h>
 #include <sys/types.h>
