@@ -63,17 +63,6 @@ RCSID("$NetBSD$")
 _ASM_LABEL(aarch64_start):
 
 #ifdef DEBUG_LOCORE
-	mov	x9, x0		// save x0
-
-	mrs	x0, mpidr_el1
-	PRINT("MPIDR_EL1=")
-	bl	print_x0
-
-	mrs	x0, s3_1_c11_c0_2
-	PRINT("L2CTLR_EL1=")
-	bl	print_x0
-
-
 	mrs	x0, CurrentEL
 	lsr	x0, x0, #2
 	PRINT("CurrentEL=")
@@ -82,7 +71,7 @@ _ASM_LABEL(aarch64_start):
 	cmp	x0, #2
 	bne	1f
 
-	// EL2 registers
+	/* EL2 registers can be accessed in EL2 or higher */
 	mrs	x0, sctlr_el2
 	PRINT("SCTLR_EL2=")
 	bl	print_x0
@@ -96,49 +85,37 @@ _ASM_LABEL(aarch64_start):
 	PRINT("DAIF=")
 	bl	print_x0
 
-	PRINT("SP=")
 	mov	x0, sp
-	bl	print_x0
-
-	mrs	x0, sp_el0
-	PRINT("SP_EL0=")
-	bl	print_x0
-
-	PRINT("LR=")
-	mov	x0, lr
-	bl	print_x0
-
 	PRINT("SP=")
-	mov	x0, sp
 	bl	print_x0
 
-	PRINT("PC=")
 	bl	1f
+	PRINT("PC=")
 1:	mov	x0, lr
 	bl	print_x0
 
-	mov	x0, x9		// saved x0
-	PRINT("X0=")
+	mrs	x0, mpidr_el1
+	PRINT("MPIDR_EL1=")
 	bl	print_x0
 
-	PRINT("X1=")
-	mov	x0, x1
+	mrs	x0, s3_1_c11_c0_2
+	PRINT("L2CTLR_EL1=")
 	bl	print_x0
 
-	PRINT("X2=")
-	mov	x0, x2
+	PRINT("ID_AA64MPFR0_EL1=")
+	mrs	x0, id_aa64pfr0_el1
 	bl	print_x0
 
-	PRINT("X3=")
-	mov	x0, x3
+	PRINT("ID_AA64MPFR1_EL1=")
+	mrs	x0, id_aa64pfr1_el1
 	bl	print_x0
 
-	PRINT("X4=")
-	mov	x0, x4
+	PRINT("ID_AA64ISAR0_EL1=")
+	mrs	x0, id_aa64isar0_el1
 	bl	print_x0
 
-	PRINT("X5=")
-	mov	x0, x5
+	PRINT("ID_AA64ISAR1_EL1=")
+	mrs	x0, id_aa64isar1_el1
 	bl	print_x0
 
 
@@ -163,10 +140,6 @@ _ASM_LABEL(aarch64_start):
 	bl	print_x0
 #endif /* DEBUG_LOCORE */
 #endif /* LOCORE_EL2 */
-
-	/* any exception not masked */
-	mov	x0, #0
-	msr	daif, x0
 
 #ifdef DEBUG_LOCORE
 	mrs	x0, daif
@@ -570,6 +543,10 @@ init_sysregs:
 
 	/* No trap system register access, and Trap FP/SIMD access */
 	msr	cpacr_el1, xzr
+
+	/* any exception not masked */
+	mov	x0, #0
+	msr	daif, x0
 
 	ldp	x0, lr, [sp], #16
 	ret
