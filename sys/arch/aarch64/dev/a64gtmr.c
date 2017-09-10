@@ -67,11 +67,11 @@ static struct timecounter gtmr_timecounter = {
 	.tc_get_timecount = gtmr_get_timecount,
 	.tc_poll_pps = 0,
 	.tc_counter_mask = ~0u,
-	.tc_frequency = 0,			/* set by cpu_initclocks() */
-	.tc_name = NULL,			/* set by attach */
+	.tc_frequency = 0,		/* set by cpu_initclocks() */
+	.tc_name = NULL,		/* set by attach */
 	.tc_quality = 500,
 	.tc_priv = &gtmr_sc,
-	.tc_next = NULL,
+	.tc_next = NULL
 };
 
 CFATTACH_DECL_NEW(a64gtmr, 0, gtmr_match, gtmr_attach, NULL, NULL);
@@ -95,13 +95,13 @@ static void
 gtmr_attach(device_t parent, device_t self, void *aux)
 {
 	const struct mainbus_attach_args * const mba = aux;
-        struct gtmr_softc *sc = &gtmr_sc;
+	struct gtmr_softc *sc = &gtmr_sc;
 	prop_dictionary_t dict = device_properties(self);
 	char freqbuf[sizeof("X.XXX SHz")];
 	uint32_t irq;
 
 	if (mba->mba_intr == MAINBUSCF_INTR_DEFAULT) {
-		prop_dictionary_get_uint32(dict, "intr", &irq);            
+		prop_dictionary_get_uint32(dict, "intr", &irq);
 	} else {
 		irq = mba->mba_intr;
 	}
@@ -109,7 +109,7 @@ gtmr_attach(device_t parent, device_t self, void *aux)
 	/*
 	 * This runs at a fixed frequency of 1 to 50MHz.
 	 */
-	prop_dictionary_get_uint32(dict, "frequency", &sc->sc_freq);            
+	prop_dictionary_get_uint32(dict, "frequency", &sc->sc_freq);
 
 	humanize_number(freqbuf, sizeof(freqbuf), sc->sc_freq, "Hz", 1000);
 
@@ -192,7 +192,7 @@ gtmr_init_cpu_clock(struct cpu_info *ci)
 	uint32_t end32 = reg_pmccntr_read();
 
 	uint32_t diff32 = end64 - start64;
-	printf("%s: %s: %u cycles per tick\n", 
+	printf("%s: %s: %u cycles per tick\n",
 	    __func__, ci->ci_data.cpu_name, (end32 - start32) / diff32);
 
 	printf("%s: %s: status %#x cmp %#"PRIx64" now %#"PRIx64"\n",
@@ -200,7 +200,7 @@ gtmr_init_cpu_clock(struct cpu_info *ci)
 	    reg_cntv_cval_el0_read(), reg_cntvct_el0_read());
 	splx(s);
 #elif 0
-	delay(1000000 / hz + 1000); 
+	delay(1000000 / hz + 1000);
 #endif
 }
 
@@ -223,25 +223,28 @@ cpu_initclocks(void)
 }
 
 void
-delay(unsigned long n)
+delay(unsigned int n)
 {
 	struct gtmr_softc * const sc = &gtmr_sc;
 
-	KASSERT(sc != NULL);
-
 	uint32_t freq = sc->sc_freq ? sc->sc_freq : reg_cntfrq_el0_read();
-	KASSERT(freq != 0);
 
 	/*
+	 * 0.5^20 + 0.5^24 - 0.5^26 = 0.00000099837779998780
+	 *
 	 * not quite divide by 1000000 but close enough
-	 * (higher by 1.3% which means we wait 1.3% longer).
+	 * (higher by 0.16% which means we wait 0.16% longer).
 	 */
-	const uint64_t incr_per_us = (freq >> 20) + (freq >> 24);
+	const uint64_t incr_per_us = (freq >> 20) + (freq >> 24) - (freq >> 26);
 
 	const uint64_t delta = n * incr_per_us;
 	const uint64_t base = reg_cntvct_el0_read();
 	const uint64_t finish = base + delta;
 
+	/*
+	 * if call when 64bit counter just wrap arounnd,
+	 * delay() delays hundreds of years :-)
+	 */
 	while (reg_cntvct_el0_read() < finish) {
 		/* spin */
 	}
@@ -270,8 +273,8 @@ clockhandler(void *arg)
 #endif
 
 #if 0
-	printf("%s(%p): %s: now %#"PRIx64" delta %"PRIu64"\n", 
-	     __func__, cf, ci->ci_data.cpu_name, now, delta);
+	printf("%s(%p): %s: now %#"PRIx64" delta %"PRIu64"\n",
+	    __func__, cf, ci->ci_data.cpu_name, now, delta);
 #endif
 	KASSERTMSG(delta > sc->sc_autoinc / 100,
 	    "%s: interrupting too quickly (delta=%"PRIu64") autoinc=%lu",
