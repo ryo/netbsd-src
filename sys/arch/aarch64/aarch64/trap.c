@@ -56,43 +56,50 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 static bool pagefault(struct trapframe *, ksiginfo_t *ksi);
 static bool pagefault_refmod(struct trapframe *, struct pmap *);
 static void trap_ksi_init(ksiginfo_t *, int, int, vaddr_t, register_t);
+static void dump_trapframe(struct trapframe *, void (*)(const char *, ...));
 
 static const char * const causenames[] = {
-	[ESR_EC_UNKNOWN] = "Unknown Reason",
-	[ESR_EC_WFX] = "WFI or WFE instruction execution",
-	[ESR_EC_CP15_RT] = "A32: MCR/MRC access to CP15 !EC=0",
-	[ESR_EC_CP15_RRT] = "A32: MCRR/MRRC access to CP15 !EC=0",
-	[ESR_EC_CP14_RT] = "A32: MCR/MRC access to CP14",
-	[ESR_EC_CP14_DT] = "A32: LDC/STC access to CP14",
-	[ESR_EC_FP_ACCESS] = "Access to SIMD/FP Registers",
-	[ESR_EC_FPID] = "A32: MCR/MRC access to CP10 !EC=7",
-	[ESR_EC_CP14_RRT] = "A32: MRRC access to CP14",
-	[ESR_EC_ILL_STATE] = "Illegal Execution State",
-	[ESR_EC_SVC_A32] = "A32: SVC Instruction Execution",
-	[ESR_EC_HVC_A32] = "A32: HVC Instruction Execution",
-	[ESR_EC_SMC_A32] = "A32: SMC Instruction Execution",
-	[ESR_EC_SVC_A64] = "SVC Instruction Execution",
-	[ESR_EC_HVC_A64] = "HVC Instruction Execution",
-	[ESR_EC_SMC_A64] = "SMC Instruction Execution",
-	[ESR_EC_SYS_REG] = "MSR/MRS/SYS instruction (!EC0/1/7)",
-	[ESR_EC_INSN_ABT_EL0] = "Instruction Abort (EL0)",
-	[ESR_EC_INSN_ABT_EL1] = "Instruction Abort (EL1)",
-	[ESR_EC_PC_ALIGNMENT] = "Misaligned PC",
-	[ESR_EC_DATA_ABT_EL0] = "Data Abort (EL0)",
-	[ESR_EC_DATA_ABT_EL1] = "Data Abort (EL1)",
-	[ESR_EC_SP_ALIGNMENT] = "Misaligned SP",
-	[ESR_EC_FP_TRAP_A32] = "A32: FP Exception",
-	[ESR_EC_FP_TRAP_A64] = "FP Exception",
-	[ESR_EC_SERROR] = "SError Interrupt",
-	[ESR_EC_BRKPNT_EL0] = "Breakpoint Exception (EL0)",
-	[ESR_EC_BRKPNT_EL1] = "Breakpoint Exception (EL1)",
-	[ESR_EC_SW_STEP_EL0] = "Software Step (EL0)",
-	[ESR_EC_SW_STEP_EL1] = "Software Step (EL1)",
-	[ESR_EC_WTCHPNT_EL0] = "Watchpoint (EL0)",
-	[ESR_EC_WTCHPNT_EL1] = "Watchpoint (EL1)",
-	[ESR_EC_BKPT_INSN_A32] = "A32: BKPT Instruction Execution",
-	[ESR_EC_VECTOR_CATCH] = "A32: Vector Catch Exception",
-	[ESR_EC_BKPT_INSN_A64] = "BKPT Instruction Execution",
+	[ESR_EC_UNKNOWN]	= "Unknown Reason",
+	[ESR_EC_SERROR]		= "SError Interrupt",
+	[ESR_EC_WFX]		= "WFI or WFE instruction execution",
+	[ESR_EC_ILL_STATE]	= "Illegal Execution State",
+
+	[ESR_EC_SYS_REG]	= "MSR/MRS/SYS instruction (!EC0/1/7)",
+	[ESR_EC_SVC_A64]	= "SVC Instruction Execution",
+	[ESR_EC_HVC_A64]	= "HVC Instruction Execution",
+	[ESR_EC_SMC_A64]	= "SMC Instruction Execution",
+
+	[ESR_EC_INSN_ABT_EL0]	= "Instruction Abort (EL0)",
+	[ESR_EC_INSN_ABT_EL1]	= "Instruction Abort (EL1)",
+	[ESR_EC_DATA_ABT_EL0]	= "Data Abort (EL0)",
+	[ESR_EC_DATA_ABT_EL1]	= "Data Abort (EL1)",
+
+	[ESR_EC_PC_ALIGNMENT]	= "Misaligned PC",
+	[ESR_EC_SP_ALIGNMENT]	= "Misaligned SP",
+
+	[ESR_EC_FP_ACCESS]	= "Access to SIMD/FP Registers",
+	[ESR_EC_FP_TRAP_A64]	= "FP Exception",
+
+	[ESR_EC_BRKPNT_EL0]	= "Breakpoint Exception (EL0)",
+	[ESR_EC_BRKPNT_EL1]	= "Breakpoint Exception (EL1)",
+	[ESR_EC_SW_STEP_EL0]	= "Software Step (EL0)",
+	[ESR_EC_SW_STEP_EL1]	= "Software Step (EL1)",
+	[ESR_EC_WTCHPNT_EL0]	= "Watchpoint (EL0)",
+	[ESR_EC_WTCHPNT_EL1]	= "Watchpoint (EL1)",
+	[ESR_EC_BKPT_INSN_A64]	= "BKPT Instruction Execution",
+
+	[ESR_EC_CP15_RT]	= "A32: MCR/MRC access to CP15 !EC=0",
+	[ESR_EC_CP15_RRT]	= "A32: MCRR/MRRC access to CP15 !EC=0",
+	[ESR_EC_CP14_RT]	= "A32: MCR/MRC access to CP14",
+	[ESR_EC_CP14_DT]	= "A32: LDC/STC access to CP14",
+	[ESR_EC_CP14_RRT]	= "A32: MRRC access to CP14",
+	[ESR_EC_SVC_A32]	= "A32: SVC Instruction Execution",
+	[ESR_EC_HVC_A32]	= "A32: HVC Instruction Execution",
+	[ESR_EC_SMC_A32]	= "A32: SMC Instruction Execution",
+	[ESR_EC_FPID]		= "A32: MCR/MRC access to CP10 !EC=7",
+	[ESR_EC_FP_TRAP_A32]	= "A32: FP Exception",
+	[ESR_EC_BKPT_INSN_A32]	= "A32: BKPT Instruction Execution",
+	[ESR_EC_VECTOR_CATCH]	= "A32: Vector Catch Exception",
 };
 
 static void
@@ -163,19 +170,18 @@ void
 trap(struct trapframe *tf, int reason)
 {
 	struct lwp * const l = curlwp;
-	size_t code = tf->tf_esr & 0xffff;
+	int code = tf->tf_esr & 0xffff;
 	ksiginfo_t ksi;
-	int cause;
 	const char *causestr;
 	bool usertrap_p = USERMODE(tf->tf_esr);
 	bool ok = true;
 
 	KASSERT(reason == 0);
 
-	cause = __SHIFTOUT(tf->tf_esr, ESR_EC);
-	if (cause > ESR_EC_BKPT_INSN_A64)
-		cause = ESR_EC_UNKNOWN;
-	causestr = causenames[cause];
+	code = __SHIFTOUT(tf->tf_esr, ESR_EC);
+	if (code > ESR_EC_BKPT_INSN_A64)
+		code = ESR_EC_UNKNOWN;
+	causestr = causenames[code];
 	if (causestr == NULL)
 		causestr = causenames[ESR_EC_UNKNOWN];
 
@@ -196,6 +202,16 @@ trap(struct trapframe *tf, int reason)
 	case ESR_EC_DATA_ABT_EL0:
 	case ESR_EC_DATA_ABT_EL1:
 		ok = pagefault(tf, &ksi);
+		break;
+
+	case ESR_EC_PC_ALIGNMENT:
+	case ESR_EC_SP_ALIGNMENT:
+		ok = false;
+		if (usertrap_p) {
+			trap_ksi_init(&ksi,
+			     SIGBUS, BUS_ADRALN,
+			    (intptr_t)tf->tf_far, code);
+		}
 		break;
 
 	case ESR_EC_SW_STEP_EL1:
