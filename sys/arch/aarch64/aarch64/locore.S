@@ -276,6 +276,12 @@ ENTRY_NP(el0_trap_exit)
 	/* XXX critial section guarded by SR.EXL if it was MIPS XXX */
 	unwind_x0_x18
 
+	mrs	x8, tpidr_el1
+	ldr	x9, [x8, #CI_CURLWP]
+	ldr	x23, [x9, #L_MD_CPACR]
+	msr	cpacr_el1, x23		/* FP unit EL0 handover */
+	isb				/* necessary? */
+
 	ldr	x20, [sp, #TF_PC]
 	ldr	x21, [sp, #TF_SPSR]
 	ldr	x22, [sp, #TF_SP]
