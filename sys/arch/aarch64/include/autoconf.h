@@ -34,13 +34,10 @@
 
 struct mainbus_attach_args {
 	const char *mba_name;
-	bus_space_tag_t mba_memt;
-	bus_dma_tag_t mba_dmat;
 	bus_addr_t mba_addr;
 	bus_size_t mba_size;
 	int mba_intr;
-	int mba_intrbase;
-	int mba_package;
+	int mba_unit;
 };
 
 #endif

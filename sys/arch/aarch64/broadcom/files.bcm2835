@@ -21,11 +21,6 @@ file	arch/aarch64/broadcom/bcm2835_obio.c	obio needs-count
 # OBIO files
 file	arch/aarch64/broadcom/bcm2835_space.c	obio
 
-# ARMv7 Generic Timer
-device	armgtmr
-attach	armgtmr at obio
-file	arch/arm/cortex/gtmr.c			armgtmr
-
 # Interrupt Controller (BCM2835_ARMICU_BASE) #, pic_splfuncs
 device	bcmicu: pic, pic_splfuncs
 attach	bcmicu at obio with bcmicu

@@ -32,40 +32,42 @@
 #ifndef _AARCH64_ARMREG_H_
 #define _AARCH64_ARMREG_H_
 
+#include <arm/cputypes.h>
+
 #ifdef __aarch64__
 
 #include <sys/types.h>
 
-#define AARCH64REG_READ_INLINE2(regname, regdesc)	\
-static uint64_t inline					\
-reg_##regname##_read(void)				\
-{							\
-	uint64_t __rv;					\
-	__asm("mrs %0, " #regdesc : "=r"(__rv));	\
-	return __rv;					\
+#define AARCH64REG_READ_INLINE2(regname, regdesc)		\
+static uint64_t inline						\
+reg_##regname##_read(void)					\
+{								\
+	uint64_t __rv;						\
+	__asm __volatile("mrs %0, " #regdesc : "=r"(__rv));	\
+	return __rv;						\
 }
 
-#define AARCH64REG_WRITE_INLINE2(regname, regdesc)	\
-static void inline					\
-reg_##regname##_write(uint64_t __val)			\
-{							\
-	__asm("msr " #regdesc ", %0" :: "r"(__val));	\
+#define AARCH64REG_WRITE_INLINE2(regname, regdesc)		\
+static void inline						\
+reg_##regname##_write(uint64_t __val)				\
+{								\
+	__asm __volatile("msr " #regdesc ", %0" :: "r"(__val));	\
 }
 
-#define AARCH64REG_WRITEIMM_INLINE2(regname, regdesc)	\
-static void inline					\
-reg_##regname##_write(uint64_t __val)			\
-{							\
-	__asm("msr " #regdesc ", %0" :: "n"(__val));	\
+#define AARCH64REG_WRITEIMM_INLINE2(regname, regdesc)		\
+static void inline						\
+reg_##regname##_write(uint64_t __val)				\
+{								\
+	__asm __volatile("msr " #regdesc ", %0" :: "n"(__val));	\
 }
 
-#define AARCH64REG_READ_INLINE(regname)			\
+#define AARCH64REG_READ_INLINE(regname)				\
 	AARCH64REG_READ_INLINE2(regname, regname)
 
-#define AARCH64REG_WRITE_INLINE(regname)		\
+#define AARCH64REG_WRITE_INLINE(regname)			\
 	AARCH64REG_WRITE_INLINE2(regname, regname)
 
-#define AARCH64REG_WRITEIMM_INLINE(regname)		\
+#define AARCH64REG_WRITEIMM_INLINE(regname)			\
 	AARCH64REG_WRITEIMM_INLINE2(regname, regname)
 /*
  * System registers available at EL0 (user)
@@ -153,7 +155,35 @@ AARCH64REG_READ_INLINE2(cbar_el1, s3_1_c15_c3_0)	/* Cortex-A57 */
 static const uintmax_t CBAR_PA = __BITS(47,18);
 
 AARCH64REG_READ_INLINE(clidr_el1)
+
+static const uintmax_t
+    CLIDR_LOUU   = __BITS(29,27),	/* Level of Unification Uniprocessor */
+    CLIDR_LOC    = __BITS(26,24),	/* Level of Coherency */
+    CLIDR_LOUIS  = __BITS(23,21),	/* Level of Unification InnerShareable*/
+    CLIDR_CTYPE7 = __BITS(20,18),	/* Cache Type field for level7 */
+    CLIDR_CTYPE6 = __BITS(17,15),	/* Cache Type field for level6 */
+    CLIDR_CTYPE5 = __BITS(14,12),	/* Cache Type field for level5 */
+    CLIDR_CTYPE4 = __BITS(11,9),	/* Cache Type field for level4 */
+    CLIDR_CTYPE3 = __BITS(8,6),		/* Cache Type field for level3 */
+    CLIDR_CTYPE2 = __BITS(5,3),		/* Cache Type field for level2 */
+    CLIDR_CTYPE1 = __BITS(2,0),		/* Cache Type field for level1 */
+     CLIDR_TYPE_NOCACHE		= 0,	/* No cache */
+     CLIDR_TYPE_ICACHE		= 1,	/* Instruction cache only */
+     CLIDR_TYPE_DCACHE		= 2,	/* Data cache only */
+     CLIDR_TYPE_IDCACHE		= 3,	/* Separate inst and data caches */
+     CLIDR_TYPE_UNIFIEDCACHE	= 4;	/* Unified cache */
+
 AARCH64REG_READ_INLINE(ccsidr_el1)
+
+static const uintmax_t
+    CCSIDR_WT		= __BIT(31),	/* Write-through supported */
+    CCSIDR_WB		= __BIT(30),	/* Write-back supported */
+    CCSIDR_RA		= __BIT(29),	/* Read-allocation supported */
+    CCSIDR_WA		= __BIT(28),	/* Write-allocation supported */
+    CCSIDR_NUMSET	= __BITS(27,13),/* (Number of sets in cache) - 1 */
+    CCSIDR_ASSOC	= __BITS(12,3),	/* (Associativity of cache) - 1 */
+    CCSIDR_LINESIZE	= __BITS(2,0);	/* Number of bytes in cache line */
+
 AARCH64REG_READ_INLINE(id_afr0_el1)
 AARCH64REG_READ_INLINE(id_adr0_el1)
 AARCH64REG_READ_INLINE(id_isar0_el1)
@@ -171,6 +201,15 @@ AARCH64REG_READ_INLINE(id_prf1_el1)
 AARCH64REG_READ_INLINE(isr_el1)
 AARCH64REG_READ_INLINE(midr_el1)
 AARCH64REG_READ_INLINE(mpidr_el1)
+
+static const uintmax_t
+    MPIDR_AFF3		= __BITS(32,39),
+    MPIDR_U		= __BIT(30),		/* 1 = Uni-Processor System */
+    MPIDR_MT		= __BIT(24),		/* 1 = SMT(AFF0 is logical) */
+    MPIDR_AFF2		= __BITS(16,23),
+    MPIDR_AFF1		= __BITS(8,15),
+    MPIDR_AFF0		= __BITS(0,7);
+
 AARCH64REG_READ_INLINE(mvfr0_el1)
 AARCH64REG_READ_INLINE(mvfr1_el1)
 AARCH64REG_READ_INLINE(mvfr2_el1)
@@ -189,8 +228,12 @@ static const uintmax_t
     L2CTLR_L2_INPUT_LATENCY	= __BIT(5),	/* L2 Data RAM input latency */
     L2CTLR_L2_OUTPUT_LATENCY	= __BIT(0);	/* L2 Data RAM output latency */
 
-AARCH64REG_READ_INLINE(ccselr_el1)	/* Cache Size Selection Register */
-AARCH64REG_WRITE_INLINE(ccselr_el1)
+AARCH64REG_READ_INLINE(csselr_el1)	/* Cache Size Selection Register */
+AARCH64REG_WRITE_INLINE(csselr_el1)
+
+static const uintmax_t
+    CSSELR_LEVEL	= __BITS(3,1),	/* Cache level of required cache */
+    CSSELR_IND		= __BIT(0);	/* Instruction not Data bit */
 
 AARCH64REG_READ_INLINE(cpacr_el1)	/* Coprocessor Access Control Regiser */
 AARCH64REG_WRITE_INLINE(cpacr_el1)

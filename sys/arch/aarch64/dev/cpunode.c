@@ -91,7 +91,7 @@ cpunode_print(void *aux, const char *cpunode)
 		aprint_normal("%s", cpunode);
 
 	if (caa->caa_cpucore != CPUNODECF_CORE_DEFAULT)
-		aprint_normal(" core %d", caa->caa_cpucore);
+		aprint_normal("");
 
 	return UNCONF;
 }
