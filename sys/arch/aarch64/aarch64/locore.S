@@ -228,6 +228,14 @@ END(lwp_trampoline)
  * a syscall return.
  */
 ENTRY_NP(exception_trap_exit)
+	ldr	x8, [sp, #TF_SPSR]
+	and	x8, x8, #1
+	cbz	x8, .Lfullexit
+	mrs	x8, tpidr_el1
+	ldr	w9, [x8, #CI_ASTPENDING]
+	cbz	w9, .Lfullexit
+	bl	_C_LABEL(trap_doast)
+.Lfullexit:
 	/* XXX critial section guarded by SR.EXL if it was MIPS XXX */
 	ldp	x0, x1, [sp, #TF_X0]
 	ldp	x2, x3, [sp, #TF_X2]
@@ -265,7 +273,8 @@ ENTRY_NP(exception_trap_exit)
 	ldp	x25, x26, [sp, #TF_X25]
 	ldp	x27, x28, [sp, #TF_X27]
 	ldp	x29, x30, [sp, #TF_X29]
-	add	sp, sp, #TF_SIZE	/* unwind trapframe on stack */
+	/* unwind trapframe on EL1 stack */
+	add	sp, sp, #TF_SIZE
 	eret
 END(exception_trap_exit)
 
