@@ -81,6 +81,10 @@ _ASM_LABEL(aarch64_start):
 	bl	print_x0
 1:
 
+	mrs	x0, cntfrq_el0
+	PRINT("CNTFREQ_EL0=")
+	bl	print_x0
+
 	mrs	x0, daif
 	PRINT("DAIF=")
 	bl	print_x0
