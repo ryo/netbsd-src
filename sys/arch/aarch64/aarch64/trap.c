@@ -153,7 +153,7 @@ userret(struct lwp *l)
 	mi_userret(l);
 }
 
-#define USERMODE(esr)	((esr)&01)
+#define USERMODE(esr)	(SPSR_M_EL0T == ((int)(esr) & SPSR_M))
 
 void
 trap(struct trapframe *tf, int reason)
@@ -204,15 +204,29 @@ static const char * const syndrome[] = {
 	[4] = "bad error exception",
 };
 
+#define SPSR_A32_P(esr)		((int)(esr) & 0x10)
+#define SPSR_A32_DECODE(esr)	((int)(esr) & 0x0c)
+#define SPSR_ELx_DECODE(esr)	(((int)(esr) & 0x0c) >> 2)
+
 void
 trap_bad(struct trapframe *tf, int reason)
 {
 	KASSERT(reason > 0 && reason <= 4);
 
-	printf("EL%d %s\n", !!(tf->tf_spsr & 02), syndrome[reason]);
+	if (SPSR_A32_P(tf->tf_spsr))
+		printf("A32 (%x) ", SPSR_A32_DECODE(tf->tf_spsr));
+	else
+		printf("EL%d%s ", SPSR_ELx_DECODE(tf->tf_spsr),
+		    (tf->tf_spsr & 01) ? "h" : "t");
+	printf("%s\n", syndrome[reason]);
+
 	dump_trapframe(tf, printf);
 	panic("unexpected exception");
 }
+
+#undef SPSR_A32_P
+#undef SPSR_A32_DECODE
+#undef SPSR_ELx_DECODE
 
 void
 interrupt(struct trapframe *tf)
