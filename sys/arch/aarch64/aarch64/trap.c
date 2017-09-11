@@ -198,6 +198,7 @@ trap_el1_sync(struct trapframe *tf)
 		// XXXAARCH64: notyet
 		printf("%s trap!\n", trapname);
 		dump_trapframe(tf, printf);
+		panic("fp trap");
 		break;
 
 	case ESR_EC_INSN_ABT_EL1:
@@ -206,6 +207,7 @@ trap_el1_sync(struct trapframe *tf)
 		printf("%s trap!\n", trapname);
 		printf("FAR_EL1  = 0x%016"PRIxREGISTER"\n", tf->tf_far);
 		dump_trapframe(tf, printf);
+		panic("abort");
 		break;
 
 	case ESR_EC_SW_STEP_EL1:
