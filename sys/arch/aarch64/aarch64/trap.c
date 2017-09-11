@@ -53,6 +53,10 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 #include <aarch64/pte.h>
 #include <aarch64/armreg.h>
 
+static bool pagefault(struct trapframe *, ksiginfo_t *ksi);
+static bool pagefault_refmod(struct trapframe *, struct pmap *);
+static void trap_ksi_init(ksiginfo_t *, int, int, vaddr_t, register_t);
+
 static const char * const causenames[] = {
 	[ESR_EC_UNKNOWN] = "Unknown Reason",
 	[ESR_EC_WFX] = "WFI or WFE instruction execution",
@@ -60,7 +64,7 @@ static const char * const causenames[] = {
 	[ESR_EC_CP15_RRT] = "A32: MCRR/MRRC access to CP15 !EC=0",
 	[ESR_EC_CP14_RT] = "A32: MCR/MRC access to CP14",
 	[ESR_EC_CP14_DT] = "A32: LDC/STC access to CP14",
-	[ESR_EC_FP_ACCCES] = "Access to SIMD/FP Registers",
+	[ESR_EC_FP_ACCESS] = "Access to SIMD/FP Registers",
 	[ESR_EC_FPID] = "A32: MCR/MRC access to CP10 !EC=7",
 	[ESR_EC_CP14_RRT] = "A32: MRRC access to CP14",
 	[ESR_EC_ILL_STATE] = "Illegal Execution State",
@@ -174,17 +178,39 @@ trap(struct trapframe *tf, int reason)
 	causestr = causenames[cause];
 	if (causestr == NULL)
 		causestr = causenames[ESR_EC_UNKNOWN];
-	printf("%s TRAP!\n", causestr);
-	printf(" FAR_EL1  = 0x%016"PRIxREGISTER"\n", tf->tf_far);
-	printf(" ISS      = 0x%08x\n", (int)(code & ESR_ISS));
-	printf(" DFSC.ISS = 0x%08x\n", (int)(code & 0x3f));
 
-	dump_trapframe(tf, printf);
+	switch (code) {
+	case ESR_EC_FP_ACCESS:
+	case ESR_EC_FP_TRAP_A64:
+		if (usertrap_p) {
+			/* XXX handle delayed FP handover
+			fpu_load(curlwp);
+			XXX */
+			break;
+		}
+		dump_trapframe(tf, printf);
+		panic("%s: EL1 touched FP unit", __func__);
 
-#if 1 //XXXAARCH64
-	for (;;)
-		asm("wfi");
+	case ESR_EC_INSN_ABT_EL0:
+	case ESR_EC_INSN_ABT_EL1:
+	case ESR_EC_DATA_ABT_EL0:
+	case ESR_EC_DATA_ABT_EL1:
+		ok = pagefault(tf, &ksi);
+		break;
+
+	case ESR_EC_SW_STEP_EL1:
+	case ESR_EC_WTCHPNT_EL1:
+	case ESR_EC_BKPT_INSN_A64:
+#ifdef DDB
+		/* XXX kdb_trap(tf) XXX */
+		break;
+#else
+		panic("missing DDB");
 #endif
+	default:
+		usertrap_p = false;
+		break;
+	}
 
 	if (usertrap_p) {
 		if (!ok)
@@ -192,8 +218,9 @@ trap(struct trapframe *tf, int reason)
 		userret(l);
 	}
 	else if (!ok) {
+		printf("%s\n", causestr);
 		dump_trapframe(tf, printf);
-		panic("%s: fatal kernel trap", __func__);
+		panic("%s: unhandled trap", __func__);
 	}
 }
 
@@ -292,12 +319,9 @@ void	cpu_unset_onfault(void);
 struct faultbuf *cpu_disable_onfault(void);
 void	cpu_enable_onfault(struct faultbuf *);
 
-bool	pagefault(struct trapframe *, ksiginfo_t *ksi);
-bool	pagefault_refmod(struct trapframe *, struct pmap *);
-void	trap_ksi_init(ksiginfo_t *, int, int, vaddr_t, register_t);
 #define ESR_ELx_WNR	(1U<<6)
 
-bool
+static bool
 pagefault(struct trapframe *tf, ksiginfo_t *ksi)
 {
 	int cause = __SHIFTOUT(tf->tf_esr, ESR_EC);
@@ -349,7 +373,7 @@ pagefault(struct trapframe *tf, ksiginfo_t *ksi)
 	return true;
 }
 
-bool
+static bool
 pagefault_refmod(struct trapframe *tf, struct pmap *pmap)
 {
 	intptr_t addr = trunc_page(tf->tf_far);
@@ -369,7 +393,7 @@ pagefault_refmod(struct trapframe *tf, struct pmap *pmap)
 	return true;
 }
 
-void
+static void
 trap_ksi_init(ksiginfo_t *ksi, int signo, int code, vaddr_t addr,
     register_t cause)
 {
