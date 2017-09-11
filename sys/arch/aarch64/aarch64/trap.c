@@ -228,6 +228,18 @@ static const char * const syndrome[] = {
 #define SPSR_ELx_DECODE(esr)	(((int)(esr) & 0x0c) >> 2)
 
 void
+trap_a32(struct trapframe *tf, int reason)
+{
+
+	KASSERT(reason == 0);
+	KASSERT(SPSR_A32_P(tf->tf_spsr));
+
+	printf("A32 (%x) exception\n", SPSR_A32_DECODE(tf->tf_spsr));
+	dump_trapframe(tf, printf);
+	panic("%s: unexpected exception", __func__);
+}
+
+void
 trap_bad(struct trapframe *tf, int reason)
 {
 	KASSERT(reason > 0 && reason <= 4);
@@ -240,7 +252,7 @@ trap_bad(struct trapframe *tf, int reason)
 	printf("%s\n", syndrome[reason]);
 
 	dump_trapframe(tf, printf);
-	panic("unexpected exception");
+	panic("%s: unexpected exception", __func__);
 }
 
 #undef SPSR_A32_P

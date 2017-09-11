@@ -43,11 +43,13 @@ void	cpu_switchto_softint(struct lwp *, int);
 void	trap(struct trapframe *, int);
 void	trap_doast(struct trapframe *);
 void	trap_bad(struct trapframe *, int);
+void	trap_a32(struct trapframe *, int);
 void	interrupt(struct trapframe *);
 void	dumpsys(void);
 void	initarm64(void);
 void	dosoftints(void);
 paddr_t vtophys(vaddr_t);
+
 #include <sys/pcu.h>
 
 extern const pcu_ops_t pcu_fpu_ops;

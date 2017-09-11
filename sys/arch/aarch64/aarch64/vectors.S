@@ -173,7 +173,7 @@ _C_LABEL(el0_32sync):
 	ldr	lr, =el0_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
-	b	trap
+	b	trap_a32
 END(el0_32sync)
 
 _C_LABEL(el0_32irq):
