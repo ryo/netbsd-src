@@ -94,6 +94,9 @@ lr	.req	x30	/* link register */
 	mrs	x24, far_el1
 	str	x23, [sp, #TF_ESR]
 	str	x24, [sp, #TF_FAR]
+	.if \el == 0
+	msr	cpacr_el1, xzr; isb	/* XXX not sure XXX */
+	.endif
 	.endm
 
 	.pushsection ".vectors", "ax"
