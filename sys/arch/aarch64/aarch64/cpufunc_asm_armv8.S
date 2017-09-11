@@ -90,26 +90,26 @@ ENTRY(aarch64_cpuid)
 END(aarch64_cpuid)
 
 /*
- * int aarch64_dcache_size(void)
+ * int aarch64_dcache_line_size(void)
  */
-ENTRY(aarch64_dcache_size)
+ENTRY(aarch64_dcache_line_size)
 	mrs	x0, ctr_el0
 	ubfx	x0, x0, #16, #4		/* x0 = D cache shift */
 	mov	x1, #4
 	lsl	x0, x1, x0		/* x0 = D cache line size */
 	ret
-END(aarch64_dcache_size)
+END(aarch64_dcache_line_size)
 
 /*
- * int aarch64_icache_size(void)
+ * int aarch64_icache_line_size(void)
  */
-ENTRY(aarch64_icache_size)
+ENTRY(aarch64_icache_line_size)
 	mrs	x0, ctr_el0
 	ubfx	x0, x0, #16, #4		/* x0 = I cache shift */
 	mov	x1, #4
 	lsl	x0, x1, x0		/* x0 = I cache line size */
 	ret
-END(aarch64_icache_size)
+END(aarch64_icache_line_size)
 
 /*
  * Generic functions to read/modify/write the internal coprocessor registers

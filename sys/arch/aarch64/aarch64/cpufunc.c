@@ -51,8 +51,8 @@ set_cpufuncs(void)
 	cpufuncs.cf_tlb_flushID_SE = aarch64_tlb_flushID_SE;
 
 	/* cache op */
-	cpufuncs.cf_dcache_size = aarch64_dcache_size;
-	cpufuncs.cf_icache_size = aarch64_icache_size;
+	cpufuncs.cf_dcache_line_size = aarch64_dcache_line_size;
+	cpufuncs.cf_icache_line_size = aarch64_icache_line_size;
 	cpufuncs.cf_icache_sync_range = aarch64_icache_sync_range;
 	cpufuncs.cf_idcache_wbinv_range = aarch64_idcache_wbinv_range;
 	cpufuncs.cf_dcache_wbinv_range = aarch64_dcache_wbinv_range;
@@ -66,8 +66,8 @@ set_cpufuncs(void)
 	cpufuncs.cf_drain_writebuf = aarch64_drain_writebuf;
 
 
-	/* XXX: for compatible arm */
-	cputype = cpufunc_id();
+	/* for compatible arm */
+	cputype = cpu_idnum();
 
 	return 0;
 }

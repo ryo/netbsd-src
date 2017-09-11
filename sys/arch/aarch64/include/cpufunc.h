@@ -44,8 +44,8 @@ struct cpu_functions {
 	void (*cf_tlb_flushID_SE)(vaddr_t);
 
 	/* cache op */
-	int (*cf_dcache_size)(void);
-	int (*cf_icache_size)(void);
+	int (*cf_dcache_line_size)(void);
+	int (*cf_icache_line_size)(void);
 	void (*cf_icache_sync_range)(vaddr_t, vsize_t);
 	void (*cf_idcache_wbinv_range)(vaddr_t, vsize_t);
 	void (*cf_dcache_wbinv_range)(vaddr_t, vsize_t);
@@ -64,14 +64,14 @@ extern u_int cputype;
 
 /* misc */
 #define cpufunc_nullop(args...)		cpufuncs.cf_nullop(args)
-#define cpufunc_id(args...)		cpufuncs.cf_id(args)
+#define cpu_idnum(args...)		cpufuncs.cf_id(args)
 /* TLB op */
 #define cpu_setttb(args...)		cpufuncs.cf_setttb(args)
 #define cpu_tlb_flushID(args...)	cpufuncs.cf_tlb_flushID(args)
 #define cpu_tlb_flushID_SE(args...)	cpufuncs.cf_tlb_flushID_SE(args)
 /* cache op */
-#define cpu_icache_size(args...)	cpufuncs.cf_dcache_size(args)
-#define cpu_dcache_size(args...)	cpufuncs.cf_icache_size(args)
+#define cpu_icache_line_size(args...)	cpufuncs.cf_dcache_line_size(args)
+#define cpu_dcache_line_size(args...)	cpufuncs.cf_icache_line_size(args)
 #define cpu_dcache_wbinv_range(args...)	cpufuncs.cf_dcache_wbinv_range(args)
 #define cpu_dcache_inv_range(args...)	cpufuncs.cf_dcache_inv_range(args)
 #define cpu_dcache_wb_range(args...)	cpufuncs.cf_dcache_wb_range(args)
@@ -92,8 +92,8 @@ uint32_t aarch64_cpuid(void);
 void aarch64_setttb(paddr_t);
 void aarch64_tlb_flushID(void);
 void aarch64_tlb_flushID_SE(vaddr_t);
-int aarch64_dcache_size(void);
-int aarch64_icache_size(void);
+int aarch64_dcache_line_size(void);
+int aarch64_icache_line_size(void);
 void aarch64_icache_sync_range(vaddr_t, vsize_t);
 void aarch64_idcache_wbinv_range(vaddr_t, vsize_t);
 void aarch64_dcache_wbinv_range(vaddr_t, vsize_t);
