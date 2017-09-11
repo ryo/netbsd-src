@@ -212,6 +212,7 @@ trap(struct trapframe *tf, int reason)
 		}
 		break;
 
+	case ESR_EC_BRKPNT_EL1:
 	case ESR_EC_SW_STEP_EL1:
 	case ESR_EC_WTCHPNT_EL1:
 	case ESR_EC_BKPT_INSN_A64:
@@ -221,6 +222,14 @@ trap(struct trapframe *tf, int reason)
 #else
 		panic("missing DDB");
 #endif
+	case ESR_EC_BRKPNT_EL0:
+	case ESR_EC_SW_STEP_EL0:
+	case ESR_EC_WTCHPNT_EL0:
+		KASSERT(usertrap_p);
+		trap_ksi_init(&ksi,
+		     SIGTRAP, TRAP_BRKPT, (intptr_t)tf->tf_far, cause);
+		ok = false;
+		break;
 	default:
 		usertrap_p = false;
 		break;
