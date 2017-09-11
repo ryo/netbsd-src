@@ -270,6 +270,7 @@ ENTRY_NP(el0_trap_exit)
 	mrs	x8, tpidr_el1
 	ldr	w9, [x8, #CI_ASTPENDING]
 	cbz	w9, .Lfullexit
+	mov	x0, sp
 	bl	_C_LABEL(trap_doast)
 .Lfullexit:
 	/* XXX critial section guarded by SR.EXL if it was MIPS XXX */
