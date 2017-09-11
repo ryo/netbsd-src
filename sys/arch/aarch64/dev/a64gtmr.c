@@ -109,7 +109,8 @@ gtmr_attach(device_t parent, device_t self, void *aux)
 	/*
 	 * This runs at a fixed frequency of 1 to 50MHz.
 	 */
-	prop_dictionary_get_uint32(dict, "frequency", &sc->sc_freq);
+	if (!prop_dictionary_get_uint32(dict, "frequency", &sc->sc_freq))
+		sc->sc_freq = reg_cntfrq_el0_read();
 
 	humanize_number(freqbuf, sizeof(freqbuf), sc->sc_freq, "Hz", 1000);
 
@@ -241,10 +242,6 @@ delay(unsigned int n)
 	const uint64_t base = reg_cntvct_el0_read();
 	const uint64_t finish = base + delta;
 
-	/*
-	 * if call when 64bit counter just wrap arounnd,
-	 * delay() delays hundreds of years :-)
-	 */
 	while (reg_cntvct_el0_read() < finish) {
 		/* spin */
 	}
