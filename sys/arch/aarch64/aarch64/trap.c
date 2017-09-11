@@ -166,6 +166,8 @@ trap(struct trapframe *tf, int reason)
 	bool usertrap_p = USERMODE(tf->tf_esr);
 	bool ok = true;
 
+	KASSERT(reason == 0);
+
 	cause = __SHIFTOUT(tf->tf_esr, ESR_EC);
 	if (cause > ESR_EC_BKPT_INSN_A64)
 		cause = ESR_EC_UNKNOWN;
@@ -193,6 +195,23 @@ trap(struct trapframe *tf, int reason)
 		dump_trapframe(tf, printf);
 		panic("%s: fatal kernel trap", __func__);
 	}
+}
+
+static const char * const syndrome[] = {
+	[1] = "bad synchronous exception",
+	[2] = "bad irq exception",
+	[3] = "bad fiq exception",
+	[4] = "bad error exception",
+};
+
+void
+trap_bad(struct trapframe *tf, int reason)
+{
+	KASSERT(reason > 0 && reason <= 4);
+
+	printf("EL%d %s\n", !!(tf->tf_spsr & 02), syndrome[reason]);
+	dump_trapframe(tf, printf);
+	panic("unexpected exception");
 }
 
 void

@@ -54,7 +54,7 @@ lr	.req	x30	/* link register */
 	ldr	lr, =panic
 	mov	x0, sp
 	mov	x1, #\cause
-	b	trap
+	b	trap_bad
 	/* !!! beware about remaining slot !!! */
 	.endm
 
