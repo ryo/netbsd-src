@@ -176,9 +176,11 @@ config		netbsd	root on ? type ?
 #config		netbsd	root on ? type nfs
 
 mainbus0 at	root
-cpunode*	at mainbus0
+cpunode0	at mainbus0
 cpu*		at cpunode?
 
+# Generic timer
+a64gtmr*	at mainbus? intr 3
 
 # OBIO
 obio0		at mainbus?
@@ -186,17 +188,17 @@ obio0		at mainbus?
 # Interrupt Controller
 bcmicu0		at obio?
 
-## VC Mailbox
+# VC Mailbox
 #bcmmbox0	at obio?
 #vcmbox0 	at bcmmbox0
 
-## DMA Controller
+# DMA Controller
 #bcmdmac0	at obio?
 
-## AUDS
+# AUDS
 #vcaudio0	at vchiq0
 #audio*		at audiobus?
-#
+
 #spkr*		at audio?		# PC speaker (synthesized)
 
 # PL011 uart
@@ -205,44 +207,44 @@ plcom0		at obio?
 # AUX UART
 com0		at obio?
 
-## Framebuffer console
-#genfb0		at obio?
-#wsdisplay*	at genfb?
-#options		VCONS_DRAW_INTR
-##options 	RPI_HWCURSOR
+# Framebuffer console
+genfb0		at obio?
+wsdisplay*	at genfb?
+options		VCONS_DRAW_INTR
+#options 	RPI_HWCURSOR
 
 # System timer
-bcmtmr0		at obio?
+#bcmtmr0 	at obio?
 
-## Power management, Reset controller and Watchdog registers
-#bcmpm0		at obio?
-#
-## Random number generator
+# Power management, Reset controller and Watchdog registers
+bcmpm0		at obio?
+
+# Random number generator
 #bcmrng0 	at obio?
-#
-## GPIO
+
+# GPIO
 #bcmgpio0	at obio?	# pins  0 ... 31
 #bcmgpio1	at obio?	# pins 32 ... 53
-#
-## Arasan SD/MMC Interface
+
+# Arasan SD/MMC Interface
 #sdhc* at obio?
 #sdmmc*  at sdhc?
-#
-## SD host controller
+
+# SD host controller
 #sdhost* at obio?
 #sdmmc* at sdhost?
 #
 #ld*     at sdmmc?
-#
+
 # On-board USB
 #dwctwo* 	at obio?
 #usb* 		at dwctwo?
-#
-## USB device drivers
+
+# USB device drivers
 #include "dev/usb/usbdevices.config"
-#
+
 #midi*		at midibus?
-#
+
 # MII/PHY support
 #exphy* 		at mii? phy ?		# 3Com internal PHYs
 #gentbi* 	at mii? phy ?		# Generic Ten-Bit 1000BASE-[CLS]X PHYs
@@ -269,20 +271,20 @@ bcmtmr0		at obio?
 #urlphy*		at mii? phy ?		# Realtek RTL8150L internal PHYs
 #ukphy*		at mii? phy ?		# generic unknown PHYs
 
-## Broadcom Serial Control (I2C)
-#bsciic* at obio?
-#iic* at i2cbus?
-#
-## 'DS3231 Raspberry Pi RTC Board Real Time Clock Module for Arduino'
-## sold by linksprite.com
-##dsrtc* at iic1 addr 0x68 flags 3231
-#
-## MCP7940 based PiFace Real Time Clock
-##dsrtc* at iic1 addr 0x6f flags 7940
-#
-## SPI controller
-#bcmspi* at obio?
-#spi* at spibus?
+# Broadcom Serial Control (I2C)
+bsciic* at obio?
+iic* at i2cbus?
+
+# 'DS3231 Raspberry Pi RTC Board Real Time Clock Module for Arduino'
+# sold by linksprite.com
+#dsrtc* at iic1 addr 0x68 flags 3231
+
+# MCP7940 based PiFace Real Time Clock
+#dsrtc* at iic1 addr 0x6f flags 7940
+
+# SPI controller
+bcmspi* at obio?
+spi* at spibus?
 
 
 
