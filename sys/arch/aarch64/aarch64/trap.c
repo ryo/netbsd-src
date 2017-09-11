@@ -197,6 +197,25 @@ trap(struct trapframe *tf, int reason)
 	}
 }
 
+void
+trap_doast(struct trapframe *tf)
+{
+	/*
+	 * allow to have a chance of context switch just prior to user
+	 * exception return.
+	 */
+
+        atomic_swap_uint(curcpu()->ci_astpending, 0);
+
+        if (curlwp->l_pflag & LP_OWEUPC) {
+                curlwp->l_pflag &= ~LP_OWEUPC;
+                ADDUPROF(curlwp);
+        }
+
+        if (curcpu()->ci_want_resched)
+                preempt();
+}
+
 static const char * const syndrome[] = {
 	[1] = "bad synchronous exception",
 	[2] = "bad irq exception",
@@ -264,7 +283,6 @@ void	cpu_enable_onfault(struct faultbuf *);
 bool	pagefault(struct trapframe *, ksiginfo_t *ksi);
 bool	pagefault_refmod(struct trapframe *, struct pmap *);
 void	trap_ksi_init(ksiginfo_t *, int, int, vaddr_t, register_t);
-void	trap_doast(struct trapframe *);
 #define ESR_ELx_WNR	(1U<<6)
 
 bool
@@ -349,25 +367,6 @@ trap_ksi_init(ksiginfo_t *ksi, int signo, int code, vaddr_t addr,
 	ksi->ksi_code = code;
 	ksi->ksi_addr = (void *)addr;
 	ksi->ksi_trap = cause;
-}
-
-void
-trap_doast(struct trapframe *tf)
-{
-	/*
-	 * allow to have a chance of context switch just prior to user
-	 * exception return.
-	 */
-
-        atomic_swap_uint(curcpu()->ci_astpending, 0);
-
-        if (curlwp->l_pflag & LP_OWEUPC) {
-                curlwp->l_pflag &= ~LP_OWEUPC;
-                ADDUPROF(curlwp);
-        }
-
-        if (curcpu()->ci_want_resched)
-                preempt();
 }
 
 void
