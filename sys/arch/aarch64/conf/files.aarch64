@@ -1,11 +1,11 @@
 #	$NetBSD: files.aarch64,v 1.2 2017/08/16 22:52:40 nisimura Exp $
 
 # CPU types.
-defflag	opt_cputypes.h		CPU_ARMV8
-defflag	opt_cputypes.h		CPU_CORTEXA53: CPU_ARMV8
-defflag	opt_cputypes.h		CPU_CORTEXA57: CPU_ARMV8
+defflag opt_cputypes.h		CPU_ARMV8
+defflag opt_cputypes.h		CPU_CORTEXA53: CPU_ARMV8
+defflag opt_cputypes.h		CPU_CORTEXA57: CPU_ARMV8
 
-defparam opt_cpuoptions.h	ARM_HAS_VBAR	# XXXAARCH64
+defflag opt_cpuoptions.h	AARCH64_HAS_L2CTLR
 
 # Interrupt implementation header definition.
 defparam opt_arm_intr_impl.h	ARM_INTR_IMPL
@@ -30,7 +30,7 @@ file	arch/aarch64/aarch64/fpu.c
 defflag				PMAP_DEBUG
 
 # PMAP options
-defflag	opt_pmap.h		PMAPHIST : KERNHIST
+defflag opt_pmap.h		PMAPHIST : KERNHIST
 defflag opt_pmap.h		PMAPCOUNTERS PMAP_STEAL_MEMORY
 				PMAP_NEED_ALLOC_POOLPAGE
 

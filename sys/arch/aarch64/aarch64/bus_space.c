@@ -525,14 +525,12 @@ aarch64_generic_bs_map(void *t, bus_addr_t bpa, bus_size_t size, int flag,
 	paddr_t startpa, endpa, pa;
 	vaddr_t va;
 
-#if 0 /* XXXAARCH64: pmap_devmap is not implemented */
 	const struct pmap_devmap *pd;
 	if ((pd = pmap_devmap_find_pa(bpa, size)) != NULL) {
 		/* Device was statically mapped. */
 		*bshp = pd->pd_va + (bpa - pd->pd_pa);
 		return 0;
 	}
-#endif
 
 	startpa = trunc_page(bpa);
 	endpa = round_page(bpa + size);
@@ -564,12 +562,10 @@ aarch64_generic_bs_unmap(void *t, bus_space_handle_t bsh, bus_size_t size)
 	vaddr_t va;
 	vsize_t sz;
 
-#if 0 /* XXXAARCH64: pmap_devmap is not implemented */
 	if (pmap_devmap_find_va(bsh, size) != NULL) {
 		/* Device was statically mapped; nothing to do. */
 		return;
 	}
-#endif
 
 	va = trunc_page(bsh);
 	sz = round_page(bsh + size) - va;

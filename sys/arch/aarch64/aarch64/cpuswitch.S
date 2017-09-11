@@ -36,7 +36,7 @@
 
 RCSID("$NetBSD: locore.S,v 1.4 2017/08/25 22:23:59 nisimura Exp $")
 
-// XXX:AARCH64
+// XXXAARCH64
 lr	.req	x30
 	.macro DISABLE_INTERRUPT
 	msr	daifset, #DAIF_I|DAIF_F		/* daif'set */

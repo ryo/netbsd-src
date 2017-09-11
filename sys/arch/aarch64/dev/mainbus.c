@@ -62,7 +62,6 @@ mainbus_attach(device_t parent, device_t self, void *aux)
 	    .mba_addr = MAINBUSCF_ADDR_DEFAULT,
 	    .mba_size = MAINBUSCF_SIZE_DEFAULT,
 	    .mba_intr = MAINBUSCF_INTR_DEFAULT,
-	    .mba_unit = 0
 	};
 
 	aprint_naive("\n");

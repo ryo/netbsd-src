@@ -90,7 +90,7 @@ const char * const trap_names[] = {
 	[ESR_EC_PC_ALIGNMENT]	= "Misaligned PC",
 	[ESR_EC_SP_ALIGNMENT]	= "Misaligned SP",
 
-	[ESR_EC_FP_ACCCES]	= "Access to SIMD/FP Registers",
+	[ESR_EC_FP_ACCESS]	= "Access to SIMD/FP Registers",
 	[ESR_EC_FP_TRAP_A64]	= "FP Exception",
 
 	[ESR_EC_BRKPNT_EL0]	= "Breakpoint Exception (EL0)",
@@ -193,7 +193,7 @@ trap_el1_sync(struct trapframe *tf)
 		trapname = "Unknown";
 
 	switch (cause) {
-	case ESR_EC_FP_ACCCES:
+	case ESR_EC_FP_ACCESS:
 	case ESR_EC_FP_TRAP_A64:
 		// XXXAARCH64: notyet
 		printf("%s trap!\n", trapname);

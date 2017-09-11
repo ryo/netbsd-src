@@ -36,7 +36,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <aarch64/cpufunc.h>
 
 struct cpu_functions cpufuncs;
-extern uint32_t cputype;
+u_int cputype;
 
 int
 set_cpufuncs(void)

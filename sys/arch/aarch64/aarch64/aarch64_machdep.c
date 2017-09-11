@@ -61,12 +61,8 @@ const pcu_ops_t * const pcu_ops_md_defs[PCU_UNIT_COUNT] = {
 
 struct vm_map *phys_map;
 
-//XXXAARCH64
 vaddr_t physical_start;
 vaddr_t physical_end;
-extern char __kernel_text[];
-extern char _end[];
-extern char lwp0uspace[];
 
 /*
  * Upper region: 0xffffffffffffffff  Top of virtual memory
@@ -102,6 +98,10 @@ extern char lwp0uspace[];
 void
 initarm64(void)
 {
+	extern char __kernel_text[];
+	extern char _end[];
+	extern char lwp0uspace[];
+
 	struct trapframe *tf;
 	psize_t memsize;
 	vaddr_t kernstart, kernend;
@@ -124,22 +124,26 @@ initarm64(void)
 
 #ifdef VERBOSE_INIT_ARM
 	printf(
-	    "%s: physical_start    = 0x%016lx\n"
-	    "%s: physical_end      = 0x%016lx\n"
-	    "%s: kernel_start_phys = 0x%016lx\n"
-	    "%s: kernel_end_phys   = 0x%016lx\n"
-	    "%s: kernel_start      = 0x%016lx\n"
-	    "%s: kernel_end        = 0x%016lx\n"
-	    "%s: kernel_start_l2   = 0x%016lx\n"
-	    "%s: kernel_end_l2     = 0x%016lx\n",
-	    __func__, physical_start,
-	    __func__, physical_end,
-	    __func__, kernstart_phys,
-	    __func__, kernend_phys,
-	    __func__, kernstart,
-	    __func__, kernend,
-	    __func__, kernstart_l2,
-	    __func__, kernend_l2);
+	    "physical_start        = 0x%016lx\n"
+	    "physical_end          = 0x%016lx\n"
+	    "kernel_start_phys     = 0x%016lx\n"
+	    "kernel_end_phys       = 0x%016lx\n"
+	    "VM_MIN_KERNEL_ADDRESS = 0x%016lx\n"
+	    "kernel_start_l2       = 0x%016lx\n"
+	    "kernel_start          = 0x%016lx\n"
+	    "kernel_end            = 0x%016lx\n"
+	    "kernel_end_l2         = 0x%016lx\n"
+	    "VM_MAX_KERNEL_ADDRESS = 0x%016lx\n",
+	    physical_start,
+	    physical_end,
+	    kernstart_phys,
+	    kernend_phys,
+	    VM_MIN_KERNEL_ADDRESS,
+	    kernstart_l2,
+	    kernstart,
+	    kernend,
+	    kernend_l2,
+	    VM_MAX_KERNEL_ADDRESS);
 #endif
 
 	/*
@@ -155,12 +159,10 @@ initarm64(void)
 	    atop(kernend_phys), atop(physical_end),
 	    atop(kernend_phys), atop(physical_end),
 	    VM_FREELIST_DEFAULT);
-#if 1
 	uvm_page_physload(
 	    atop(physical_start), atop(kernend_phys),
 	    atop(physical_start), atop(kernend_phys),
 	    VM_FREELIST_DEFAULT);
-#endif
 
 	/*
 	 * kernel image is mapped L2 table (2M*n)

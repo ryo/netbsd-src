@@ -37,7 +37,6 @@ struct mainbus_attach_args {
 	bus_addr_t mba_addr;
 	bus_size_t mba_size;
 	int mba_intr;
-	int mba_unit;
 };
 
 #endif
