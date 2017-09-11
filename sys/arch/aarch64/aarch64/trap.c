@@ -207,8 +207,7 @@ trap(struct trapframe *tf, int reason)
 		ok = false;
 		if (usertrap_p) {
 			trap_ksi_init(&ksi,
-			     SIGBUS, BUS_ADRALN,
-			    (intptr_t)tf->tf_far, cause);
+			     SIGBUS, BUS_ADRALN, tf->tf_far, cause);
 		}
 		break;
 
@@ -227,7 +226,7 @@ trap(struct trapframe *tf, int reason)
 	case ESR_EC_WTCHPNT_EL0:
 		KASSERT(usertrap_p);
 		trap_ksi_init(&ksi,
-		     SIGTRAP, TRAP_BRKPT, (intptr_t)tf->tf_far, cause);
+		     SIGTRAP, TRAP_BRKPT, tf->tf_far, cause);
 		ok = false;
 		break;
 	default:
