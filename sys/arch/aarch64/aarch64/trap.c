@@ -155,12 +155,10 @@ dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 void
 userret(struct lwp *l)
 {
-#if 0
 	/*
 	 * dump l->l_md.md_utf here if necessary. user process is about to
 	 * run with these set of registers.
 	 */
-#endif
 	mi_userret(l);
 }
 
@@ -170,22 +168,22 @@ void
 trap(struct trapframe *tf, int reason)
 {
 	struct lwp * const l = curlwp;
-	int code = tf->tf_esr & 0xffff;
 	ksiginfo_t ksi;
+	int cause;
 	const char *causestr;
 	bool usertrap_p = USERMODE(tf->tf_esr);
 	bool ok = true;
 
 	KASSERT(reason == 0);
 
-	code = __SHIFTOUT(tf->tf_esr, ESR_EC);
-	if (code > ESR_EC_BKPT_INSN_A64)
-		code = ESR_EC_UNKNOWN;
-	causestr = causenames[code];
+	cause = __SHIFTOUT(tf->tf_esr, ESR_EC);
+	if (cause >= __arraycount(causenames))
+		cause = ESR_EC_UNKNOWN;
+	causestr = causenames[cause];
 	if (causestr == NULL)
 		causestr = causenames[ESR_EC_UNKNOWN];
 
-	switch (code) {
+	switch (cause) {
 	case ESR_EC_FP_ACCESS:
 	case ESR_EC_FP_TRAP_A64:
 		if (usertrap_p) {
@@ -210,7 +208,7 @@ trap(struct trapframe *tf, int reason)
 		if (usertrap_p) {
 			trap_ksi_init(&ksi,
 			     SIGBUS, BUS_ADRALN,
-			    (intptr_t)tf->tf_far, code);
+			    (intptr_t)tf->tf_far, cause);
 		}
 		break;
 
