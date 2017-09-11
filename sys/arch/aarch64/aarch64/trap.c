@@ -244,18 +244,10 @@ pagefault(struct trapframe *tf, ksiginfo_t *ksi)
 	struct faultbuf *fb;
 	int error, minor;
 
-	ftype = VM_PROT_READ |
-		(tf->tf_esr & ESR_ELx_WNR) ? VM_PROT_WRITE : 0;
-	if (USERMODE(tf->tf_esr)) {
-		error = uvm_fault(&p->p_vmspace->vm_map, addr, ftype);
-		if (error != 0) {
-			minor = (error == EACCES) ? SEGV_ACCERR : SEGV_MAPERR;
-			trap_ksi_init(ksi, SIGSEGV, minor,
-			    (intptr_t)tf->tf_far, cause);
-			return false;
-		}
-		uvm_grow(p, addr);
-		return true;	/* address space growth handled */
+	/* EL0 -- user process touched kernel address space */
+	if (USERMODE(tf->tf_esr) && addr < 0) {
+		trap_ksi_init(ksi, SIGSEGV, SEGV_MAPERR, addr, cause);
+		return false;
 	}
 
 	/* page reference/page modified tracking */
@@ -263,7 +255,22 @@ pagefault(struct trapframe *tf, ksiginfo_t *ksi)
 	if (error)
 		return true;
 
-	/* genuine page fault plus faultbail path */
+	ftype = VM_PROT_READ |
+		(tf->tf_esr & ESR_ELx_WNR) ? VM_PROT_WRITE : 0;
+
+	/* EL0 -- page fault, or user stack growth */
+	if (USERMODE(tf->tf_esr)) {
+		error = uvm_fault(&p->p_vmspace->vm_map, addr, ftype);
+		if (error != 0) {
+			minor = (error == EACCES) ? SEGV_ACCERR : SEGV_MAPERR;
+			trap_ksi_init(ksi, SIGSEGV, minor, addr, cause);
+			return false;
+		}
+		uvm_grow(p, addr);
+		return true;	/* address space growth handled */
+	}
+
+	/* page fault plus faultbail path */
 	fb = cpu_disable_onfault();
 	error = uvm_fault(map, addr, ftype);
 	cpu_enable_onfault(fb);
