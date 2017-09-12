@@ -395,23 +395,76 @@ pagefault(struct trapframe *tf, ksiginfo_t *ksi)
 	return true;
 }
 
+#if 1 /* XXX place holder to show design intent XXX */
+
+static pt_entry_t *
+pmap_pte_lookup(struct pmap *pmap, vaddr_t addr)
+{
+	pt_entry_t *ptep = NULL;
+
+	if (pmap == pmap_kernel()) {
+		KASSERT((intptr_t)addr < 0);
+		/* ptep = VPTEBASE + PTE_INDEX(addr); */
+	} else {
+		KASSERT((intptr_t)addr >= 0);
+		/* traverse L0/L1/L2/L3 tree in order */
+	}
+	return ptep;
+}
+
+static paddr_t
+pte_to_paddr(pt_entry_t pte)
+{
+	return (u_long)pte & LX_TBL_PA;
+}
+
+#endif
+
+#define PTE_V	LX_VALID
+#define PTE_RO	__BIT(7)
+
 static bool
 pagefault_refmod(struct trapframe *tf, struct pmap *pmap)
 {
-	intptr_t addr = trunc_page(tf->tf_far);
+	vaddr_t addr = trunc_page(tf->tf_far);
+	int storefault = !!(tf->tf_esr & ESR_ELx_WNR);
+	pt_entry_t *ptep, opte, npte;
 	struct vm_page *pg;
 	struct vm_page_md *mdpg;
 	u_int attr;
-	paddr_t pa;
 
-	pa = addr;
-	pg = PHYS_TO_VM_PAGE(pa);
-	attr = 0;
-	attr |= VM_PAGE_MD_REFERENCED;
-	attr |= VM_PAGE_MD_MODIFIED;
+	ptep = pmap_pte_lookup(pmap, addr);
+	if (ptep == NULL)
+		return false;
+	opte = *ptep;
+	do {
+		if (opte == 0)
+			return false;
 
+		pg = PHYS_TO_VM_PAGE(pte_to_paddr(opte));
+		if (pg == NULL)
+			return false;
+
+		/* modify new pg attribute */
+		npte = opte; attr = 0;
+		if ((npte & PTE_V) == 0) {
+			npte |= PTE_V;
+			attr |= VM_PAGE_MD_REFERENCED;
+		}
+		if ((npte & PTE_RO) && storefault) {
+			npte &=~ PTE_RO;
+			attr |= VM_PAGE_MD_MODIFIED;
+		}
+		if (attr == 0)
+			return false; /* found no difference */
+
+	} while (opte != atomic_cas_64(ptep, opte, npte));
+
+	/* update pg attribute */
 	mdpg = VM_PAGE_TO_MD(pg);
 	atomic_or_uint(&mdpg->mdpg_attrs, attr);
+
+	/* page refernce/modifed bit emulation completed */
 	return true;
 }
 
