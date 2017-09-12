@@ -167,13 +167,13 @@ gtmr_init_cpu_clock(struct cpu_info *ci)
 	ci->ci_lastintr = reg_cntvct_el0_read();
 	reg_cntv_tval_el0_write(sc->sc_autoinc);
 #if 0
-	printf("%s: %s: delta cval = %"PRIu64"\n",
+	printf("%s: %s: delta cval = %016llx\n",
 	    __func__, ci->ci_data.cpu_name,
-	    reg_cntv_cval_el1_read() - ci->ci_lastintr);
+	    reg_cntv_cval_el0_read() - ci->ci_lastintr);
 #endif
 	splx(s);
 #if 0
-	printf("%s: %s: ctl %#x cmp %#"PRIx64" now %#"PRIx64"\n",
+	printf("%s: %s: ctl    %016llx cmp %016llx now %016llx\n",
 	    __func__, ci->ci_data.cpu_name, reg_cntv_ctl_el0_read(),
 	    reg_cntv_cval_el0_read(), reg_cntvct_el0_read());
 
@@ -186,17 +186,17 @@ gtmr_init_cpu_clock(struct cpu_info *ci)
 	} while (start64 == now64);
 	start64 = now64;
 	uint64_t end64 = start64 + 64;
-	uint32_t start32 = reg_pmccntr_read();
+	uint32_t start32 = reg_pmccntr_el0_read();
 	do {
 		now64 = reg_cntvct_el0_read();
 	} while (end64 != now64);
-	uint32_t end32 = reg_pmccntr_read();
+	uint32_t end32 = reg_pmccntr_el0_read();
 
 	uint32_t diff32 = end64 - start64;
 	printf("%s: %s: %u cycles per tick\n",
 	    __func__, ci->ci_data.cpu_name, (end32 - start32) / diff32);
 
-	printf("%s: %s: status %#x cmp %#"PRIx64" now %#"PRIx64"\n",
+	printf("%s: %s: status %016llx cmp %016llx now %016llx\n",
 	    __func__, ci->ci_data.cpu_name, reg_cntv_ctl_el0_read(),
 	    reg_cntv_cval_el0_read(), reg_cntvct_el0_read());
 	splx(s);
@@ -231,12 +231,12 @@ delay(unsigned int n)
 	uint32_t freq = sc->sc_freq ? sc->sc_freq : reg_cntfrq_el0_read();
 
 	/*
-	 * 0.5^20 + 0.5^24 - 0.5^26 = 0.00000099837779998780
+	 * 0.5^20 + 0.5^25 + 0.5^26 = 0.00000099837779998779296875
 	 *
 	 * not quite divide by 1000000 but close enough
 	 * (higher by 0.16% which means we wait 0.16% longer).
 	 */
-	const uint64_t incr_per_us = (freq >> 20) + (freq >> 24) - (freq >> 26);
+	const uint64_t incr_per_us = (freq >> 20) + (freq >> 25) + (freq >> 26);
 
 	const uint64_t delta = n * incr_per_us;
 	const uint64_t base = reg_cntvct_el0_read();
