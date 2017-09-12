@@ -483,7 +483,7 @@ pagefault_refmod(struct trapframe *tf, struct pmap *pmap)
 		else if (noexec) {
 			if (npte & PTE_NX) {
 				npte &=~ PTE_NX;
-				attr |= VM_PAGE_MD_EXECPAGE;
+				attr |= VM_PAGE_MD_EXECUTABLE;
 			}
 		}
 		if (attr == 0)
