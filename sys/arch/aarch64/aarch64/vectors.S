@@ -44,18 +44,10 @@ lr	.req	x30	/* link register */
 	.endif
 	mrs	x21, elr_el1
 	mrs	x22, spsr_el1
-	str	x20, [sp, #TF_SP]
-	str	x21, [sp, #TF_PC]
-	str	x22, [sp, #TF_SPSR]
-	mrs	x23, esr_el1
-	mrs	x24, far_el1
-	str	x23, [sp, #TF_ESR]
-	str	x24, [sp, #TF_FAR]
-	ldr	lr, =panic
 	mov	x0, sp
 	mov	x1, #\cause
-	b	trap_bad
-	/* !!! beware about remaining slot !!! */
+	b	bad_entry
+	/* !!! vector slot size is limited to 32 instruction !!! */
 	.endm
 
 	.macro	exception_entry, el, regsize = 64
@@ -135,6 +127,20 @@ _C_LABEL(el1_vectors):
 	VECT_ENTRY	el0_32irq		/* IRQ 32bit EL0 */
 	VECT_INVAL	0, BAD_FIQ, 32		/* FIQ 32bit EL0 */
 	VECT_INVAL	0, BAD_ERROR, 32	/* Error 32bit EL0 */
+
+_C_LABEL(bad_entry):
+	str	x20, [sp, #TF_SP]
+	str	x21, [sp, #TF_PC]
+	str	x22, [sp, #TF_SPSR]
+	mrs	x23, esr_el1
+	mrs	x24, far_el1
+	str	x23, [sp, #TF_ESR]
+	str	x24, [sp, #TF_FAR]
+	tbnz	x22, #7, 1f			/* if SPSR.I is enabled */
+	msr	daifclr, #DAIF_I		/* reenable I */
+ 1:	ldr	lr, =panic
+	b	trap_bad			/* call with x0/x1 */
+END(bad_entry)
 
 _C_LABEL(el1_sync):
 	sub	sp, sp, #TF_SIZE
