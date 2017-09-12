@@ -297,7 +297,7 @@ bcm2835_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
 	    ba < BCM2835_PERIPHERALS_BASE_BUS + BCM2835_PERIPHERALS_SIZE) {
 		match = true;
 		pa = BCM2835_PERIPHERALS_BUS_TO_PHYS(ba);
-		
+
 	}
 #ifdef BCM2836
 	if (ba >= BCM2836_ARM_LOCAL_BASE &&
@@ -314,7 +314,9 @@ bcm2835_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
 	}
 
 	/* Now assume bus address so convert to PA */
+#if 0 // XXXAARCH64
 	pa = ba & ~BCM2835_BUSADDR_CACHE_MASK;
+#endif
 
 	startpa = trunc_page(pa);
 	endpa = round_page(pa + size);
