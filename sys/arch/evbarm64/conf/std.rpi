@@ -8,6 +8,8 @@ include 	"arch/evbarm64/conf/std.evbarm64"
 # Pull in Raspberry Pi config definitions.
 include "arch/evbarm64/conf/files.rpi"
 
+options 	AARCH64_HAS_L2CTLR	# L2CTLR_EL1 register implemented
+
 options 	EVBARM_BOARDTYPE="rpi"
 makeoptions	BOARDMKFRAG="${THISA64}/conf/mk.rpi"
 makeoptions	LOADADDRESS="0x0000000000200000"
