@@ -91,9 +91,9 @@ lr	.req	x30	/* link register */
 	.endif
 	.endm
 
-	.pushsection ".vectors", "ax"
+	.text
+	.align 11
 	.global _C_LABEL(el1_vectors)
-	.p2align 11
 _C_LABEL(el1_vectors):
 /*
  * Exception taken from current Exception Level with SP_EL1.
@@ -147,7 +147,7 @@ _C_LABEL(el1_sync):
 	exception_entry 1
 	tbnz	x22, #7, 1f			/* if SPSR.I is enabled */
 	msr	daifclr, #DAIF_I		/* reenable I */
- 1:	ldr	lr, =el1_trap_exit
+ 1:	adr	lr, el1_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap
@@ -157,7 +157,7 @@ _C_LABEL(el1_irq):
 	sub	sp, sp, #TF_SIZE
 	exception_entry 1
 	/* leave DAIF_I marked */
-	ldr	lr, =el1_trap_exit
+	adr	lr, el1_trap_exit
 	mov	x0, sp
 	b	interrupt
 END(el1_irq)
@@ -166,7 +166,7 @@ _C_LABEL(el0_sync):
 	exception_entry 0
 	tbnz	x22, #7, 1f			/* if SPSR.I is enabled */
 	msr	daifclr, #DAIF_I		/* reenable I */
- 1:	ldr	lr, =el1_trap_exit
+ 1:	adr	lr, el1_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap
@@ -175,7 +175,7 @@ END(el0_sync)
 _C_LABEL(el0_irq):
 	exception_entry 0
 	/* leave DAIF_I marked */
-	ldr	lr, =el0_trap_exit
+	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	interrupt
 END(el0_irq)
@@ -184,7 +184,7 @@ _C_LABEL(el0_32sync):
 	exception_entry 0, 32
 	tbnz	x22, #7, 1f			/* if SPSR.I is enabled */
 	msr	daifclr, #DAIF_I		/* reenable I */
- 1:	ldr	lr, =el0_trap_exit
+ 1:	adr	lr, el0_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_a32
@@ -192,7 +192,7 @@ END(el0_32sync)
 
 _C_LABEL(el0_32irq):
 	exception_entry 0, 32
-	ldr	lr, =el0_trap_exit
+	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	interrupt
 END(el0_32irq)
