@@ -196,7 +196,7 @@ trap(struct trapframe *tf, int reason)
 		panic("%s: EL1 touched FP unit", __func__);
 
 	case ESR_EC_INSN_ABT_EL0:
-	case ESR_EC_INSN_ABT_EL1:
+	/* case ESR_EC_INSN_ABT_EL1: EL1 insn fault is not expected */
 	case ESR_EC_DATA_ABT_EL0:
 	case ESR_EC_DATA_ABT_EL1:
 		ok = pagefault(tf, &ksi);
@@ -341,7 +341,22 @@ void	cpu_unset_onfault(void);
 struct faultbuf *cpu_disable_onfault(void);
 void	cpu_enable_onfault(struct faultbuf *);
 
-#define ESR_ELx_WNR	(1U<<6)
+#define ESR_ELx_WNR		(1UL<<6)
+#define ESR_ELx_FSC_TYPE	(0x3c)
+#define ESR_ELx_FSC_PERM	(0x0c)
+
+static vm_prot_t
+get_faulttype(register_t esr)
+{
+	int cause = __SHIFTOUT(esr, ESR_EC);
+	int fsc = (esr & ESR_ELx_FSC_TYPE);
+
+	if (cause == ESR_EC_INSN_ABT_EL0)
+		return VM_PROT_READ | VM_PROT_EXECUTE;
+	else if (fsc == ESR_ELx_FSC_PERM || (esr & ESR_ELx_WNR))
+		return VM_PROT_READ | VM_PROT_WRITE;
+	return VM_PROT_READ;
+}
 
 static bool
 pagefault(struct trapframe *tf, ksiginfo_t *ksi)
@@ -365,8 +380,7 @@ pagefault(struct trapframe *tf, ksiginfo_t *ksi)
 	if (error)
 		return true;
 
-	ftype = VM_PROT_READ |
-		(tf->tf_esr & ESR_ELx_WNR) ? VM_PROT_WRITE : 0;
+	ftype = get_faulttype(tf->tf_esr);
 
 	/* EL0 -- page fault, or user stack growth */
 	if (USERMODE(tf->tf_esr)) {
@@ -422,16 +436,25 @@ pte_to_paddr(pt_entry_t pte)
 
 #define PTE_V	LX_VALID
 #define PTE_RO	__BIT(7)
+#define PTE_NX	LX_BLKPAG_UXN
 
 static bool
 pagefault_refmod(struct trapframe *tf, struct pmap *pmap)
 {
+	int cause = __SHIFTOUT(tf->tf_esr, ESR_EC);
 	vaddr_t addr = trunc_page(tf->tf_far);
-	int storefault = !!(tf->tf_esr & ESR_ELx_WNR);
 	pt_entry_t *ptep, opte, npte;
 	struct vm_page *pg;
 	struct vm_page_md *mdpg;
+	bool store, noexec;
 	u_int attr;
+
+	store = noexec = false;
+	if (cause == ESR_EC_INSN_ABT_EL0)
+		noexec = true;
+	else /* DATA_ABT_ELx */
+		store =	(ESR_ELx_FSC_PERM == (tf->tf_esr&ESR_ELx_FSC_TYPE)) &&
+			(tf->tf_esr & ESR_ELx_WNR);
 
 	ptep = pmap_pte_lookup(pmap, addr);
 	if (ptep == NULL)
@@ -451,9 +474,17 @@ pagefault_refmod(struct trapframe *tf, struct pmap *pmap)
 			npte |= PTE_V;
 			attr |= VM_PAGE_MD_REFERENCED;
 		}
-		if ((npte & PTE_RO) && storefault) {
-			npte &=~ PTE_RO;
-			attr |= VM_PAGE_MD_MODIFIED;
+		if (store) {
+			if (npte & PTE_RO) {
+				npte &=~ PTE_RO;
+				attr |= VM_PAGE_MD_MODIFIED;
+			}
+		}
+		else if (noexec) {
+			if (npte & PTE_NX) {
+				npte &=~ PTE_NX;
+				attr |= VM_PAGE_MD_EXECPAGE;
+			}
 		}
 		if (attr == 0)
 			return false; /* found no difference */
