@@ -65,23 +65,16 @@ static inline register_t cpsid(register_t psw) __attribute__((__unused__));
 static inline void
 cpsie(register_t psw)
 {
-	if (!__builtin_constant_p(psw)) {
-		reg_daif_write(psw);
-	} else {
-		reg_daifset_write(psw);
-	}
+	reg_daifclr_write((psw & (DAIF_I|DAIF_F)) >> DAIF_IMM_SHIFT);
 }
 
 static inline register_t
 cpsid(register_t psw)
 {
-	register_t oldpsw = reg_daif_read();
-	if (!__builtin_constant_p(psw)) {
-		reg_daif_write(oldpsw & ~psw);
-	} else {
-		reg_daifclr_write(psw);
-	}
+	uint32_t oldpsw = reg_daif_read();
+	reg_daifset_write((psw & (DAIF_I|DAIF_F)) >> DAIF_IMM_SHIFT);
 	return oldpsw;
+
 }
 
 #elif defined(__arm__)

@@ -43,7 +43,7 @@ ENTRY(cpu_idle)
 	sub	sp, sp, #TF_SIZE		// allocate trapfame
 	str	x28, [sp, #TF_X28]
 	str	x30, [sp, #TF_X30]
-	msr	daifset, #DAIF_I|DAIF_F		// disable interrupts
+	msr	daifset, #((DAIF_I|DAIF_F)>>DAIF_IMM_SHIFT)	// disable interrupts
 	wfi
 
 	mrs	x1, tpidr_el1			// get curcpu()
@@ -72,7 +72,7 @@ ENTRY(cpu_idle)
 	ldr	x30, [sp, #TF_X30]		// restore registers
 	add	sp, sp, #TF_SIZE		// pop trapframe
 
-	msr	daifclr, #DAIF_I|DAIF_F		// enable interrupts
+	msr	daifclr, #((DAIF_I|DAIF_F)>>DAIF_IMM_SHIFT)	// enable interrupts
 
 	ldr	w3, [x1, #CI_SOFTINTS]		// Get pending softint mask
 #if 0

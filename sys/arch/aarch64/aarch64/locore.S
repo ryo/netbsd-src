@@ -549,8 +549,7 @@ init_sysregs:
 	msr	cpacr_el1, xzr
 
 	/* any exception not masked */
-	mov	x0, #0
-	msr	daif, x0
+	msr	daif, xzr
 
 	ldp	x0, lr, [sp], #16
 	ret

@@ -235,7 +235,7 @@ vtophys(vaddr_t va)
 	/*
 	 * Use the address translation instruction to do the lookup.
 	 */
-	reg_daifset_write(DAIF_I|DAIF_F);
+	reg_daifset_write((DAIF_I|DAIF_F) >> DAIF_IMM_SHIFT);
 	__asm __volatile("at\ts1e1r, %0" :: "r"(va));
 	pa = reg_par_el1_read();
 	pa = (pa & PAR_F) ? VTOPHYS_FAILED : (pa & PAR_PA);

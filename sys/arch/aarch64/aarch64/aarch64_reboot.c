@@ -182,14 +182,14 @@ bootsync(void)
 	bootsyncdone = true;
 
 	/* Make sure we can still manage to do things */
-	if (reg_daif_read() & DAIF_I) {
+	if ((reg_daif_read() & DAIF_I) != 0) {
 		/*
 		 * If we get here then boot has been called without RB_NOSYNC
 		 * and interrupts were disabled. This means the boot() call
 		 * did not come from a user process e.g. shutdown, but must
 		 * have come from somewhere in the kernel.
 		 */
-		reg_daifset_write(DAIF_I);	/* enable IRQ */
+		reg_daifclr_write((DAIF_I >> DAIF_IMM_SHIFT));	/* enable IRQ */
 		printf("Warning IRQ's disabled during boot()\n");
 	}
 
@@ -241,7 +241,7 @@ cpu_reboot(int howto, char *bootstr)
 	doshutdownhooks();
 
 	/* Make sure IRQ's are disabled */
-	reg_daifclr_write(DAIF_I);
+	reg_daifset_write(DAIF_I >> DAIF_IMM_SHIFT);
 
 	docpureset(howto);
 	__unreachable();
