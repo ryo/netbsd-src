@@ -25,6 +25,7 @@ maxusers 32
 
 # CPU Support
 options 	CPU_CORTEXA53
+options 	BCM2836
 
 options 	MEMSIZE=1008		# SDRAM: 0x00000000-0x3f000000
 options 	VERBOSE_LOCORE
@@ -49,6 +50,8 @@ makeoptions	DEBUG="-g"
 
 #options 	KGDB			# Remote kernel GDB support
 #options 	KGDB_DEVNAME="\"com\""	# device to use for KGDB
+
+makeoptions	COPY_SYMTAB=1
 
 # File systems
 file-system	FFS		# Fast file system
