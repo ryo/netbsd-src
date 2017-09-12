@@ -247,7 +247,8 @@ END(lwp_trampoline)
  * EL1 exception return for trap and interrupt.
  */
 ENTRY_NP(el1_trap_exit)
-	/* XXX critial section guarded by SR.EXL if it was MIPS XXX */
+	DISABLE_INTERRUPT		/* make sure I|F marked */
+
 	unwind_x0_x18
 
 	ldr	x20, [sp, #TF_PC]
@@ -257,7 +258,7 @@ ENTRY_NP(el1_trap_exit)
 
 	unwind_x19_x30
 
-	/* unwind trapframe on EL1 stack */
+	/* pop off kernel trapframe on EL1 stack */
 	add	sp, sp, #TF_SIZE
 	eret
 END(el1_trap_exit)
@@ -273,7 +274,8 @@ ENTRY_NP(el0_trap_exit)
 	mov	x0, sp
 	bl	_C_LABEL(trap_doast)
 .Lfullexit:
-	/* XXX critial section guarded by SR.EXL if it was MIPS XXX */
+	DISABLE_INTERRUPT		/* make sure I|F marked */
+
 	unwind_x0_x18
 
 	mrs	x8, tpidr_el1
@@ -291,7 +293,7 @@ ENTRY_NP(el0_trap_exit)
 
 	unwind_x19_x30
 
-	/* now return back to EL0 user process */
+	/* leave sp at l_md.md_utf, return back to EL0 user process */
 	eret
 END(el0_trap_exit)
 
