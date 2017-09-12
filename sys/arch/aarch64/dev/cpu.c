@@ -225,6 +225,7 @@ prt_cache(device_t self, int level, int inst, const char *cachetype, const char 
 static void
 cpu_identify(device_t self, struct cpu_info *ci)
 {
+	uint64_t mpidr;
 	int level;
 	uint32_t cpuid;
 	uint32_t clidr, ctr, sctlr;	/* for cache */
@@ -238,6 +239,14 @@ cpu_identify(device_t self, struct cpu_info *ci)
 
 	aprint_naive("\n");
 	aprint_normal(": %s\n", model);
+
+
+	mpidr = reg_mpidr_el1_read();
+	aprint_normal_dev(self, "CPU Affinity %llu-%llu-%llu-%llu\n",
+	    __SHIFTOUT(mpidr, MPIDR_AFF3),
+	    __SHIFTOUT(mpidr, MPIDR_AFF2),
+	    __SHIFTOUT(mpidr, MPIDR_AFF1),
+	    __SHIFTOUT(mpidr, MPIDR_AFF0));
 
 
 	/* SCTLR - System Control Register */
