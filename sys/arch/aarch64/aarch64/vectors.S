@@ -136,8 +136,8 @@ _C_LABEL(bad_entry):
 	mrs	x24, far_el1
 	str	x23, [sp, #TF_ESR]
 	str	x24, [sp, #TF_FAR]
-	tbnz	x22, #7, 1f			/* if SPSR.I is enabled */
-	msr	daifclr, #DAIF_I		/* reenable I */
+	tbnz	x22, #SPSR_I, 1f		/* if SPSR.I is unmarked */
+	msr	daifclr, #DAIF_I		/* reenable interrupt */
  1:	ldr	lr, =panic
 	b	trap_bad			/* call with x0/x1 */
 END(bad_entry)
@@ -145,8 +145,8 @@ END(bad_entry)
 _C_LABEL(el1_sync):
 	sub	sp, sp, #TF_SIZE
 	exception_entry 1
-	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
-	msr	daifclr, #DAIF_I		/* clear I for interrupt */
+	tbnz	x22, #SPSR_I, 1f		/* if SPSR.I is unmarked */
+	msr	daifclr, #DAIF_I		/* reenable interrupt */
  1:	adr	lr, el1_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
@@ -164,8 +164,8 @@ END(el1_irq)
 
 _C_LABEL(el0_sync):
 	exception_entry 0
-	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
-	msr	daifclr, #DAIF_I		/* clear I for interupt */
+	tbnz	x22, #SPSR_I, 1f		/* if SPSR.I is unmarked */
+	msr	daifclr, #DAIF_I		/* reenable interrupt */
  1:	adr	lr, el1_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
@@ -182,8 +182,8 @@ END(el0_irq)
 
 _C_LABEL(el0_32sync):
 	exception_entry 0, 32
-	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
-	msr	daifclr, #DAIF_I		/* clear I for interrupt */
+	tbnz	x22, #SPSR_I, 1f		/* if SPSR.I is unmarked */
+	msr	daifclr, #DAIF_I		/* reenable interrupt */
  1:	adr	lr, el0_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
