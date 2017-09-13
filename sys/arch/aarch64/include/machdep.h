@@ -40,6 +40,7 @@ extern char *booted_kernel;
 void lwp_trampoline(void);
 void cpu_dosoftints(void);
 void cpu_switchto_softint(struct lwp *, int);
+void trap_doast(struct trapframe *);
 void trap_el1_bad(struct trapframe *);
 void trap_el1_sync(struct trapframe *);
 void trap_el0_bad(struct trapframe *);

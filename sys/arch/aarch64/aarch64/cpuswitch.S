@@ -215,20 +215,14 @@ ENTRY_NP(lwp_trampoline)
 	bl	_C_LABEL(lwp_startup)
 
 	/*
-	 * If the function returns, have it return to the exception trap return
-	 * handler which will restore all user state before returning to EL0.
+	 * When the x27 function returns, it will jump to el0_trap_exit.
 	 */
-	adr	x30, exception_trap_exit	// set function return address
-	mov	x0, x28				// mov arg into place
-	br	x27				// call function with arg
+	adr	x30, el0_trap_exit	/* tail call via lr */
+	mov	x0, x28			/* mov arg into place */
+	br	x27			/* call function with arg */
 END(lwp_trampoline)
 
-/*
- * Return from exception.  There's a trap return, an intr return, and
- * a syscall return.
- */
-ENTRY_NP(exception_trap_exit)
-	/* XXX critial section guarded by SR.EXL if it was MIPS XXX */
+	.macro unwind_x0_x18
 	ldp	x0, x1, [sp, #TF_X0]
 	ldp	x2, x3, [sp, #TF_X2]
 	ldp	x4, x5, [sp, #TF_X4]
@@ -239,35 +233,69 @@ ENTRY_NP(exception_trap_exit)
 	ldp	x14, x15, [sp, #TF_X14]
 	ldp	x16, x17, [sp, #TF_X16]
 	ldr	x18, [sp, #TF_X18]
+	.endm
+	.macro unwind_x19_x30
+	ldp	x19, x20, [sp, #TF_X19]
+	ldp	x21, x22, [sp, #TF_X21]
+	ldp	x23, x24, [sp, #TF_X23]
+	ldp	x25, x26, [sp, #TF_X25]
+	ldp	x27, x28, [sp, #TF_X27]
+	ldp	x29, x30, [sp, #TF_X29]
+	.endm
+
+/*
+ * EL1 exception return for trap and interrupt.
+ */
+ENTRY_NP(el1_trap_exit)
+	DISABLE_INTERRUPT		/* make sure I|F marked */
+
+	unwind_x0_x18
 
 	ldr	x20, [sp, #TF_PC]
 	ldr	x21, [sp, #TF_SPSR]
 	msr	elr_el1, x20		/* exception pc */
 	msr	spsr_el1, x21		/* exception pstate */
 
-	and	x21, x21, #1
-	cbz	x21, .Lkernelexception
+	unwind_x19_x30
+
+	/* pop off kernel trapframe on EL1 stack */
+	add	sp, sp, #TF_SIZE
+	eret
+END(el1_trap_exit)
+
+/*
+ * EL0 exception return for trap, interrupt and syscall with
+ * possible AST processing.
+ */
+ENTRY_NP(el0_trap_exit)
+	mrs	x8, tpidr_el1
+	ldr	w9, [x8, #CI_ASTPENDING]
+	cbz	w9, .Lfullexit
+	mov	x0, sp
+	bl	_C_LABEL(trap_doast)
+.Lfullexit:
+	DISABLE_INTERRUPT		/* make sure I|F marked */
+
+	unwind_x0_x18
+
+	mrs	x8, tpidr_el1
+	ldr	x9, [x8, #CI_CURLWP]
+	ldr	x23, [x9, #L_MD_CPACR]
+	msr	cpacr_el1, x23		/* FP unit EL0 handover */
+	isb				/* necessary? */
+
+	ldr	x20, [sp, #TF_PC]
+	ldr	x21, [sp, #TF_SPSR]
 	ldr	x22, [sp, #TF_SP]
+	msr	elr_el1, x20		/* exception pc */
+	msr	spsr_el1, x21		/* exception pstate */
 	msr	sp_el0, x22		/* restore EL0 stack */
 
-	ldp	x19, x20, [sp, #TF_X19]
-	ldp	x21, x22, [sp, #TF_X21]
-	ldp	x23, x24, [sp, #TF_X23]
-	ldp	x25, x26, [sp, #TF_X25]
-	ldp	x27, x28, [sp, #TF_X27]
-	ldp	x29, x30, [sp, #TF_X29]
-	/* EL1 sp stays at l_md_utf */
+	unwind_x19_x30
+
+	/* leave sp at l_md.md_utf, return back to EL0 user process */
 	eret
- .Lkernelexception:
-	ldp	x19, x20, [sp, #TF_X19]
-	ldp	x21, x22, [sp, #TF_X21]
-	ldp	x23, x24, [sp, #TF_X23]
-	ldp	x25, x26, [sp, #TF_X25]
-	ldp	x27, x28, [sp, #TF_X27]
-	ldp	x29, x30, [sp, #TF_X29]
-	add	sp, sp, #TF_SIZE	/* unwind trapframe on stack */
-	eret
-END(exception_trap_exit)
+END(el0_trap_exit)
 
 #ifdef DDB
 ENTRY(cpu_Debugger)

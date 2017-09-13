@@ -39,6 +39,7 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 #include <sys/types.h>
 #include <sys/cpu.h>
 #include <sys/proc.h>
+#include <sys/atomic.h>
 #include <sys/systm.h>
 #include <sys/signal.h>
 #include <sys/signalvar.h>
@@ -175,6 +176,25 @@ userret(struct lwp *l)
 	 */
 #endif
 	mi_userret(l);
+}
+
+void
+trap_doast(struct trapframe *tf)
+{
+	/*
+	 * allow to have a chance of context switch just prior to user
+	 * exception return.
+	 */
+
+	atomic_swap_uint(curcpu()->ci_astpending, 0);
+
+	if (curlwp->l_pflag & LP_OWEUPC) {
+		curlwp->l_pflag &= ~LP_OWEUPC;
+		ADDUPROF(curlwp);
+	}
+
+	if (curcpu()->ci_want_resched)
+		preempt();
 }
 
 void

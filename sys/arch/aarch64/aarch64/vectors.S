@@ -44,22 +44,14 @@ lr	.req	x30	/* link register */
 	.endif
 	mrs	x21, elr_el1
 	mrs	x22, spsr_el1
-	str	x20, [sp, #TF_SP]
-	str	x21, [sp, #TF_PC]
-	str	x22, [sp, #TF_SPSR]
-	mrs	x23, esr_el1
-	mrs	x24, far_el1
-	str	x23, [sp, #TF_ESR]
-	str	x24, [sp, #TF_FAR]
-	adr	lr, exception_trap_exit
 	mov	x0, sp
 	mov	x1, #\cause
-	.if \el == 1
-	b	trap_el1_bad
+	.if \el == 0
+	b	el0_bad_entry
 	.else
-	b	trap_el0_bad
+	b	el1_bad_entry
 	.endif
-	/* !!! beware about remaining slot !!! */
+	/* !!! vector slot size is limited to 32 instruction !!! */
 	.endm
 
 	.macro	exception_entry, el, regsize = 64
@@ -98,6 +90,9 @@ lr	.req	x30	/* link register */
 	mrs	x24, far_el1
 	str	x23, [sp, #TF_ESR]
 	str	x24, [sp, #TF_FAR]
+	.if \el == 0
+	msr	cpacr_el1, xzr; isb	/* XXX not sure XXX */
+	.endif
 	.endm
 
 	.text
@@ -137,10 +132,40 @@ _C_LABEL(el1_vectors):
 	VECT_INVAL	0, BAD_FIQ, 32		/* FIQ 32bit EL0 */
 	VECT_ENTRY	el0_32error		/* Error 32bit EL0 */
 
+_C_LABEL(el0_bad_entry):
+	str	x20, [sp, #TF_SP]
+	str	x21, [sp, #TF_PC]
+	str	x22, [sp, #TF_SPSR]
+	mrs	x23, esr_el1
+	mrs	x24, far_el1
+	str	x23, [sp, #TF_ESR]
+	str	x24, [sp, #TF_FAR]
+	tbnz	x22, #7, 1f			/* if SPSR.I is enabled */
+	msr	daifclr, #(DAIF_I>>DAIF_IMM_SHIFT)	/* reenable I */
+ 1:	ldr	lr, =panic
+	b	trap_el0_bad			/* call with x0/x1 */
+END(bad_entry)
+
+_C_LABEL(el1_bad_entry):
+	str	x20, [sp, #TF_SP]
+	str	x21, [sp, #TF_PC]
+	str	x22, [sp, #TF_SPSR]
+	mrs	x23, esr_el1
+	mrs	x24, far_el1
+	str	x23, [sp, #TF_ESR]
+	str	x24, [sp, #TF_FAR]
+	tbnz	x22, #7, 1f			/* if SPSR.I is enabled */
+	msr	daifclr, #(DAIF_I>>DAIF_IMM_SHIFT)	/* reenable I */
+ 1:	ldr	lr, =panic
+	b	trap_el1_bad			/* call with x0/x1 */
+END(bad_entry)
+
 _C_LABEL(el1_sync):
 	sub	sp, sp, #TF_SIZE
 	exception_entry 1
-	adr	lr, exception_trap_exit
+	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
+	msr	daifclr, #(DAIF_I>>DAIF_IMM_SHIFT)	/* clear I for interrupt */
+ 1:	adr	lr, el1_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_el1_sync
@@ -149,14 +174,17 @@ END(el1_sync)
 _C_LABEL(el1_irq):
 	sub	sp, sp, #TF_SIZE
 	exception_entry 1
-	adr	lr, exception_trap_exit
+	/* leave DAIF_I marked */
+	adr	lr, el1_trap_exit
 	mov	x0, sp
 	b	interrupt
 END(el1_irq)
 
 _C_LABEL(el0_sync):
 	exception_entry 0
-	adr	lr, exception_trap_exit
+	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
+	msr	daifclr, #(DAIF_I>>DAIF_IMM_SHIFT)	/* clear I for interupt */
+ 1:	adr	lr, el1_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_el0_sync
@@ -164,14 +192,15 @@ END(el0_sync)
 
 _C_LABEL(el0_irq):
 	exception_entry 0
-	adr	lr, exception_trap_exit
+	/* leave DAIF_I marked */
+	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	interrupt
 END(el0_irq)
 
 _C_LABEL(el0_error):
 	exception_entry 0
-	adr	lr, exception_trap_exit
+	adr	lr, el0_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_el0_error
@@ -179,7 +208,9 @@ END(el0_sync)
 
 _C_LABEL(el0_32sync):
 	exception_entry 0, 32
-	adr	lr, exception_trap_exit
+	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
+	msr	daifclr, #(DAIF_I>>DAIF_IMM_SHIFT)	/* clear I for interrupt */
+ 1:	adr	lr, el0_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_el0_32sync
@@ -187,14 +218,14 @@ END(el0_32sync)
 
 _C_LABEL(el0_32irq):
 	exception_entry 0, 32
-	adr	lr, exception_trap_exit
+	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	interrupt
 END(el0_32irq)
 
 _C_LABEL(el0_32error):
 	exception_entry 0, 32
-	adr	lr, exception_trap_exit
+	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	trap_el0_32error
 END(el0_32irq)
