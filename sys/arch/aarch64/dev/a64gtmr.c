@@ -224,11 +224,10 @@ cpu_initclocks(void)
 }
 
 void
-delay(unsigned int n)
+delay(unsigned int us)
 {
 	struct gtmr_softc * const sc = &gtmr_sc;
-
-	uint32_t freq = sc->sc_freq ? sc->sc_freq : reg_cntfrq_el0_read();
+	const uint64_t freq = sc->sc_freq ? sc->sc_freq : reg_cntfrq_el0_read();
 
 	/*
 	 * 0.5^20 + 0.5^25 + 0.5^26 = 0.00000099837779998779296875
@@ -236,9 +235,8 @@ delay(unsigned int n)
 	 * not quite divide by 1000000 but close enough
 	 * (higher by 0.16% which means we wait 0.16% longer).
 	 */
-	const uint64_t incr_per_us = (freq >> 20) + (freq >> 25) + (freq >> 26);
-
-	const uint64_t delta = n * incr_per_us;
+	const uint64_t n = (uint64_t)us * freq;	/* n = totalcycle * 10^6 */
+	const uint64_t delta = (n >> 20) + (n >> 25) + (n >> 26); /* div 10^6 */
 	const uint64_t base = reg_cntvct_el0_read();
 	const uint64_t finish = base + delta;
 
