@@ -36,6 +36,7 @@ __KERNEL_RCSID(1, "$NetBSD$");
 #include <sys/systm.h>
 #include <sys/device.h>
 #include <sys/cpu.h>
+#include <sys/kmem.h>
 
 #include <aarch64/armreg.h>
 #include <aarch64/cpuvar.h>
