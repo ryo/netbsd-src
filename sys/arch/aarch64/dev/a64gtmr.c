@@ -53,8 +53,6 @@ __KERNEL_RCSID(0, "$NetBSD: a64gtmr.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 static int gtmr_match(device_t, cfdata_t, void *);
 static void gtmr_attach(device_t, device_t, void *);
 
-static int clockhandler(void *);
-
 static u_int gtmr_get_timecount(struct timecounter *);
 
 static struct gtmr_softc gtmr_sc;
@@ -133,7 +131,7 @@ gtmr_attach(device_t parent, device_t self, void *aux)
 	    device_xname(self), "missing interrupts");
 
 	sc->sc_global_ih = intr_establish(irq, IPL_CLOCK, IST_LEVEL,
-	    clockhandler, NULL);
+	    gtmr_intr, NULL);
 	if (sc->sc_global_ih == NULL)
 		panic("%s: unable to register timer interrupt", __func__);
 	aprint_normal_dev(self, "interrupting on irq %d\n", irq);
@@ -248,12 +246,10 @@ delay(unsigned int us)
 }
 
 /*
- * clockhandler:
- *
- *	Handle the hardclock interrupt.
+ *  Handle the hardclock interrupt.
  */
-static int
-clockhandler(void *arg)
+int
+gtmr_intr(void *arg)
 {
 	const uint64_t now = reg_cntvct_el0_read();
 	struct cpu_info * const ci = curcpu();
