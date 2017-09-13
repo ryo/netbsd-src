@@ -273,6 +273,8 @@ interrupt(struct trapframe *tf)
 {
 	struct cpu_info * const ci = curcpu();
 
+	__asm("clrex; dmb sy");	/* XXXAARCH64: really need dmb ? */
+
 	ci->ci_intr_depth++;
 	ARM_IRQ_HANDLER(tf);
 	ci->ci_intr_depth--;

@@ -214,6 +214,8 @@ cpu_initclocks(void)
 	KASSERT(sc->sc_freq != 0);
 
 	sc->sc_autoinc = sc->sc_freq / hz;
+//XXXAARCH64
+	sc->sc_autoinc = sc->sc_freq / hz * hz * 2;
 
 	gtmr_init_cpu_clock(curcpu());
 

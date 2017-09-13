@@ -57,6 +57,12 @@ static void konsinit(void);
 
 uint64_t uboot_args[4] = { 0 };	/* filled in by rpi_start.S (not in bss) */
 
+
+//XXX: don't define here
+#define RPI_CPU_FREQ	(600 * 1000 * 1000)	// XXXAARCH64: get from vcprop::vbt_armclockrate.rate
+#define RPI_REF_FREQ	19200000
+
+
 //XXXAARCH64
 static void
 raspi_reset(void)
@@ -89,9 +95,7 @@ initarm(void)
 	physical_start = 0;
 	physical_end = physical_start + MEMSIZE * 1024 * 1024;
 
-	//XXX: don't define here
-#define RPI_REF_FREQ	(600 * 1000 * 1000)
-	curcpu()->ci_data.cpu_cc_freq = RPI_REF_FREQ;
+	curcpu()->ci_data.cpu_cc_freq = RPI_CPU_FREQ;
 
 	initarm64();
 

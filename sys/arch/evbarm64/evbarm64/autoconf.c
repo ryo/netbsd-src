@@ -44,7 +44,13 @@ cpu_rootconf(void)
 void
 cpu_configure(void)
 {
-	config_rootfound("mainbus", NULL);
+	splhigh();
+
+	if (config_rootfound("mainbus", NULL) == NULL)
+		panic("no mainbus found");
+
+	/* Turn on interrupt! */
+	spl0();
 }
 
 void
