@@ -251,9 +251,8 @@ bcm2835_irq_handler(void *frame)
 	/*
 	 * Record the pending_ipls and deliver them if we can.
 	 */
-	if ((ipl_mask & ~oldipl_mask) > oldipl_mask) {
+	if ((ipl_mask & ~oldipl_mask) > oldipl_mask)
 		pic_do_pending_ints(I32_bit, oldipl, frame);
-	}
 }
 
 static void
