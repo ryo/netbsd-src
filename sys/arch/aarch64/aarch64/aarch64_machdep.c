@@ -230,15 +230,11 @@ cpu_dumpconf(void)
 paddr_t
 vtophys(vaddr_t va)
 {
-	const uint64_t daif = reg_daif_read();
 	paddr_t pa;
-	/*
-	 * Use the address translation instruction to do the lookup.
-	 */
-	reg_daifset_write((DAIF_I|DAIF_F) >> DAIF_IMM_SHIFT);
-	__asm __volatile("at\ts1e1r, %0" :: "r"(va));
-	pa = reg_par_el1_read();
-	pa = (pa & PAR_F) ? VTOPHYS_FAILED : (pa & PAR_PA);
-	reg_daif_write(daif);
+
+	if (pmap_extract(pmap_kernel(), va, &pa) == false)
+		return 0;
+
 	return pa;
 }
+
