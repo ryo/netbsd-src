@@ -218,7 +218,7 @@ cpu_reboot(int howto, char *bootstr)
 	 * that it cannot page part of the binary in as the filesystem has
 	 * been unmounted.
 	 */
-	if (!(howto & RB_NOSYNC))
+	if ((howto & RB_NOSYNC) != 0)
 		bootsync();
 
 	/* Say NO to interrupts for the duration of the dump */
