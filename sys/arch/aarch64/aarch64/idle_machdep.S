@@ -30,10 +30,11 @@
  */
 
 #include <aarch64/asm.h>
-RCSID("$NetBSD: idle_machdep.S,v 1.1 2014/08/10 05:47:37 matt Exp $");
-
+#include <aarch64/locore.h>
 #include "assym.h"
 #include "opt_arm_intr_impl.h"
+
+RCSID("$NetBSD: idle_machdep.S,v 1.1 2014/08/10 05:47:37 matt Exp $");
 
 #ifdef ARM_INTR_IMPL
 #include ARM_INTR_IMPL
@@ -43,7 +44,7 @@ ENTRY(cpu_idle)
 	sub	sp, sp, #TF_SIZE		// allocate trapfame
 	str	x28, [sp, #TF_X28]
 	str	x30, [sp, #TF_X30]
-	msr	daifset, #((DAIF_I|DAIF_F)>>DAIF_IMM_SHIFT)	// disable interrupts
+	DISABLE_INTERRUPT
 	wfi
 
 	mrs	x1, tpidr_el1			// get curcpu()
@@ -72,7 +73,7 @@ ENTRY(cpu_idle)
 	ldr	x30, [sp, #TF_X30]		// restore registers
 	add	sp, sp, #TF_SIZE		// pop trapframe
 
-	msr	daifclr, #((DAIF_I|DAIF_F)>>DAIF_IMM_SHIFT)	// enable interrupts
+	ENABLE_INTERRUPT
 
 	ldr	w3, [x1, #CI_SOFTINTS]		// Get pending softint mask
 #if 0

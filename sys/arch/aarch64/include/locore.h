@@ -32,12 +32,14 @@
 #ifndef _AARCH64_LOCORE_H_
 #define _AARCH64_LOCORE_H_
 
-/*
- * This file is referred from arch/arm/ file(s) to conceal difference
- * between ARM and AARCH64.
- */
-
 #ifdef __aarch64__
+
+#ifdef _LOCORE
+
+#define ENABLE_INTERRUPT	msr daifclr, #((DAIF_I|DAIF_F)>>DAIF_IMM_SHIFT)
+#define DISABLE_INTERRUPT	msr daifset, #((DAIF_I|DAIF_F)>>DAIF_IMM_SHIFT)
+
+#else /* _LOCORE */
 
 #include <sys/types.h>
 
@@ -50,9 +52,8 @@
 
 #ifdef MULTIPROCESSOR
 // XXXAARCH64
-/* for compatibility arch/arm */
+/* for compatibility arch/arm/pic/pic.c */
 extern u_int arm_cpu_max;
-extern volatile u_int arm_cpu_hatched;
 #endif
 
 /* for compatibility arch/arm */
@@ -61,6 +62,9 @@ extern volatile u_int arm_cpu_hatched;
 
 static inline void cpsie(register_t psw) __attribute__((__unused__));
 static inline register_t cpsid(register_t psw) __attribute__((__unused__));
+
+#define IRQenable	cpsie(DAIF_I|DAIF_F)
+#define IRQdisable	cpsid(DAIF_I|DAIF_F)
 
 static inline void
 cpsie(register_t psw)
@@ -74,8 +78,9 @@ cpsid(register_t psw)
 	uint32_t oldpsw = reg_daif_read();
 	reg_daifset_write((psw & (DAIF_I|DAIF_F)) >> DAIF_IMM_SHIFT);
 	return oldpsw;
-
 }
+
+#endif /* _LOCORE */
 
 #elif defined(__arm__)
 

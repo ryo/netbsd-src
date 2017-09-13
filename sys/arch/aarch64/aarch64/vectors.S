@@ -1,6 +1,7 @@
 /* $NetBSD: vectors.S,v 1.4 2017/08/23 13:02:14 nisimura Exp $ */
 
 #include <aarch64/asm.h>
+#include <aarch64/locore.h>
 #include "assym.h"
 
 lr	.req	x30	/* link register */
@@ -141,7 +142,7 @@ _C_LABEL(el0_bad_entry):
 	str	x23, [sp, #TF_ESR]
 	str	x24, [sp, #TF_FAR]
 	tbnz	x22, #7, 1f			/* if SPSR.I is enabled */
-	msr	daifclr, #(DAIF_I>>DAIF_IMM_SHIFT)	/* reenable I */
+	ENABLE_INTERRUPT
  1:	ldr	lr, =panic
 	b	trap_el0_bad			/* call with x0/x1 */
 END(bad_entry)
@@ -155,7 +156,7 @@ _C_LABEL(el1_bad_entry):
 	str	x23, [sp, #TF_ESR]
 	str	x24, [sp, #TF_FAR]
 	tbnz	x22, #7, 1f			/* if SPSR.I is enabled */
-	msr	daifclr, #(DAIF_I>>DAIF_IMM_SHIFT)	/* reenable I */
+	ENABLE_INTERRUPT
  1:	ldr	lr, =panic
 	b	trap_el1_bad			/* call with x0/x1 */
 END(bad_entry)
@@ -164,7 +165,7 @@ _C_LABEL(el1_sync):
 	sub	sp, sp, #TF_SIZE
 	exception_entry 1
 	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
-	msr	daifclr, #(DAIF_I>>DAIF_IMM_SHIFT)	/* clear I for interrupt */
+	ENABLE_INTERRUPT
  1:	adr	lr, el1_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
@@ -183,7 +184,7 @@ END(el1_irq)
 _C_LABEL(el0_sync):
 	exception_entry 0
 	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
-	msr	daifclr, #(DAIF_I>>DAIF_IMM_SHIFT)	/* clear I for interupt */
+	ENABLE_INTERRUPT
  1:	adr	lr, el1_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
@@ -209,7 +210,7 @@ END(el0_sync)
 _C_LABEL(el0_32sync):
 	exception_entry 0, 32
 	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
-	msr	daifclr, #(DAIF_I>>DAIF_IMM_SHIFT)	/* clear I for interrupt */
+	ENABLE_INTERRUPT
  1:	adr	lr, el0_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
