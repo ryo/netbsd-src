@@ -75,6 +75,10 @@ raspi_reset(void)
 	volatile uint32_t *wdog = (volatile uint32_t *)BCM2835_WDOG_BASE;
 	uint32_t v;
 
+	//XXXAARCH64
+	void cpucache_clean(void);
+	cpucache_clean();
+
 	v = wdog[BCM2835_WDOG_RSTC_REG];
 	v &= ~0x30;
 	v |= 0x20;
@@ -98,8 +102,6 @@ initarm(void)
 	curcpu()->ci_data.cpu_cc_freq = RPI_CPU_FREQ;
 
 	initarm64();
-
-	printf("cputype=0x%08x\n", cputype);
 }
 
 void

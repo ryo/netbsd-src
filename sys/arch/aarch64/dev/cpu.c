@@ -175,9 +175,50 @@ struct aarch64_cache_info {
 	bool cache_wa;
 };
 
+// XXXAARCH64
+#if 0
+#define MAX_CACHE_LEVEL	8
+
+struct aarch64_cache_type {
+	int level;				/* 0:L1, 1:L2, ... 7:L8 cache */
+	enum cachetype cachetype;		/* VIVT/VIPT/PIPT */
+	struct aarch64_cache_info *icacheinfo;
+	struct aarch64_cache_info *dcacheinfo;
+}
+struct aarch64_cache_type aarch64_cache_type[MAX_CACHE_LEVEL];
+#endif
+
+// XXXAARCH64
 struct aarch64_cache_info aarch64_l1_icache;
 struct aarch64_cache_info aarch64_l1_dcache;
 struct aarch64_cache_info aarch64_l2_cache;
+
+// XXXAARCH64
+static inline void
+cache_clean(int level, struct aarch64_cache_info *cinfo)
+{
+	int set, way, setshift, wayshift;
+	uint64_t x;
+
+	setshift = ffs(cinfo->cache_line_size) - 1;
+	wayshift = 32 - (ffs(cinfo->cache_ways) - 1);
+
+	for (set = 0; set < cinfo->cache_sets; set++) {
+		for (way = 0; way < cinfo->cache_ways; way++) {
+			x = (way << wayshift) | (set << setshift) | (level << 1);
+			__asm __volatile("dc csw, %0" :: "r"(x));
+		}
+	}
+}
+
+void cpucache_clean(void);
+
+void
+cpucache_clean(void)
+{
+	cache_clean(0, &aarch64_l1_dcache);
+	cache_clean(1, &aarch64_l2_cache);
+}
 
 static void
 extract_ccsidr(struct aarch64_cache_info *cinfo, uint32_t ccsidr)
@@ -210,6 +251,16 @@ prt_cache(device_t self, int level, int inst, const char *cachetype, const char 
 
 	ccsidr = reg_ccsidr_el1_read();
 	extract_ccsidr(&cinfo, ccsidr);
+
+	// XXXAARCH64
+	if ((level == 0) && inst)
+		memcpy(&aarch64_l1_icache, &cinfo, sizeof(cinfo));
+	if ((level == 0) && !inst)
+		memcpy(&aarch64_l1_dcache, &cinfo, sizeof(cinfo));
+	if (level == 1)
+		memcpy(&aarch64_l2_cache, &cinfo, sizeof(cinfo));
+
+
 	aprint_normal_dev(self, "L%d %dKB/%dB %d-way%s%s%s%s %s%s cache\n",
 	    level + 1,
 	    cinfo.cache_size / 1024,
