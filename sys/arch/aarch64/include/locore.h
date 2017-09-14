@@ -57,29 +57,21 @@ extern u_int arm_cpu_max;
 extern volatile u_int arm_cpu_hatched;
 #endif
 
-static inline void cpsie(register_t psw) __attribute__((__unused__));
-static inline register_t cpsid(register_t psw) __attribute__((__unused__));
+static inline void cpsie(register_t cpsr) __attribute__((__unused__));
+static inline register_t cpsid(register_t cpsr) __attribute__((__unused__));
 
 static inline void
-cpsie(register_t psw)
+cpsie(register_t pstatedaif)
 {
-	if (!__builtin_constant_p(psw)) {
-		reg_daif_write(psw);
-	} else {
-		reg_daifset_write(psw);
-	}
+	reg_daifclr_write(pstatedaif >> 6);
 }
 
 static inline register_t
-cpsid(register_t psw)
+cpsid(register_t pstatedaif)
 {
-	register_t oldpsw = reg_daif_read();
-	if (!__builtin_constant_p(psw)) {
-		reg_daif_write(oldpsw & ~psw);
-	} else {
-		reg_daifclr_write(psw);
-	}
-	return oldpsw;
+	register_t olddaif = reg_daif_read();
+	reg_daifset_write(pstatedaif >> 6);
+	return 0xf & (olddaif >> 6); /* align to DAIF[3:0] */
 }
 
 #elif defined(__arm__)

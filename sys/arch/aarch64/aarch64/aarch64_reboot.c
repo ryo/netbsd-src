@@ -182,7 +182,7 @@ bootsync(void)
 	bootsyncdone = true;
 
 	/* Make sure we can still manage to do things */
-	if (reg_daif_read() & DAIF_I) {
+	if (reg_daif_read() & SPSR_I) { /* PSTATE.DAIF_I */
 		/*
 		 * If we get here then boot has been called without RB_NOSYNC
 		 * and interrupts were disabled. This means the boot() call
