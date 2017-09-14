@@ -233,7 +233,7 @@ vtophys(vaddr_t va)
 	paddr_t pa;
 
 	if (pmap_extract(pmap_kernel(), va, &pa) == false)
-		return 0;
+		return VTOPHYS_FAILED;
 
 	return pa;
 }
