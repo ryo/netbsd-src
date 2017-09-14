@@ -122,47 +122,46 @@ cpu_attach(device_t parent, device_t self, void *aux)
 //	vfp_attach(ci);
 }
 
-
-enum cpu_class {
-	CPU_CLASS_NONE,
-	CPU_CLASS_CORTEX
-};
-
 struct cpuidtab {
-	uint32_t cpuid;
-	enum cpu_class cpu_class;
-	const char *cpu_classname;
+	uint32_t cpu_partnum;
+	const char *cpu_name;
+	const char *cpu_class;
+	const char *cpu_architecture;
 };
+
+#define CPU_PARTMASK	(CPU_ID_IMPLEMENTOR_MASK | CPU_ID_PARTNO_MASK)
 
 const struct cpuidtab cpuids[] = {
-	{ CPU_ID_CORTEXA53R0, CPU_CLASS_CORTEX, "Cortex-A53" },
-	{ CPU_ID_CORTEXA57R0, CPU_CLASS_CORTEX, "Cortex-A57" },
-	{ CPU_ID_CORTEXA72R0, CPU_CLASS_CORTEX, "Cortex-A72" }
+	{ CPU_ID_CORTEXA53R0 & CPU_PARTMASK, "Cortex-A53", "Cortex", "V8-A" },
+	{ CPU_ID_CORTEXA57R0 & CPU_PARTMASK, "Cortex-A57", "Cortex", "V8-A" },
+	{ CPU_ID_CORTEXA72R0 & CPU_PARTMASK, "Cortex-A72", "Cortex", "V8-A" },
+	{ CPU_ID_CORTEXA73R0 & CPU_PARTMASK, "Cortex-A73", "Cortex", "V8-A" },
+	{ CPU_ID_CORTEXA55R1 & CPU_PARTMASK, "Cortex-A55", "Cortex", "V8.2-A" },
+	{ CPU_ID_CORTEXA75R2 & CPU_PARTMASK, "Cortex-A75", "Cortex", "V8.2-A" },
 };
 
-static enum cpu_class
+static void
 identify_aarch64_model(uint32_t cpuid, char *buf, size_t len)
 {
 	int i;
 	uint32_t cpupart, variant, revision;
 
-	cpupart = cpuid & CPU_ID_PARTNO_MASK;
+	cpupart = cpuid & CPU_PARTMASK;
 	variant = __SHIFTOUT(cpuid, CPU_ID_VARIANT_MASK);
 	revision = __SHIFTOUT(cpuid, CPU_ID_REVISION_MASK);
 
 	for (i = 0; i < __arraycount(cpuids); i++) {
-		if (cpupart == (cpuids[i].cpuid & CPU_ID_PARTNO_MASK)) {
-			snprintf(buf, len, "%s r%dp%d",
-			    cpuids[i].cpu_classname, variant, revision);
-			return cpuids[i].cpu_class;
+		if (cpupart == cpuids[i].cpu_partnum) {
+			snprintf(buf, len, "%s r%dp%d (%s %s core)",
+			    cpuids[i].cpu_name, variant, revision,
+			    cpuids[i].cpu_class,
+			    cpuids[i].cpu_architecture);
+			return;
 		}
 	}
 
 	snprintf(buf, len, "unknown CPU (ID = 0x%08x)", cpuid);
-	return CPU_CLASS_NONE;
 }
-
-
 
 struct aarch64_cache_info {
 	u_int cache_line_size;
