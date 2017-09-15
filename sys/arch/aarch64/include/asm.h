@@ -34,7 +34,7 @@
 
 #ifdef __aarch64__
 
-#define	__BIT(n)	(1 << (n))
+#define __BIT(n)	(1 << (n))
 #define __BITS(hi,lo)	((~((~0)<<((hi)+1)))&((~0)<<(lo)))
 
 #define __LOWEST_SET_BIT(__mask) ((((__mask) - 1) & (__mask)) ^ (__mask))
@@ -42,7 +42,7 @@
 #define __SHIFTIN(__x, __mask) ((__x) * __LOWEST_SET_BIT(__mask))
 
 #define _C_LABEL(x)	x
-#define	_ASM_LABEL(x)	x
+#define _ASM_LABEL(x)	x
 
 #define __CONCAT(x,y)	x ## y
 #define __STRING(x)	#x
@@ -67,18 +67,18 @@
 # define _PROF_PROLOGUE
 #endif
 
-#define	ENTRY(y)		_ENTRY(_C_LABEL(y)); _PROF_PROLOGUE
-#define	ENTRY_NP(y)		_ENTRY(_C_LABEL(y))
-#define	END(y)			_END(_C_LABEL(y))
-#define	END(y)			_END(_C_LABEL(y))
-#define	ASENTRY(y)		_ENTRY(_ASM_LABEL(y)); _PROF_PROLOGUE
-#define	ASENTRY_NP(y)		_ENTRY(_ASM_LABEL(y))
-#define	ASEND(y)		_END(_ASM_LABEL(y))
+#define ENTRY(y)		_ENTRY(_C_LABEL(y)); _PROF_PROLOGUE
+#define ENTRY_NP(y)		_ENTRY(_C_LABEL(y))
+#define END(y)			_END(_C_LABEL(y))
+#define END(y)			_END(_C_LABEL(y))
+#define ASENTRY(y)		_ENTRY(_ASM_LABEL(y)); _PROF_PROLOGUE
+#define ASENTRY_NP(y)		_ENTRY(_ASM_LABEL(y))
+#define ASEND(y)		_END(_ASM_LABEL(y))
 
-#define	ASMSTR		.asciz
+#define ASMSTR		.asciz
 
 #ifdef __PIC__
-#define	GOTREF(x)		:got:x
+#define GOTREF(x)		:got:x
 #define GOTLO12(x)		:got_lo12:x
 #else
 #define GOTREF(x)		x
@@ -87,7 +87,7 @@
 
 #define RCSID(x)	.pushsection ".ident"; .asciz x; .popsection
 
-#define	WEAK_ALIAS(alias,sym)						\
+#define WEAK_ALIAS(alias,sym)						\
 	.weak alias;							\
 	alias = sym
 
@@ -98,7 +98,7 @@
 	.globl alias;							\
 	alias = sym
 
-#define	WARN_REFERENCES(sym,msg)					\
+#define WARN_REFERENCES(sym,msg)					\
 	.pushsection .gnu.warning. ## sym;				\
 	.ascii msg;							\
 	.popsection
