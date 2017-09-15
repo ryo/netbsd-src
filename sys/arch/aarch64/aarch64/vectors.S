@@ -4,8 +4,6 @@
 #include <aarch64/locore.h>
 #include "assym.h"
 
-lr	.req	x30	/* link register */
-
 #define BAD_SYNC	1
 #define BAD_IRQ		2
 #define BAD_FIQ		3
@@ -133,7 +131,7 @@ _C_LABEL(el1_vectors):
 	VECT_INVAL	0, BAD_FIQ, 32		/* FIQ 32bit EL0 */
 	VECT_ENTRY	el0_32error		/* Error 32bit EL0 */
 
-_C_LABEL(el0_bad_entry):
+ASENTRY_NP(el0_bad_entry)
 	str	x20, [sp, #TF_SP]
 	str	x21, [sp, #TF_PC]
 	str	x22, [sp, #TF_SPSR]
@@ -145,9 +143,9 @@ _C_LABEL(el0_bad_entry):
 	ENABLE_INTERRUPT
  1:	ldr	lr, =panic
 	b	trap_el0_bad			/* call with x0/x1 */
-END(bad_entry)
+ASEND(bad_entry)
 
-_C_LABEL(el1_bad_entry):
+ASENTRY_NP(el1_bad_entry)
 	str	x20, [sp, #TF_SP]
 	str	x21, [sp, #TF_PC]
 	str	x22, [sp, #TF_SPSR]
@@ -159,9 +157,9 @@ _C_LABEL(el1_bad_entry):
 	ENABLE_INTERRUPT
  1:	ldr	lr, =panic
 	b	trap_el1_bad			/* call with x0/x1 */
-END(bad_entry)
+ASEND(bad_entry)
 
-_C_LABEL(el1_sync):
+ASENTRY_NP(el1_sync)
 	sub	sp, sp, #TF_SIZE
 	exception_entry 1
 	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
@@ -170,18 +168,18 @@ _C_LABEL(el1_sync):
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_el1_sync
-END(el1_sync)
+ASEND(el1_sync)
 
-_C_LABEL(el1_irq):
+ASENTRY_NP(el1_irq)
 	sub	sp, sp, #TF_SIZE
 	exception_entry 1
 	/* leave DAIF_I marked */
 	adr	lr, el1_trap_exit
 	mov	x0, sp
 	b	interrupt
-END(el1_irq)
+ASEND(el1_irq)
 
-_C_LABEL(el0_sync):
+ASENTRY_NP(el0_sync)
 	exception_entry 0
 	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
 	ENABLE_INTERRUPT
@@ -189,25 +187,25 @@ _C_LABEL(el0_sync):
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_el0_sync
-END(el0_sync)
+ASEND(el0_sync)
 
-_C_LABEL(el0_irq):
+ASENTRY(el0_irq)
 	exception_entry 0
 	/* leave DAIF_I marked */
 	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	interrupt
-END(el0_irq)
+ASEND(el0_irq)
 
-_C_LABEL(el0_error):
+ASENTRY_NP(el0_error)
 	exception_entry 0
 	adr	lr, el0_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_el0_error
-END(el0_sync)
+ASEND(el0_sync)
 
-_C_LABEL(el0_32sync):
+ASENTRY(el0_32sync)
 	exception_entry 0, 32
 	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
 	ENABLE_INTERRUPT
@@ -215,18 +213,18 @@ _C_LABEL(el0_32sync):
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_el0_32sync
-END(el0_32sync)
+ASEND(el0_32sync)
 
-_C_LABEL(el0_32irq):
+ASENTRY(el0_32irq)
 	exception_entry 0, 32
 	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	interrupt
-END(el0_32irq)
+ASEND(el0_32irq)
 
-_C_LABEL(el0_32error):
+ASENTRY(el0_32error)
 	exception_entry 0, 32
 	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	trap_el0_32error
-END(el0_32irq)
+ASEND(el0_32irq)
