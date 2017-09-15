@@ -172,7 +172,7 @@ define	TF_TPIDR		offsetof(struct trapframe, tf_tpidr)
 define	TF_ESR			offsetof(struct trapframe, tf_esr)
 define	TF_FAR			offsetof(struct trapframe, tf_far)
 define	TF_CHAIN		offsetof(struct trapframe, tf_chain)
-define	TF_SIZE			roundup(sizeof(struct trapframe), 16)
+define	TF_SIZE			TF_SIZE
 
 
 define	CI_CURPRIORITY		offsetof(struct cpu_info, ci_schedstate.spc_curpriority)

@@ -172,7 +172,7 @@ initarm64(void)
 
 
 	tf = (struct trapframe *)(lwp0uspace + USPACE) - 1;
-	memset(tf, 0, sizeof(struct trapframe));
+	memset(tf, 0, TF_SIZE);
 
 	uvm_lwp_setuarea(&lwp0, lwp0uspace);
 	memset(&lwp0.l_md, 0, sizeof(lwp0.l_md));
