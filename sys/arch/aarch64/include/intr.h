@@ -32,10 +32,6 @@
 #ifndef _AARCH64_INTR_H_
 #define _AARCH64_INTR_H_
 
-#ifdef _LOCORE
-#error use "assym.h"
-#endif
-
 #ifdef _KERNEL
 
 #ifdef _KERNEL_OPT
@@ -81,6 +77,11 @@
 
 #include ARM_INTR_IMPL
 
+#ifdef _LOCORE
+
+#include "assym.h"
+
+#else /* _LOCORE */
 
 typedef uint8_t ipl_t;
 typedef struct {
@@ -102,6 +103,8 @@ splraiseipl(ipl_cookie_t icookie)
 #define spl0()		_spllower(IPL_NONE);
 
 #include <sys/spl.h>
+
+#endif /* _LOCORE */
 
 #endif /* _KERNEL */
 
