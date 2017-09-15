@@ -48,8 +48,9 @@ void trap_el0_sync(struct trapframe *);
 void trap_el0_error(struct trapframe *);
 void trap_el0_32sync(struct trapframe *);
 void trap_el0_32error(struct trapframe *);
-
 void interrupt(struct trapframe *);
+
+void dump_trapframe(struct trapframe *, void (*)(const char *, ...));
 void dumpsys(void);
 void initarm64(void);
 void dosoftints(void);
