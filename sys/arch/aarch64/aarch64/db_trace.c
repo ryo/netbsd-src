@@ -33,6 +33,8 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <sys/param.h>
 
 #include <aarch64/db_machdep.h>
+#include <aarch64/machdep.h>
+#include <aarch64/armreg.h>
 
 #include <ddb/db_access.h>
 #include <ddb/db_command.h>
@@ -42,55 +44,109 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <ddb/db_extern.h>
 #include <ddb/db_interface.h>
 
+#define MAXBACKTRACE	128	/* against infinite loop */
 
-/*
- *  fp[0]  saved fp(x29) value
- *  fp[1]  saved lr(x30) value
- */
+static void
+pr_traceaddr(const char *prefix, uint64_t frame, uint64_t pc, const char **name,
+    void (*pr)(const char *, ...))
+{
+	db_expr_t offset;
+	db_sym_t sym;
 
-#define MAXBACKTRACE	64	/* against loop */
+	(*pr)("%s %016llx ", prefix, frame);
+	sym = db_search_symbol(pc, DB_STGY_ANY, &offset);
+	if (sym != DB_SYM_NULL) {
+		db_symbol_values(sym, name, NULL);
+	} else {
+		*name = "?";
+	}
+	(*pr)("%s() at ", *name);
+	(*pr)("%016llx ", pc);
+	db_printsym(pc, DB_STGY_PROC, pr);
+	(*pr)("\n", pc);
+}
 
 void
 db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
     const char *modif, void (*pr)(const char *, ...))
 {
-	uint64_t pc, sp, lr, lastlr;
-	uint64_t frame;
-	int maxbacktrace;
+	uint64_t sp, lr, lastlr;
+	uint64_t frame, lastframe;
 
-//	db_printf("%s: addr=%016llx have_addr=%d, count=%lld, modif=%s\n",
-//	    __func__, addr, have_addr, count, modif);
+#if 0
+	db_printf("%s: addr=%016llx have_addr=%d, count=%lld, modif=%s\n",
+	    __func__, addr, have_addr, count, modif);
+#endif
 
 	if (!have_addr) {
 		frame = DDB_REGS->tf_reg[29];	/* fp = x29 */
 		sp = DDB_REGS->tf_sp;
 		lr = DDB_REGS->tf_lr;
 	} else {
+		//XXXAARCH64
 		db_printf("%s: %016llx: not supported now\n", __func__, addr);
 		return;
 	}
 
-	for (maxbacktrace = MAXBACKTRACE;
-	    (maxbacktrace > 0) && (frame != 0);) {
-		db_expr_t offset;
-		db_sym_t sym;
-		const char *name;
+	if (count > MAXBACKTRACE)
+		count = MAXBACKTRACE;
 
-		pc = lr - 4;
-
-		sym = db_search_symbol(pc, DB_STGY_ANY, &offset);
-		if (sym != DB_SYM_NULL) {
-			db_symbol_values(sym, &name, NULL);
-
-			(*pr)("%s() at ", name);
-		}
-		db_printsym(pc, DB_STGY_PROC, pr);
-//		(*pr)(" (%016llx)", pc);
-		(*pr)("\n", pc);
+	for (; (count > 0) && (frame != 0); count--) {
+		const char *name = NULL;
 
 		lastlr = lr;
-		db_read_bytes(frame + 8, sizeof(db_addr_t), (char *)&lr);
-		db_read_bytes(frame, sizeof(db_addr_t), (char *)&frame);
-	}
+		lastframe = frame;
 
+		/*
+		 *
+		 * interrupt handler trace
+		 *
+		 *  XXX: depend on implementation of vectors.S and cpuswitch.S
+		 *
+		 * in case of interrupted in kernel:
+		 *
+		 *     main()
+		 *  ->        :
+		 *  -> some-kernel-function()
+		 *     ---INTERRUPT!---
+		 *  -> <push TRAPFRAME>
+		 *  -> el1_{sync,irq}() without fp
+		 *  -> interrupt()
+		 *  -> ARM_IRQ_HANDLER()
+		 *  ->        :
+		 *  ->        :
+		 */
+		extern char el1_trap[];	/* XXX */
+		if ((char *)(lr - 4) == (char *)el1_trap) {
+
+			struct trapframe *tf;
+
+			tf = (struct trapframe *)(lastframe + 16);
+			pr_traceaddr("tf", tf, lr - 4, &name, pr);
+
+			db_read_bytes(&tf->tf_pc, sizeof(tf->tf_pc),
+			    (char *)&lr);
+			db_read_bytes(&tf->tf_reg[29], sizeof(tf->tf_lr),
+			    (char *)&frame);
+
+			(*pr)("--- trapframe %016llx ---\n", tf);
+			dump_trapframe(tf, pr);
+			(*pr)("----------------------------------\n");
+
+		} else {
+			/*
+			 * normal stack trace
+			 *
+			 *  fp[0]  saved fp(x29) value
+			 *  fp[1]  saved lr(x30) value
+			 */
+			pr_traceaddr("fp", frame, lr - 4, &name, pr);
+
+			db_read_bytes(frame + 8, sizeof(lr), (char *)&lr);
+			db_read_bytes(frame, sizeof(frame), (char *)&frame);
+		}
+
+		if (frame == lastframe)
+			break;
+	}
 }

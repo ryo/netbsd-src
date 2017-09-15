@@ -241,6 +241,10 @@ END(lwp_trampoline)
 /*
  * EL1 exception return for trap and interrupt.
  */
+#ifdef DDB
+ENTRY_NP(el1_trap)
+	nop				/* dummy for DDB backtrace (for lr-4) */
+#endif
 ENTRY_NP(el1_trap_exit)
 	DISABLE_INTERRUPT		/* make sure I|F marked */
 
@@ -257,11 +261,18 @@ ENTRY_NP(el1_trap_exit)
 	add	sp, sp, #TF_SIZE
 	eret
 END(el1_trap_exit)
+#ifdef DDB
+END(el1_trap)
+#endif
 
 /*
  * EL0 exception return for trap, interrupt and syscall with
  * possible AST processing.
  */
+#ifdef DDB
+ENTRY_NP(el0_trap)
+	nop				/* dummy for DDB backtrace (for lr-4) */
+#endif
 ENTRY_NP(el0_trap_exit)
 	mrs	x8, tpidr_el1
 	ldr	w9, [x8, #CI_ASTPENDING]
@@ -291,6 +302,9 @@ ENTRY_NP(el0_trap_exit)
 	/* leave sp at l_md.md_utf, return back to EL0 user process */
 	eret
 END(el0_trap_exit)
+#ifdef DDB
+END(el0_trap)
+#endif
 
 #ifdef DDB
 ENTRY(cpu_Debugger)
