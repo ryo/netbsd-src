@@ -71,7 +71,7 @@ cpsid(register_t pstatedaif)
 {
 	register_t olddaif = reg_daif_read();
 	reg_daifset_write(pstatedaif >> 6);
-	return 0xf & (olddaif >> 6); /* align to DAIF[3:0] */
+	return olddaif; /* pstate [9:6] */
 }
 
 #elif defined(__arm__)
