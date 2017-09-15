@@ -184,6 +184,7 @@ static const uintmax_t
     CCSIDR_ASSOC	= __BITS(12,3),	/* (Associativity of cache) - 1 */
     CCSIDR_LINESIZE	= __BITS(2,0);	/* Number of bytes in cache line */
 
+AARCH64REG_READ_INLINE(currentel)
 AARCH64REG_READ_INLINE(id_afr0_el1)
 AARCH64REG_READ_INLINE(id_adr0_el1)
 AARCH64REG_READ_INLINE(id_isar0_el1)
