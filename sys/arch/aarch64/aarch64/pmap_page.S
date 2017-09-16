@@ -1,4 +1,4 @@
-/* $NetBSD: pmap_page.S,v 1.1 2014/08/10 05:47:37 matt Exp $ */
+/* $NetBSD: pmap_page.S,v 1.2 2017/08/27 00:29:57 ryo Exp $ */
 
 /*-
  * Copyright (c) 2014 The NetBSD Foundation, Inc.
@@ -33,7 +33,7 @@
 
 #include "assym.h"
 
-RCSID("$NetBSD: pmap_page.S,v 1.1 2014/08/10 05:47:37 matt Exp $");
+RCSID("$NetBSD: pmap_page.S,v 1.2 2017/08/27 00:29:57 ryo Exp $");
 
 /* LINTSTUB: void pmap_zero_page(paddr_t pa); */
 ENTRY(pmap_zero_page)
