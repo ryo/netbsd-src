@@ -109,11 +109,16 @@ struct pmap_devmap {
 	paddr_t pd_pa;		/* physical address */
 	psize_t pd_size;	/* size of region */
 	vm_prot_t pd_prot;	/* protection code */
-	int pd_cache;		/* cache attributes */
+	u_int pd_flags;		/* flags for pmap_kenter_pa() */
 };
 void pmap_devmap_register(const struct pmap_devmap *);
+void pmap_devmap_bootstrap(const struct pmap_devmap *);
 const struct pmap_devmap *pmap_devmap_find_pa(paddr_t, psize_t);
 const struct pmap_devmap *pmap_devmap_find_va(vaddr_t, vsize_t);
+
+/* devmap use L2 blocks. (2Mbyte) */
+#define DEVMAP_TRUNC_ADDR(x)	((x) & ~L2_OFFSET)
+#define DEVMAP_ROUND_SIZE(x)	(((x) + L2_SIZE - 1) & ~(L2_SIZE - 1))
 
 #elif defined(__arm__)
 

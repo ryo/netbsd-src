@@ -43,16 +43,20 @@ __KERNEL_RCSID(1, "$NetBSD: pmap.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 #include <aarch64/armreg.h>
 #include <aarch64/cpufunc.h>
 
+#include "opt_arm_debug.h"
+
 /* memory attributes are configured MAIR_EL1 in locore */
 #define LX_BLKPAG_ATTR_NORMAL_WB	__SHIFTIN(0, LX_BLKPAG_ATTR_INDX)
 #define LX_BLKPAG_ATTR_NORMAL_NC	__SHIFTIN(1, LX_BLKPAG_ATTR_INDX)
 #define LX_BLKPAG_ATTR_NORMAL_WT	__SHIFTIN(2, LX_BLKPAG_ATTR_INDX)
 #define LX_BLKPAG_ATTR_DEVICE_MEM	__SHIFTIN(3, LX_BLKPAG_ATTR_INDX)
+#define LX_BLKPAG_ATTR_MASK		LX_BLKPAG_ATTR_INDX
 
 static pt_entry_t *_pmap_pte_lookup(vaddr_t);
 static pd_entry_t *_pmap_grow_l2(pd_entry_t *, vaddr_t);
 static pt_entry_t *_pmap_grow_l3(pd_entry_t *, vaddr_t);
-
+static pt_entry_t _pmap_pte_update_prot(pt_entry_t, vm_prot_t);
+static pt_entry_t _pmap_pte_update_cacheflags(pt_entry_t, u_int);
 static struct pmap kernel_pmap;
 
 struct pmap * const kernel_pmap_ptr = &kernel_pmap;
@@ -75,23 +79,128 @@ vaddr_t virtual_avail, virtual_end;
 
 static const struct pmap_devmap *pmap_devmap_table;
 
+static vsize_t
+_pmap_map_chunk(pd_entry_t *l2, vaddr_t va, paddr_t pa, vsize_t size,
+    vm_prot_t prot, u_int flags)
+{
+	pd_entry_t oldpte;
+	pt_entry_t attr;
+	vsize_t resid;
+
+	oldpte = l2[l2pde_index(va)];
+	KDASSERT(!l2pde_valid(oldpte));
+
+	attr = _pmap_pte_update_prot(L2_BLOCK, prot);
+	attr = _pmap_pte_update_cacheflags(attr, flags);
+#ifdef MULTIPROCESSOR
+	attr |= LX_BLKPAG_SH_IS;
+#endif
+
+	resid = (size + (L2_SIZE - 1)) & ~(L2_SIZE - 1);
+	size = resid;
+
+	while (resid > 0) {
+		pt_entry_t pte;
+
+		pte = pa | attr;
+		atomic_swap_64(&l2[l2pde_index(va)], pte);
+
+		aarch64_tlb_flushID_SE(va);
+		if ((prot & VM_PROT_EXECUTE) != 0)
+			cpu_icache_sync_range(va, L2_SIZE);
+
+		va += L2_SIZE;
+		pa += L2_SIZE;
+		resid -= L2_SIZE;
+	}
+
+	return size;
+}
+
 void
 pmap_devmap_register(const struct pmap_devmap *table)
 {
 	pmap_devmap_table = table;
 }
 
+void
+pmap_devmap_bootstrap(const struct pmap_devmap *table)
+{
+	pd_entry_t *l0, *l1, *l2;
+	vaddr_t va;
+	int i;
+
+	pmap_devmap_table = table;
+
+	l0 = AARCH64_PA_TO_KVA(reg_ttbr1_el1_read());
+
+#ifdef VERBOSE_INIT_ARM
+	printf("%s:\n", __func__);
+#endif
+	for (i = 0; pmap_devmap_table[i].pd_size != 0; i++) {
+#ifdef VERBOSE_INIT_ARM
+		printf(" devmap: pa %08lx-%08lx = va %016lx\n",
+		    pmap_devmap_table[i].pd_pa,
+		    pmap_devmap_table[i].pd_pa +
+		    pmap_devmap_table[i].pd_size - 1,
+		    pmap_devmap_table[i].pd_va);
+#endif
+		va = pmap_devmap_table[i].pd_va;
+
+		l1 = l0pde_pa(l0[l0pde_index(va)]);
+		KASSERT(l1 != NULL);
+		l1 = AARCH64_PA_TO_KVA((paddr_t)l1);
+
+		l2 = l1pde_pa(l1[l1pde_index(va)]);
+		if (l2 == NULL)
+			panic("L2 table for devmap is not allocated");
+
+		l2 = AARCH64_PA_TO_KVA((paddr_t)l2);
+
+		_pmap_map_chunk(l2,
+		    pmap_devmap_table[i].pd_va,
+		    pmap_devmap_table[i].pd_pa,
+		    pmap_devmap_table[i].pd_size,
+		    pmap_devmap_table[i].pd_prot,
+		    pmap_devmap_table[i].pd_flags);
+	}
+}
+
 const struct pmap_devmap *
 pmap_devmap_find_va(vaddr_t va, vsize_t size)
 {
-	//XXXAARCH64
+	paddr_t endva;
+	int i;
+
+	if (pmap_devmap_table == NULL)
+		return NULL;
+
+	endva = va + size;
+	for (i = 0; pmap_devmap_table[i].pd_size != 0; i++) {
+		if ((va <= pmap_devmap_table[i].pd_va) &&
+		    (endva <= pmap_devmap_table[i].pd_va +
+		     pmap_devmap_table[i].pd_size))
+			return &pmap_devmap_table[i];
+	}
 	return NULL;
 }
 
 const struct pmap_devmap *
-pmap_devmap_find_pa(paddr_t va, psize_t size)
+pmap_devmap_find_pa(paddr_t pa, psize_t size)
 {
-	//XXXAARCH64
+	paddr_t endpa;
+	int i;
+
+	if (pmap_devmap_table == NULL)
+		return NULL;
+
+	endpa = pa + size;
+	for (i = 0; pmap_devmap_table[i].pd_size != 0; i++) {
+		if ((pa <= pmap_devmap_table[i].pd_pa) &&
+		    (endpa <= pmap_devmap_table[i].pd_pa +
+		     pmap_devmap_table[i].pd_size))
+			return &pmap_devmap_table[i];
+	}
 	return NULL;
 }
 
@@ -433,6 +542,7 @@ _pmap_pte_update_prot(pt_entry_t pte, vm_prot_t prot)
 {
 	pte &= ~LX_BLKPAG_AF;
 	pte &= ~LX_BLKPAG_AP;
+
 	switch (prot & (VM_PROT_READ|VM_PROT_WRITE)) {
 	case 0:
 	default:
@@ -456,6 +566,30 @@ _pmap_pte_update_prot(pt_entry_t pte, vm_prot_t prot)
 	return pte;
 }
 
+static pt_entry_t
+_pmap_pte_update_cacheflags(pt_entry_t pte, u_int flags)
+{
+	pte &= ~LX_BLKPAG_ATTR_MASK;
+
+	switch (flags & PMAP_CACHE_MASK) {
+	case PMAP_NOCACHE:
+	case PMAP_NOCACHE_OVR:
+#if 0
+		pte |= LX_BLKPAG_ATTR_NORMAL_NC;	/* only no-cache */
+#else
+		pte |= LX_BLKPAG_ATTR_DEVICE_MEM;	/* nGnRnE */
+#endif
+		break;
+	case PMAP_WRITE_COMBINE:
+	case PMAP_WRITE_BACK:
+	default:
+	case 0:
+		pte |= LX_BLKPAG_ATTR_NORMAL_WB;
+		break;
+	}
+	return pte;
+}
+
 void
 pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 {
@@ -472,32 +606,13 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 		panic("%s: cannot lookup L3 PTE: 0x%016lx\n", __func__, va);
 	}
 
-	attr = _pmap_pte_update_prot(0, prot);
-
-	switch (flags & PMAP_CACHE_MASK) {
-	case PMAP_NOCACHE:
-	case PMAP_NOCACHE_OVR:
-#if 0
-		attr |= LX_BLKPAG_ATTR_NORMAL_NC;	/* but reordering? */
-#else
-		attr |= LX_BLKPAG_ATTR_DEVICE_MEM;
-#endif
-		break;
-	case PMAP_WRITE_COMBINE:
-	case PMAP_WRITE_BACK:
-	case 0:
-		attr |= LX_BLKPAG_ATTR_NORMAL_WB;
-		break;
-	default:
-		panic("%s: illegal cache flags=0x%08x(cache=%02x): va=%016lx, pa=0x%016lx",
-		    __func__, flags, flags & PMAP_CACHE_MASK, va, pa);
-	}
-
-	pte = pa | attr |
+	attr = _pmap_pte_update_prot(LX_VALID | L3_TYPE_PAG, prot);
+	attr = _pmap_pte_update_cacheflags(attr, flags);
 #ifdef MULTIPROCESSOR
-	    LX_BLKPAG_SH_IS |
+	attr |= LX_BLKPAG_SH_IS;
 #endif
-	    LX_VALID | L3_TYPE_PAG;
+
+	pte = pa | attr;
 
 	DPRINTF("ptep=%p, pte=0x%016llx\n", ptep, pte);
 

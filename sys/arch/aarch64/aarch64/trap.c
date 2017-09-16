@@ -229,6 +229,15 @@ trap_el1_sync(struct trapframe *tf)
 		panic("abort");
 		break;
 
+	case ESR_EC_PC_ALIGNMENT:
+	case ESR_EC_SP_ALIGNMENT:
+		// XXXAARCH64: notyet
+		printf("%s trap!\n", trapname);
+		dump_trapframe(tf, printf);
+		panic("abort");
+		break;
+
+	case ESR_EC_BRKPNT_EL1:
 	case ESR_EC_SW_STEP_EL1:
 	case ESR_EC_WTCHPNT_EL1:
 	case ESR_EC_BKPT_INSN_A64:

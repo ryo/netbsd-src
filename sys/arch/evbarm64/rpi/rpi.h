@@ -26,57 +26,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _AARCH64_MACHDEP_H_
-#define _AARCH64_MACHDEP_H_
+#ifndef _EVBARM64_RPI_RPI_H_
+#define _EVBARM64_RPI_RPI_H_
 
-extern paddr_t physical_start;
-extern paddr_t physical_end;
+#include <aarch64/vmparam.h>
+#include <arm/broadcom/bcm2835reg.h>
 
-extern void (*cpu_reset_address)(void);
-extern void (*cpu_powerdown_address)(void);
+/* reserve devmap area from last 32Mbyte of KVA area */
+#define RPI_DEVMAP_SIZE		(1024 * 1024 * 32) /* XXX: must be 2M aligned */
+#define RPI_DEVMAP_VBASE	(VM_MAX_KERNEL_ADDRESS - RPI_DEVMAP_SIZE)
 
-extern char *booted_kernel;
+/*
+ * BCM2835 ARM Peripherals
+ */
+#define RPI_KERNEL_IO_PBASE	BCM2835_PERIPHERALS_BASE
+#define RPI_KERNEL_IO_VSIZE	BCM2835_PERIPHERALS_SIZE
 
-void lwp_trampoline(void);
-void cpu_dosoftints(void);
-void cpu_switchto_softint(struct lwp *, int);
-void trap_doast(struct trapframe *);
-void trap_el1_bad(struct trapframe *);
-void trap_el1_sync(struct trapframe *);
-void trap_el0_bad(struct trapframe *);
-void trap_el0_sync(struct trapframe *);
-void trap_el0_error(struct trapframe *);
-void trap_el0_32sync(struct trapframe *);
-void trap_el0_32error(struct trapframe *);
-void interrupt(struct trapframe *);
+/*
+ * BCM2836 Local control block
+ */
+#define RPI_KERNEL_LOCAL_PBASE	BCM2836_ARM_LOCAL_BASE
+#define RPI_KERNEL_LOCAL_VSIZE	BCM2836_ARM_LOCAL_SIZE
 
-void dump_trapframe(struct trapframe *, void (*)(const char *, ...));
-void dumpsys(void);
-void initarm64(vsize_t);
-void dosoftints(void);
-paddr_t vtophys(vaddr_t);
-#define VTOPHYS_FAILED	((paddr_t)-1L)
 
-#include <sys/pcu.h>
+#define RPI_REF_FREQ	19200000
 
-extern const pcu_ops_t pcu_fpu_ops;
-
-static inline bool
-fpu_used_p(lwp_t *l)
-{
-	return pcu_valid_p(&pcu_fpu_ops, l);
-}
-
-static inline void
-fpu_discard(lwp_t *l, bool usesw)
-{
-	pcu_discard(&pcu_fpu_ops, l, usesw);
-}
-
-static inline void
-fpu_save(lwp_t *l)
-{
-	pcu_save(&pcu_fpu_ops, l);
-}
-
-#endif /* _AARCH64_MACHDEP_H_ */
+#endif /* _EVBARM64_RPI_RPI_H_ */

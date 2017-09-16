@@ -413,8 +413,19 @@ arm_boot_l0pt_init:
 	lsr	x4, x4, #L2_SHIFT
 	bl	l2_setblocks
 
+	VERBOSE("Creating devmap tables\r\n")
+	/* devmap=PA table for L1 */
+	adr	x0, ttbr1_l1table_kva
+	ldr	x1, .L_devmap_addr
+	adr	x2, ttbr1_l2table_devmap
+	bl	l1_settable
+
 	ldp	x0, lr, [sp], #16
 	ret
+
+	.align 3
+.L_devmap_addr:
+	.quad	VM_MAX_KERNEL_ADDRESS - L2_SIZE
 
 /*
  *	x0 = l0table
@@ -686,8 +697,9 @@ ttbr0_l1table:
 	.space	PAGE_SIZE
 
 /*
- * KVA  => PA mapping using L2 2MB block (kernelsize)
- * KSEG => PA mapping using L1 1GB block * 512
+ * KVA    => PA mapping using L2 2MB block (kernelsize, max 2MB*512=2Gbyte)
+ * DEVMAP => PA mapping using L2 2MB block (devmap size, max 2MB*512=2Gbyte)
+ * KSEG   => PA mapping using L1 1GB block * 512
  */
 ttbr1_l0table:
 	.space	PAGE_SIZE
@@ -696,4 +708,6 @@ ttbr1_l1table_kseg:
 ttbr1_l1table_kva:
 	.space	PAGE_SIZE
 ttbr1_l2table_kva:
+	.space	PAGE_SIZE
+ttbr1_l2table_devmap:
 	.space	PAGE_SIZE

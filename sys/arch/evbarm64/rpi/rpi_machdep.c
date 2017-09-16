@@ -33,12 +33,16 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <sys/device.h>
 
 #include <dev/cons.h>
+#include <uvm/uvm_extern.h>
 
 #include <aarch64/cpu.h>
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
 #include <aarch64/armreg.h>
 #include <aarch64/cpufunc.h>
+#include <aarch64/pmap.h>
+
+#include <evbarm64/rpi/rpi.h>
 
 #include <machine/autoconf.h>
 
@@ -58,9 +62,28 @@ static void konsinit(void);
 uint64_t uboot_args[4] = { 0 };	/* filled in by rpi_start.S (not in bss) */
 
 
-//XXX: don't define here
+//XXXAARCH64: don't define here
 #define RPI_CPU_FREQ	(600 * 1000 * 1000)	// XXXAARCH64: get from vcprop::vbt_armclockrate.rate
-#define RPI_REF_FREQ	19200000
+
+static const struct pmap_devmap rpi_devmap[] = {
+	{
+		.pd_va = DEVMAP_TRUNC_ADDR(RPI_DEVMAP_VBASE + 0),
+		.pd_pa = DEVMAP_TRUNC_ADDR(RPI_KERNEL_IO_PBASE),
+		.pd_size = DEVMAP_ROUND_SIZE(RPI_KERNEL_IO_VSIZE),	/* 16Mb */
+		.pd_prot = VM_PROT_READ|VM_PROT_WRITE,
+		.pd_flags = PMAP_NOCACHE
+	},
+#if defined(BCM2836)
+	{
+		.pd_va = DEVMAP_TRUNC_ADDR(RPI_DEVMAP_VBASE + RPI_KERNEL_IO_VSIZE),
+		.pd_pa = DEVMAP_TRUNC_ADDR(RPI_KERNEL_LOCAL_PBASE),
+		.pd_size = DEVMAP_ROUND_SIZE(RPI_KERNEL_LOCAL_VSIZE),
+		.pd_prot = VM_PROT_READ|VM_PROT_WRITE,
+		.pd_flags = PMAP_NOCACHE
+	},
+#endif
+	{ 0 }
+};
 
 
 //XXXAARCH64
@@ -101,7 +124,10 @@ initarm(void)
 
 	curcpu()->ci_data.cpu_cc_freq = RPI_CPU_FREQ;
 
-	initarm64();
+	/* map some peripheral registers */
+	pmap_devmap_bootstrap(rpi_devmap);
+
+	initarm64(RPI_DEVMAP_SIZE);
 }
 
 void
