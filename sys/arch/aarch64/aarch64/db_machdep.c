@@ -30,58 +30,97 @@
  */
 
 #include <sys/cdefs.h>
-
-__KERNEL_RCSID(1, "$NetBSD: db_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
+__KERNEL_RCSID(0, "$NetBSD$");
 
 #include <sys/param.h>
 #include <sys/systm.h>
 
-#include <ddb/db_access.h>
-#include <ddb/db_sym.h>
-#include <ddb/db_output.h>
-#include <ddb/db_variables.h>
-#include <ddb/db_command.h>
-
 #include <aarch64/db_machdep.h>
 
-db_regs_t ddb_regs;
+#include <ddb/db_access.h>
+#include <ddb/db_command.h>
+#include <ddb/db_output.h>
+#include <ddb/db_variables.h>
+#include <ddb/db_sym.h>
+#include <ddb/db_extern.h>
+#include <ddb/db_interface.h>
+
+#include <dev/cons.h>
 
 const struct db_variable db_regs[] = {
-	{ "x0", (long *) &ddb_regs.tf_reg[0], FCN_NULL, NULL },
-	{ "x1", (long *) &ddb_regs.tf_reg[1], FCN_NULL, NULL },
-	{ "x2", (long *) &ddb_regs.tf_reg[2], FCN_NULL, NULL },
-	{ "x3", (long *) &ddb_regs.tf_reg[3], FCN_NULL, NULL },
-	{ "x4", (long *) &ddb_regs.tf_reg[4], FCN_NULL, NULL },
-	{ "x5", (long *) &ddb_regs.tf_reg[5], FCN_NULL, NULL },
-	{ "x6", (long *) &ddb_regs.tf_reg[6], FCN_NULL, NULL },
-	{ "x7", (long *) &ddb_regs.tf_reg[7], FCN_NULL, NULL },
-	{ "x8", (long *) &ddb_regs.tf_reg[8], FCN_NULL, NULL },
-	{ "x9", (long *) &ddb_regs.tf_reg[9], FCN_NULL, NULL },
-	{ "x10", (long *) &ddb_regs.tf_reg[10], FCN_NULL, NULL },
-	{ "x11", (long *) &ddb_regs.tf_reg[11], FCN_NULL, NULL },
-	{ "x12", (long *) &ddb_regs.tf_reg[12], FCN_NULL, NULL },
-	{ "x13", (long *) &ddb_regs.tf_reg[13], FCN_NULL, NULL },
-	{ "x14", (long *) &ddb_regs.tf_reg[14], FCN_NULL, NULL },
-	{ "x15", (long *) &ddb_regs.tf_reg[15], FCN_NULL, NULL },
-	{ "x16", (long *) &ddb_regs.tf_reg[16], FCN_NULL, NULL },
-	{ "x17", (long *) &ddb_regs.tf_reg[17], FCN_NULL, NULL },
-	{ "x18", (long *) &ddb_regs.tf_reg[18], FCN_NULL, NULL },
-	{ "x19", (long *) &ddb_regs.tf_reg[19], FCN_NULL, NULL },
-	{ "x20", (long *) &ddb_regs.tf_reg[20], FCN_NULL, NULL },
-	{ "x21", (long *) &ddb_regs.tf_reg[21], FCN_NULL, NULL },
-	{ "x22", (long *) &ddb_regs.tf_reg[22], FCN_NULL, NULL },
-	{ "x23", (long *) &ddb_regs.tf_reg[23], FCN_NULL, NULL },
-	{ "x24", (long *) &ddb_regs.tf_reg[24], FCN_NULL, NULL },
-	{ "x25", (long *) &ddb_regs.tf_reg[25], FCN_NULL, NULL },
-	{ "x26", (long *) &ddb_regs.tf_reg[26], FCN_NULL, NULL },
-	{ "x27", (long *) &ddb_regs.tf_reg[27], FCN_NULL, NULL },
-	{ "x28", (long *) &ddb_regs.tf_reg[28], FCN_NULL, NULL },
-	{ "x29", (long *) &ddb_regs.tf_reg[29], FCN_NULL, NULL },
-	{ "x30", (long *) &ddb_regs.tf_reg[30], FCN_NULL, NULL },
-	{ "sp", (long *) &ddb_regs.tf_sp, FCN_NULL, NULL },
-	{ "pc", (long *) &ddb_regs.tf_pc, FCN_NULL, NULL },
-	{ "spsr", (long *) &ddb_regs.tf_spsr, FCN_NULL, NULL },
-	{ "tpidr", (long *) &ddb_regs.tf_tpidr, FCN_NULL, NULL },
+	{ "x0",    (long *) &ddb_regs.tf_reg[0],  FCN_NULL, NULL },
+	{ "x1",    (long *) &ddb_regs.tf_reg[1],  FCN_NULL, NULL },
+	{ "x2",    (long *) &ddb_regs.tf_reg[2],  FCN_NULL, NULL },
+	{ "x3",    (long *) &ddb_regs.tf_reg[3],  FCN_NULL, NULL },
+	{ "x4",    (long *) &ddb_regs.tf_reg[4],  FCN_NULL, NULL },
+	{ "x5",    (long *) &ddb_regs.tf_reg[5],  FCN_NULL, NULL },
+	{ "x6",    (long *) &ddb_regs.tf_reg[6],  FCN_NULL, NULL },
+	{ "x7",    (long *) &ddb_regs.tf_reg[7],  FCN_NULL, NULL },
+	{ "x8",    (long *) &ddb_regs.tf_reg[8],  FCN_NULL, NULL },
+	{ "x9",    (long *) &ddb_regs.tf_reg[9],  FCN_NULL, NULL },
+	{ "x10",   (long *) &ddb_regs.tf_reg[10], FCN_NULL, NULL },
+	{ "x11",   (long *) &ddb_regs.tf_reg[11], FCN_NULL, NULL },
+	{ "x12",   (long *) &ddb_regs.tf_reg[12], FCN_NULL, NULL },
+	{ "x13",   (long *) &ddb_regs.tf_reg[13], FCN_NULL, NULL },
+	{ "x14",   (long *) &ddb_regs.tf_reg[14], FCN_NULL, NULL },
+	{ "x15",   (long *) &ddb_regs.tf_reg[15], FCN_NULL, NULL },
+	{ "x16",   (long *) &ddb_regs.tf_reg[16], FCN_NULL, NULL },
+	{ "x17",   (long *) &ddb_regs.tf_reg[17], FCN_NULL, NULL },
+	{ "x18",   (long *) &ddb_regs.tf_reg[18], FCN_NULL, NULL },
+	{ "x19",   (long *) &ddb_regs.tf_reg[19], FCN_NULL, NULL },
+	{ "x20",   (long *) &ddb_regs.tf_reg[20], FCN_NULL, NULL },
+	{ "x21",   (long *) &ddb_regs.tf_reg[21], FCN_NULL, NULL },
+	{ "x22",   (long *) &ddb_regs.tf_reg[22], FCN_NULL, NULL },
+	{ "x23",   (long *) &ddb_regs.tf_reg[23], FCN_NULL, NULL },
+	{ "x24",   (long *) &ddb_regs.tf_reg[24], FCN_NULL, NULL },
+	{ "x25",   (long *) &ddb_regs.tf_reg[25], FCN_NULL, NULL },
+	{ "x26",   (long *) &ddb_regs.tf_reg[26], FCN_NULL, NULL },
+	{ "x27",   (long *) &ddb_regs.tf_reg[27], FCN_NULL, NULL },
+	{ "x28",   (long *) &ddb_regs.tf_reg[28], FCN_NULL, NULL },
+	{ "x29",   (long *) &ddb_regs.tf_reg[29], FCN_NULL, NULL },
+	{ "x30",   (long *) &ddb_regs.tf_reg[30], FCN_NULL, NULL },
+	{ "sp",    (long *) &ddb_regs.tf_sp,      FCN_NULL, NULL },
+	{ "pc",    (long *) &ddb_regs.tf_pc,      FCN_NULL, NULL },
+	{ "spsr",  (long *) &ddb_regs.tf_spsr,    FCN_NULL, NULL },
+	{ "tpidr", (long *) &ddb_regs.tf_tpidr,   FCN_NULL, NULL },
 };
 
 const struct db_variable * const db_eregs = db_regs + __arraycount(db_regs);
+
+int db_active;
+db_regs_t ddb_regs;
+
+int
+kdb_trap(int type, struct trapframe *tf)
+{
+	int s;
+
+	switch (type) {
+	case DB_TRAP_UNKNOWN:
+	case DB_TRAP_BREAKPOINT:
+	case DB_TRAP_BKPT_INSN:
+	case DB_TRAP_WATCHPOINT:
+		break;
+	default:
+		if (db_recover != 0) {
+			db_error("Faulted in DDB: continuing...\n");
+			/* NOTREACHED */
+		}
+		break;
+	}
+
+	/* Should switch to kdb`s own stack here. */
+	ddb_regs = *tf;
+
+	s = splhigh();
+	db_active++;
+	cnpollc(true);
+	db_trap(type, 0/*code*/);
+	cnpollc(false);
+	db_active--;
+	splx(s);
+
+	*tf = ddb_regs;
+
+	return 1;
+}
