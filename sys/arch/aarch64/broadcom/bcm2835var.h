@@ -1,10 +1,11 @@
-/* $NetBSD: a64gtmr_var.h,v 1.1 2014/08/10 05:47:37 matt Exp $ */
+/*	$NetBSD: bcm2835var.h,v 1.2 2015/02/28 09:34:34 skrll Exp $	*/
+
 /*-
- * Copyright (c) 2013 The NetBSD Foundation, Inc.
+ * Copyright (c) 2012 The NetBSD Foundation, Inc.
  * All rights reserved.
  *
  * This code is derived from software contributed to The NetBSD Foundation
- * by Matt Thomas of 3am Software Foundry.
+ * by Nick Hudson
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,24 +29,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _ARM_CORTEX_GTMR_VAR_
-#define _ARM_CORTEX_GTMR_VAR_
+#ifndef	_AARCH64_BROADCOM_BCM2835_VAR_H_
+#define	_AARCH64_BROADCOM_BCM2835_VAR_H_
 
-struct gtmr_softc {
-	device_t sc_dev;
-	struct evcnt sc_ev_missing_ticks;
-	uint32_t sc_freq;
-	u_long sc_autoinc;
-	void *sc_global_ih;
-#ifdef DIAGNOSTIC
-	percpu_t *sc_percpu;
-#endif
-};
+#include <sys/types.h>
+#include <sys/bus.h>
 
-#ifdef _KERNEL
-struct cpu_info;
-void gtmr_init_cpu_clock(struct cpu_info *);
-int gtmr_intr(void *);
-#endif
+extern struct bus_space bcm2835_bs_tag;
+extern struct bus_space bcm2835_a4x_bs_tag;
+extern struct aarch64_bus_dma_tag bcm2835_bus_dma_tag;
 
-#endif /* _ARM_CORTEX_GTMR_VAR_ */
+extern bus_space_tag_t al_iot;
+extern bus_space_handle_t al_ioh;
+
+bus_dma_tag_t bcm2835_bus_dma_init(struct aarch64_bus_dma_tag *);
+
+void bcm2836_cpu_hatch(struct cpu_info *);
+
+#endif	/* _AARCH64_BROADCOM_BCM2835_VAR_H_ */

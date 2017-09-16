@@ -53,8 +53,6 @@ __KERNEL_RCSID(0, "$NetBSD: a64gtmr.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 static int gtmr_match(device_t, cfdata_t, void *);
 static void gtmr_attach(device_t, device_t, void *);
 
-static int clockhandler(void *);
-
 static u_int gtmr_get_timecount(struct timecounter *);
 
 static struct gtmr_softc gtmr_sc;
@@ -67,11 +65,11 @@ static struct timecounter gtmr_timecounter = {
 	.tc_get_timecount = gtmr_get_timecount,
 	.tc_poll_pps = 0,
 	.tc_counter_mask = ~0u,
-	.tc_frequency = 0,			/* set by cpu_initclocks() */
-	.tc_name = NULL,			/* set by attach */
+	.tc_frequency = 0,		/* set by cpu_initclocks() */
+	.tc_name = NULL,		/* set by attach */
 	.tc_quality = 500,
 	.tc_priv = &gtmr_sc,
-	.tc_next = NULL,
+	.tc_next = NULL
 };
 
 CFATTACH_DECL_NEW(a64gtmr, 0, gtmr_match, gtmr_attach, NULL, NULL);
@@ -95,13 +93,13 @@ static void
 gtmr_attach(device_t parent, device_t self, void *aux)
 {
 	const struct mainbus_attach_args * const mba = aux;
-        struct gtmr_softc *sc = &gtmr_sc;
+	struct gtmr_softc *sc = &gtmr_sc;
 	prop_dictionary_t dict = device_properties(self);
 	char freqbuf[sizeof("X.XXX SHz")];
 	uint32_t irq;
 
 	if (mba->mba_intr == MAINBUSCF_INTR_DEFAULT) {
-		prop_dictionary_get_uint32(dict, "intr", &irq);            
+		prop_dictionary_get_uint32(dict, "intr", &irq);
 	} else {
 		irq = mba->mba_intr;
 	}
@@ -109,7 +107,8 @@ gtmr_attach(device_t parent, device_t self, void *aux)
 	/*
 	 * This runs at a fixed frequency of 1 to 50MHz.
 	 */
-	prop_dictionary_get_uint32(dict, "frequency", &sc->sc_freq);            
+	if (!prop_dictionary_get_uint32(dict, "frequency", &sc->sc_freq))
+		sc->sc_freq = reg_cntfrq_el0_read();
 
 	humanize_number(freqbuf, sizeof(freqbuf), sc->sc_freq, "Hz", 1000);
 
@@ -132,7 +131,7 @@ gtmr_attach(device_t parent, device_t self, void *aux)
 	    device_xname(self), "missing interrupts");
 
 	sc->sc_global_ih = intr_establish(irq, IPL_CLOCK, IST_LEVEL,
-	    clockhandler, NULL);
+	    gtmr_intr, NULL);
 	if (sc->sc_global_ih == NULL)
 		panic("%s: unable to register timer interrupt", __func__);
 	aprint_normal_dev(self, "interrupting on irq %d\n", irq);
@@ -166,13 +165,13 @@ gtmr_init_cpu_clock(struct cpu_info *ci)
 	ci->ci_lastintr = reg_cntvct_el0_read();
 	reg_cntv_tval_el0_write(sc->sc_autoinc);
 #if 0
-	printf("%s: %s: delta cval = %"PRIu64"\n",
+	printf("%s: %s: delta cval = %016llx\n",
 	    __func__, ci->ci_data.cpu_name,
-	    reg_cntv_cval_el1_read() - ci->ci_lastintr);
+	    reg_cntv_cval_el0_read() - ci->ci_lastintr);
 #endif
 	splx(s);
 #if 0
-	printf("%s: %s: ctl %#x cmp %#"PRIx64" now %#"PRIx64"\n",
+	printf("%s: %s: ctl    %016llx cmp %016llx now %016llx\n",
 	    __func__, ci->ci_data.cpu_name, reg_cntv_ctl_el0_read(),
 	    reg_cntv_cval_el0_read(), reg_cntvct_el0_read());
 
@@ -185,22 +184,22 @@ gtmr_init_cpu_clock(struct cpu_info *ci)
 	} while (start64 == now64);
 	start64 = now64;
 	uint64_t end64 = start64 + 64;
-	uint32_t start32 = reg_pmccntr_read();
+	uint32_t start32 = reg_pmccntr_el0_read();
 	do {
 		now64 = reg_cntvct_el0_read();
 	} while (end64 != now64);
-	uint32_t end32 = reg_pmccntr_read();
+	uint32_t end32 = reg_pmccntr_el0_read();
 
 	uint32_t diff32 = end64 - start64;
-	printf("%s: %s: %u cycles per tick\n", 
+	printf("%s: %s: %u cycles per tick\n",
 	    __func__, ci->ci_data.cpu_name, (end32 - start32) / diff32);
 
-	printf("%s: %s: status %#x cmp %#"PRIx64" now %#"PRIx64"\n",
+	printf("%s: %s: status %016llx cmp %016llx now %016llx\n",
 	    __func__, ci->ci_data.cpu_name, reg_cntv_ctl_el0_read(),
 	    reg_cntv_cval_el0_read(), reg_cntvct_el0_read());
 	splx(s);
 #elif 0
-	delay(1000000 / hz + 1000); 
+	delay(1000000 / hz + 1000);
 #endif
 }
 
@@ -223,22 +222,19 @@ cpu_initclocks(void)
 }
 
 void
-delay(unsigned long n)
+delay(unsigned int us)
 {
 	struct gtmr_softc * const sc = &gtmr_sc;
-
-	KASSERT(sc != NULL);
-
-	uint32_t freq = sc->sc_freq ? sc->sc_freq : reg_cntfrq_el0_read();
-	KASSERT(freq != 0);
+	const uint64_t freq = sc->sc_freq ? sc->sc_freq : reg_cntfrq_el0_read();
 
 	/*
+	 * 0.5^20 + 0.5^25 + 0.5^26 = 0.00000099837779998779296875
+	 *
 	 * not quite divide by 1000000 but close enough
-	 * (higher by 1.3% which means we wait 1.3% longer).
+	 * (higher by 0.16% which means we wait 0.16% longer).
 	 */
-	const uint64_t incr_per_us = (freq >> 20) + (freq >> 24);
-
-	const uint64_t delta = n * incr_per_us;
+	const uint64_t n = (uint64_t)us * freq;	/* n = totalcycle * 10^6 */
+	const uint64_t delta = (n >> 20) + (n >> 25) + (n >> 26); /* div 10^6 */
 	const uint64_t base = reg_cntvct_el0_read();
 	const uint64_t finish = base + delta;
 
@@ -248,12 +244,10 @@ delay(unsigned long n)
 }
 
 /*
- * clockhandler:
- *
- *	Handle the hardclock interrupt.
+ *  Handle the hardclock interrupt.
  */
-static int
-clockhandler(void *arg)
+int
+gtmr_intr(void *arg)
 {
 	const uint64_t now = reg_cntvct_el0_read();
 	struct cpu_info * const ci = curcpu();
@@ -270,8 +264,8 @@ clockhandler(void *arg)
 #endif
 
 #if 0
-	printf("%s(%p): %s: now %#"PRIx64" delta %"PRIu64"\n", 
-	     __func__, cf, ci->ci_data.cpu_name, now, delta);
+	printf("%s(%p): %s: now %#"PRIx64" delta %"PRIu64"\n",
+	    __func__, cf, ci->ci_data.cpu_name, now, delta);
 #endif
 	KASSERTMSG(delta > sc->sc_autoinc / 100,
 	    "%s: interrupting too quickly (delta=%"PRIu64") autoinc=%lu",

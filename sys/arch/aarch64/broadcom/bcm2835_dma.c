@@ -1,10 +1,11 @@
-/* $NetBSD: a64gtmr_var.h,v 1.1 2014/08/10 05:47:37 matt Exp $ */
+/*	$NetBSD: bcm2835_dma.c,v 1.2 2012/09/18 05:47:27 matt Exp $	*/
+
 /*-
- * Copyright (c) 2013 The NetBSD Foundation, Inc.
+ * Copyright (c) 2012 The NetBSD Foundation, Inc.
  * All rights reserved.
  *
  * This code is derived from software contributed to The NetBSD Foundation
- * by Matt Thomas of 3am Software Foundry.
+ * by Nick Hudson
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,24 +29,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _ARM_CORTEX_GTMR_VAR_
-#define _ARM_CORTEX_GTMR_VAR_
+#include <sys/cdefs.h>
+__KERNEL_RCSID(0, "$NetBSD: bcm2835_dma.c,v 1.2 2012/09/18 05:47:27 matt Exp $");
 
-struct gtmr_softc {
-	device_t sc_dev;
-	struct evcnt sc_ev_missing_ticks;
-	uint32_t sc_freq;
-	u_long sc_autoinc;
-	void *sc_global_ih;
-#ifdef DIAGNOSTIC
-	percpu_t *sc_percpu;
-#endif
+#define _AARCH64_BUS_DMA_PRIVATE
+
+#include <sys/param.h>
+#include <sys/bus.h>
+
+struct aarch64_bus_dma_tag bcm2835_bus_dma_tag = {
+	_BUS_DMAMAP_FUNCS,
+	_BUS_DMAMEM_FUNCS,
+	_BUS_DMATAG_FUNCS,
 };
-
-#ifdef _KERNEL
-struct cpu_info;
-void gtmr_init_cpu_clock(struct cpu_info *);
-int gtmr_intr(void *);
-#endif
-
-#endif /* _ARM_CORTEX_GTMR_VAR_ */

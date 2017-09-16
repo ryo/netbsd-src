@@ -29,19 +29,25 @@
 #include <sys/cdefs.h>
 __KERNEL_RCSID(1, "$NetBSD$");
 
+#include "locators.h"
+#include "opt_multiprocessor.h"
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/device.h>
+#include <sys/cpu.h>
+#include <sys/kmem.h>
 
-struct cpu_attach_args {
-	const char *caa_name;
-};
+#include <aarch64/armreg.h>
+#include <aarch64/cpuvar.h>
+#include <aarch64/cpu.h>
+#include <aarch64/cpufunc.h>
 
 static int cpu_match(device_t, cfdata_t, void *);
 static void cpu_attach(device_t, device_t, void *);
-//static int cpu_print(void *, const char *);
+static void cpu_identify(device_t self, struct cpu_info *);
 
-CFATTACH_DECL_NEW(cpu_cpucore, 0,
+CFATTACH_DECL_NEW(cpu_cpunode, 0,
     cpu_match, cpu_attach, NULL, NULL);
 
 static int
@@ -53,15 +59,343 @@ cpu_match(device_t parent, cfdata_t cf, void *aux)
 static void
 cpu_attach(device_t parent, device_t self, void *aux)
 {
-	aprint_naive("\n");
-	aprint_normal("\n");
+	struct cpu_attach_args *caa;
+	struct cpu_info *ci;
+	cpuid_t id;
+
+	caa = (struct cpu_attach_args *)aux;
+	id = caa->caa_cpucore;
+
+	if (id == 0) {
+		ci = curcpu();
+
+	} else {
+#ifdef MULTIPROCESSOR
+		//XXXAARCH64: notyet?
+
+		uint64_t mpidr = reg_mpidr_el1_read();
+
+		KASSERT(cpu_info[id] == NULL);
+		ci = kmem_zalloc(sizeof(*ci), KM_SLEEP);
+		ci->ci_cpl = IPL_HIGH;
+		ci->ci_cpuid = id;
+		if (mpidr & MPIDR_MT) {
+			ci->ci_data.cpu_smt_id = mpidr & MPIDR_AFF0;
+			ci->ci_data.cpu_core_id = mpidr & MPIDR_AFF1;
+			ci->ci_data.cpu_package_id = mpidr & MPIDR_AFF2;
+		} else {
+			ci->ci_data.cpu_core_id = mpidr & MPIDR_AFF0;
+			ci->ci_data.cpu_package_id = mpidr & MPIDR_AFF1;
+		}
+		ci->ci_data.cpu_cc_freq = cpu_info_store.ci_data.cpu_cc_freq;
+		cpu_info[ci->ci_cpuid] = ci;
+		if ((arm_cpu_hatched & (1 << id)) == 0) {
+			ci->ci_dev = parent;
+			self->dv_private = ci;
+
+			aprint_naive(": disabled\n");
+			aprint_normal(": disabled (uniprocessor kernel)\n");
+			return;
+		}
+#else
+		aprint_naive(": disabled\n");
+		aprint_normal(": disabled (uniprocessor kernel)\n");
+		return;
+#endif
+	}
+
+	ci->ci_dev = self;
+	self->dv_private = ci;
+
+#ifdef MULTIPROCESSOR
+	if (caa->caa_cpucore != 0) {
+		aprint_naive("\n");
+		aprint_normal(": %s\n", cpu_getmodel());
+		mi_cpu_attach(ci);
+
+		// XXXAARCH64
+		//pmap_tlb_info_attach();
+	}
+#endif
+
+	cpu_identify(self, ci);
+//	vfp_attach(ci);
 }
 
-//XXXAARCH64
-#if 0
-static int
-cpu_print(void *aux, const char *cpu)
+struct cpuidtab {
+	uint32_t cpu_partnum;
+	const char *cpu_name;
+	const char *cpu_class;
+	const char *cpu_architecture;
+};
+
+#define CPU_PARTMASK	(CPU_ID_IMPLEMENTOR_MASK | CPU_ID_PARTNO_MASK)
+
+const struct cpuidtab cpuids[] = {
+	{ CPU_ID_CORTEXA53R0 & CPU_PARTMASK, "Cortex-A53", "Cortex", "V8-A" },
+	{ CPU_ID_CORTEXA57R0 & CPU_PARTMASK, "Cortex-A57", "Cortex", "V8-A" },
+	{ CPU_ID_CORTEXA72R0 & CPU_PARTMASK, "Cortex-A72", "Cortex", "V8-A" },
+	{ CPU_ID_CORTEXA73R0 & CPU_PARTMASK, "Cortex-A73", "Cortex", "V8-A" },
+	{ CPU_ID_CORTEXA55R1 & CPU_PARTMASK, "Cortex-A55", "Cortex", "V8.2-A" },
+	{ CPU_ID_CORTEXA75R2 & CPU_PARTMASK, "Cortex-A75", "Cortex", "V8.2-A" },
+};
+
+static void
+identify_aarch64_model(uint32_t cpuid, char *buf, size_t len)
 {
-	return UNCONF;
+	int i;
+	uint32_t cpupart, variant, revision;
+
+	cpupart = cpuid & CPU_PARTMASK;
+	variant = __SHIFTOUT(cpuid, CPU_ID_VARIANT_MASK);
+	revision = __SHIFTOUT(cpuid, CPU_ID_REVISION_MASK);
+
+	for (i = 0; i < __arraycount(cpuids); i++) {
+		if (cpupart == cpuids[i].cpu_partnum) {
+			snprintf(buf, len, "%s r%dp%d (%s %s core)",
+			    cpuids[i].cpu_name, variant, revision,
+			    cpuids[i].cpu_class,
+			    cpuids[i].cpu_architecture);
+			return;
+		}
+	}
+
+	snprintf(buf, len, "unknown CPU (ID = 0x%08x)", cpuid);
 }
+
+struct aarch64_cache_info {
+	u_int cache_line_size;
+	u_int cache_ways;
+	u_int cache_sets;
+	u_int cache_way_size;
+	u_int cache_size;
+	bool cache_wb;
+	bool cache_wt;
+	bool cache_ra;
+	bool cache_wa;
+};
+
+// XXXAARCH64
+#if 0
+#define MAX_CACHE_LEVEL	8
+
+struct aarch64_cache_type {
+	int level;				/* 0:L1, 1:L2, ... 7:L8 cache */
+	enum cachetype cachetype;		/* VIVT/VIPT/PIPT */
+	struct aarch64_cache_info *icacheinfo;
+	struct aarch64_cache_info *dcacheinfo;
+}
+struct aarch64_cache_type aarch64_cache_type[MAX_CACHE_LEVEL];
 #endif
+
+// XXXAARCH64
+struct aarch64_cache_info aarch64_l1_icache;
+struct aarch64_cache_info aarch64_l1_dcache;
+struct aarch64_cache_info aarch64_l2_cache;
+
+// XXXAARCH64
+static inline void
+cache_clean(int level, struct aarch64_cache_info *cinfo)
+{
+	int set, way, setshift, wayshift;
+	uint64_t x;
+
+	setshift = ffs(cinfo->cache_line_size) - 1;
+	wayshift = 32 - (ffs(cinfo->cache_ways) - 1);
+
+	for (set = 0; set < cinfo->cache_sets; set++) {
+		for (way = 0; way < cinfo->cache_ways; way++) {
+			x = (way << wayshift) | (set << setshift) | (level << 1);
+			__asm __volatile("dc csw, %0" :: "r"(x));
+		}
+	}
+}
+
+void cpucache_clean(void);
+
+void
+cpucache_clean(void)
+{
+	cache_clean(0, &aarch64_l1_dcache);
+	cache_clean(1, &aarch64_l2_cache);
+}
+
+static void
+extract_ccsidr(struct aarch64_cache_info *cinfo, uint32_t ccsidr)
+{
+	cinfo->cache_line_size = 1 << (__SHIFTOUT(ccsidr, CCSIDR_LINESIZE) + 4);
+	cinfo->cache_ways = __SHIFTOUT(ccsidr, CCSIDR_ASSOC) + 1;
+	cinfo->cache_sets = __SHIFTOUT(ccsidr, CCSIDR_NUMSET) + 1;
+
+	/* calc waysize and whole size */
+	cinfo->cache_way_size = cinfo->cache_line_size * cinfo->cache_sets;
+	cinfo->cache_size = cinfo->cache_way_size * cinfo->cache_ways;
+
+	/* cache types */
+	cinfo->cache_wt = ccsidr & CCSIDR_WT;
+	cinfo->cache_wb = ccsidr & CCSIDR_WB;
+	cinfo->cache_ra = ccsidr & CCSIDR_RA;
+	cinfo->cache_wa = ccsidr & CCSIDR_WA;
+}
+
+static void
+prt_cache(device_t self, int level, int inst, const char *cachetype, const char *cachetype2)
+{
+	struct aarch64_cache_info cinfo;
+	uint32_t ccsidr;
+
+	/* select level N Instruction cache */
+	reg_csselr_el1_write(__SHIFTIN(level, CSSELR_LEVEL) |
+	    __SHIFTIN(inst == 0 ? 0 : 1, CSSELR_IND));
+	asm("isb");
+
+	ccsidr = reg_ccsidr_el1_read();
+	extract_ccsidr(&cinfo, ccsidr);
+
+	// XXXAARCH64
+	if ((level == 0) && inst)
+		memcpy(&aarch64_l1_icache, &cinfo, sizeof(cinfo));
+	if ((level == 0) && !inst)
+		memcpy(&aarch64_l1_dcache, &cinfo, sizeof(cinfo));
+	if (level == 1)
+		memcpy(&aarch64_l2_cache, &cinfo, sizeof(cinfo));
+
+
+	aprint_normal_dev(self, "L%d %dKB/%dB %d-way%s%s%s%s %s%s cache\n",
+	    level + 1,
+	    cinfo.cache_size / 1024,
+	    cinfo.cache_line_size,
+	    cinfo.cache_ways,
+	    cinfo.cache_wt ? " write-through" : "",
+	    cinfo.cache_wb ? " write-back" : "",
+	    cinfo.cache_ra ? " read-allocate" : "",
+	    cinfo.cache_wa ? " write-allocate" : "",
+	    cachetype2, cachetype);
+}
+
+static void
+cpu_identify(device_t self, struct cpu_info *ci)
+{
+	uint64_t mpidr;
+	int level;
+	uint32_t cpuid;
+	uint32_t clidr, ctr, sctlr;	/* for cache */
+	const char *cachetype;
+	char model[128];
+
+	cpuid = reg_midr_el1_read();
+	identify_aarch64_model(cpuid, model, sizeof(model));
+	if (ci->ci_cpuid == 0)
+		cpu_setmodel("%s", model);
+
+	aprint_naive("\n");
+	aprint_normal(": %s\n", model);
+
+
+	mpidr = reg_mpidr_el1_read();
+	aprint_normal_dev(self, "CPU Affinity %llu-%llu-%llu-%llu\n",
+	    __SHIFTOUT(mpidr, MPIDR_AFF3),
+	    __SHIFTOUT(mpidr, MPIDR_AFF2),
+	    __SHIFTOUT(mpidr, MPIDR_AFF1),
+	    __SHIFTOUT(mpidr, MPIDR_AFF0));
+
+
+	/* SCTLR - System Control Register */
+	sctlr = reg_sctlr_el1_read();
+	if (sctlr & SCTLR_I)
+		aprint_normal_dev(self, "IC enabled");
+	else
+		aprint_normal_dev(self, "IC disabled");
+
+	if (sctlr & SCTLR_C)
+		aprint_normal(", DC enabled");
+	else
+		aprint_normal(", DC disabled");
+
+	if (sctlr & SCTLR_A)
+		aprint_normal(", Alignment check enabled\n");
+	else {
+		switch (sctlr & (SCTLR_SA | SCTLR_SA0)) {
+		case SCTLR_SA | SCTLR_SA0:
+			aprint_normal(", EL0/EL1 stack Alignment check enabled\n");
+			break;
+		case SCTLR_SA:
+			aprint_normal(", EL1 stack Alignment check enabled\n");
+			break;
+		case SCTLR_SA0:
+			aprint_normal(", EL0 stack Alignment check enabled\n");
+			break;
+		case 0:
+			aprint_normal(", Alignment check disabled\n");
+			break;
+		}
+	}
+
+
+	/*
+	 * CTR - Cache Type Register
+	 */
+	ctr = reg_ctr_el0_read();
+	switch (__SHIFTOUT(ctr, CTR_EL0_L1IP_MASK)) {
+	case CTR_EL0_L1IP_AIVIVT:
+		cachetype = "ASID-tagged VIVT ";
+		break;
+	case CTR_EL0_L1IP_VIPT:
+		cachetype = "VIPT ";
+		break;
+	case CTR_EL0_L1IP_PIPT:
+		cachetype = "PIPT ";
+		break;
+	default:
+		cachetype = "unknown type ";
+		break;
+	}
+
+	aprint_normal_dev(self, "Cache Writeback Granule %lluB, Exclusives Reservation Granule %lluB\n",
+	    __SHIFTOUT(ctr, CTR_EL0_CWG_LINE) * 4,
+	    __SHIFTOUT(ctr, CTR_EL0_ERG_LINE) * 4);
+
+
+	/*
+	 * CLIDR -  Cache Level ID Register
+	 * CSSELR - Cache Size Selection Register
+	 * CCSIDR - CurrentCache Size ID Register (selected by CSSELR)
+	 */
+
+	/* L1, L2, L3, ..., L7 cache */
+	for (level = 0, clidr = reg_clidr_el1_read();
+	    level < 7; level++, clidr >>= 3) {
+		if ((clidr & 7) == 0)	/* no more level cache */
+			break;
+
+		switch (clidr & 7) {
+		case CLIDR_TYPE_ICACHE:
+			prt_cache(self, level, 1, "Instruction", cachetype);
+			break;
+		case CLIDR_TYPE_DCACHE:
+			prt_cache(self, level, 0, "Data", cachetype);
+			break;
+		case CLIDR_TYPE_UNIFIEDCACHE:
+			prt_cache(self, level, 0, "Unified", cachetype);
+			break;
+		case CLIDR_TYPE_IDCACHE:
+			prt_cache(self, level, 1, "Instruction", cachetype);
+			prt_cache(self, level, 0, "Data", cachetype);
+			break;
+		}
+
+		/* L2 or higher is PIPT */
+		cachetype = "PIPT ";
+	}
+
+	/* and much more... */
+
+	//  ID_AA64DFR0_EL1
+	// *ID_AA64DFR1_EL1
+	//  ID_AA64ISAR0_EL1
+	// *ID_AA64ISAR1_EL1
+	//  ID_AA64MMFR0_EL1
+	// *ID_AA64MMFR1_EL1
+	//  ID_AA64PFR0_EL1
+	// *ID_AA64PFR1_EL1
+}
