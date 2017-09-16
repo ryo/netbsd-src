@@ -48,6 +48,7 @@ include <uvm/uvm_extern.h>
 include <aarch64/vmparam.h>
 include <aarch64/frame.h>
 include <aarch64/armreg.h>
+include <aarch64/bus_space_defs.h>
 
 if defined(_KERNEL_OPT)
 include "opt_multiprocessor.h"
@@ -171,7 +172,7 @@ define	TF_TPIDR		offsetof(struct trapframe, tf_tpidr)
 define	TF_ESR			offsetof(struct trapframe, tf_esr)
 define	TF_FAR			offsetof(struct trapframe, tf_far)
 define	TF_CHAIN		offsetof(struct trapframe, tf_chain)
-define	TF_SIZE			roundup(sizeof(struct trapframe), 16)
+define	TF_SIZE			TF_SIZE
 
 
 define	CI_CURPRIORITY		offsetof(struct cpu_info, ci_schedstate.spc_curpriority)
@@ -251,6 +252,9 @@ define	SCTLR_LSMAOE		SCTLR_LSMAOE
 define	ICC_SRE_EL2_EN		ICC_SRE_EL2_EN
 define	ICC_SRE_EL2_SRE		ICC_SRE_EL2_SRE
 
+
+# for bus_space_asm
+define	BS_STRIDE		offsetof(struct bus_space, bs_stride)
 
 # Constants required for in_cksum() and friends.
 define	M_LEN			offsetof(struct mbuf, m_len)
