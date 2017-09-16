@@ -42,6 +42,7 @@ __KERNEL_RCSID(1, "$NetBSD$");
 #include <aarch64/cpuvar.h>
 #include <aarch64/cpu.h>
 #include <aarch64/cpufunc.h>
+#include <arm/cputypes.h>
 
 static int cpu_match(device_t, cfdata_t, void *);
 static void cpu_attach(device_t, device_t, void *);
