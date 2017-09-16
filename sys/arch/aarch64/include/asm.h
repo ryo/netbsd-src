@@ -34,8 +34,8 @@
 
 #ifdef __aarch64__
 
-#define __BIT(n)	(1 << (n))
-#define __BITS(hi,lo)	((~((~0)<<((hi)+1)))&((~0)<<(lo)))
+#define __BIT(n)	(1UL << (n))
+#define __BITS(hi,lo)	(((~0UL)>>(63-(hi)))&((~0UL)<<(lo)))
 
 #define __LOWEST_SET_BIT(__mask) ((((__mask) - 1) & (__mask)) ^ (__mask))
 #define __SHIFTOUT(__x, __mask) (((__x) & (__mask)) / __LOWEST_SET_BIT(__mask))
