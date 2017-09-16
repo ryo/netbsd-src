@@ -53,7 +53,7 @@ ENTRY(cpu_idle)
 	mov	x4, #SPSR_M_EL1T		// what our spsr should be
 	str	x2, [sp, #TF_SPSR]
 
-	bl	armgic_irq_handler		// process irq
+	bl	bcm2835_irq_handler		//XXXAARCH64 process irq
 
 	mrs	x1, tpidr_el1			// get curcpu()
 	str	w28, [x1, #CI_INTR_DEPTH]	// restore intr depth
