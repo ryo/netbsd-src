@@ -98,6 +98,9 @@ void	cpu_boot_secondary_processors(void);
 #define setsoftast(ci)		atomic_or_uint(&(ci)->ci_astpending, __BIT(0))
 
 extern struct cpu_info *cpu_info[];
+extern struct cpu_info cpu_info_store;	/* MULTIPROCESSOR */
+extern volatile u_int arm_cpu_hatched;	/* MULTIPROCESSOR */
+
 #define CPU_INFO_ITERATOR	cpuid_t
 #define CPU_INFO_FOREACH(cii, ci) \
 	cii = 0, ci = cpu_info[0]; cii < ncpu && (ci = cpu_info[cii]) != NULL; cii++
@@ -106,10 +109,10 @@ static inline void
 cpu_dosoftints(void)
 {
 	extern void dosoftints(void);
-        struct cpu_info * const ci = curcpu();
-        if (ci->ci_intr_depth == 0
-	    && (ci->ci_data.cpu_softints >> ci->ci_cpl) > 0)
-                dosoftints();
+	struct cpu_info * const ci = curcpu();
+	if ((ci->ci_intr_depth == 0) &&
+	    ((ci->ci_data.cpu_softints >> ci->ci_cpl) > 0))
+		dosoftints();
 }
 
 static inline bool
