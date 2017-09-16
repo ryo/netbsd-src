@@ -107,7 +107,7 @@
  * to be user for directly mapped (block addressable) addresses. 
  */
 #define VM_MIN_KERNEL_ADDRESS	((vaddr_t) 0xffffffc000000000L)
-#define VM_MAX_KERNEL_ADDRESS	((vaddr_t) 0xffffffffffff0000L)
+#define VM_MAX_KERNEL_ADDRESS	((vaddr_t) 0xffffffffffe00000L)
 
 /* virtual sizes (bytes) for various kernel submaps */
 #define USRIOSIZE		(PAGE_SIZE / 8)
