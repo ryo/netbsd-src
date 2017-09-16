@@ -3,6 +3,8 @@
 #ifndef _ARM_BROADCOM_BCM_AMBA_H_
 #define _ARM_BROADCOM_BCM_AMBA_H_
 
+#ifdef __arm__
+
 /* Broadcom AMBA AXI Peripheral Bus */
 
 struct amba_attach_args {
@@ -25,5 +27,11 @@ struct ambadev_locators {
 extern struct bus_space bcm2835_bs_tag;
 extern struct arm32_bus_dma_tag bcm2835_bus_dma_tag;
 // extern const struct ambadev_locators *md_ambadev_locs;
+
+#elif defined(__aarch64__)
+
+#include <aarch64/broadcom/bcm_amba.h>
+
+#endif /* __arm__/__aarch64__ */
 
 #endif /* _ARM_BROADCOM_BCM_AMBA_H_ */

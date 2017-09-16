@@ -32,6 +32,8 @@
 #ifndef	_ARM_BROADCOM_BCM2835_VAR_H_
 #define	_ARM_BROADCOM_BCM2835_VAR_H_
 
+#ifdef __arm__
+
 #include <sys/types.h>
 #include <sys/bus.h>
 
@@ -45,5 +47,11 @@ extern bus_space_handle_t al_ioh;
 bus_dma_tag_t bcm2835_bus_dma_init(struct arm32_bus_dma_tag *);
 
 void bcm2836_cpu_hatch(struct cpu_info *);
+
+#elif defined(__aarch64__)
+
+#include <aarch64/broadcom/bcm2835var.h>
+
+#endif /* __arm__/__aarch64__ */
 
 #endif	/* _ARM_BROADCOM_BCM2835_VAR_H_ */

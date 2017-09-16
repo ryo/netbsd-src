@@ -219,10 +219,11 @@ bcm2835_icu_attach(device_t parent, device_t self, void *aux)
 #if defined(BCM2836)
 #if defined(MULTIPROCESSOR)
 	aprint_normal(": Multiprocessor");
-#endif
-
 	bcm2836mp_intr_init(curcpu());
+#else
+	pic_add(&bcm2836mp_pic[0], BCM2836_INT_BASECPUN(0));
 #endif
+#endif /* BCM2836 */
 	pic_add(sc->sc_pic, BCM2835_INT_BASE);
 
 	aprint_normal("\n");
