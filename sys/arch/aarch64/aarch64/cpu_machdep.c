@@ -57,8 +57,6 @@ volatile u_int arm_cpu_hatched;
 u_int arm_cpu_max = 1;
 #endif
 
-u_int cputype;	// XXXAARCH64
-
 /* Our exported CPU info; we can have only one. */
 struct cpu_info cpu_info_store __cacheline_aligned = {
 	.ci_cpl = IPL_HIGH,
