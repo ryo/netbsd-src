@@ -246,6 +246,10 @@ END(lwp_trampoline)
 /*
  * EL1 exception return for trap and interrupt.
  */
+#ifdef DDB
+ENTRY_NP(el1_trap)
+	nop
+#endif
 ENTRY_NP(el1_trap_exit)
 	DISABLE_INTERRUPT		/* make sure I|F marked */
 
@@ -267,6 +271,10 @@ END(el1_trap_exit)
  * EL0 exception return for trap, interrupt and syscall with
  * possible AST processing.
  */
+#ifdef DDB
+ENTRY_NP(el0_trap)
+	nop
+#endif
 ENTRY_NP(el0_trap_exit)
 	mrs	x8, tpidr_el1
 	ldr	w9, [x8, #CI_ASTPENDING]
@@ -299,7 +307,7 @@ END(el0_trap_exit)
 
 #ifdef DDB
 ENTRY(cpu_Debugger)
-	brk	#0xffff
+	brk	#0
 	ret
 END(cpu_Debugger)
 #endif /* DDB */
