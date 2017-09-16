@@ -26,43 +26,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/systm.h>
-#include <sys/conf.h>
-#include <sys/device.h>
+#ifndef _EVBARM64_AUTOCONF_H_
+#define _EVBARM64_AUTOCONF_H_
 
-#include <machine/autoconf.h>
+#include <aarch64/autoconf.h>
 
-void (*evbarm64_device_register)(device_t, void *);
-void (*evbarm64_device_register_post_config)(device_t, void *);
+extern void (*evbarm64_device_register)(device_t, void *);
+extern void (*evbarm64_device_register_post_config)(device_t, void *);
 
-void
-cpu_rootconf(void)
-{
-	rootconf();
-}
-
-void
-cpu_configure(void)
-{
-	splhigh();
-
-	if (config_rootfound("mainbus", NULL) == NULL)
-		panic("no mainbus found");
-
-	/* Turn on interrupt! */
-	spl0();
-}
-
-void
-device_register(device_t dev, void *aux)
-{
-	if (evbarm64_device_register != NULL)
-		(*evbarm64_device_register)(dev, aux);
-}
-
-void
-device_register_post_config(device_t dev, void *aux)
-{
-	if (evbarm64_device_register_post_config != NULL)
-		(*evbarm64_device_register_post_config)(dev, aux);
-}
+#endif /* _EVBARM64_AUTOCONF_H_ */

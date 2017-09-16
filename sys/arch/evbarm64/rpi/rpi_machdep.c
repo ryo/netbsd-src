@@ -40,8 +40,10 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <aarch64/armreg.h>
 #include <aarch64/cpufunc.h>
 
+#include <machine/autoconf.h>
+
 void initarm(void);
-void uartputs(const char *);
+static void rpi_device_register(device_t, void *);
 
 static dev_type_cngetc(konsgetc);
 static dev_type_cnputc(konsputc);
@@ -52,6 +54,14 @@ static struct consdev konsole = {
 	NULL, NULL, NODEV, CN_NORMAL
 };
 static void konsinit(void);
+
+uint64_t uboot_args[4] = { 0 };	/* filled in by rpi_start.S (not in bss) */
+
+
+//XXX: don't define here
+#define RPI_CPU_FREQ	(600 * 1000 * 1000)	// XXXAARCH64: get from vcprop::vbt_armclockrate.rate
+#define RPI_REF_FREQ	19200000
+
 
 //XXXAARCH64
 static void
@@ -78,16 +88,16 @@ initarm(void)
 {
 	konsinit();
 
-	// XXXAARCH64
+	// XXX: rpi config
 	cpu_reset_address = raspi_reset;
+	evbarm64_device_register = rpi_device_register;
 
-	// XXXAARCH64
 	physical_start = 0;
 	physical_end = physical_start + MEMSIZE * 1024 * 1024;
 
-	initarm64();
+	curcpu()->ci_data.cpu_cc_freq = RPI_CPU_FREQ;
 
-	printf("cputype=0x%08x\n", cputype);
+	initarm64();
 }
 
 void
@@ -164,4 +174,19 @@ konsputc(dev_t dev, int c)
 static void
 konspollc(dev_t dev, int on)
 {
+}
+
+static void
+rpi_device_register(device_t dev, void *aux)
+{
+	prop_dictionary_t dict = device_properties(dev);
+
+	if (device_is_a(dev, "a64gtmr")) {
+		/*
+		 * The frequency of the generic timer is the reference
+		 * frequency.
+		 */
+		prop_dictionary_set_uint32(dict, "frequency", RPI_REF_FREQ);
+		return;
+	}
 }
