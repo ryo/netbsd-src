@@ -48,7 +48,9 @@ void	interrupt(struct trapframe *);
 void	dumpsys(void);
 void	initarm64(void);
 void	dosoftints(void);
+void dump_trapframe(struct trapframe *, void (*)(const char *, ...));
 paddr_t vtophys(vaddr_t);
+#define VTOPHYS_FAILED ((paddr_t)-1L)
 
 #include <sys/pcu.h>
 

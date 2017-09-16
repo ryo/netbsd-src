@@ -32,7 +32,7 @@
 typedef uintptr_t bus_addr_t;
 typedef uintptr_t bus_size_t;
 typedef uintptr_t bus_space_handle_t;
-typedef struct aarch64_bus_space *bus_space_tag_t;
+typedef struct bus_space *bus_space_tag_t;
 
 
 #define BSTAG	void *
@@ -42,7 +42,7 @@ typedef struct aarch64_bus_space *bus_space_tag_t;
 #define OFFSET	bus_size_t
 #define COUNT	bus_size_t
 
-struct aarch64_bus_space {
+struct bus_space {
 	int bs_stride;	/* offset <<= bs_stride (if needed) */
 	int bs_flags;
 
@@ -65,11 +65,11 @@ struct aarch64_bus_space {
 	uint32_t (*bs_r_4)(BSTAG, HANDLE, OFFSET);
 	uint64_t (*bs_r_8)(BSTAG, HANDLE, OFFSET);
 
-	/* bus_space_write_[1248] */
-	void (*bs_w_1)(BSTAG, HANDLE, OFFSET, uint8_t);
-	void (*bs_w_2)(BSTAG, HANDLE, OFFSET, uint16_t);
-	void (*bs_w_4)(BSTAG, HANDLE, OFFSET, uint32_t);
-	void (*bs_w_8)(BSTAG, HANDLE, OFFSET, uint64_t);
+	/* bus_space_read_multi_[1248] */
+	void (*bs_rm_1)(BSTAG, HANDLE, OFFSET, uint8_t *, COUNT);
+	void (*bs_rm_2)(BSTAG, HANDLE, OFFSET, uint16_t *, COUNT);
+	void (*bs_rm_4)(BSTAG, HANDLE, OFFSET, uint32_t *, COUNT);
+	void (*bs_rm_8)(BSTAG, HANDLE, OFFSET, uint64_t *, COUNT);
 
 	/* bus_space_read_region_[1248] */
 	void (*bs_rr_1)(BSTAG, HANDLE, OFFSET, uint8_t *, COUNT);
@@ -77,29 +77,11 @@ struct aarch64_bus_space {
 	void (*bs_rr_4)(BSTAG, HANDLE, OFFSET, uint32_t *, COUNT);
 	void (*bs_rr_8)(BSTAG, HANDLE, OFFSET, uint64_t *, COUNT);
 
-	/* bus_space_write_region_[1248] */
-	void (*bs_wr_1)(BSTAG, HANDLE, OFFSET, const uint8_t *, COUNT);
-	void (*bs_wr_2)(BSTAG, HANDLE, OFFSET, const uint16_t *, COUNT);
-	void (*bs_wr_4)(BSTAG, HANDLE, OFFSET, const uint32_t *, COUNT);
-	void (*bs_wr_8)(BSTAG, HANDLE, OFFSET, const uint64_t *, COUNT);
-
-	/* bus_space_copy_region_[1248] */
-	void (*bs_c_1)(BSTAG, HANDLE, OFFSET, HANDLE, OFFSET, COUNT);
-	void (*bs_c_2)(BSTAG, HANDLE, OFFSET, HANDLE, OFFSET, COUNT);
-	void (*bs_c_4)(BSTAG, HANDLE, OFFSET, HANDLE, OFFSET, COUNT);
-	void (*bs_c_8)(BSTAG, HANDLE, OFFSET, HANDLE, OFFSET, COUNT);
-
-	/* bus_spce_set_region_[1248] */
-	void (*bs_sr_1)(BSTAG, HANDLE, OFFSET, uint8_t, COUNT);
-	void (*bs_sr_2)(BSTAG, HANDLE, OFFSET, uint16_t, COUNT);
-	void (*bs_sr_4)(BSTAG, HANDLE, OFFSET, uint32_t, COUNT);
-	void (*bs_sr_8)(BSTAG, HANDLE, OFFSET, uint64_t, COUNT);
-
-	/* bus_space_read_multi_[1248] */
-	void (*bs_rm_1)(BSTAG, HANDLE, OFFSET, uint8_t *, COUNT);
-	void (*bs_rm_2)(BSTAG, HANDLE, OFFSET, uint16_t *, COUNT);
-	void (*bs_rm_4)(BSTAG, HANDLE, OFFSET, uint32_t *, COUNT);
-	void (*bs_rm_8)(BSTAG, HANDLE, OFFSET, uint64_t *, COUNT);
+	/* bus_space_write_[1248] */
+	void (*bs_w_1)(BSTAG, HANDLE, OFFSET, uint8_t);
+	void (*bs_w_2)(BSTAG, HANDLE, OFFSET, uint16_t);
+	void (*bs_w_4)(BSTAG, HANDLE, OFFSET, uint32_t);
+	void (*bs_w_8)(BSTAG, HANDLE, OFFSET, uint64_t);
 
 	/* bus_space_write_multi_[1248] */
 	void (*bs_wm_1)(BSTAG, HANDLE, OFFSET, const uint8_t *, COUNT);
@@ -107,11 +89,29 @@ struct aarch64_bus_space {
 	void (*bs_wm_4)(BSTAG, HANDLE, OFFSET, const uint32_t *, COUNT);
 	void (*bs_wm_8)(BSTAG, HANDLE, OFFSET, const uint64_t *, COUNT);
 
+	/* bus_space_write_region_[1248] */
+	void (*bs_wr_1)(BSTAG, HANDLE, OFFSET, const uint8_t *, COUNT);
+	void (*bs_wr_2)(BSTAG, HANDLE, OFFSET, const uint16_t *, COUNT);
+	void (*bs_wr_4)(BSTAG, HANDLE, OFFSET, const uint32_t *, COUNT);
+	void (*bs_wr_8)(BSTAG, HANDLE, OFFSET, const uint64_t *, COUNT);
+
+	/* bus_spce_set_region_[1248] */
+	void (*bs_sr_1)(BSTAG, HANDLE, OFFSET, uint8_t, COUNT);
+	void (*bs_sr_2)(BSTAG, HANDLE, OFFSET, uint16_t, COUNT);
+	void (*bs_sr_4)(BSTAG, HANDLE, OFFSET, uint32_t, COUNT);
+	void (*bs_sr_8)(BSTAG, HANDLE, OFFSET, uint64_t, COUNT);
+
 	/* bus_space_set_multi_[1248] */
 	void (*bs_sm_1)(BSTAG, HANDLE, OFFSET, uint8_t, COUNT);
 	void (*bs_sm_2)(BSTAG, HANDLE, OFFSET, uint16_t, COUNT);
 	void (*bs_sm_4)(BSTAG, HANDLE, OFFSET, uint32_t, COUNT);
 	void (*bs_sm_8)(BSTAG, HANDLE, OFFSET, uint64_t, COUNT);
+
+	/* bus_space_copy_region_[1248] */
+	void (*bs_c_1)(BSTAG, HANDLE, OFFSET, HANDLE, OFFSET, COUNT);
+	void (*bs_c_2)(BSTAG, HANDLE, OFFSET, HANDLE, OFFSET, COUNT);
+	void (*bs_c_4)(BSTAG, HANDLE, OFFSET, HANDLE, OFFSET, COUNT);
+	void (*bs_c_8)(BSTAG, HANDLE, OFFSET, HANDLE, OFFSET, COUNT);
 
 	/* bus_space_peek_[1248] */
 	int (*bs_pe_1)(BSTAG, HANDLE, OFFSET, uint8_t *);

@@ -29,8 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	_AARCH64_PARAM_H_
-#define	_AARCH64_PARAM_H_
+#ifndef _AARCH64_PARAM_H_
+#define _AARCH64_PARAM_H_
 
 #ifdef __aarch64__
 
@@ -51,7 +51,7 @@
  */
 
 #if defined(_KERNEL)
-# ifndef MACHINE_ARCH			/* XXX For now */
+# ifndef MACHINE_ARCH		/* XXX For now */
 #  ifndef __AARCH64EB__
 #   define	_MACHINE_ARCH	aarch64eb
 #   define	MACHINE_ARCH	"aarch64eb"
@@ -80,14 +80,14 @@
 
 /* AARCH64-specific macro to align a stack pointer (downwards). */
 #define STACK_ALIGNBYTES	(16 - 1)
-#define	ALIGNBYTES32	7
+#define ALIGNBYTES32		7
 
-#define	DEV_BSHIFT	9		/* log2(DEV_BSIZE) */
-#define	DEV_BSIZE	(1 << DEV_BSHIFT)
-#define	BLKDEV_IOSIZE	2048
+#define DEV_BSHIFT		9	/* log2(DEV_BSIZE) */
+#define DEV_BSIZE		(1 << DEV_BSHIFT)
+#define BLKDEV_IOSIZE		2048
 
 #ifndef MAXPHYS
-#define	MAXPHYS		65536		/* max I/O transfer size */
+#define MAXPHYS			65536	/* max I/O transfer size */
 #endif
 
 #define NKMEMPAGES_MAX_DEFAULT	((2048UL * 1024 * 1024) >> PAGE_SHIFT)
@@ -96,13 +96,13 @@
 #ifdef AARCH64_PAGE_SHIFT
 #if (1 << AARCH64_PAGE_SHIFT) & ~0x141000
 #error AARCH64_PAGE_SHIFT contains an unsupported value.
-#endif 
-#define PGSHIFT		AARCH64_PAGE_SHIFT
-#else 
-#define PGSHIFT		12
 #endif
-#define	NBPG		(1 << PGSHIFT)
-#define PGOFSET		(NBPG - 1)
+#define PGSHIFT			AARCH64_PAGE_SHIFT
+#else
+#define PGSHIFT			12
+#endif
+#define NBPG			(1 << PGSHIFT)
+#define PGOFSET			(NBPG - 1)
 
 /*
  * Constants related to network buffer management.
@@ -110,25 +110,25 @@
  * NBPG % MCLBYTES must be zero.
  */
 #if PGSHIFT > 12
-#define	MSIZE		256		/* size of an mbuf */
+#define MSIZE			256	/* size of an mbuf */
 #else
-#define	MSIZE		512		/* size of an mbuf */
+#define MSIZE			512	/* size of an mbuf */
 #endif
 
 #ifndef MCLSHIFT
-#define	MCLSHIFT	11		/* convert bytes to m_buf clusters */
+#define MCLSHIFT		11	/* convert bytes to m_buf clusters */
 					/* 2K cluster can hold Ether frame */
-#endif	/* MCLSHIFT */
+#endif /* MCLSHIFT */
 
-#define	MCLBYTES	(1 << MCLSHIFT)	/* size of a m_buf cluster */
+#define MCLBYTES		(1 << MCLSHIFT)	/* size of a m_buf cluster */
 
 
 #ifndef MSGBUFSIZE
-#define MSGBUFSIZE	NBPG		/* default message buffer size */
+#define MSGBUFSIZE		NBPG	/* default message buffer size */
 #endif
 
 #ifdef _KERNEL
-void delay(unsigned long);
+void delay(unsigned int);
 #define	DELAY(x)	delay(x)
 #endif
 /*
@@ -136,9 +136,14 @@ void delay(unsigned long);
  */
 #ifdef _KERNEL
 #ifdef COMPAT_16
-#define	COMPAT_ZERODEV(x)	(x == makedev(0, _DEV_ZERO_oARM))
+#define COMPAT_ZERODEV(x)	(x == makedev(0, _DEV_ZERO_oARM))
 #endif
 #endif /* _KERNEL */
+
+/* for compatible arm */
+#define arm_btop(x)		((unsigned long)(x) >> PGSHIFT)
+#define arm_ptob(x)		((unsigned long)(x) << PGSHIFT)
+#define arm_trunc_page(x)	((unsigned long)(x) & ~PGSHIFT)
 
 #elif defined(__arm__)
 

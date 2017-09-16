@@ -49,6 +49,8 @@ struct trapframe {
 #define tf_tpidr	tf_regs.r_tpidr
 };
 
+#define TF_SIZE		roundup(sizeof(struct trapframe), 16)
+
 #elif defined(__arm__)
 
 #include <arm/frame.h>

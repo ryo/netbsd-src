@@ -57,6 +57,9 @@ extern u_int arm_cpu_max;
 extern volatile u_int arm_cpu_hatched;
 #endif
 
+#define I32_bit	SPSR_I
+#define F32_bit	SPSR_F
+
 static inline void cpsie(register_t cpsr) __attribute__((__unused__));
 static inline register_t cpsid(register_t cpsr) __attribute__((__unused__));
 

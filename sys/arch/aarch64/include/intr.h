@@ -32,16 +32,11 @@
 #ifndef _AARCH64_INTR_H_
 #define _AARCH64_INTR_H_
 
-#ifdef __aarch64__
-
-#ifdef _LOCORE
-#error use "assym.h"
-#endif
-
 #ifdef _KERNEL
 
 #ifdef _KERNEL_OPT
 #include "opt_multiprocessor.h"
+#include "opt_arm_intr_impl.h"
 #endif
 
 #ifdef MULTIPROCESSOR
@@ -49,81 +44,44 @@
 #endif
 
 /* Interrupt priority "levels". */
-#define	IPL_NONE	0		/* nothing */
-#define	IPL_SOFTCLOCK	1		/* clock */
-#define	IPL_SOFTBIO	2		/* block I/O */
-#define	IPL_SOFTNET	3		/* software network interrupt */
-#define	IPL_SOFTSERIAL	4		/* software serial interrupt */
-#define	IPL_VM		5		/* memory allocation */
-#define	IPL_SCHED	6		/* clock interrupt */
-#define	IPL_HIGH	7		/* everything */
+#define IPL_NONE	0		/* nothing */
+#define IPL_SOFTCLOCK	1		/* clock */
+#define IPL_SOFTBIO	2		/* block I/O */
+#define IPL_SOFTNET	3		/* software network interrupt */
+#define IPL_SOFTSERIAL	4		/* software serial interrupt */
+#define IPL_VM		5		/* memory allocation */
+#define IPL_SCHED	6		/* clock interrupt */
+#define IPL_HIGH	7		/* everything */
 
-#define	NIPL		8
+#define NIPL		8
 
 /* Interrupt sharing types. */
-#define	IST_NONE	0	/* none */
-#define	IST_PULSE	1	/* pulsed */
-#define	IST_EDGE	2	/* edge-triggered */
-#define	IST_LEVEL	3	/* level-triggered */
+#define IST_NONE	0	/* none */
+#define IST_PULSE	1	/* pulsed */
+#define IST_EDGE	2	/* edge-triggered */
+#define IST_LEVEL	3	/* level-triggered */
 
-#define IST_LEVEL_LOW	IST_LEVEL
-#define IST_LEVEL_HIGH	4
-#define IST_EDGE_FALLING IST_EDGE
-#define IST_EDGE_RISING	5
-#define IST_EDGE_BOTH	6
-#define IST_SOFT	7
+#define IST_LEVEL_LOW		IST_LEVEL
+#define IST_LEVEL_HIGH		4
+#define IST_EDGE_FALLING	IST_EDGE
+#define IST_EDGE_RISING		5
+#define IST_EDGE_BOTH		6
+#define IST_SOFT		7
 
-#define IST_MPSAFE	0x100	/* interrupt is MPSAFE */
+#define IST_MPSAFE		0x100	/* interrupt is MPSAFE */
 
-#include <arm/pic/picvar.h>
 
-static inline void
-spl0(void)
-{
-	(void)_spllower(IPL_NONE);
-}
+#ifndef ARM_INTR_IMPL
+#error ARM_INTR_IMPL not defined.
+#endif
 
-static inline int
-splsoftclock(void)
-{
-	return _splraise(IPL_SOFTCLOCK);
-}
+#include ARM_INTR_IMPL
 
-static inline int
-splsoftbio(void)
-{
-	return _splraise(IPL_SOFTBIO);
-}
+#ifdef _LOCORE
 
-static inline int
-splsoftnet(void)
-{
-	return _splraise(IPL_SOFTNET);
-}
+#include "assym.h"
 
-static inline int
-splsoftserial(void)
-{
-	return _splraise(IPL_SOFTSERIAL);
-}
-
-static inline int
-splvm(void)
-{
-	return _splraise(IPL_VM);
-}
-
-static inline int
-splsched(void)
-{
-	return _splraise(IPL_SCHED);
-}
-
-static inline int
-splhigh(void)
-{
-	return _splraise(IPL_HIGH);
-}
+#else /* _LOCORE */
 
 typedef uint8_t ipl_t;
 typedef struct {
@@ -133,23 +91,21 @@ typedef struct {
 static inline ipl_cookie_t
 makeiplcookie(ipl_t ipl)
 {
-
 	return (ipl_cookie_t){._ipl = ipl};
 }
 
 static inline int
 splraiseipl(ipl_cookie_t icookie)
 {
-
 	return _splraise(icookie._ipl);
 }
 
+#define spl0()		_spllower(IPL_NONE);
+
+#include <sys/spl.h>
+
+#endif /* _LOCORE */
+
 #endif /* _KERNEL */
-
-#elif defined(__arm__)
-
-#include <arm/intr.h>
-
-#endif /* __aarch64__/__arm__ */
 
 #endif /* _AARCH64_INTR_H_ */
