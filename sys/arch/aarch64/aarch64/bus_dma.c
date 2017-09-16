@@ -816,7 +816,7 @@ _bus_dmamap_sync_segment(vaddr_t va, paddr_t pa, vsize_t len, int ops, bool read
 		}
 		/* FALLTHROUGH */
 	case BUS_DMASYNC_PREREAD: {
-		const size_t line_size = cpu_dcache_size();
+		const size_t line_size = cpu_dcache_line_size();
 		const size_t line_mask = line_size - 1;
 		vsize_t misalignment = va & line_mask;
 		if (misalignment) {
