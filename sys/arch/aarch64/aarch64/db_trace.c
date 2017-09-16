@@ -94,9 +94,6 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 	for (; (count > 0) && (frame != 0); count--) {
 		const char *name = NULL;
 
-		lastlr = lr;
-		lastframe = frame;
-
 		/*
 		 *
 		 * interrupt handler trace
@@ -116,6 +113,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		 *  ->        :
 		 *  ->        :
 		 */
+
 		extern char el1_trap[];	/* XXX */
 		if ((char *)(lr - 4) == (char *)el1_trap) {
 
@@ -123,6 +121,9 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 
 			tf = (struct trapframe *)(lastframe + 16);
 			pr_traceaddr("tf", tf, lr - 4, &name, pr);
+
+			lastlr = lr;
+			lastframe = frame;
 
 			db_read_bytes(&tf->tf_pc, sizeof(tf->tf_pc),
 			    (char *)&lr);
@@ -142,11 +143,11 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 			 */
 			pr_traceaddr("fp", frame, lr - 4, &name, pr);
 
+			lastlr = lr;
+			lastframe = frame;
+
 			db_read_bytes(frame + 8, sizeof(lr), (char *)&lr);
 			db_read_bytes(frame, sizeof(frame), (char *)&frame);
 		}
-
-		if (frame == lastframe)
-			break;
 	}
 }
