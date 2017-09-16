@@ -3,8 +3,6 @@
 #include <aarch64/asm.h>
 #include "assym.h"
 
-lr	.req	x30	/* link register */
-
 #define BAD_SYNC	1
 #define BAD_IRQ		2
 #define BAD_FIQ		3
@@ -128,7 +126,7 @@ _C_LABEL(el1_vectors):
 	VECT_INVAL	0, BAD_FIQ, 32		/* FIQ 32bit EL0 */
 	VECT_INVAL	0, BAD_ERROR, 32	/* Error 32bit EL0 */
 
-_C_LABEL(bad_entry):
+ASENTRY_NP(bad_entry)
 	str	x20, [sp, #TF_SP]
 	str	x21, [sp, #TF_PC]
 	str	x22, [sp, #TF_SPSR]
@@ -140,9 +138,9 @@ _C_LABEL(bad_entry):
 	msr	daifclr, #DAIF_I		/* reenable interrupt */
  1:	ldr	lr, =panic
 	b	trap_bad			/* call with x0/x1 */
-END(bad_entry)
+ASEND(bad_entry)
 
-_C_LABEL(el1_sync):
+ASENTRY_NP(el1_sync)
 	sub	sp, sp, #TF_SIZE
 	exception_entry 1
 	tbnz	x22, #7, 1f			/* if #SPSR_I is unmarked */
@@ -151,18 +149,18 @@ _C_LABEL(el1_sync):
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap
-END(el1_sync)
+ASEND(el1_sync)
 
-_C_LABEL(el1_irq):
+ASENTRY_NP(el1_irq)
 	sub	sp, sp, #TF_SIZE
 	exception_entry 1
 	/* leave DAIF_I marked */
 	adr	lr, el1_trap_exit
 	mov	x0, sp
 	b	interrupt
-END(el1_irq)
+ASEND(el1_irq)
 
-_C_LABEL(el0_sync):
+ASENTRY_NP(el0_sync)
 	exception_entry 0
 	tbnz	x22, #7, 1f			/* if #SPSR_I is unmarked */
 	msr	daifclr, #DAIF_I		/* reenable interrupt */
@@ -170,17 +168,17 @@ _C_LABEL(el0_sync):
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap
-END(el0_sync)
+ASEND(el0_sync)
 
-_C_LABEL(el0_irq):
+ASENTRY_NP(el0_irq)
 	exception_entry 0
 	/* leave DAIF_I marked */
 	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	interrupt
-END(el0_irq)
+ASEND(el0_irq)
 
-_C_LABEL(el0_32sync):
+ASENTRY_NP(el0_32sync)
 	exception_entry 0, 32
 	tbnz	x22, #7, 1f			/* if #SPSR_I is unmarked */
 	msr	daifclr, #DAIF_I		/* reenable interrupt */
@@ -188,11 +186,11 @@ _C_LABEL(el0_32sync):
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap_a32
-END(el0_32sync)
+ASEND(el0_32sync)
 
-_C_LABEL(el0_32irq):
+ASENTRY_NP(el0_32irq)
 	exception_entry 0, 32
 	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	interrupt
-END(el0_32irq)
+ASEND(el0_32irq)
