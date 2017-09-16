@@ -19,14 +19,16 @@ include 	"arch/evbarm64/conf/std.rpi"
 
 options 	INCLUDE_CONFIG_FILE	# embed config file in kernel binary
 
-#ident		"RPi3-$Revision: 0.99 $"
+#ident		"RPI3-$Revision$"
 
 maxusers 32
 
 # CPU Support
 options 	CPU_CORTEXA53
+options 	BCM2836
 
 options 	MEMSIZE=1008		# SDRAM: 0x00000000-0x3f000000
+options 	VERBOSE_LOCORE
 options 	VERBOSE_INIT_ARM
 
 # Standard system options
@@ -41,13 +43,19 @@ options 	KTRACE			# System call tracing support
 # Diagnostic/debugging support options
 options 	DIAGNOSTIC		# Cheap kernel consistency checks
 options 	DEBUG			# Expensive debugging checks/support
-#options 	DDB			# kernel debugger
+options 	DDB			# kernel debugger
+options 	DB_MAX_WIDTH=0
+options 	DB_MAX_LINE=1024
 #options 	DDB_HISTORY_SIZE=512	# enable history editing in DDB
 makeoptions	DEBUG="-g"
 #makeoptions	DEBUGLIST="pattern1 pattern2 ..."
 
 #options 	KGDB			# Remote kernel GDB support
 #options 	KGDB_DEVNAME="\"com\""	# device to use for KGDB
+
+options 	MSGBUFSIZE=32768
+
+makeoptions	COPY_SYMTAB=1
 
 # File systems
 file-system	FFS		# Fast file system
@@ -175,11 +183,117 @@ config		netbsd	root on ? type ?
 #config		netbsd	root on ? type nfs
 
 mainbus0 at	root
-cpunode*	at	mainbus0
-cpucore*	at	cpunode? core ?
-cpu*		at	cpucore? thread ?
-a64gic*		at	mainbus0
-a64gtmr*	at	mainbus0
+cpunode0	at mainbus0
+cpu*		at cpunode?
+
+# Generic timer
+a64gtmr*	at mainbus? intr 3
+
+# OBIO
+obio0		at mainbus?
+
+# Interrupt Controller
+bcmicu0		at obio?
+
+# VC Mailbox
+#bcmmbox0	at obio?
+#vcmbox0 	at bcmmbox0
+
+# DMA Controller
+#bcmdmac0	at obio?
+
+# AUDS
+#vcaudio0	at vchiq0
+#audio*		at audiobus?
+
+#spkr*		at audio?		# PC speaker (synthesized)
+
+# PL011 uart
+plcom0		at obio?
+
+# AUX UART
+com0		at obio?
+
+# Framebuffer console
+genfb0		at obio?
+wsdisplay*	at genfb?
+options		VCONS_DRAW_INTR
+#options 	RPI_HWCURSOR
+
+# System timer
+#bcmtmr0 	at obio?
+
+# Power management, Reset controller and Watchdog registers
+bcmpm0		at obio?
+
+# Random number generator
+#bcmrng0 	at obio?
+
+# GPIO
+#bcmgpio0	at obio?	# pins  0 ... 31
+#bcmgpio1	at obio?	# pins 32 ... 53
+
+# Arasan SD/MMC Interface
+#sdhc* at obio?
+#sdmmc*  at sdhc?
+
+# SD host controller
+#sdhost* at obio?
+#sdmmc* at sdhost?
+#
+#ld*     at sdmmc?
+
+# On-board USB
+#dwctwo* 	at obio?
+#usb* 		at dwctwo?
+
+# USB device drivers
+#include "dev/usb/usbdevices.config"
+
+#midi*		at midibus?
+
+# MII/PHY support
+#exphy* 		at mii? phy ?		# 3Com internal PHYs
+#gentbi* 	at mii? phy ?		# Generic Ten-Bit 1000BASE-[CLS]X PHYs
+#glxtphy*	at mii? phy ?		# Level One LXT-1000 PHYs
+#gphyter* 	at mii? phy ?		# NS83861 Gig-E PHY
+#icsphy*		at mii? phy ?		# Integrated Circuit Systems ICS189x
+#igphy*		at mii? phy ?		# Intel IGP01E1000
+#ihphy*		at mii? phy ?		# Intel 82577 PHYs
+#ikphy*		at mii? phy ?		# Intel 82563 PHYs
+#inphy*		at mii? phy ?		# Intel 82555 PHYs
+#iophy*		at mii? phy ?		# Intel 82553 PHYs
+#lxtphy*		at mii? phy ?		# Level One LXT-970 PHYs
+#makphy*		at mii? phy ?		# Marvell Semiconductor 88E1000 PHYs
+#nsphy*		at mii? phy ?		# NS83840 PHYs
+#nsphyter*	at mii? phy ? 		# NS83843 PHYs
+#pnaphy*		at mii? phy ?		# generic HomePNA PHYs
+#qsphy*		at mii? phy ?		# Quality Semiconductor QS6612 PHYs
+#rdcphy*		at mii? phy ?		# RDC R6040 10/100 PHY
+#rgephy*		at mii? phy ?		# Realtek 8169S/8110S internal PHYs
+#rlphy*		at mii? phy ?		# Realtek 8139/8201L PHYs
+#sqphy*		at mii? phy ?		# Seeq 80220/80221/80223 PHYs
+#tlphy*		at mii? phy ?		# ThunderLAN PHYs
+#tqphy*		at mii? phy ?		# TDK Semiconductor PHYs
+#urlphy*		at mii? phy ?		# Realtek RTL8150L internal PHYs
+#ukphy*		at mii? phy ?		# generic unknown PHYs
+
+# Broadcom Serial Control (I2C)
+bsciic* at obio?
+iic* at i2cbus?
+
+# 'DS3231 Raspberry Pi RTC Board Real Time Clock Module for Arduino'
+# sold by linksprite.com
+#dsrtc* at iic1 addr 0x68 flags 3231
+
+# MCP7940 based PiFace Real Time Clock
+#dsrtc* at iic1 addr 0x6f flags 7940
+
+# SPI controller
+bcmspi* at obio?
+spi* at spibus?
+
+
 
 #
 # accept filters

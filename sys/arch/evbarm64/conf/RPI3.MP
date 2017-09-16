@@ -17,6 +17,6 @@
 
 include 	"arch/evbarm64/conf/RPI3"
 
-ident		"RPi3.MP-$Revision: 0.99 $"
+#ident		"RPI3.MP-$Revision$"
 
 options		MULTIPROCESSOR		# include multiprocessor support
