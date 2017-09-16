@@ -65,9 +65,17 @@ start:
 	b	aarch64_start		/* aarch64_start() @ aarch64/locore.S */
 
 
+/*
+ * uartputc(x0:char) is a machine dependent character output routine
+ * that is referenced from locore.S
+ *
+ * Caller expects all registers would be saved.
+ * Don't break any registers
+ *
+ * If no uart, please define dummy routine like "uartputc: ret"
+ */
 #if defined(COM_DATA) && defined(COM_LSR) && defined(COM_LSR_TXFE_BIT)
 ENTRY_NP(uartputc)
-	/* doesn't break any registers */
 	stp	x9, x10, [sp, #-16]!
 	stp	x0, x1, [sp, #-16]!
 
