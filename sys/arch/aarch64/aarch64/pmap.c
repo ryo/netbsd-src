@@ -385,7 +385,7 @@ _pmap_pte_lookup(vaddr_t va)
 	pt_entry_t *l3;
 	paddr_t pa;
 
-	if (VM_MIN_KERNEL_ADDRESS <= va && va <= VM_MAX_KERNEL_ADDRESS) {
+	if (VM_MIN_KERNEL_ADDRESS <= va && va < VM_MAX_KERNEL_ADDRESS) {
 		pde = pmap_kernel()->pm_l1table[l1pde_index(va)];
 
 		if (!l1pde_valid(pde)) {
@@ -533,7 +533,7 @@ pmap_kremove(vaddr_t va, vsize_t size)
 		return;
 
 	eva = va + size;
-	KDASSERT(VM_MIN_KERNEL_ADDRESS <= va && eva <= VM_MAX_KERNEL_ADDRESS);
+	KDASSERT(VM_MIN_KERNEL_ADDRESS <= va && eva < VM_MAX_KERNEL_ADDRESS);
 
 	mutex_enter(&kpm->pm_lock);
 	for (; va < eva; va += PAGE_SIZE) {
