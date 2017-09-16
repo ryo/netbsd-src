@@ -76,6 +76,29 @@ vaddr_t virtual_avail, virtual_end;
 #endif
 
 
+static const struct pmap_devmap *pmap_devmap_table;
+
+void
+pmap_devmap_register(const struct pmap_devmap *table)
+{
+	pmap_devmap_table = table;
+}
+
+
+const struct pmap_devmap *
+pmap_devmap_find_va(vaddr_t va, vsize_t size)
+{
+	//XXXAARCH64
+	return NULL;
+}
+
+const struct pmap_devmap *
+pmap_devmap_find_pa(paddr_t va, psize_t size)
+{
+	//XXXAARCH64
+	return NULL;
+}
+
 void
 pmap_bootstrap(vaddr_t vstart, vaddr_t vend)
 {

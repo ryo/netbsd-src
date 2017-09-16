@@ -56,7 +56,6 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 static bool pagefault(struct trapframe *, ksiginfo_t *ksi);
 static bool pagefault_refmod(struct trapframe *, struct pmap *);
 static void trap_ksi_init(ksiginfo_t *, int, int, vaddr_t, register_t);
-static void dump_trapframe(struct trapframe *, void (*)(const char *, ...));
 
 static const char * const causenames[] = {
 	[ESR_EC_UNKNOWN]	= "Unknown Reason",
@@ -102,7 +101,7 @@ static const char * const causenames[] = {
 	[ESR_EC_VECTOR_CATCH]	= "A32: Vector Catch Exception"
 };
 
-static void
+void
 dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 {
 	(*pr)( "   pc=%016"PRIxREGISTER
