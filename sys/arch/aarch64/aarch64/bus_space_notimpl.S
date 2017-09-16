@@ -43,113 +43,113 @@ _C_LABEL(func):							;	\
 
 
 /* misc */
-NOT_IMPL(bs_map, "map")
-NOT_IMPL(bs_unmap, "unmap")
-NOT_IMPL(bs_subregion, "subregion")
-NOT_IMPL(bs_alloc, "alloc")
-NOT_IMPL(bs_free, "free")
-NOT_IMPL(bs_vaddr, "vaddr")
-NOT_IMPL(bs_mmap, "mmap")
-NOT_IMPL(bs_barrier, "barrier")
+NOT_IMPL(bs_notimpl_bs_map, "map")
+NOT_IMPL(bs_notimpl_bs_unmap, "unmap")
+NOT_IMPL(bs_notimpl_bs_subregion, "subregion")
+NOT_IMPL(bs_notimpl_bs_alloc, "alloc")
+NOT_IMPL(bs_notimpl_bs_free, "free")
+NOT_IMPL(bs_notimpl_bs_vaddr, "vaddr")
+NOT_IMPL(bs_notimpl_bs_mmap, "mmap")
+NOT_IMPL(bs_notimpl_bs_barrier, "barrier")
 
 /* read */
-NOT_IMPL(bs_notimpl_r_1, "read_1")
-NOT_IMPL(bs_notimpl_r_2, "read_2")
-NOT_IMPL(bs_notimpl_r_4, "read_4")
-NOT_IMPL(bs_notimpl_r_8, "read_8")
+NOT_IMPL(bs_notimpl_bs_r_1, "read_1")
+NOT_IMPL(bs_notimpl_bs_r_2, "read_2")
+NOT_IMPL(bs_notimpl_bs_r_4, "read_4")
+NOT_IMPL(bs_notimpl_bs_r_8, "read_8")
 
 /* read_multi */
-NOT_IMPL(bs_notimpl_rm_1, "read_multi_1")
-NOT_IMPL(bs_notimpl_rm_2, "read_multi_2")
-NOT_IMPL(bs_notimpl_rm_4, "read_multi_4")
-NOT_IMPL(bs_notimpl_rm_8, "read_multi_8")
+NOT_IMPL(bs_notimpl_bs_rm_1, "read_multi_1")
+NOT_IMPL(bs_notimpl_bs_rm_2, "read_multi_2")
+NOT_IMPL(bs_notimpl_bs_rm_4, "read_multi_4")
+NOT_IMPL(bs_notimpl_bs_rm_8, "read_multi_8")
 
 /* read_region */
-NOT_IMPL(bs_notimpl_rr_1, "read_region_1")
-NOT_IMPL(bs_notimpl_rr_2, "read_region_2")
-NOT_IMPL(bs_notimpl_rr_4, "read_region_4")
-NOT_IMPL(bs_notimpl_rr_8, "read_region_8")
+NOT_IMPL(bs_notimpl_bs_rr_1, "read_region_1")
+NOT_IMPL(bs_notimpl_bs_rr_2, "read_region_2")
+NOT_IMPL(bs_notimpl_bs_rr_4, "read_region_4")
+NOT_IMPL(bs_notimpl_bs_rr_8, "read_region_8")
 
 /* set_multi */
-NOT_IMPL(bs_notimpl_sm_1, "set_multi_1")
-NOT_IMPL(bs_notimpl_sm_2, "set_multi_2")
-NOT_IMPL(bs_notimpl_sm_4, "set_multi_4")
-NOT_IMPL(bs_notimpl_sm_8, "set_multi_8")
+NOT_IMPL(bs_notimpl_bs_sm_1, "set_multi_1")
+NOT_IMPL(bs_notimpl_bs_sm_2, "set_multi_2")
+NOT_IMPL(bs_notimpl_bs_sm_4, "set_multi_4")
+NOT_IMPL(bs_notimpl_bs_sm_8, "set_multi_8")
 
 /* set_region */
-NOT_IMPL(bs_notimpl_sr_1, "set_region_1")
-NOT_IMPL(bs_notimpl_sr_2, "set_region_2")
-NOT_IMPL(bs_notimpl_sr_4, "set_region_4")
-NOT_IMPL(bs_notimpl_sr_8, "set_region_8")
+NOT_IMPL(bs_notimpl_bs_sr_1, "set_region_1")
+NOT_IMPL(bs_notimpl_bs_sr_2, "set_region_2")
+NOT_IMPL(bs_notimpl_bs_sr_4, "set_region_4")
+NOT_IMPL(bs_notimpl_bs_sr_8, "set_region_8")
 
 /* write */
-NOT_IMPL(bs_notimpl_w_1, "write_1")
-NOT_IMPL(bs_notimpl_w_2, "write_2")
-NOT_IMPL(bs_notimpl_w_4, "write_4")
-NOT_IMPL(bs_notimpl_w_8, "write_8")
+NOT_IMPL(bs_notimpl_bs_w_1, "write_1")
+NOT_IMPL(bs_notimpl_bs_w_2, "write_2")
+NOT_IMPL(bs_notimpl_bs_w_4, "write_4")
+NOT_IMPL(bs_notimpl_bs_w_8, "write_8")
 
 /* write_multi */
-NOT_IMPL(bs_notimpl_wm_1, "write_multi_1")
-NOT_IMPL(bs_notimpl_wm_2, "write_multi_2")
-NOT_IMPL(bs_notimpl_wm_4, "write_multi_4")
-NOT_IMPL(bs_notimpl_wm_8, "write_multi_8")
+NOT_IMPL(bs_notimpl_bs_wm_1, "write_multi_1")
+NOT_IMPL(bs_notimpl_bs_wm_2, "write_multi_2")
+NOT_IMPL(bs_notimpl_bs_wm_4, "write_multi_4")
+NOT_IMPL(bs_notimpl_bs_wm_8, "write_multi_8")
 
 /* write_region */
-NOT_IMPL(bs_notimpl_wr_1, "write_region_1")
-NOT_IMPL(bs_notimpl_wr_2, "write_region_2")
-NOT_IMPL(bs_notimpl_wr_4, "write_region_4")
-NOT_IMPL(bs_notimpl_wr_8, "write_region_8")
+NOT_IMPL(bs_notimpl_bs_wr_1, "write_region_1")
+NOT_IMPL(bs_notimpl_bs_wr_2, "write_region_2")
+NOT_IMPL(bs_notimpl_bs_wr_4, "write_region_4")
+NOT_IMPL(bs_notimpl_bs_wr_8, "write_region_8")
 
 /* copy_region */
-NOT_IMPL(bs_notimpl_c_1, "copy_region_1")
-NOT_IMPL(bs_notimpl_c_2, "copy_region_2")
-NOT_IMPL(bs_notimpl_c_4, "copy_region_4")
-NOT_IMPL(bs_notimpl_c_8, "copy_region_8")
+NOT_IMPL(bs_notimpl_bs_c_1, "copy_region_1")
+NOT_IMPL(bs_notimpl_bs_c_2, "copy_region_2")
+NOT_IMPL(bs_notimpl_bs_c_4, "copy_region_4")
+NOT_IMPL(bs_notimpl_bs_c_8, "copy_region_8")
 
 /* peek */
-NOT_IMPL(bs_notimpl_pe_1, "peek_1")
-NOT_IMPL(bs_notimpl_pe_2, "peek_2")
-NOT_IMPL(bs_notimpl_pe_4, "peek_4")
-NOT_IMPL(bs_notimpl_pe_8, "peek_8")
+NOT_IMPL(bs_notimpl_bs_pe_1, "peek_1")
+NOT_IMPL(bs_notimpl_bs_pe_2, "peek_2")
+NOT_IMPL(bs_notimpl_bs_pe_4, "peek_4")
+NOT_IMPL(bs_notimpl_bs_pe_8, "peek_8")
 
 /* poke */
-NOT_IMPL(bs_notimpl_po_1, "poke_1")
-NOT_IMPL(bs_notimpl_po_2, "poke_2")
-NOT_IMPL(bs_notimpl_po_4, "poke_4")
-NOT_IMPL(bs_notimpl_po_8, "poke_8")
+NOT_IMPL(bs_notimpl_bs_po_1, "poke_1")
+NOT_IMPL(bs_notimpl_bs_po_2, "poke_2")
+NOT_IMPL(bs_notimpl_bs_po_4, "poke_4")
+NOT_IMPL(bs_notimpl_bs_po_8, "poke_8")
 
 /* read_stream */
-NOT_IMPL(bs_r_1_s, "read_stream_1")
-NOT_IMPL(bs_r_2_s, "read_stream_2")
-NOT_IMPL(bs_r_4_s, "read_stream_4")
-NOT_IMPL(bs_r_8_s, "read_stream_8")
+NOT_IMPL(bs_notimpl_bs_r_1_s, "read_stream_1")
+NOT_IMPL(bs_notimpl_bs_r_2_s, "read_stream_2")
+NOT_IMPL(bs_notimpl_bs_r_4_s, "read_stream_4")
+NOT_IMPL(bs_notimpl_bs_r_8_s, "read_stream_8")
 
 /* write_stream */
-NOT_IMPL(bs_w_1_s, "write_stream_1")
-NOT_IMPL(bs_w_2_s, "write_stream_2")
-NOT_IMPL(bs_w_4_s, "write_stream_4")
-NOT_IMPL(bs_w_8_s, "write_stream_8")
+NOT_IMPL(bs_notimpl_bs_w_1_s, "write_stream_1")
+NOT_IMPL(bs_notimpl_bs_w_2_s, "write_stream_2")
+NOT_IMPL(bs_notimpl_bs_w_4_s, "write_stream_4")
+NOT_IMPL(bs_notimpl_bs_w_8_s, "write_stream_8")
 
 /* read_region_stream */
-NOT_IMPL(bs_rr_1_s, "read_region_stream_1")
-NOT_IMPL(bs_rr_2_s, "read_region_stream_2")
-NOT_IMPL(bs_rr_4_s, "read_region_stream_4")
-NOT_IMPL(bs_rr_8_s, "read_region_stream_8")
+NOT_IMPL(bs_notimpl_bs_rr_1_s, "read_region_stream_1")
+NOT_IMPL(bs_notimpl_bs_rr_2_s, "read_region_stream_2")
+NOT_IMPL(bs_notimpl_bs_rr_4_s, "read_region_stream_4")
+NOT_IMPL(bs_notimpl_bs_rr_8_s, "read_region_stream_8")
 
 /* write_region_stream */
-NOT_IMPL(bs_wr_1_s, "write_region_stream_1")
-NOT_IMPL(bs_wr_2_s, "write_region_stream_2")
-NOT_IMPL(bs_wr_4_s, "write_region_stream_4")
-NOT_IMPL(bs_wr_8_s, "write_region_stream_8")
+NOT_IMPL(bs_notimpl_bs_wr_1_s, "write_region_stream_1")
+NOT_IMPL(bs_notimpl_bs_wr_2_s, "write_region_stream_2")
+NOT_IMPL(bs_notimpl_bs_wr_4_s, "write_region_stream_4")
+NOT_IMPL(bs_notimpl_bs_wr_8_s, "write_region_stream_8")
 
 /* read_multi_stream */
-NOT_IMPL(bs_rm_1_s, "read_multi_stream_1")
-NOT_IMPL(bs_rm_2_s, "read_multi_stream_2")
-NOT_IMPL(bs_rm_4_s, "read_multi_stream_4")
-NOT_IMPL(bs_rm_8_s, "read_multi_stream_8")
+NOT_IMPL(bs_notimpl_bs_rm_1_s, "read_multi_stream_1")
+NOT_IMPL(bs_notimpl_bs_rm_2_s, "read_multi_stream_2")
+NOT_IMPL(bs_notimpl_bs_rm_4_s, "read_multi_stream_4")
+NOT_IMPL(bs_notimpl_bs_rm_8_s, "read_multi_stream_8")
 
 /* write_multi_stream */
-NOT_IMPL(bs_wm_1_s, "write_multi_stream_1")
-NOT_IMPL(bs_wm_2_s, "write_multi_stream_2")
-NOT_IMPL(bs_wm_4_s, "write_multi_stream_4")
-NOT_IMPL(bs_wm_8_s, "write_multi_stream_8")
+NOT_IMPL(bs_notimpl_bs_wm_1_s, "write_multi_stream_1")
+NOT_IMPL(bs_notimpl_bs_wm_2_s, "write_multi_stream_2")
+NOT_IMPL(bs_notimpl_bs_wm_4_s, "write_multi_stream_4")
+NOT_IMPL(bs_notimpl_bs_wm_8_s, "write_multi_stream_8")
