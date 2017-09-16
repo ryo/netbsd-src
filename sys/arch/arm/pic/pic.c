@@ -47,14 +47,9 @@ __KERNEL_RCSID(0, "$NetBSD: pic.c,v 1.39 2017/08/29 22:57:05 nisimura Exp $");
 #include <sys/xcall.h>
 #include <sys/ipi.h>
 
-#if defined(__arm__)
 #include <arm/armreg.h>
 #include <arm/cpufunc.h>
-#elif defined(__aarch64__)
-#include <aarch64/locore.h>
-#define I32_bit		DAIF_I
-#define F32_bit		DAIF_F
-#endif
+#include <arm/locore.h>	/* for compat aarch64 */
 
 #ifdef DDB
 #include <arm/db_machdep.h>

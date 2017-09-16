@@ -39,15 +39,10 @@ __KERNEL_RCSID(0, "$NetBSD: pic_splfuncs.c,v 1.7 2015/04/02 03:11:34 matt Exp $"
 
 #include <dev/cons.h>
 
-#if defined(__arm__)
 #include <arm/armreg.h>
 #include <arm/cpu.h>
 #include <arm/cpufunc.h>
-#elif defined(__aarch64__)
-#include <aarch64/locore.h>
-#define I32_bit		DAIF_I
-#define F32_bit		DAIF_F
-#endif
+#include <arm/locore.h>	/* for compat aarch64 */
 
 #include <arm/pic/picvar.h>
 
