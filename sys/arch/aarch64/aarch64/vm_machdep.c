@@ -61,6 +61,7 @@ __KERNEL_RCSID(0, "$NetBSD: vm_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 void
 cpu_proc_fork(struct proc *p1, struct proc *p2)
 {
+	/* STACKCHECKS if necessary */
 }
 
 /*
@@ -113,8 +114,7 @@ cpu_lwp_fork(struct lwp *l1, struct lwp *l2, void *stack, size_t stacksize,
 	if (stack != NULL)
 		utf->tf_sp = ((vaddr_t)(stack) + stacksize) & -16;
 
-	utf->tf_spsr = SPSR_M_EL0T;		/* for returning to userspace */
-
+	/* fabricate an initial switchframe to go */
 	struct trapframe * const ktf = utf - 1;
 	ktf->tf_chain = utf;
 	ktf->tf_reg[27] = (u_int)func;
@@ -138,11 +138,13 @@ cpu_lwp_fork(struct lwp *l1, struct lwp *l2, void *stack, size_t stacksize,
 void
 cpu_lwp_free(struct lwp *l, int proc)
 {
+	/* STACKCHECKS if necessary */
 }
 
 void
 cpu_lwp_free2(struct lwp *l)
 {
+	/* Nothing to do here */
 }
 
 /*
