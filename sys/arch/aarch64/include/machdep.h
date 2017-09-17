@@ -57,6 +57,9 @@ void dosoftints(void);
 paddr_t vtophys(vaddr_t);
 #define VTOPHYS_FAILED	((paddr_t)-1L)
 
+#define KERN_VTOPHYS(va)	((paddr_t)((vaddr_t)va - VM_MIN_KERNEL_ADDRESS))
+#define KERN_PHYSTOV(pa)	((vaddr_t)((paddr_t)pa + VM_MIN_KERNEL_ADDRESS))
+
 #include <sys/pcu.h>
 
 extern const pcu_ops_t pcu_fpu_ops;

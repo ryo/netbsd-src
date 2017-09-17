@@ -40,6 +40,14 @@ __KERNEL_RCSID(0, "$NetBSD: bcm2835_gpio_subr.c,v 1.5 2017/07/30 17:32:59 jmcnei
 #include <arm/broadcom/bcm2835_gpioreg.h>
 #include <arm/broadcom/bcm2835_gpio_subr.h>
 
+/* XXXAARCH64 */
+#ifdef __aarch64__
+#include <uvm/uvm.h>
+#include <aarch64/pmap.h>
+#undef BCM2835_IOPHYSTOVIRT
+#define BCM2835_IOPHYSTOVIRT(x)	pmap_devmap_pa2va(x)
+#endif
+
 void
 bcm2835gpio_function_select(u_int pin, u_int func)
 {

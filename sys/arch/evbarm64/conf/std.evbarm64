@@ -3,3 +3,5 @@
 include		"conf/std"
 include		"arch/aarch64/conf/std.aarch64"	# arch standard options
 
+options 	CHILD_MAX=1024	# 160 is too few
+options 	OPEN_MAX=1024	# 128 is too few

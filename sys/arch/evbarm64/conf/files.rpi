@@ -1,8 +1,15 @@
-# $NetBSD: files.a64emul,v 1.1 2014/08/10 05:47:38 matt Exp $
+#	$NetBSD$
+#
+# Raspberry Pi 3
+#
 
 file	arch/evbarm64/rpi/rpi_machdep.c
-#file	arch/evbarm/rpi/vcprop_subr.c
-file	kern/subr_disk_mbr.c
+
+file	arch/evbarm/rpi/vcprop_subr.c
+makeoptions	"COPTS.vcprop_subr.c"+="-fno-stack-protector"
+
+# Kernel boot arguments
+defparam opt_machdep.h				BOOT_ARGS
 
 # CPU support and integrated peripherals
 include "arch/aarch64/broadcom/files.bcm2835"

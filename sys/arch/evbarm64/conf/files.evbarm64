@@ -3,9 +3,46 @@
 maxpartitions	16
 maxusers	2 16 64
 
+# Memory disk driver
+file	dev/md_root.c				md & memory_disk_hooks
+
 # Generic MD files
 file	arch/evbarm64/evbarm64/autoconf.c
 
+file	kern/subr_disk_mbr.c			disk
+
+#
+# Machine-independent drivers
+#
+include "dev/ata/files.ata"			# ATA devices
+include "dev/bluetooth/files.bluetooth"		# Bluetooth devices
+include "dev/i2o/files.i2o"			# I2O devices
+include "dev/isa/files.isa"			# ISA devices
+include "dev/pci/files.pci"			# PCI devices
+include "dev/cardbus/files.cardbus"		#   and CardBus devices
+include "dev/pcmcia/files.pcmcia"		# PCMCIA devices
+include "dev/sdmmc/files.sdmmc"			# SD/MMC devices
+include "dev/scsipi/files.scsipi"		# SCSI devices
+include "dev/usb/files.usb"			# USB devices
+
+#
+# ARM evaluation board specific devices
+#
+defparam	opt_evbarm_boardtype.h EVBARM_BOARDTYPE
+
+# We need to define the Integrator's "plcom" device here since
+# it we need to generate a "plcom.h" header file for conf.c
 defflag	opt_plcom.h		PLCOM_DEBUG
 device	plcom { }: tty
-file	arch/evbarm/dev/plcom.c		plcom needs-flag
+file	arch/evbarm/dev/plcom.c			plcom needs-flag
+
+#
+# Maximum number of memory ranges
+#
+defparam	opt_machdep.h			DRAM_BLOCKS
+
+#
+# Flattened Device Tree (FDT) support
+#
+include "dev/ofw/files.ofw"
+include "dev/fdt/files.fdt"

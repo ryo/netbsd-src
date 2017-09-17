@@ -222,6 +222,33 @@ pmap_devmap_find_pa(paddr_t pa, psize_t size)
 	return NULL;
 }
 
+vaddr_t
+pmap_devmap_pa2va(paddr_t pa)
+{
+	const struct pmap_devmap *table;
+	paddr_t offset;
+
+	table = pmap_devmap_find_pa(pa, 0);
+	if (table == NULL)
+		return 0;
+
+	offset = pa - table->pd_pa;
+	return table->pd_va + offset;
+}
+
+vaddr_t
+pmap_devmap_va2pa(paddr_t va)
+{
+	const struct pmap_devmap *table;
+	vaddr_t offset;
+
+	table = pmap_devmap_find_va(va, 0);
+	if (table == NULL)
+		return 0;
+
+	offset = va - table->pd_va;
+	return table->pd_pa + offset;
+}
 
 void
 pmap_bootstrap(vaddr_t vstart, vaddr_t vend)
