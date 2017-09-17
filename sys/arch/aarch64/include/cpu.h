@@ -41,7 +41,7 @@ struct clockframe {
 	int cf_intr_depth;
 };
 
-#define CLKF_USERMODE(cf)	(SPSR_M_EL0T == ((cf)->cf_psr & SPSR_M))
+#define CLKF_USERMODE(cf)	(((cf)->cf_psr & 0x0f) == 0)
 #define CLKF_PC(cf)		((cf)->cf_pc)
 #define CLKF_INTR(cf)		((cf)->cf_intr_depth > 0)
 
