@@ -59,6 +59,8 @@ const pcu_ops_t * const pcu_ops_md_defs[PCU_UNIT_COUNT] = {
 	[PCU_FPU] = &pcu_fpu_ops,
 };
 
+uint32_t cputype;
+
 struct vm_map *phys_map;
 
 vaddr_t physical_start;
@@ -108,8 +110,7 @@ initarm64(void)
 	vaddr_t kernstart_l2, kernend_l2;	/* L2 table 2MB aligned */
 	paddr_t kernstart_phys, kernend_phys;
 
-	if (set_cpufuncs() != 0)
-		panic("cpu not recognized!");
+	cputype = cpu_idnum();	/* for compatible arm */
 
 	kernstart = trunc_page((vaddr_t)__kernel_text);
 	kernend = round_page((vaddr_t)_end);
