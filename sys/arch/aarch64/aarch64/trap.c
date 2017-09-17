@@ -173,7 +173,7 @@ userret(struct lwp *l)
 	mi_userret(l);
 }
 
-#define USERMODE(esr)	(SPSR_M_EL0T == ((int)(esr) & SPSR_M))
+#define USERMODE(psr)	(SPSR_M_EL0T == ((int)(psr) & SPSR_M))
 
 void
 trap(struct trapframe *tf, int reason)
@@ -182,7 +182,7 @@ trap(struct trapframe *tf, int reason)
 	ksiginfo_t ksi;
 	int cause;
 	const char *causestr;
-	bool usertrap_p = USERMODE(tf->tf_esr);
+	bool usertrap_p = USERMODE(tf->tf_spsr);
 	bool ok = true;
 
 	KASSERT(reason == 0);
@@ -283,9 +283,9 @@ static const char * const syndrome[] = {
 	[4] = "bad error exception",
 };
 
-#define SPSR_A32_P(esr)		((int)(esr) & 0x10)
-#define SPSR_A32_DECODE(esr)	((int)(esr) & 0x0c)
-#define SPSR_ELx_DECODE(esr)	(((int)(esr) & 0x0c) >> 2)
+#define SPSR_A32_P(psr)		((int)(psr) & 0x10)
+#define SPSR_A32_DECODE(psr)	((int)(psr) & 0x0c)
+#define SPSR_ELx_DECODE(psr)	(((int)(psr) & 0x0c) >> 2)
 
 void
 trap_a32(struct trapframe *tf, int reason)
