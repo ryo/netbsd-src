@@ -52,7 +52,7 @@ void interrupt(struct trapframe *);
 
 void dump_trapframe(struct trapframe *, void (*)(const char *, ...));
 void dumpsys(void);
-void initarm64(vsize_t);
+void initarm64(void);
 void dosoftints(void);
 paddr_t vtophys(vaddr_t);
 #define VTOPHYS_FAILED	((paddr_t)-1L)

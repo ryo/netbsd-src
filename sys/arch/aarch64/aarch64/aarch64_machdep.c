@@ -96,7 +96,7 @@ vaddr_t physical_end;
  *               0x0000000000000000  Start of user address space
  */
 void
-initarm64(vsize_t devmap_reserved)
+initarm64(void)
 {
 	extern char __kernel_text[];
 	extern char _end[];
@@ -133,7 +133,11 @@ initarm64(vsize_t devmap_reserved)
 	    "kernel_start_l2       = 0x%016lx\n"
 	    "kernel_start          = 0x%016lx\n"
 	    "kernel_end            = 0x%016lx\n"
-	    "kernel_end_l2         = 0x%016lx\n",
+	    "kernel_end_l2         = 0x%016lx\n"
+	    "(kernel va area)\n"
+	    "(devmap va area)\n"
+	    "VM_MAX_KERNEL_ADDRESS = 0x%016lx\n"
+	    "------------------------------------------\n",
 	    physical_start,
 	    kernstart_phys,
 	    kernend_phys,
@@ -142,17 +146,7 @@ initarm64(vsize_t devmap_reserved)
 	    kernstart_l2,
 	    kernstart,
 	    kernend,
-	    kernend_l2);
-
-	if (devmap_reserved != 0) {
-		printf(
-		    "devmap_base           = 0x%016lx\n",
-		    VM_MAX_KERNEL_ADDRESS - devmap_reserved);
-	}
-
-	printf(
-	    "VM_MAX_KERNEL_ADDRESS = 0x%016lx\n"
-	    "------------------------------------------\n",
+	    kernend_l2,
 	    VM_MAX_KERNEL_ADDRESS);
 #endif
 
@@ -178,7 +172,7 @@ initarm64(vsize_t devmap_reserved)
 	 * kernel image is mapped L2 table (2M*n) by locore.S
 	 * virtual space start from 2MB aligned kernend
 	 */
-	pmap_bootstrap(kernend_l2, VM_MAX_KERNEL_ADDRESS - devmap_reserved);
+	pmap_bootstrap(kernend_l2, VM_MAX_KERNEL_ADDRESS);
 
 
 	tf = (struct trapframe *)(lwp0uspace + USPACE) - 1;

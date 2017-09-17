@@ -64,6 +64,7 @@ static vaddr_t pmap_maxkvaddr;
 vmem_t *pmap_asid_arena;
 
 vaddr_t virtual_avail, virtual_end;
+vaddr_t virtual_devmap_addr;
 
 //#define PMAP_DEBUG
 
@@ -79,6 +80,7 @@ vaddr_t virtual_avail, virtual_end;
 
 static const struct pmap_devmap *pmap_devmap_table;
 
+/* XXX: for now, only support for devmap */
 static vsize_t
 _pmap_map_chunk(pd_entry_t *l2, vaddr_t va, paddr_t pa, vsize_t size,
     vm_prot_t prot, u_int flags)
@@ -130,22 +132,38 @@ pmap_devmap_bootstrap(const struct pmap_devmap *table)
 	vaddr_t va;
 	int i;
 
-	pmap_devmap_table = table;
+	pmap_devmap_register(table);
 
 	l0 = AARCH64_PA_TO_KVA(reg_ttbr1_el1_read());
 
 #ifdef VERBOSE_INIT_ARM
 	printf("%s:\n", __func__);
 #endif
-	for (i = 0; pmap_devmap_table[i].pd_size != 0; i++) {
+	for (i = 0; table[i].pd_size != 0; i++) {
 #ifdef VERBOSE_INIT_ARM
 		printf(" devmap: pa %08lx-%08lx = va %016lx\n",
-		    pmap_devmap_table[i].pd_pa,
-		    pmap_devmap_table[i].pd_pa +
-		    pmap_devmap_table[i].pd_size - 1,
-		    pmap_devmap_table[i].pd_va);
+		    table[i].pd_pa,
+		    table[i].pd_pa + table[i].pd_size - 1,
+		    table[i].pd_va);
 #endif
-		va = pmap_devmap_table[i].pd_va;
+		va = table[i].pd_va;
+
+		/* update and check virtual_devmap_addr */
+		if ((virtual_devmap_addr == 0) ||
+		    (virtual_devmap_addr > va)) {
+			virtual_devmap_addr = va;
+
+			/* XXX: only one L2 table is allocated for devmap  */
+			if ((VM_MAX_KERNEL_ADDRESS - virtual_devmap_addr) >
+			    (L2_SIZE * Ln_ENTRIES)) {
+				panic("devmap va:%016lx out of range."
+				    " available devmap range is %016lx-%016lx",
+				    va,
+				    VM_MAX_KERNEL_ADDRESS -
+				    (L2_SIZE * Ln_ENTRIES),
+				    VM_MAX_KERNEL_ADDRESS);
+			}
+		}
 
 		l1 = l0pde_pa(l0[l0pde_index(va)]);
 		KASSERT(l1 != NULL);
@@ -158,11 +176,11 @@ pmap_devmap_bootstrap(const struct pmap_devmap *table)
 		l2 = AARCH64_PA_TO_KVA((paddr_t)l2);
 
 		_pmap_map_chunk(l2,
-		    pmap_devmap_table[i].pd_va,
-		    pmap_devmap_table[i].pd_pa,
-		    pmap_devmap_table[i].pd_size,
-		    pmap_devmap_table[i].pd_prot,
-		    pmap_devmap_table[i].pd_flags);
+		    table[i].pd_va,
+		    table[i].pd_pa,
+		    table[i].pd_size,
+		    table[i].pd_prot,
+		    table[i].pd_flags);
 	}
 }
 
@@ -211,6 +229,10 @@ pmap_bootstrap(vaddr_t vstart, vaddr_t vend)
 	struct pmap *kpm;
 	pd_entry_t *l0, l1;
 	vaddr_t va;
+
+	/* devmap already uses last of va? */
+	if ((virtual_devmap_addr != 0) && (virtual_devmap_addr < vend))
+		vend = virtual_devmap_addr;
 
 	virtual_avail = vstart;
 	virtual_end = vend;

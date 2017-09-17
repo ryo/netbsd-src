@@ -32,7 +32,7 @@
 #include <aarch64/vmparam.h>
 #include <arm/broadcom/bcm2835reg.h>
 
-/* reserve devmap area from last 32Mbyte of KVA area */
+/* reserve last 32Mbyte of KVA area as devmap area */
 #define RPI_DEVMAP_SIZE		(1024 * 1024 * 32) /* XXX: must be 2M aligned */
 #define RPI_DEVMAP_VBASE	(VM_MAX_KERNEL_ADDRESS - RPI_DEVMAP_SIZE)
 

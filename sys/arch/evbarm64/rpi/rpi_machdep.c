@@ -127,7 +127,7 @@ initarm(void)
 	/* map some peripheral registers */
 	pmap_devmap_bootstrap(rpi_devmap);
 
-	initarm64(RPI_DEVMAP_SIZE);
+	initarm64();
 }
 
 void
