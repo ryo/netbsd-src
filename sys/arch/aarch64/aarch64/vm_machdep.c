@@ -61,7 +61,7 @@ __KERNEL_RCSID(0, "$NetBSD: vm_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 void
 cpu_proc_fork(struct proc *p1, struct proc *p2)
 {
-	/* STACKCHECKS if necessary */
+	/* Nothing to copy MD stuff from proc to proc on a fork */
 }
 
 /*
@@ -127,24 +127,18 @@ cpu_lwp_fork(struct lwp *l1, struct lwp *l2, void *stack, size_t stacksize,
 	l2->l_md.md_ktf = ktf;
 }
 
-/*
- * cpu_exit is called as the last action during exit.
- *
- * We clean up a little and then call switch_exit() with the old proc as an
- * argument.  switch_exit() first switches to lwp0's context, and finally
- * jumps into switch() to wait for another process to wake up.
- */
-
 void
 cpu_lwp_free(struct lwp *l, int proc)
 {
 	/* STACKCHECKS if necessary */
+	(void)l;
+	(void)proc;
 }
 
 void
 cpu_lwp_free2(struct lwp *l)
 {
-	/* Nothing to do here */
+	(void)l;
 }
 
 /*
