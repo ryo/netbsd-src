@@ -64,13 +64,19 @@ struct cpu_info cpu_info_store __cacheline_aligned = {
 };
 
 #ifdef MULTIPROCESSOR
+struct cpu_info clu0_ci[3] __cacheline_aligned;
 #define NCPUINFO	MAXCPUS
 #else
 #define NCPUINFO	1
 #endif
 
 struct cpu_info *cpu_info[NCPUINFO] = {
-	[0] = &cpu_info_store
+	[0] = &cpu_info_store,
+#ifdef MULTIPROCESSOR
+	[1] = clu0_ci + 0,
+	[2] = clu0_ci + 1,
+	[3] = clu0_ci + 2
+#endif
 };
 
 uint32_t cpu_boot_mbox;
