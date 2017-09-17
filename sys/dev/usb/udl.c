@@ -673,7 +673,9 @@ udl_mmap(void *v, void *vs, off_t off, int prot)
 	paddr += vaddr & PGOFSET;
 
 	/* XXX we need MI paddr_t -> mmap cookie API */
-#if defined(__alpha__)
+#if defined(__aarch64__)
+#define PTOMMAP(paddr)	aarch64_btop((char *)paddr)
+#elif defined(__alpha__)
 #define PTOMMAP(paddr)	alpha_btop((char *)paddr)
 #elif defined(__arm__)
 #define PTOMMAP(paddr)	arm_btop((u_long)paddr)
