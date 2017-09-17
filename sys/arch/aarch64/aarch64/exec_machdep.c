@@ -77,4 +77,5 @@ setregs(struct lwp *l, struct exec_package *pack, vaddr_t stack)
 	tf->tf_reg[2] = p->p_psstrp;
 	tf->tf_pc = pack->ep_entry;
 	tf->tf_sp = stack & -16L;
+	tf->tf_spsr = SPSR_M_EL0T;
 }
