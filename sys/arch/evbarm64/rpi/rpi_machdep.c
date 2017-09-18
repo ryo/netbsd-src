@@ -49,7 +49,8 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include "plcom.h"
 #include "com.h"
 #include "genfb.h"
-//#include "ukbd.h"
+#include "usb.h"
+#include "ukbd.h"
 
 #include <sys/param.h>
 #include <sys/device.h>
