@@ -155,7 +155,7 @@ options 	FILEASSOC		# fileassoc(9) - required for Veriexec
 # Veriexec
 #
 # a pseudo device needed for veriexec
-pseudo-device   veriexec
+pseudo-device	veriexec
 #
 # Uncomment the fingerprint methods below that are desired. Note that
 # removing fingerprint methods will have almost no impact on the kernel  
