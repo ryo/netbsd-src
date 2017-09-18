@@ -189,7 +189,7 @@ ASENTRY_NP(el0_sync)
 	b	trap_el0_sync
 ASEND(el0_sync)
 
-ASENTRY(el0_irq)
+ASENTRY_NP(el0_irq)
 	exception_entry 0
 	/* leave DAIF_I marked */
 	adr	lr, el0_trap_exit
@@ -205,7 +205,7 @@ ASENTRY_NP(el0_error)
 	b	trap_el0_error
 ASEND(el0_sync)
 
-ASENTRY(el0_32sync)
+ASENTRY_NP(el0_32sync)
 	exception_entry 0, 32
 	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
 	ENABLE_INTERRUPT
@@ -215,14 +215,14 @@ ASENTRY(el0_32sync)
 	b	trap_el0_32sync
 ASEND(el0_32sync)
 
-ASENTRY(el0_32irq)
+ASENTRY_NP(el0_32irq)
 	exception_entry 0, 32
 	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	interrupt
 ASEND(el0_32irq)
 
-ASENTRY(el0_32error)
+ASENTRY_NP(el0_32error)
 	exception_entry 0, 32
 	adr	lr, el0_trap_exit
 	mov	x0, sp
