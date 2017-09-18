@@ -78,7 +78,6 @@
 	stp	x27, x28, [sp, #TF_X27]
 	stp	x29, x30, [sp, #TF_X29]
 	.if \el == 0
-	mov	x29, xzr		/* fp pointed to user-space */
 	mrs	x20, sp_el0
 	.else
 	add	x20, sp, #TF_SIZE	/* sp is already adjusted */
