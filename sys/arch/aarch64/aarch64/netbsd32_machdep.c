@@ -179,12 +179,17 @@ cpu_setmcontext32(struct lwp *l, const mcontext32_t *mcp, unsigned int flags)
 		pcb->pcb_fpregs = *(const struct fpreg *)&mcp->__fregs;
 	}
 
+	if ((flags & _UC_TLSBASE) != 0)
+		lwp_setprivate(l, (void *)(uintptr_t)mcp->_mc_tlsbase);
+
 	mutex_enter(p->p_lock);
 	if (flags & _UC_SETSTACK)
 		l->l_sigstk.ss_flags |= SS_ONSTACK;
 	if (flags & _UC_CLRSTACK)
 		l->l_sigstk.ss_flags &= ~SS_ONSTACK;
 	mutex_exit(p->p_lock);
+
+	tf->tf_tpidr = mcp->_mc_user_tpid;
 
 	return 0;
 }
@@ -217,6 +222,7 @@ cpu_getmcontext32(struct lwp *l, const mcontext32_t *mcp, unsigned int *flags)
 
 	mcp->_mc_tlsbase = (uintptr_t)l->l_private;
 	*flags |= _UC_TLSBASE;
+	mcp->_mc_user_tpid = tf->tf_tpidr;
 }
 
 void
