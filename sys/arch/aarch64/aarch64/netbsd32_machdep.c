@@ -153,7 +153,7 @@ cpu_setmcontext32(struct lwp *l, const mcontext32_t *mcp, unsigned int flags)
 		if (error != 0)
 			return error;
 
-		l->l_private = 0; /* ARM32 has no TPIDIR_EL0 */
+		lwp_setprivate(l->l_private, 0) /* ARM32 has no TPIDIR_EL0 */
 		tf->tf_reg[0]	= gr[0];
 		tf->tf_reg[1]	= gr[1];
 		tf->tf_reg[2]	= gr[2];
