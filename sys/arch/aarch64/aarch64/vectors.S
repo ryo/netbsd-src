@@ -58,6 +58,9 @@
 	.if \regsize == 32
 	mov	w0, w0			/* fill 0 in upper half of x0 */
 	.endif
+	.if \el == 1
+	sub	sp, sp, #TF_SIZE	/* need to allocate stack on el1 */
+	.endif
 	stp	x0, x1, [sp, #TF_X0]
 	stp	x2, x3, [sp, #TF_X2]
 	stp	x4, x5, [sp, #TF_X4]
@@ -78,7 +81,7 @@
 	mov	x29, xzr		/* fp pointed to user-space */
 	mrs	x20, sp_el0
 	.else
-	mov	x20, sp
+	add	x20, sp, #TF_SIZE	/* sp is already adjusted */
 	.endif
 	mrs	x21, elr_el1
 	mrs	x22, spsr_el1
@@ -141,7 +144,7 @@ ASENTRY_NP(el0_bad_entry)
 	str	x24, [sp, #TF_FAR]
 	tbnz	x22, #7, 1f			/* if SPSR.I is enabled */
 	ENABLE_INTERRUPT
- 1:	ldr	lr, =panic
+1:	ldr	lr, =panic
 	b	trap_el0_bad			/* call with x0/x1 */
 ASEND(bad_entry)
 
@@ -155,23 +158,20 @@ ASENTRY_NP(el1_bad_entry)
 	str	x24, [sp, #TF_FAR]
 	tbnz	x22, #7, 1f			/* if SPSR.I is enabled */
 	ENABLE_INTERRUPT
- 1:	ldr	lr, =panic
+1:	ldr	lr, =panic
 	b	trap_el1_bad			/* call with x0/x1 */
 ASEND(bad_entry)
 
 ASENTRY_NP(el1_sync)
-	sub	sp, sp, #TF_SIZE
 	exception_entry 1
 	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
 	ENABLE_INTERRUPT
- 1:	adr	lr, el1_trap_exit
+1:	adr	lr, el1_trap_exit
 	mov	x0, sp
-	mov	x1, xzr
 	b	trap_el1_sync
 ASEND(el1_sync)
 
 ASENTRY_NP(el1_irq)
-	sub	sp, sp, #TF_SIZE
 	exception_entry 1
 	/* leave DAIF_I marked */
 	adr	lr, el1_trap_exit
@@ -183,9 +183,8 @@ ASENTRY_NP(el0_sync)
 	exception_entry 0
 	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
 	ENABLE_INTERRUPT
- 1:	adr	lr, el1_trap_exit
+1:	adr	lr, el1_trap_exit
 	mov	x0, sp
-	mov	x1, xzr
 	b	trap_el0_sync
 ASEND(el0_sync)
 
@@ -201,7 +200,6 @@ ASENTRY_NP(el0_error)
 	exception_entry 0
 	adr	lr, el0_trap_exit
 	mov	x0, sp
-	mov	x1, xzr
 	b	trap_el0_error
 ASEND(el0_sync)
 
@@ -209,9 +207,8 @@ ASENTRY_NP(el0_32sync)
 	exception_entry 0, 32
 	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
 	ENABLE_INTERRUPT
- 1:	adr	lr, el0_trap_exit
+1:	adr	lr, el0_trap_exit
 	mov	x0, sp
-	mov	x1, xzr
 	b	trap_el0_32sync
 ASEND(el0_32sync)
 
