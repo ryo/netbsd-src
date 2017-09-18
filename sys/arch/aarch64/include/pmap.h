@@ -115,8 +115,8 @@ void pmap_devmap_register(const struct pmap_devmap *);
 void pmap_devmap_bootstrap(const struct pmap_devmap *);
 const struct pmap_devmap *pmap_devmap_find_pa(paddr_t, psize_t);
 const struct pmap_devmap *pmap_devmap_find_va(vaddr_t, vsize_t);
-vaddr_t pmap_devmap_pa2va(paddr_t);
-paddr_t pmap_devmap_va2pa(paddr_t);
+vaddr_t pmap_devmap_phystov(paddr_t);
+paddr_t pmap_devmap_vtophys(paddr_t);
 
 /* devmap use L2 blocks. (2Mbyte) */
 #define DEVMAP_TRUNC_ADDR(x)	((x) & ~L2_OFFSET)

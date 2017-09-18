@@ -362,7 +362,7 @@ rpi_uartinit(void)
 {
 	const paddr_t pa = BCM2835_PERIPHERALS_BUS_TO_PHYS(BCM2835_ARMMBOX_BASE);
 	const bus_space_tag_t iot = &bcm2835_bs_tag;
-	const bus_space_handle_t ioh = pmap_devmap_pa2va(pa);
+	const bus_space_handle_t ioh = pmap_devmap_phystov(pa);
 	uint32_t res;
 
 	cpu_dcache_wbinv_range((vaddr_t)&vb_uart, sizeof(vb_uart));
@@ -392,7 +392,7 @@ rpi_bootparams(void)
 {
 	const paddr_t pa = BCM2835_PERIPHERALS_BUS_TO_PHYS(BCM2835_ARMMBOX_BASE);
 	const bus_space_tag_t iot = &bcm2835_bs_tag;
-	const bus_space_handle_t ioh = pmap_devmap_pa2va(pa);
+	const bus_space_handle_t ioh = pmap_devmap_phystov(pa);
 	uint32_t res;
 
 #if 0

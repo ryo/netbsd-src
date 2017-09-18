@@ -223,7 +223,7 @@ pmap_devmap_find_pa(paddr_t pa, psize_t size)
 }
 
 vaddr_t
-pmap_devmap_pa2va(paddr_t pa)
+pmap_devmap_phystov(paddr_t pa)
 {
 	const struct pmap_devmap *table;
 	paddr_t offset;
@@ -237,7 +237,7 @@ pmap_devmap_pa2va(paddr_t pa)
 }
 
 vaddr_t
-pmap_devmap_va2pa(paddr_t va)
+pmap_devmap_vtophys(paddr_t va)
 {
 	const struct pmap_devmap *table;
 	vaddr_t offset;

@@ -45,7 +45,7 @@ __KERNEL_RCSID(0, "$NetBSD: bcm2835_gpio_subr.c,v 1.5 2017/07/30 17:32:59 jmcnei
 #include <uvm/uvm.h>
 #include <aarch64/pmap.h>
 #undef BCM2835_IOPHYSTOVIRT
-#define BCM2835_IOPHYSTOVIRT(x)	pmap_devmap_pa2va(x)
+#define BCM2835_IOPHYSTOVIRT(x)	pmap_devmap_phystov(x)
 #endif
 
 void
