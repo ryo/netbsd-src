@@ -101,7 +101,7 @@ cpu_lwp_fork(struct lwp *l1, struct lwp *l2, void *stack, size_t stacksize,
 	 * Note: this stack is not in use if we are forking from p1
 	 */
 	vaddr_t uv = uvm_lwp_getuarea(l2);
-	struct trapframe * const utf = (void *)(uv + USPACE - TF_SIZE);
+	struct trapframe * const utf = (struct trapframe *)(uv + USPACE - TF_SIZE);
 	l2->l_md.md_utf = utf;
 
 	*utf = *l1->l_md.md_utf;
