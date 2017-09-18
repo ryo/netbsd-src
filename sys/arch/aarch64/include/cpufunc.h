@@ -68,9 +68,6 @@ void aarch64_idcache_wbinv_range(vaddr_t, vsize_t);
 void aarch64_dcache_wbinv_range(vaddr_t, vsize_t);
 void aarch64_dcache_inv_range(vaddr_t, vsize_t);
 void aarch64_dcache_wb_range(vaddr_t, vsize_t);
-void aarch64_sdcache_wbinv_range(vaddr_t, paddr_t, vsize_t);
-void aarch64_sdcache_inv_range(vaddr_t, paddr_t, vsize_t);
-void aarch64_sdcache_wb_range(vaddr_t, paddr_t, vsize_t);
 void aarch64_drain_writebuf(void);
 
 #endif /* _KERNEL */
