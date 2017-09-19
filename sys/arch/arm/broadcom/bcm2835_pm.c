@@ -182,5 +182,7 @@ bcm2835_system_reset(void)
 	struct bcm2835pm_softc *sc = bcm2835pm_sc;
 	uint32_t timeout = 10;
 
+	if (bcm2835pm_sc == NULL)
+		return;
 	bcmpm_wdog_set_timeout(sc, timeout);
 }
