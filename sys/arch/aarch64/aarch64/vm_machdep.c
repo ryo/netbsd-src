@@ -101,7 +101,8 @@ cpu_lwp_fork(struct lwp *l1, struct lwp *l2, void *stack, size_t stacksize,
 	 * Note: this stack is not in use if we are forking from p1
 	 */
 	vaddr_t uv = uvm_lwp_getuarea(l2);
-	struct trapframe * const utf = (struct trapframe *)(uv + USPACE - TF_SIZE);
+	struct trapframe * const utf =
+	    (struct trapframe *)(uv + USPACE - TF_SIZE);
 	l2->l_md.md_utf = utf;
 
 	*utf = *l1->l_md.md_utf;
@@ -176,7 +177,7 @@ vmapbuf(struct buf *bp, vsize_t len)
 		(void) pmap_extract(vm_map_pmap(&bp->b_proc->p_vmspace->vm_map),
 		    faddr, &fpa);
 		pmap_enter(pmap_kernel(), taddr, fpa,
-			VM_PROT_READ|VM_PROT_WRITE, VM_PROT_READ|VM_PROT_WRITE|PMAP_WIRED);
+		    VM_PROT_READ|VM_PROT_WRITE, PMAP_WIRED);
 		faddr += PAGE_SIZE;
 		taddr += PAGE_SIZE;
 		len -= PAGE_SIZE;
