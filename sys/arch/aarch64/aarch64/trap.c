@@ -116,6 +116,49 @@ const char * const trap_names[] = {
 	[ESR_EC_VECTOR_CATCH]	= "A32: Vector Catch Exception"
 };
 
+const char * const fault_status_code[] = {
+	[ESR_ISS_FSC_ADDRESS_SIZE_FAULT_0]          = "Address Size Fault 0",
+	[ESR_ISS_FSC_ADDRESS_SIZE_FAULT_1]          = "Address Size Fault 1",
+	[ESR_ISS_FSC_ADDRESS_SIZE_FAULT_2]          = "Address Size Fault 2",
+	[ESR_ISS_FSC_ADDRESS_SIZE_FAULT_3]          = "Address Size Fault 3",
+	[ESR_ISS_FSC_TRANSLATION_FAULT_0]           = "Translation Fault 0",
+	[ESR_ISS_FSC_TRANSLATION_FAULT_1]           = "Translation Fault 1",
+	[ESR_ISS_FSC_TRANSLATION_FAULT_2]           = "Translation Fault 2",
+	[ESR_ISS_FSC_TRANSLATION_FAULT_3]           = "Translation Fault 3",
+	[ESR_ISS_FSC_ACCESS_FAULT_0]                = "Access Flag Fault 0",
+	[ESR_ISS_FSC_ACCESS_FAULT_1]                = "Access Flag Fault 1",
+	[ESR_ISS_FSC_ACCESS_FAULT_2]                = "Access Flag Fault 2",
+	[ESR_ISS_FSC_ACCESS_FAULT_3]                = "Access Flag Fault 3",
+	[ESR_ISS_FSC_PERM_FAULT_0]                  = "Permission Fault 0",
+	[ESR_ISS_FSC_PERM_FAULT_1]                  = "Permission Fault 1",
+	[ESR_ISS_FSC_PERM_FAULT_2]                  = "Permission Fault 2",
+	[ESR_ISS_FSC_PERM_FAULT_3]                  = "Permission Fault 3",
+	[ESR_ISS_FSC_SYNC_EXTERNAL_ABORT]           = "Synchronous External Abort",
+	[ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_0]  = "Synchronous External Abort on translation table walk 0",
+	[ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_1]  = "Synchronous External Abort on translation table walk 1",
+	[ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_2]  = "Synchronous External Abort on translation table walk 2",
+	[ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_3]  = "Synchronous External Abort on translation table walk 3",
+	[ESR_ISS_FSC_SYNC_PARITY_ERROR]             = "Synchronous Parity error",
+	[ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_0] = "Synchronous Parity error on translation table walk 0",
+	[ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_1] = "Synchronous Parity error on translation table walk 1",
+	[ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_2] = "Synchronous Parity error on translation table walk 2",
+	[ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_3] = "Synchronous Parity error on translation table walk 3",
+	[ESR_ISS_FSC_ALIGNMENT_FAULT]               = "Alignment Fault",
+	[ESR_ISS_FSC_TLB_CONFLICT_FAULT]            = "TLB Conflict Fault",
+	[ESR_ISS_FSC_LOCKDOWN_ABORT]                = "Lockdown Abort",
+	[ESR_ISS_FSC_UNSUPPORTED_EXCLUSIVE]         = "Unsupported exclusive",
+	[ESR_ISS_FSC_FIRST_LEVEL_DOMAIN_FAULT]      = "First Level Domain Fault",
+	[ESR_ISS_FSC_SECOND_LEVEL_DOMAIN_FAULT]     = "Second Level Domain Fault",
+};
+
+const char *const data_abort_fsc_sas[] = {
+	[0] = "Byte",
+	[1] = "Halfword",
+	[2] = "Word",
+	[3] = "Doubleword"
+};
+
+
 void
 dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 {
@@ -196,45 +239,92 @@ trap_doast(struct trapframe *tf)
 		preempt();
 }
 
+static bool
+is_fatal_abort(uint32_t esr)
+{
+	uint32_t fsc;
+
+	fsc = __SHIFTOUT(esr, ESR_ISS_DATAABORT_DFSC);
+
+	switch (fsc) {
+	case ESR_ISS_FSC_ACCESS_FAULT_0:
+	case ESR_ISS_FSC_ACCESS_FAULT_1:
+	case ESR_ISS_FSC_PERM_FAULT_0:
+	case ESR_ISS_FSC_PERM_FAULT_1:
+		return false;
+	}
+	return true;
+}
+
 void
 trap_el1_sync(struct trapframe *tf)
 {
-	int cause;
+	uint32_t esr, esr_ec;
 	const char *trapname;
 
-	cause = __SHIFTOUT(tf->tf_esr, ESR_EC);
+	esr = tf->tf_esr;
+	esr_ec = __SHIFTOUT(esr, ESR_EC);
 
-	if (cause >= __arraycount(trap_names))
+	if (esr_ec >= __arraycount(trap_names))
 		trapname = trap_names[0];
 	else
-		trapname = trap_names[cause];
+		trapname = trap_names[esr_ec];
 	if (trapname == NULL)
 		trapname = "Unknown";
 
-	switch (cause) {
+	switch (esr_ec) {
 	case ESR_EC_FP_ACCESS:
 	case ESR_EC_FP_TRAP_A64:
 		// XXXAARCH64: notyet
-		printf("%s trap!\n", trapname);
-		dump_trapframe(tf, printf);
-		panic("fp trap");
+		printf("%s\n", trapname);
+		panic("in kernel FP trap");
 		break;
 
 	case ESR_EC_INSN_ABT_EL1:
 	case ESR_EC_DATA_ABT_EL1:
-		// XXXAARCH64: notyet
-		printf("%s trap!\n", trapname);
-		printf("FAR_EL1  = 0x%016"PRIxREGISTER"\n", tf->tf_far);
-		dump_trapframe(tf, printf);
-		panic("abort");
+		if (is_fatal_abort(esr)) {
+			uint32_t fsc, rw;
+			const char *faultstr;
+
+			printf("fatal %s trap: ", trapname);
+
+			fsc = __SHIFTOUT(esr, ESR_ISS_DATAABORT_DFSC);	/* also IFSC */
+			rw = __SHIFTOUT(esr, ESR_ISS_DATAABORT_WnR);	/* IFSC: always 0 */
+
+			if ((fsc >= __arraycount(fault_status_code)) ||
+			    ((faultstr = fault_status_code[fsc]) == NULL))
+				printf("unknown fault status 0x%x ", fsc);
+			else
+				printf("%s", faultstr);
+
+			printf(" with %s access: ", (rw == 0) ? "read" : "write");
+
+			if (__SHIFTOUT(esr, ESR_ISS_DATAABORT_ISV) != 0) {
+				printf("SAS:%s, ",
+				    data_abort_fsc_sas[__SHIFTOUT(esr, ESR_ISS_DATAABORT_SAS)]);
+				printf("SSE=%llx, ", __SHIFTOUT(esr, ESR_ISS_DATAABORT_SSE));
+				printf("SRT/SF:%s%llu, ",
+				    (__SHIFTOUT(esr, ESR_ISS_DATAABORT_SF) == 0) ? "w" : "x",
+				    __SHIFTOUT(esr, ESR_ISS_DATAABORT_SRT));
+				printf("CM=%llx, ", __SHIFTOUT(esr, ESR_ISS_DATAABORT_CM));
+				printf("WnR=%llx, ", __SHIFTOUT(esr, ESR_ISS_DATAABORT_WnR));
+			}
+			printf("EA=%llx, ", __SHIFTOUT(esr, ESR_ISS_DATAABORT_EA));
+			printf("S1PTW=%llx, ", __SHIFTOUT(esr, ESR_ISS_DATAABORT_S1PTW));
+			printf("DFSC=%llx\n", __SHIFTOUT(esr, ESR_ISS_DATAABORT_DFSC));
+
+			panic("Abort");
+		} else {
+//XXXAARCH64
+//			pagefault(tf);
+			panic("in kernel pagefault");
+		}
 		break;
 
+	case ESR_EC_ILL_STATE:
 	case ESR_EC_PC_ALIGNMENT:
 	case ESR_EC_SP_ALIGNMENT:
-		// XXXAARCH64: notyet
-		printf("%s trap!\n", trapname);
-		dump_trapframe(tf, printf);
-		panic("abort");
+		panic("fatal %s trap: pc=%016llx sp=%016llx", trapname, tf->tf_pc, tf->tf_sp);
 		break;
 
 	case ESR_EC_BRKPNT_EL1:
@@ -248,9 +338,9 @@ trap_el1_sync(struct trapframe *tf)
 #endif
 		break;
 	default:
-		printf("%s trap!\n", trapname);
-		dump_trapframe(tf, printf);
+		printf("%s trap (EC=0x%02x)\n", trapname, esr_ec);
 		panic("Unhandled kernel exception");
+		break;
 	}
 }
 
