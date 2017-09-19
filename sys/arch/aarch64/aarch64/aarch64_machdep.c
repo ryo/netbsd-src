@@ -51,7 +51,7 @@ __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp
 #include <aarch64/pmap.h>
 #include <aarch64/pte.h>
 
-char cpu_model[32]; 
+char cpu_model[32];
 char machine[] = MACHINE;
 char machine_arch[] = MACHINE_ARCH;
 
@@ -198,7 +198,7 @@ mm_md_direct_mapped_phys(paddr_t pa, vaddr_t *vap)
 }
 
 int
-mm_md_physacc(paddr_t pa, vm_prot_t prot) 
+mm_md_physacc(paddr_t pa, vm_prot_t prot)
 {
 	if (physical_start <= pa && pa < physical_end)
 		return 0;
