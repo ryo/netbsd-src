@@ -203,6 +203,8 @@ cache_clean(int level, struct aarch64_cache_info *cinfo)
 	setshift = ffs(cinfo->cache_line_size) - 1;
 	wayshift = 32 - (ffs(cinfo->cache_ways) - 1);
 
+	cpu_drain_writebuf();
+
 	for (set = 0; set < cinfo->cache_sets; set++) {
 		for (way = 0; way < cinfo->cache_ways; way++) {
 			x = (way << wayshift) | (set << setshift) | (level << 1);

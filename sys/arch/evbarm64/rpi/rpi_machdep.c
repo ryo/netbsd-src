@@ -79,7 +79,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <machine/autoconf.h>
 
 #include <aarch64/broadcom/bcm2835var.h>
-//#include <arm/broadcom/bcm2835_pmvar.h>
+#include <arm/broadcom/bcm2835_pmvar.h>
 #include <arm/broadcom/bcm2835_mbox.h>
 #include <arm/broadcom/bcm2835_gpio_subr.h>
 #include <arm/broadcom/bcm_amba.h>
@@ -109,10 +109,9 @@ static void rpi_uartinit(void);
 static void rpi_bootparams(void);
 static void rpi_device_register(device_t, void *);
 
-static dev_type_cngetc(konsgetc);
-static dev_type_cnputc(konsputc);
-static dev_type_cnpollc(konspollc);
+#ifdef EARLY_CONSOLE
 static void konsinit(void);
+#endif
 
 uint64_t uboot_args[4] = { 0 };	/* filled in by rpi_start.S (not in bss) */
 
@@ -140,11 +139,6 @@ static const bus_addr_t consaddr = (bus_addr_t)PLCONADDR;
 int plcomcnspeed = PLCONSPEED;
 int plcomcnmode = PLCONMODE;
 #endif
-
-static struct consdev konsole = {
-	NULL, NULL, konsgetc, konsputc, konspollc, NULL,
-	NULL, NULL, NODEV, CN_NORMAL
-};
 
 #if (NPLCOM > 0 && (defined(PLCONSOLE) || defined(KGDB)))
 static struct plcom_instance rpi_pi = {
@@ -322,40 +316,16 @@ static const struct pmap_devmap rpi_devmap[] = {
 	{ 0 }
 };
 
-
-//XXXAARCH64
-static void
-raspi_reset(void)
-{
-#define BCM2835_WDOG_BASE	0x3f100000
-#define  BCM2835_WDOG_RSTC_REG	7	/* 0x3f10001c */
-#define  BCM2835_WDOG_RSTS_REG	8	/* 0x3f100020 */
-#define  BCM2835_WDOG_WDOG_REG	9	/* 0x3f100024 */
-#define  BCM2835_WDOG_MAGIC	0x5a000000
-	volatile uint32_t *wdog = (volatile uint32_t *)BCM2835_WDOG_BASE;
-	uint32_t v;
-
-	//XXXAARCH64
-	void cpucache_clean(void);
-	cpucache_clean();
-
-	v = wdog[BCM2835_WDOG_RSTC_REG];
-	v &= ~0x30;
-	v |= 0x20;
-	wdog[BCM2835_WDOG_WDOG_REG] = BCM2835_WDOG_MAGIC | 50;
-	wdog[BCM2835_WDOG_RSTC_REG] = BCM2835_WDOG_MAGIC | v;
-}
-
-
 void
 initarm(void)
 {
+#ifdef EARLY_CONSOLE
 	konsinit();	/* early console before consinit() */
+#endif
 
-	// XXX: rpi config
-	cpu_reset_address = raspi_reset;
 	evbarm64_device_register = rpi_device_register;
 
+	// XXX: rpi config (bootconfig?)
 	physical_start = 0;
 	physical_end = physical_start + MEMSIZE * 1024 * 1024;
 
@@ -369,6 +339,8 @@ initarm(void)
 	consinit();
 
 	rpi_bootparams();	/* update curcpu()->ci_data.cpu_cc_freq */
+
+	cpu_reset_address = bcm2835_system_reset;
 
 	initarm64();
 }
@@ -573,65 +545,41 @@ consinit(void)
 		consinit_plcom();
 }
 
-#define AUX_MU_BASE	0x3f215000
-#define AUX_MU_IO_REG	0x40	/* Mini Uart I/O Data (8bit) */
-#define AUX_MU_LSR_REG	0x54	/* Mini Uart Line Status (8bit) */
-
-#define THR		0x40	/* octet write to Tx */
-#define RBR		0x40	/* octet read to Rx */
-#define LSR		0x54	/* line status */
-#define LSR_THRE	0x20
-#define UART_READ(r)		*(volatile uint32_t *)(uartbase + (r))
-#define UART_WRITE(r, v)	*(volatile uint32_t *)(uartbase + (r)) = (v)
-#define LSR_TXEMPTY		0x20
-#define LSR_OE			0x02
-#define LSR_RXREADY		0x01
-
-static uintptr_t uartbase;
+#ifdef EARLY_CONSOLE
+void uartputc(char);
+char uartgetc(void);
+static dev_type_cngetc(konsgetc);
+static dev_type_cnputc(konsputc);
+static dev_type_cnpollc(konspollc);
+static struct consdev konsole = {
+	NULL, NULL, konsgetc, konsputc, konspollc, NULL,
+	NULL, NULL, NODEV, CN_NORMAL
+};
 
 static void
 konsinit(void)
 {
 	/* make debugging aid work */
 	cn_tab = &konsole;
-	uartbase = AUX_MU_BASE;
 }
 
 static int
 konsgetc(dev_t dev)
 {
-	unsigned lsr;
-	int s, c;
-
-	s = splserial();
-	do {
-		lsr = UART_READ(LSR);
-	} while ((lsr & LSR_OE) || (lsr & LSR_RXREADY) == 0);
-	c = UART_READ(RBR);
-	splx(s);
-	return c & 0xff;
+	return uartgetc();
 }
 
 static void
 konsputc(dev_t dev, int c)
 {
-	unsigned lsr, timo;
-	int s;
-
-	s = splserial();
-	timo = 150000;
-	do {
-		lsr = UART_READ(LSR);
-	} while (timo-- > 0 && (lsr & LSR_TXEMPTY) == 0);
-	if (timo > 0)
-		UART_WRITE(THR, c);
-	splx(s);
+	uartputc(c);
 }
 
 static void
 konspollc(dev_t dev, int on)
 {
 }
+#endif
 
 static void
 rpi_device_register(device_t dev, void *aux)

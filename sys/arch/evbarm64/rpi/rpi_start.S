@@ -38,6 +38,7 @@ RCSID("$NetBSD$")
 #define COM_DATA		AUX_MU_IO_REG
 #define COM_LSR			AUX_MU_LSR_REG
 #define COM_LSR_TXFE_BIT	5	/* Transmit fifo empty */
+#define COM_LSR_RXRDY_BIT	0	/* Byte ready in Receive Buffer */
 
 #define PRINT(string)	\
 	stp x0,lr,[sp,#-16]!;bl xprint;.asciz string;.align 2;ldp x0,lr,[sp],#16
@@ -66,11 +67,16 @@ start:
 
 
 /*
- * uartputc(x0:char) is a machine dependent character output routine
- * that is referenced from locore.S
+ * void uartputc(x0:char)
+ *   uartputc is a SoC dependent character output routine
+ *   referenced from locore.S and early console. (before consinit)
  *
- * Caller expects all registers would be saved.
- * Don't break any registers
+ *   Caller expects all registers would be saved.
+ *   Don't break any registers
+ *
+ * char uartgetc(void)
+ *   uartgetc() is character input routine referenced from rpi_machdep.c
+ *   for early console. (before consinit)
  *
  * If no uart, please define dummy routine like "uartputc: ret"
  */
@@ -99,3 +105,31 @@ ENTRY_NP(uartputc)
 END(uartputc)
 
 #endif /* COM_DATA/COM_LSR/COM_LSR_TXFE_BIT */
+
+
+#if defined(COM_DATA) && defined(COM_LSR) && defined(COM_LSR_RXRDY_BIT)
+
+ENTRY_NP(uartgetc)
+	stp	x9, x10, [sp, #-16]!
+
+	ldr	x9, =COM_LSR
+1:	ldr	w10, [x9]
+	tbz	w10, #COM_LSR_RXRDY_BIT, 1b
+
+	ldr	x9, =COM_DATA
+	ldr	w0, [x9]
+	and	w0, w0, #0xff
+
+	ldp	x9, x10, [sp], #16
+	ret
+END(uartgetc)
+
+#else /* COM_DATA/COM_LSR/COM_LSR_RXRDY_BIT */
+
+ENTRY_NP(uartgetc)
+	mov x0, xzr	/* XXX */
+	ret
+END(uartgetc)
+
+#endif /* COM_DATA/COM_LSR/COM_LSR_RXRDY_BIT */
+
