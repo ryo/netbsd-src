@@ -273,13 +273,14 @@ static const struct pmap_devmap rpi_devmap[] = {
 	{
 		.pd_va = DEVMAP_TRUNC_ADDR(RPI_DEVMAP_VBASE + 0),
 		.pd_pa = DEVMAP_TRUNC_ADDR(RPI_KERNEL_IO_PBASE),
-		.pd_size = DEVMAP_ROUND_SIZE(RPI_KERNEL_IO_VSIZE),	/* 16Mb */
+		.pd_size = DEVMAP_ROUND_SIZE(RPI_KERNEL_IO_VSIZE), /* 16Mb */
 		.pd_prot = VM_PROT_READ|VM_PROT_WRITE,
 		.pd_flags = PMAP_NOCACHE
 	},
 #if defined(BCM2836)
 	{
-		.pd_va = DEVMAP_TRUNC_ADDR(RPI_DEVMAP_VBASE + RPI_KERNEL_IO_VSIZE),
+		.pd_va =
+		    DEVMAP_TRUNC_ADDR(RPI_DEVMAP_VBASE + RPI_KERNEL_IO_VSIZE),
 		.pd_pa = DEVMAP_TRUNC_ADDR(RPI_KERNEL_LOCAL_PBASE),
 		.pd_size = DEVMAP_ROUND_SIZE(RPI_KERNEL_LOCAL_VSIZE),
 		.pd_prot = VM_PROT_READ|VM_PROT_WRITE,
@@ -342,7 +343,7 @@ initarm(void)
 
 /*
  * Return true if this model Raspberry Pi has Bluetooth/Wi-Fi support
- */ 
+ */
 static bool
 rpi_rev_has_btwifi(uint32_t rev)
 {
@@ -361,13 +362,15 @@ rpi_rev_has_btwifi(uint32_t rev)
 static void
 rpi_uartinit(void)
 {
-	const paddr_t pa = BCM2835_PERIPHERALS_BUS_TO_PHYS(BCM2835_ARMMBOX_BASE);
+	const paddr_t pa =
+	    BCM2835_PERIPHERALS_BUS_TO_PHYS(BCM2835_ARMMBOX_BASE);
 	const bus_space_tag_t iot = &bcm2835_bs_tag;
 	const bus_space_handle_t ioh = pmap_devmap_phystov(pa);
 	uint32_t res;
 
 	cpu_dcache_wbinv_range((vaddr_t)&vb_uart, sizeof(vb_uart));
-	bcm2835_mbox_write(iot, ioh, BCMMBOX_CHANARM2VC, KERN_VTOPHYS(&vb_uart));
+	bcm2835_mbox_write(iot, ioh, BCMMBOX_CHANARM2VC,
+	    KERN_VTOPHYS(&vb_uart));
 	bcm2835_mbox_read(iot, ioh, BCMMBOX_CHANARM2VC, &res);
 
 	if (vcprop_tag_success_p(&vb_uart.vbt_boardrev.tag)) {
@@ -391,7 +394,8 @@ rpi_uartinit(void)
 static void
 rpi_bootparams(void)
 {
-	const paddr_t pa = BCM2835_PERIPHERALS_BUS_TO_PHYS(BCM2835_ARMMBOX_BASE);
+	const paddr_t pa =
+	    BCM2835_PERIPHERALS_BUS_TO_PHYS(BCM2835_ARMMBOX_BASE);
 	const bus_space_tag_t iot = &bcm2835_bs_tag;
 	const bus_space_handle_t ioh = pmap_devmap_phystov(pa);
 	uint32_t res;
@@ -615,12 +619,12 @@ rpi_device_register(device_t dev, void *aux)
 	if (device_is_a(dev, "usmsc") &&
 	    vcprop_tag_success_p(&vb.vbt_macaddr.tag)) {
 		const uint8_t enaddr[ETHER_ADDR_LEN] = {
-		     (vb.vbt_macaddr.addr >> 0) & 0xff,
-		     (vb.vbt_macaddr.addr >> 8) & 0xff,
-		     (vb.vbt_macaddr.addr >> 16) & 0xff,
-		     (vb.vbt_macaddr.addr >> 24) & 0xff,
-		     (vb.vbt_macaddr.addr >> 32) & 0xff,
-		     (vb.vbt_macaddr.addr >> 40) & 0xff
+		    (vb.vbt_macaddr.addr >> 0) & 0xff,
+		    (vb.vbt_macaddr.addr >> 8) & 0xff,
+		    (vb.vbt_macaddr.addr >> 16) & 0xff,
+		    (vb.vbt_macaddr.addr >> 24) & 0xff,
+		    (vb.vbt_macaddr.addr >> 32) & 0xff,
+		    (vb.vbt_macaddr.addr >> 40) & 0xff
 		};
 
 		prop_data_t pd = prop_data_create_data(enaddr, ETHER_ADDR_LEN);
