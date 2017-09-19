@@ -33,10 +33,12 @@ extern paddr_t physical_start;
 extern paddr_t physical_end;
 
 extern void (*cpu_reset_address)(void);
+extern void (*cpu_reset_address0)(void);
 extern void (*cpu_powerdown_address)(void);
 
 extern char *booted_kernel;
 
+struct trapframe;
 void lwp_trampoline(void);
 void cpu_dosoftints(void);
 void cpu_switchto_softint(struct lwp *, int);

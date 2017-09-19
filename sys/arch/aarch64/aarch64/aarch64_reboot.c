@@ -138,6 +138,7 @@ __KERNEL_RCSID(0, "$NetBSD: arm32_reboot.c,v 1.10 2015/11/11 14:50:08 jmcneill E
 #include <aarch64/locore.h>
 #include <aarch64/cpufunc.h>
 
+void (*cpu_reset_address0)(void);
 void (*cpu_reset_address)(void);
 void (*cpu_powerdown_address)(void);
 
@@ -171,8 +172,10 @@ docpureset(int howto)
 
 	delay(1000);
 
-	if (cpu_reset_address)
+	if (cpu_reset_address != NULL)
 		(*cpu_reset_address)();
+	if (cpu_reset_address0 != NULL)
+		(*cpu_reset_address0)();
 
 	for (;;)
 		asm("wfi");

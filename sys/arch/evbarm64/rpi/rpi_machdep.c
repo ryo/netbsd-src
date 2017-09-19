@@ -316,9 +316,30 @@ static const struct pmap_devmap rpi_devmap[] = {
 	{ 0 }
 };
 
+/* cpu reset hook for early boot */
+static void
+raspi_early_reset(void)
+{
+#define BCM2835_WDOG_BASE		0x3f100000
+#define  BCM2835_WDOG_RSTC_REG 7	/* 0x3f10001c */
+#define  BCM2835_WDOG_RSTS_REG 8	/* 0x3f100020 */
+#define  BCM2835_WDOG_WDOG_REG 9	/* 0x3f100024 */
+#define  BCM2835_WDOG_MAGIC	0x5a000000
+	volatile uint32_t *wdog = (volatile uint32_t *)BCM2835_WDOG_BASE;
+	uint32_t v;
+
+	v = wdog[BCM2835_WDOG_RSTC_REG];
+	v &= ~0x30;
+	v |= 0x20;
+	wdog[BCM2835_WDOG_WDOG_REG] = BCM2835_WDOG_MAGIC | 50;
+	wdog[BCM2835_WDOG_RSTC_REG] = BCM2835_WDOG_MAGIC | v;
+}
+
 void
 initarm(void)
 {
+	cpu_reset_address0 = raspi_early_reset;	/* reset before attach devs */
+
 #ifdef EARLY_CONSOLE
 	konsinit();	/* early console before consinit() */
 #endif

@@ -37,6 +37,7 @@ __KERNEL_RCSID(1, "$NetBSD$");
 #include <sys/device.h>
 
 #include <aarch64/autoconf.h>
+#include <aarch64/machdep.h>
 
 static int mainbus_match(device_t, cfdata_t, void *);
 static void mainbus_attach(device_t, device_t, void *);
@@ -85,6 +86,8 @@ mainbus_attach(device_t parent, device_t self, void *aux)
 	config_search_ia(mainbus_early_search, self, "mainbus", &mba);
 	config_search_ia(mainbus_search, self, "mainbus", &mba);
 #endif
+
+	cpu_reset_address0 = NULL;	/* clear cpu reset hook for early boot */
 }
 
 #if NA64GIC == 0
