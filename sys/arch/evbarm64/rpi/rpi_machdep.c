@@ -114,10 +114,46 @@ static dev_type_cnputc(konsputc);
 static dev_type_cnpollc(konspollc);
 static void konsinit(void);
 
+uint64_t uboot_args[4] = { 0 };	/* filled in by rpi_start.S (not in bss) */
+
+int uart_clk = BCM2835_UART0_CLK;
+
+#define PLCONADDR BCM2835_UART0_BASE
+
+#ifndef CONSDEVNAME
+#define CONSDEVNAME "plcom"
+#endif
+
+#ifndef PLCONSPEED
+#define PLCONSPEED B115200
+#endif
+#ifndef PLCONMODE
+#define PLCONMODE ((TTYDEF_CFLAG & ~(CSIZE | CSTOPB | PARENB)) | CS8) /* 8N1 */
+#endif
+#ifndef PLCOMCNUNIT
+#define PLCOMCNUNIT -1
+#endif
+
+#if (NPLCOM > 0)
+static const bus_addr_t consaddr = (bus_addr_t)PLCONADDR;
+
+int plcomcnspeed = PLCONSPEED;
+int plcomcnmode = PLCONMODE;
+#endif
+
 static struct consdev konsole = {
 	NULL, NULL, konsgetc, konsputc, konspollc, NULL,
 	NULL, NULL, NODEV, CN_NORMAL
 };
+
+#if (NPLCOM > 0 && (defined(PLCONSOLE) || defined(KGDB)))
+static struct plcom_instance rpi_pi = {
+	.pi_type = PLCOM_TYPE_PL011,
+	.pi_flags = PLC_FLAG_32BIT_ACCESS,
+	.pi_iot = &bcm2835_bs_tag,
+	.pi_size = BCM2835_UART0_SIZE
+};
+#endif
 
 /* Smallest amount of RAM start.elf could give us. */
 #define RPI_MINIMUM_SPLIT	(128U * 1024 * 1024)
@@ -264,10 +300,6 @@ static struct __aligned(16) {	/* should be cacheLineSize*N aligned */
 		.vpt_tag = VCPROPTAG_NULL
 	}
 };
-
-int uart_clk = BCM2835_UART0_CLK;
-uint64_t uboot_args[4] = { 0 };	/* filled in by rpi_start.S (not in bss) */
-
 
 static const struct pmap_devmap rpi_devmap[] = {
 	{
@@ -485,20 +517,60 @@ rpi_bootparams(void)
 #endif
 }
 
+static void
+consinit_plcom(void)
+{
+#if (NPLCOM > 0 && defined(PLCONSOLE))
+	/*
+	 * Initialise the diagnostic serial console
+	 * This allows a means of generating output during initarm().
+	 */
+	rpi_pi.pi_iobase = consaddr;
+
+	plcomcnattach(&rpi_pi, plcomcnspeed, uart_clk,
+	    plcomcnmode, PLCOMCNUNIT);
+#endif
+}
+
+static void
+consinit_com(void)
+{
+#if NCOM > 0
+	bus_space_tag_t iot = &bcm2835_a4x_bs_tag;
+	const bus_addr_t addr = BCM2835_AUX_UART_BASE;
+	const int speed = B115200;
+	u_int freq = 0;
+	const u_int flags = TTYDEF_CFLAG;
+
+	if (vcprop_tag_success_p(&vb_uart.vbt_coreclockrate.tag))
+		freq = vb.vbt_coreclockrate.rate * 2;
+
+	comcnattach(iot, addr, speed, freq, COM_TYPE_BCMAUXUART, flags);
+#endif
+}
+
 void
 consinit(void)
 {
 	static int consinit_called = 0;
+	bool use_auxuart = false;
 
-	if (consinit_called)
+	if (consinit_called != 0)
 		return;
 
 	consinit_called = 1;
-#if 0
-	/*
-	 * build bus_space tag to run real UART console in NetBSD way.
-	 */
+
+#if NCOM > 0
+	if (vcprop_tag_success_p(&vb_uart.vbt_boardrev.tag) &&
+	    rpi_rev_has_btwifi(vb_uart.vbt_boardrev.rev)) {
+		use_auxuart = true;
+	}
 #endif
+
+	if (use_auxuart)
+		consinit_com();
+	else
+		consinit_plcom();
 }
 
 #define AUX_MU_BASE	0x3f215000
