@@ -915,13 +915,6 @@ pmap_is_referenced(struct vm_page *pg)
 	return (mdpg->mdpg_attrs & VM_PAGE_MD_REFERENCED) != 0;
 }
 
-paddr_t
-pmap_phys_address(paddr_t cookie)
-{
-	DMARK();
-	return cookie;
-}
-
 #ifdef MORE_DEBUG
 /*
  * Test ref/modify handling.  */

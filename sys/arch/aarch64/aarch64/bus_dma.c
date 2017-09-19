@@ -1455,12 +1455,12 @@ _bus_dmamem_mmap(bus_dma_tag_t t, bus_dma_segment_t *segs, int nsegs,
 			continue;
 		}
 
-		map_flags = 0;
-#ifdef AARCH64_MMAP_WRITECOMBINE
-		if (flags & BUS_DMA_PREFETCHABLE)
-			map_flags |= AARCH64_MMAP_WRITECOMBINE;
-#endif
-
+		if (flags & BUS_DMA_NOCACHE)
+			map_flags = AARCH64_MMAP_NOCACHE;
+		else if (flags & BUS_DMA_PREFETCHABLE)
+			map_flags = AARCH64_MMAP_WRITEBACK;
+		else
+			map_flags = 0;
 		return (atop((u_long)segs[i].ds_addr + off) | map_flags);
 
 	}

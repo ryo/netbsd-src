@@ -288,25 +288,27 @@ struct bus_space bcm2835_a4x_bs_tag = {
 };
 
 
+#define IN_RANGE(x, start, size)	\
+	(((x) >= (start)) && ((x) < ((start) + (size))))
+
 int
 bcm2835_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
     bus_space_handle_t *bshp)
 {
-	u_long startpa, endpa, pa;
-	vaddr_t va;
 	const struct pmap_devmap *pd;
-	int pmap_flags;
+	paddr_t startpa, endpa, pa;
+	vaddr_t va;
+	int pmapflags;
 	bool match = false;
 
 	/* Attempt to find the PA device mapping */
-	if (ba >= BCM2835_PERIPHERALS_BASE_BUS &&
-	    ba < BCM2835_PERIPHERALS_BASE_BUS + BCM2835_PERIPHERALS_SIZE) {
+	if (IN_RANGE(ba, BCM2835_PERIPHERALS_BASE_BUS,
+	    BCM2835_PERIPHERALS_SIZE)) {
 		match = true;
 		pa = BCM2835_PERIPHERALS_BUS_TO_PHYS(ba);
 	}
 #ifdef BCM2836
-	if (ba >= BCM2836_ARM_LOCAL_BASE &&
-	    ba < BCM2836_ARM_LOCAL_BASE + BCM2836_ARM_LOCAL_SIZE) {
+	if (IN_RANGE(ba, BCM2836_ARM_LOCAL_BASE, BCM2836_ARM_LOCAL_SIZE)) {
 		match = true;
 		pa = ba;
 	}
@@ -331,15 +333,18 @@ bcm2835_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
 
 	va = uvm_km_alloc(kernel_map, endpa - startpa, 0,
 	    UVM_KMF_VAONLY | UVM_KMF_NOWAIT);
-	if (!va)
+	if (va == 0)
 		return ENOMEM;
 
 	*bshp = (bus_space_handle_t)(va + (pa - startpa));
 
-	pmap_flags = (flag & BUS_SPACE_MAP_CACHEABLE) ? 0 : PMAP_NOCACHE;
+	if ((flag & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE)) != 0)
+		pmapflags = PMAP_WRITE_BACK;
+	else
+		pmapflags = PMAP_NOCACHE;
+
 	for (pa = startpa; pa < endpa; pa += PAGE_SIZE, va += PAGE_SIZE) {
-		pmap_kenter_pa(va, pa, VM_PROT_READ | VM_PROT_WRITE,
-		    pmap_flags);
+		pmap_kenter_pa(va, pa, VM_PROT_READ | VM_PROT_WRITE, pmapflags);
 	}
 	pmap_update(pmap_kernel());
 
@@ -349,8 +354,8 @@ bcm2835_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
 void
 bcm2835_bs_unmap(void *t, bus_space_handle_t bsh, bus_size_t size)
 {
-	vaddr_t	va;
-	vsize_t	sz;
+	vaddr_t va;
+	vsize_t sz;
 
 	if (pmap_devmap_find_va(bsh, size) != NULL) {
 		/* Device was statically mapped; nothing to do. */

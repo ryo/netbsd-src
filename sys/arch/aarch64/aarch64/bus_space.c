@@ -1,11 +1,8 @@
 /* $NetBSD$ */
 
-/*-
- * Copyright (c) 2012 The NetBSD Foundation, Inc.
+/*
+ * Copyright (c) 2017 Ryo Shimizu <ryo@nerv.org>
  * All rights reserved.
- *
- * This code is derived from software contributed to The NetBSD Foundation
- * by Nick Hudson
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -16,16 +13,16 @@
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
  *
- * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
@@ -521,12 +518,12 @@ int
 generic_bs_map(void *t, bus_addr_t bpa, bus_size_t size, int flag,
     bus_space_handle_t *bshp)
 {
+	const struct pmap_devmap *pd;
 	paddr_t startpa, endpa, pa;
 	vaddr_t va;
+	int pmapflags;
 
-	const struct pmap_devmap *pd;
 	if ((pd = pmap_devmap_find_pa(bpa, size)) != NULL) {
-		/* Device was statically mapped. */
 		*bshp = pd->pd_va + (bpa - pd->pd_pa);
 		return 0;
 	}
@@ -543,10 +540,11 @@ generic_bs_map(void *t, bus_addr_t bpa, bus_size_t size, int flag,
 
 	*bshp = (bus_space_handle_t)(va + (bpa - startpa));
 
-	const int pmapflags =
-	    (flag & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE))
-		? 0
-		: PMAP_NOCACHE;
+	if ((flag & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE)) != 0)
+		pmapflags = PMAP_WRITE_BACK;
+	else
+		pmapflags = PMAP_NOCACHE;
+
 	for (pa = startpa; pa < endpa; pa += PAGE_SIZE, va += PAGE_SIZE) {
 		pmap_kenter_pa(va, pa, VM_PROT_READ | VM_PROT_WRITE, pmapflags);
 	}
@@ -561,10 +559,8 @@ generic_bs_unmap(void *t, bus_space_handle_t bsh, bus_size_t size)
 	vaddr_t va;
 	vsize_t sz;
 
-	if (pmap_devmap_find_va(bsh, size) != NULL) {
-		/* Device was statically mapped; nothing to do. */
+	if (pmap_devmap_find_va(bsh, size) != NULL)
 		return;
-	}
 
 	va = trunc_page(bsh);
 	sz = round_page(bsh + size) - va;
@@ -589,8 +585,8 @@ generic_bs_barrier(void *t, bus_space_handle_t bsh, bus_size_t offset,
 {
 	flags &= BUS_SPACE_BARRIER_READ|BUS_SPACE_BARRIER_WRITE;
 
-	if (flags)
-		__asm __volatile("dmb sy" ::: "memory");
+	if (flags != 0)
+		__asm __volatile ("dmb sy" ::: "memory");
 }
 
 void *
@@ -604,12 +600,11 @@ generic_bs_mmap(void *t, bus_addr_t bpa, off_t offset, int prot, int flags)
 {
 	paddr_t bus_flags = 0;
 
-#if 0 // XXXAARCH64
-	if (flags & BUS_SPACE_MAP_PREFETCHABLE)
-		bus_flags |= AARCH64_MMAP_WRITECOMBINE;
-#endif
+	if ((flags & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE)) != 0)
+		bus_flags |= AARCH64_MMAP_WRITEBACK;
 
-	return (atop(bpa + (offset << ((struct bus_space *)t)->bs_stride)) | bus_flags);
+	return (atop(bpa + (offset << ((struct bus_space *)t)->bs_stride)) |
+	    bus_flags);
 }
 
 int
@@ -627,7 +622,8 @@ generic_bs_free(void *t, bus_space_handle_t bsh, bus_size_t size)
 }
 
 int
-generic_bs_pe_1(void *t, bus_space_handle_t bsh, bus_size_t offset, uint8_t *datap)
+generic_bs_pe_1(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint8_t *datap)
 {
 #if 0 //XXXAARCH64
 	struct abortbuf ab;
@@ -643,7 +639,8 @@ generic_bs_pe_1(void *t, bus_space_handle_t bsh, bus_size_t offset, uint8_t *dat
 }
 
 int
-generic_bs_pe_2(void *t, bus_space_handle_t bsh, bus_size_t offset, uint16_t *datap)
+generic_bs_pe_2(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint16_t *datap)
 {
 #if 0 // XXXAARCH64
 	struct abortbuf ab;
@@ -659,7 +656,8 @@ generic_bs_pe_2(void *t, bus_space_handle_t bsh, bus_size_t offset, uint16_t *da
 }
 
 int
-generic_bs_pe_4(void *t, bus_space_handle_t bsh, bus_size_t offset, uint32_t *datap)
+generic_bs_pe_4(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint32_t *datap)
 {
 #if 0 // XXXAARCH64
 	struct abortbuf ab;
@@ -675,7 +673,8 @@ generic_bs_pe_4(void *t, bus_space_handle_t bsh, bus_size_t offset, uint32_t *da
 }
 
 int
-generic_bs_pe_8(void *t, bus_space_handle_t bsh, bus_size_t offset, uint64_t *datap)
+generic_bs_pe_8(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint64_t *datap)
 {
 #if 0 // XXXAARCH64
 	struct abortbuf ab;
@@ -691,7 +690,8 @@ generic_bs_pe_8(void *t, bus_space_handle_t bsh, bus_size_t offset, uint64_t *da
 }
 
 int
-generic_bs_po_1(void *t, bus_space_handle_t bsh, bus_size_t offset, uint8_t data)
+generic_bs_po_1(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint8_t data)
 {
 #if 0 // XXXAARCH64
 	struct abortbuf ab;
@@ -707,7 +707,8 @@ generic_bs_po_1(void *t, bus_space_handle_t bsh, bus_size_t offset, uint8_t data
 }
 
 int
-generic_bs_po_2(void *t, bus_space_handle_t bsh, bus_size_t offset, uint16_t data)
+generic_bs_po_2(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint16_t data)
 {
 #if 0 // XXXAARCH64
 	struct abortbuf ab;
@@ -723,7 +724,8 @@ generic_bs_po_2(void *t, bus_space_handle_t bsh, bus_size_t offset, uint16_t dat
 }
 
 int
-generic_bs_po_4(void *t, bus_space_handle_t bsh, bus_size_t offset, uint32_t data)
+generic_bs_po_4(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint32_t data)
 {
 #if 0 // XXXAARCH64
 	struct abortbuf ab;
@@ -739,7 +741,8 @@ generic_bs_po_4(void *t, bus_space_handle_t bsh, bus_size_t offset, uint32_t dat
 }
 
 int
-generic_bs_po_8(void *t, bus_space_handle_t bsh, bus_size_t offset, uint64_t data)
+generic_bs_po_8(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint64_t data)
 {
 #if 0 // XXXAARCH64
 	struct abortbuf ab;
