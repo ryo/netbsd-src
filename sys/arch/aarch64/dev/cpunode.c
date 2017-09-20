@@ -30,6 +30,8 @@
 __KERNEL_RCSID(1, "$NetBSD$");
 
 #include "locators.h"
+#include "opt_cpuoptions.h"
+#include "opt_multiprocessor.h"
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -37,6 +39,7 @@ __KERNEL_RCSID(1, "$NetBSD$");
 
 #include <aarch64/armreg.h>
 #include <aarch64/cpuvar.h>
+#include <aarch64/locore.h>
 
 struct cpunode_softc {
 	device_t sc_dev;
@@ -59,16 +62,21 @@ static void
 cpunode_attach(device_t parent, device_t self, void *aux)
 {
 	struct cpunode_softc * const sc = device_private(self);
-	int cpunum, ncores;
+	int cpunum, ncores = 1;
 
 	sc->sc_dev = self;
 
-	/*
-	 * XXXAARCH64:
-	 *  Not all CPU had L2CTLR register.
-	 *  get from FDT or else.
-	 */
+	/* XXX: SoC dependent */
+#ifdef AARCH64_HAVE_L2CTLR
 	ncores = __SHIFTOUT(reg_l2ctlr_el1_read(), L2CTLR_NUMOFCORE) + 1;
+#ifdef MULTIPROCESSOR
+	arm_cpu_max = ncores;
+#endif
+#else
+#ifdef MULTIPROCESSOR
+	ncores = arm_cpu_max;
+#endif
+#endif
 
 	aprint_naive("\n");
 	aprint_normal("\n");

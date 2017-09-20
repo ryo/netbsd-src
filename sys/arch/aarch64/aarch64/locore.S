@@ -644,6 +644,26 @@ tcr_setting_inner_shareable:
 	.quad (TCR_SH0_INNER | TCR_SH1_INNER)
 #endif
 
+
+#ifdef AARCH64_ALIGNMENT_CHECK
+#define SCTLR_A_CONFIG		SCTLR_A
+#else
+#define SCTLR_A_CONFIG		0
+#endif
+
+#ifdef AARCH64_EL0_STACK_ALIGNMENT_CHECK
+#define SCTLR_SA0_CONFIG	SCTLR_SA0
+#else
+#define SCTLR_SA0_CONFIG	0
+#endif
+
+#ifdef AARCH64_EL1_STACK_ALIGNMENT_CHECK
+#define SCTLR_SA_CONFIG		SCTLR_SA
+#else
+#define SCTLR_SA_CONFIG		0
+#endif
+
+
 sctlr_ee:
 	.quad (SCTLR_EE | SCTLR_EOE)	/* Endiannes of Exception and EL0 */
 sctlr_set:
@@ -659,6 +679,9 @@ sctlr_set:
 	    SCTLR_SA |      /* Enable SP alignment check */ \
 	    SCTLR_C |       /* Cache enable */ \
 	    SCTLR_M |       /* MMU Enable */ \
+	    SCTLR_SA0_CONFIG | \
+	    SCTLR_SA_CONFIG | \
+	    SCTLR_A_CONFIG | \
 	    0)
 sctlr_clear:
 	.quad ( \
@@ -672,6 +695,9 @@ sctlr_clear:
 	    SCTLR_THEE |    /* T32EE is not implemented */ \
 	    SCTLR_CP15BEN | /* CP15 barrier enable */ \
 	    SCTLR_A |       /* Alignment check enable */ \
+	    SCTLR_SA0 | \
+	    SCTLR_SA | \
+	    SCTLR_A | \
 	    0)
 
 

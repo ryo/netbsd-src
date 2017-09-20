@@ -4,8 +4,15 @@
 defflag opt_cputypes.h		CPU_ARMV8
 defflag opt_cputypes.h		CPU_CORTEXA53: CPU_ARMV8
 defflag opt_cputypes.h		CPU_CORTEXA57: CPU_ARMV8
+defflag opt_cputypes.h		CPU_CORTEXA72: CPU_ARMV8
+defflag opt_cputypes.h		CPU_CORTEXA73: CPU_ARMV8
+defflag opt_cputypes.h		CPU_CORTEXA55: CPU_ARMV8
+defflag opt_cputypes.h		CPU_CORTEXA75: CPU_ARMV8
 
-defflag opt_cpuoptions.h	AARCH64_HAS_L2CTLR
+defflag opt_cpuoptions.h	AARCH64_ALIGNMENT_CHECK
+defflag opt_cpuoptions.h	AARCH64_EL0_STACK_ALIGNMENT_CHECK
+defflag opt_cpuoptions.h	AARCH64_EL1_STACK_ALIGNMENT_CHECK
+defflag opt_cpuoptions.h	AARCH64_HAVE_L2CTLR
 
 # Interrupt implementation header definition.
 defparam opt_arm_intr_impl.h	ARM_INTR_IMPL
