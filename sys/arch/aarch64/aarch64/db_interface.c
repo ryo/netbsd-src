@@ -49,20 +49,14 @@ void
 db_read_bytes(vaddr_t addr, size_t size, char *data)
 {
 	const char *src;
-	bool msg = false;
 
 	for (src = (const char *)addr; size > 0;) {
 		uintptr_t tmp;
 
 		if (vtophys((vaddr_t)src) == VTOPHYS_FAILED) {
-			if (!msg)
-				db_printf("address %p is invalid\n", src);
-			msg = true;
-			src++;	/* XXX: should be skipped to next page */
-			size--;
-			continue;
+			db_printf("address %p is invalid\n", src);
+			return;
 		}
-		msg = false;
 
 		tmp = (uintptr_t)src | (uintptr_t)data;
 		if ((size >= 8) && ((tmp & 7) == 0)) {
@@ -91,21 +85,15 @@ void
 db_write_bytes(vaddr_t addr, size_t size, const char *data)
 {
 	char *dst;
-	bool msg = false;
 
 	//XXXAARCH64: check text segment
 	for (dst = (char *)addr; size > 0;) {
 		uintptr_t tmp;
 
 		if (vtophys((vaddr_t)dst) == VTOPHYS_FAILED) {
-			if (!msg)
-				db_printf("address %p is invalid\n", dst);
-			msg = true;
-			dst++;	/* XXX: should be skipped to next page */
-			size--;
-			continue;
+			db_printf("address %p is invalid\n", dst);
+			return;
 		}
-		msg = false;
 
 		tmp = (uintptr_t)dst | (uintptr_t)data;
 		if ((size >= 8) && ((tmp & 7) == 0)) {
