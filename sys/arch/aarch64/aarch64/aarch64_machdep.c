@@ -190,7 +190,7 @@ void clear_ttbr0_l1tables(void);	/* XXX in locore.S */
 
 /* call from cpu_configure() */
 void
-aarch64_cpu_configure(void)
+aarch64_cpu_configured(void)
 {
 	/* clear cpu reset hook for early boot */
 	cpu_reset_address0 = NULL;

@@ -39,7 +39,7 @@ extern void (*cpu_powerdown_address)(void);
 extern char *booted_kernel;
 
 void initarm64(void);
-void aarch64_cpu_configure(void);
+void aarch64_cpu_configured(void);
 void dumpsys(void);
 
 paddr_t vtophys(vaddr_t);

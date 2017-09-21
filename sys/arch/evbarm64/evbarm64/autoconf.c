@@ -51,7 +51,7 @@ cpu_configure(void)
 		panic("no mainbus found");
 
 	/* do postinit */
-	aarch64_cpu_configure();
+	aarch64_cpu_configured();
 
 	/* Turn on interrupt! */
 	spl0();
