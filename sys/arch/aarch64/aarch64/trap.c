@@ -369,11 +369,11 @@ struct faultbuf {
 	register_t fb_reg[FB_MAX];
 };
 
-int	cpu_set_onfault(struct faultbuf *, register_t) __returns_twice;
-void	cpu_jump_onfault(struct trapframe *, const struct faultbuf *);
-void	cpu_unset_onfault(void);
+int cpu_set_onfault(struct faultbuf *, register_t) __returns_twice;
+void cpu_jump_onfault(struct trapframe *, const struct faultbuf *);
+void cpu_unset_onfault(void);
 struct faultbuf *cpu_disable_onfault(void);
-void	cpu_enable_onfault(struct faultbuf *);
+void cpu_enable_onfault(struct faultbuf *);
 
 void
 cpu_jump_onfault(struct trapframe *tf, const struct faultbuf *fb)
@@ -398,7 +398,6 @@ cpu_jump_onfault(struct trapframe *tf, const struct faultbuf *fb)
 void
 cpu_unset_onfault(void)
 {
-
 	curlwp->l_md.md_onfault = NULL;
 }
 
@@ -414,7 +413,6 @@ cpu_disable_onfault(void)
 void
 cpu_enable_onfault(struct faultbuf *fb)
 {
-
 	curlwp->l_md.md_onfault = NULL;
 }
 
@@ -429,7 +427,6 @@ cpu_enable_onfault(struct faultbuf *fb)
  * int copyinstr(const void *uaddr, void *kaddr, size_t len, size_t *done);
  * int copyoutstr(const void *kaddr, void *uaddr, size_t len, size_t *done);
  */
-
 int
 kcopy(const void *kfaddr, void *kdaddr, size_t len)
 {
