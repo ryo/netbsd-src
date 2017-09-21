@@ -36,6 +36,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <sys/systm.h>
 
 #include <aarch64/db_machdep.h>
+#include <aarch64/armreg.h>
 
 #include <ddb/db_access.h>
 #include <ddb/db_command.h>
@@ -46,6 +47,44 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <ddb/db_interface.h>
 
 #include <dev/cons.h>
+
+const struct db_command db_machine_command_table[] = {
+	{
+		DDB_ADD_CMD(
+		    "frame", db_show_frame_cmd, 0,
+		    "Displays the contents of a trapframe",
+		    "<address>",
+		    "\taddress:\taddress of trapfame to display")
+	},
+#if defined(_KERNEL)
+	{
+		DDB_ADD_CMD(
+		    "sysreg", db_show_sysreg_cmd, 0,
+		    "Displays system registers",
+		    NULL, NULL)
+	},
+	{
+		DDB_ADD_CMD(
+		    "tlb", db_show_tlb_cmd, 0,
+		    "Displays the TLB",
+		    NULL, NULL)
+	},
+#endif
+#if defined(_KERNEL) && defined(MULTIPROCESSOR)
+//XXXAARCH64
+//	{
+//		DDB_ADD_CMD(
+//		    "cpu", db_switch_cpu_cmd, 0,
+//		    "switch to a different cpu",
+//		    NULL, NULL)
+//	},
+#endif
+	{
+		DDB_ADD_CMD(NULL, NULL, 0,
+		    NULL,
+		    NULL,NULL)
+	}
+};
 
 const struct db_variable db_regs[] = {
 	{ "x0",    (long *) &ddb_regs.tf_reg[0],  FCN_NULL, NULL },
@@ -89,6 +128,169 @@ const struct db_variable * const db_eregs = db_regs + __arraycount(db_regs);
 
 int db_active;
 db_regs_t ddb_regs;
+
+void
+dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
+{
+	(*pr)( "   pc=%016"PRIxREGISTER
+	    ",     sp=%016"PRIxREGISTER
+	    ",   spsr=%016"PRIxREGISTER
+	    ",    esr=%016"PRIxREGISTER"\n",
+	    tf->tf_pc, tf->tf_sp + TF_SIZE, tf->tf_spsr, tf->tf_esr);
+	(*pr)( "   x0=%016"PRIxREGISTER
+	    ",     x1=%016"PRIxREGISTER
+	    ",     x2=%016"PRIxREGISTER
+	    ",     x3=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[0], tf->tf_reg[1], tf->tf_reg[2], tf->tf_reg[3]);
+	(*pr)( "   x4=%016"PRIxREGISTER
+	    ",     x5=%016"PRIxREGISTER
+	    ",     x6=%016"PRIxREGISTER
+	    ",     x7=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[4], tf->tf_reg[5], tf->tf_reg[6], tf->tf_reg[7]);
+	(*pr)( "   x8=%016"PRIxREGISTER
+	    ",     x9=%016"PRIxREGISTER
+	    ",    x10=%016"PRIxREGISTER
+	    ",    x11=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[8], tf->tf_reg[9], tf->tf_reg[10], tf->tf_reg[11]);
+	(*pr)( "  x12=%016"PRIxREGISTER
+	    ",    x13=%016"PRIxREGISTER
+	    ",    x14=%016"PRIxREGISTER
+	    ",    x15=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[12], tf->tf_reg[13], tf->tf_reg[14], tf->tf_reg[15]);
+	(*pr)( "  x16=%016"PRIxREGISTER
+	    ",    x17=%016"PRIxREGISTER
+	    ",    x18=%016"PRIxREGISTER
+	    ",    x19=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[16], tf->tf_reg[17], tf->tf_reg[18], tf->tf_reg[19]);
+	(*pr)( "  x20=%016"PRIxREGISTER
+	    ",    x21=%016"PRIxREGISTER
+	    ",    x22=%016"PRIxREGISTER
+	    ",    x23=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[20], tf->tf_reg[21], tf->tf_reg[22], tf->tf_reg[23]);
+	(*pr)( "  x24=%016"PRIxREGISTER
+	    ",    x25=%016"PRIxREGISTER
+	    ",    x26=%016"PRIxREGISTER
+	    ",    x27=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[24], tf->tf_reg[25], tf->tf_reg[26], tf->tf_reg[27]);
+	(*pr)( "  x28=%016"PRIxREGISTER
+	    ", fp=x29=%016"PRIxREGISTER
+	    ", lr=x30=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[28], tf->tf_reg[29], tf->tf_reg[30]);
+}
+
+void
+db_show_sysreg_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+{
+#define SHOW_ARMREG(x)	\
+	db_printf("%-16s = %016llx\n", #x, reg_ ## x ## _read())
+
+	SHOW_ARMREG(ctr_el0);
+	SHOW_ARMREG(dczid_el0);
+//	SHOW_ARMREG(fpcr);	/* FP trap */
+//	SHOW_ARMREG(fpsr);	/* FP trap */
+	SHOW_ARMREG(nzcv);
+	SHOW_ARMREG(tpidr_el0);
+	SHOW_ARMREG(cbar_el1);
+	SHOW_ARMREG(clidr_el1);
+	SHOW_ARMREG(ccsidr_el1);
+	SHOW_ARMREG(currentel);
+	SHOW_ARMREG(id_aa64afr0_el1);
+	SHOW_ARMREG(id_aa64afr1_el1);
+	SHOW_ARMREG(id_aa64dfr0_el1);
+	SHOW_ARMREG(id_aa64dfr1_el1);
+	SHOW_ARMREG(id_aa64isar0_el1);
+	SHOW_ARMREG(id_aa64isar1_el1);
+	SHOW_ARMREG(id_aa64mmfr0_el1);
+	SHOW_ARMREG(id_aa64mmfr1_el1);
+	SHOW_ARMREG(id_aa64pfr0_el1);
+	SHOW_ARMREG(id_aa64pfr1_el1);
+	SHOW_ARMREG(isr_el1);
+	SHOW_ARMREG(midr_el1);
+	SHOW_ARMREG(mpidr_el1);
+	SHOW_ARMREG(mvfr0_el1);
+	SHOW_ARMREG(mvfr1_el1);
+	SHOW_ARMREG(mvfr2_el1);
+	SHOW_ARMREG(revidr_el1);
+	SHOW_ARMREG(l2ctlr_el1);
+	SHOW_ARMREG(csselr_el1);
+	SHOW_ARMREG(cpacr_el1);
+	SHOW_ARMREG(elr_el1);
+	SHOW_ARMREG(esr_el1);
+	SHOW_ARMREG(far_el1);
+	SHOW_ARMREG(mair_el1);
+	SHOW_ARMREG(par_el1);
+#if 0
+	SHOW_ARMREG(rmr_el1);		/* unknown reason trap */
+	SHOW_ARMREG(rvbar_el1);
+#endif
+	SHOW_ARMREG(sctlr_el1);
+	SHOW_ARMREG(spsel);
+	SHOW_ARMREG(daif);
+	SHOW_ARMREG(spsr_el1);
+	SHOW_ARMREG(tcr_el1);
+	SHOW_ARMREG(tpidr_el1);
+	SHOW_ARMREG(ttbr0_el1);
+	SHOW_ARMREG(ttbr1_el1);
+	SHOW_ARMREG(vbar_el1);
+	SHOW_ARMREG(pmccfiltr_el0);
+	SHOW_ARMREG(pmccntr_el0);
+	SHOW_ARMREG(cntfrq_el0);
+	SHOW_ARMREG(cntkctl_el1);
+	SHOW_ARMREG(cntp_ctl_el0);
+	SHOW_ARMREG(cntp_cval_el0);
+	SHOW_ARMREG(cntp_tval_el0);
+	SHOW_ARMREG(cntpct_el0);
+#if 0
+	SHOW_ARMREG(cntps_ctl_el1);	/* need secure state */
+	SHOW_ARMREG(cntps_cval_el1);	/* need secure state */
+	SHOW_ARMREG(cntps_tval_el1);	/* need secure state */
+#endif
+	SHOW_ARMREG(cntv_ctl_el0);
+	SHOW_ARMREG(cntv_ctl_el0);
+	SHOW_ARMREG(cntv_cval_el0);
+	SHOW_ARMREG(cntv_tval_el0);
+	SHOW_ARMREG(cntv_tval_el0);
+	SHOW_ARMREG(cntvct_el0);
+}
+
+void
+db_show_tlb_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+{
+#if 0
+	int way, idx;
+
+	//XXXAARCH64
+	/* s3_3_c15_c4_2 is available only in EL3... */
+	for (idx = 0; idx < (1<<7) - 1; idx++) {
+		for (way = 0; way < 3; way++) {
+			uint64_t x, tlbdata0, tlbdata1, tlbdata2, tlbdata3;
+			x = (way << 30) | idx;
+			__asm __volatile ("msr s3_3_c15_c4_2, %0" :: "r"(x));
+			__asm __volatile ("mrs %0, s3_3_c15_c0_0" : "=r"(tlbdata0));
+			__asm __volatile ("mrs %0, s3_3_c15_c0_1" : "=r"(tlbdata1));
+			__asm __volatile ("mrs %0, s3_3_c15_c0_2" : "=r"(tlbdata2));
+			__asm __volatile ("mrs %0, s3_3_c15_c0_3" : "=r"(tlbdata3));
+			db_printf("%d:%d = %016x%016x%016x%016x\n", way, idx,
+			    tlbdata0, tlbdata1, tlbdata2, tlbdata3);
+		}
+	}
+#endif
+
+}
+
+void
+db_show_frame_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+{
+	struct trapframe *tf;
+
+	if (!have_addr) {
+		db_printf("frame: <address>\n");
+		return;
+	}
+
+	tf = (struct trapframe *)addr;
+	dump_trapframe(tf, db_printf);
+}
 
 int
 kdb_trap(int type, struct trapframe *tf)

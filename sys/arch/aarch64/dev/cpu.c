@@ -208,7 +208,7 @@ cache_clean(int level, struct aarch64_cache_info *cinfo)
 	for (set = 0; set < cinfo->cache_sets; set++) {
 		for (way = 0; way < cinfo->cache_ways; way++) {
 			x = (way << wayshift) | (set << setshift) | (level << 1);
-			__asm __volatile("dc csw, %0" :: "r"(x));
+			__asm __volatile ("dc csw, %0" :: "r"(x));
 		}
 	}
 }

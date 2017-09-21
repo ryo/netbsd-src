@@ -193,6 +193,11 @@ db_addr_t db_branch_taken(db_expr_t, db_addr_t, db_regs_t *);
 
 #endif /* SOFTWARE_SSTEP */
 
+#define DB_MACHINE_COMMANDS
+void dump_trapframe(struct trapframe *, void (*)(const char *, ...));
+void db_show_frame_cmd(db_expr_t, bool, db_expr_t, const char *);
+void db_show_sysreg_cmd(db_expr_t, bool, db_expr_t, const char *);
+void db_show_tlb_cmd(db_expr_t, bool, db_expr_t, const char *);
 
 #elif defined(__arm__)
 
