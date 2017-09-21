@@ -127,7 +127,7 @@ END(uartgetc)
 #else /* COM_DATA/COM_LSR/COM_LSR_RXRDY_BIT */
 
 ENTRY_NP(uartgetc)
-	mov x0, xzr	/* XXX */
+	mov x0, xzr
 	ret
 END(uartgetc)
 
