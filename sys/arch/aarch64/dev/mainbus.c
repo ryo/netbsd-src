@@ -86,8 +86,6 @@ mainbus_attach(device_t parent, device_t self, void *aux)
 	config_search_ia(mainbus_early_search, self, "mainbus", &mba);
 	config_search_ia(mainbus_search, self, "mainbus", &mba);
 #endif
-
-	cpu_reset_address0 = NULL;	/* clear cpu reset hook for early boot */
 }
 
 #if NA64GIC == 0

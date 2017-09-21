@@ -32,12 +32,23 @@
 extern paddr_t physical_start;
 extern paddr_t physical_end;
 
-extern void (*cpu_reset_address)(void);
 extern void (*cpu_reset_address0)(void);
+extern void (*cpu_reset_address)(void);
 extern void (*cpu_powerdown_address)(void);
 
 extern char *booted_kernel;
 
+void initarm64(void);
+void aarch64_cpu_configure(void);
+void dumpsys(void);
+
+paddr_t vtophys(vaddr_t);
+#define VTOPHYS_FAILED	((paddr_t)-1L)
+
+#define KERN_VTOPHYS(va)	((paddr_t)((vaddr_t)va - VM_MIN_KERNEL_ADDRESS))
+#define KERN_PHYSTOV(pa)	((vaddr_t)((paddr_t)pa + VM_MIN_KERNEL_ADDRESS))
+
+/* trap.c */
 struct trapframe;
 void lwp_trampoline(void);
 void cpu_dosoftints(void);
@@ -51,15 +62,7 @@ void trap_el0_error(struct trapframe *);
 void trap_el0_32sync(struct trapframe *);
 void trap_el0_32error(struct trapframe *);
 void interrupt(struct trapframe *);
-
-void dumpsys(void);
-void initarm64(void);
 void dosoftints(void);
-paddr_t vtophys(vaddr_t);
-#define VTOPHYS_FAILED	((paddr_t)-1L)
-
-#define KERN_VTOPHYS(va)	((paddr_t)((vaddr_t)va - VM_MIN_KERNEL_ADDRESS))
-#define KERN_PHYSTOV(pa)	((vaddr_t)((paddr_t)pa + VM_MIN_KERNEL_ADDRESS))
 
 #include <sys/pcu.h>
 

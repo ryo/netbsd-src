@@ -30,6 +30,7 @@
 #include <sys/conf.h>
 #include <sys/device.h>
 
+#include <aarch64/machdep.h>
 #include <machine/autoconf.h>
 
 void (*evbarm64_device_register)(device_t, void *);
@@ -48,6 +49,9 @@ cpu_configure(void)
 
 	if (config_rootfound("mainbus", NULL) == NULL)
 		panic("no mainbus found");
+
+	/* do postinit */
+	aarch64_cpu_configure();
 
 	/* Turn on interrupt! */
 	spl0();

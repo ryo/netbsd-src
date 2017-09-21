@@ -185,7 +185,7 @@ _ASM_LABEL(aarch64_start):
  */
 vstart:
 	adr	x0, lwp0uspace
-	add	x0, x0, #(UPAGES*PGSHIFT)
+	add	x0, x0, #(UPAGES * PAGE_SIZE)
 	sub	x0, x0, #TF_SIZE	/* lwp0space + USPACE - TF_SIZE */
 	mov	sp, x0			/* define lwp0 ksp bottom */
 
@@ -564,6 +564,16 @@ init_sysregs:
 
 	ldp	x0, lr, [sp], #16
 	ret
+
+ENTRY(clear_ttbr0_l1tables)
+	/* clear ttbr0_l1table for PA=VA */
+	adr	x0, ttbr0_l1table
+	add	x1, x0, PAGE_SIZE
+1:	stp	xzr, xzr, [x0], #16
+	cmp	x0, x1
+	bcc	1b
+	ret
+END(clear_ttbr0_l1tables)
 
 
 mmu_disable:
