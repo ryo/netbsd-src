@@ -236,7 +236,7 @@ trap_el1_sync(struct trapframe *tf)
 			uint32_t fsc, rw;
 			const char *faultstr;
 
-			printf("fatal %s trap: ", trapname);
+			printf("Trap: fatal %s: pc=%016llx sp=%016llx\n", trapname, tf->tf_pc, tf->tf_sp);
 
 			fsc = __SHIFTOUT(esr, ESR_ISS_DATAABORT_DFSC);	/* also IFSC */
 			rw = __SHIFTOUT(esr, ESR_ISS_DATAABORT_WnR);	/* IFSC: always 0 */
@@ -274,7 +274,7 @@ trap_el1_sync(struct trapframe *tf)
 	case ESR_EC_ILL_STATE:
 	case ESR_EC_PC_ALIGNMENT:
 	case ESR_EC_SP_ALIGNMENT:
-		panic("fatal %s trap: pc=%016llx sp=%016llx", trapname, tf->tf_pc, tf->tf_sp);
+		panic("Trap: fatal %s: pc=%016llx sp=%016llx", trapname, tf->tf_pc, tf->tf_sp);
 		break;
 
 	case ESR_EC_BRKPNT_EL1:
