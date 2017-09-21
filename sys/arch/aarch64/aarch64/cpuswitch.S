@@ -37,9 +37,6 @@
 
 RCSID("$NetBSD: locore.S,v 1.4 2017/08/25 22:23:59 nisimura Exp $")
 
-// XXXAARCH64
-lr	.req	x30
-
 /*
  * At IPL_SCHED:
  *	x0 = oldlwp (maybe be NULL)
@@ -347,6 +344,7 @@ ENTRY(cpu_set_onfault)
 	ldr	x2, [x3, #CI_CURLWP]	/* curlwp = curcpu()->ci_curlwp */
 	str	x0, [x2, #L_MD_ONFAULT] /* l_md.md_onfault = fb */
 	mov	x0, #0
+	ret
 END(cpu_set_onfault)
 
 /*
