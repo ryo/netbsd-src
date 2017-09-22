@@ -101,6 +101,14 @@ cpu_lwp_fork(struct lwp *l1, struct lwp *l2, void *stack, size_t stacksize,
 	 * Note: this stack is not in use if we are forking from p1
 	 */
 	vaddr_t uv = uvm_lwp_getuarea(l2);
+
+#ifdef STACKCHECKS
+	/* XXXAARCH64: TODO stack check */
+#else
+	/* clear initial stack */
+	memset(uv + (sizeof(struct pcb)), 0, USPACE - (sizeof(struct pcb)));
+#endif
+
 	struct trapframe * const utf = (struct trapframe *)(uv + USPACE) - 1;
 	l2->l_md.md_utf = utf;
 
@@ -115,10 +123,11 @@ cpu_lwp_fork(struct lwp *l1, struct lwp *l2, void *stack, size_t stacksize,
 
 	utf->tf_spsr = SPSR_M_EL0T;		/* for returning to userspace */
 
+	/* treat as switchframe */
 	struct trapframe * const ktf = utf - 1;
 	ktf->tf_chain = utf;
-	ktf->tf_reg[27] = (u_int)func;
-	ktf->tf_reg[28] = (u_int)arg;
+	ktf->tf_reg[27] = func;
+	ktf->tf_reg[28] = arg;
 	ktf->tf_reg[29] = 0;
 	KASSERT(reg_daif_read() == 0);
 	ktf->tf_spsr = SPSR_M_EL1T;
