@@ -129,7 +129,6 @@ cpu_lwp_fork(struct lwp *l1, struct lwp *l2, void *stack, size_t stacksize,
 	ktf->tf_reg[28] = arg;
 	ktf->tf_reg[29] = 0;
 	KASSERT(reg_daif_read() == 0);
-	ktf->tf_spsr = SPSR_M_EL1T;
 	ktf->tf_lr = (uintptr_t)lwp_trampoline;
 
 	l2->l_md.md_ktf = ktf;

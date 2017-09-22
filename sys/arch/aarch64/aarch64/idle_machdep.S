@@ -33,55 +33,60 @@
 #include <aarch64/locore.h>
 #include "assym.h"
 #include "opt_arm_intr_impl.h"
+#include "opt_ddb.h"
 
 RCSID("$NetBSD: idle_machdep.S,v 1.1 2014/08/10 05:47:37 matt Exp $");
 
 #ifdef ARM_INTR_IMPL
 #include ARM_INTR_IMPL
+#else
+#error ARM_INTR_IMPL not defined
 #endif
 
+#ifndef ARM_IRQ_HANDLER
+#error ARM_IRQ_HANDLER not defined
+#endif
+
+
 ENTRY(cpu_idle)
-	sub	sp, sp, #TF_SIZE		// allocate trapfame
+	sub	sp, sp, #TF_SIZE		/* allocate trapfame */
+
 	str	x28, [sp, #TF_X28]
-	str	x30, [sp, #TF_X30]
+	stp	x29, x30, [sp, #TF_X29]
+#ifdef DDB
+	add	x29, sp, #TF_X29		/* link frame for backtrace */
+#endif
+
+	mrs	x1, tpidr_el1			/* get curcpu() */
+	ldr	w28, [x1, #CI_INTR_DEPTH]	/* save intr_depth to w28 */
+	add	w2, w28, #1
+	str	w2, [x1, #CI_INTR_DEPTH]
+
+	/* fill dummy trapframe */
+	mov	x2, #SPSR_M_EL1H		/* what our spsr should be */
+	str	x2, [sp, #TF_SPSR]
+	mov	x0, sp				/* get pointer to trapframe */
+
 	DISABLE_INTERRUPT
 	wfi
 
-	mrs	x1, tpidr_el1			// get curcpu()
-	ldr	w28, [x1, #CI_INTR_DEPTH]
-	add	w2, w28, #1
-	str	w2, [x1, #CI_INTR_DEPTH]
-	ldr	x3, [x1, #CI_CC_NINTR]
-	add	x3, x3, #1
-	str	x3, [x1, #CI_CC_NINTR]
+	bl	ARM_IRQ_HANDLER			/* irqhandler(trapframe) */
 
-	mov	x0, sp				// get pointer to trapframe
-	mov	x4, #SPSR_M_EL1T		// what our spsr should be
-	str	x2, [sp, #TF_SPSR]
+	mrs	x1, tpidr_el1			/* get curcpu() */
+	str	w28, [x1, #CI_INTR_DEPTH]	/* restore intr_depth */
 
-#ifdef ARM_IRQ_HANDLER
-	bl	ARM_IRQ_HANDLER
-#else
-	/* default armgic */
-	bl	armgic_irq_handler		// process irq
-#endif
-
-	mrs	x1, tpidr_el1			// get curcpu()
-	str	w28, [x1, #CI_INTR_DEPTH]	// restore intr depth
-
-	ldr	x28, [sp, #TF_X28]		// restore registers
-	ldr	x30, [sp, #TF_X30]		// restore registers
-	add	sp, sp, #TF_SIZE		// pop trapframe
+	ldr	x28, [sp, #TF_X28]		/* restore registers */
+	ldp	x29, x30, [sp, #TF_X29]		/* restore registers */
+	add	sp, sp, #TF_SIZE		/* pop trapframe */
 
 	ENABLE_INTERRUPT
 
-	ldr	w3, [x1, #CI_SOFTINTS]		// Get pending softint mask
+	ldr	w3, [x1, #CI_SOFTINTS]		/* Get pending softint mask */
 #if 0
-	// CPL should be 0
-	ldr	w2, [x1, #CI_CPL]		// Get current priority level
-	lsr	w3, w3, w2			// shift mask by cpl
+	/* CPL should be 0 */
+	ldr	w2, [x1, #CI_CPL]		/* Get current priority level */
+	lsr	w3, w3, w2			/* shift mask by cpl */
 #endif
-	cbnz	w3, _C_LABEL(dosoftints)	// tailcall dosoftints(void)
-
+	cbnz	w3, _C_LABEL(dosoftints)	/* tailcall dosoftints(void) */
 	ret
 END(cpu_idle)
