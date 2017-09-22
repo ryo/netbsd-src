@@ -136,7 +136,7 @@ dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 	    ",     sp=%016"PRIxREGISTER
 	    ",   spsr=%016"PRIxREGISTER
 	    ",    esr=%016"PRIxREGISTER"\n",
-	    tf->tf_pc, tf->tf_sp + TF_SIZE, tf->tf_spsr, tf->tf_esr);
+	    tf->tf_pc, tf->tf_sp, tf->tf_spsr, tf->tf_esr);
 	(*pr)( "   x0=%016"PRIxREGISTER
 	    ",     x1=%016"PRIxREGISTER
 	    ",     x2=%016"PRIxREGISTER
