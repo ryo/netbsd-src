@@ -34,6 +34,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 #include <sys/param.h>
 #include <sys/systm.h>
+#include <sys/lwp.h>
 
 #include <aarch64/db_machdep.h>
 #include <aarch64/armreg.h>
@@ -51,21 +52,28 @@ __KERNEL_RCSID(0, "$NetBSD$");
 const struct db_command db_machine_command_table[] = {
 	{
 		DDB_ADD_CMD(
-		    "frame", db_show_frame_cmd, 0,
+		    "frame", db_md_frame_cmd, 0,
 		    "Displays the contents of a trapframe",
 		    "<address>",
 		    "\taddress:\taddress of trapfame to display")
 	},
+	{
+		DDB_ADD_CMD(
+		    "lwp", db_md_lwp_cmd, 0,
+		    "Displays the lwp",
+		    "<address>",
+		    "\taddress:\taddress of lwp to display")
+	},
 #if defined(_KERNEL)
 	{
 		DDB_ADD_CMD(
-		    "sysreg", db_show_sysreg_cmd, 0,
+		    "sysreg", db_md_sysreg_cmd, 0,
 		    "Displays system registers",
 		    NULL, NULL)
 	},
 	{
 		DDB_ADD_CMD(
-		    "tlb", db_show_tlb_cmd, 0,
+		    "tlb", db_md_tlb_cmd, 0,
 		    "Displays the TLB",
 		    NULL, NULL)
 	},
@@ -129,6 +137,7 @@ const struct db_variable * const db_eregs = db_regs + __arraycount(db_regs);
 int db_active;
 db_regs_t ddb_regs;
 
+
 void
 dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 {
@@ -179,7 +188,53 @@ dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 }
 
 void
-db_show_sysreg_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+db_md_frame_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+{
+	struct trapframe *tf;
+
+	if (!have_addr) {
+		db_printf("frame: <address>\n");
+		return;
+	}
+
+	tf = (struct trapframe *)addr;
+	dump_trapframe(tf, db_printf);
+}
+
+void
+db_md_lwp_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+{
+	lwp_t *l;
+
+	if (!have_addr) {
+		db_printf("lwp: <address>\n");
+		return;
+	}
+	l = (lwp_t *)addr;
+
+#define SAFESTRPTR(p)	(((p) == NULL) ? "NULL" : (p))
+
+	db_printf("lwp=%p\n", l);
+
+	db_printf("\tlwp_getpcb(l)     =%p\n", lwp_getpcb(l));
+
+	db_printf("\tl->l_md.md_utf    =%p\n", l->l_md.md_utf);
+	dump_trapframe(l->l_md.md_utf, db_printf);
+	db_printf("\tl->l_md.md_ktf    =%p\n", l->l_md.md_ktf);
+	if (l->l_md.md_ktf != l->l_md.md_utf)
+		dump_trapframe(l->l_md.md_ktf, db_printf);
+	db_printf("\tl->l_md.md_onfault=%p\n", l->l_md.md_onfault);
+	db_printf("\tl->l_md.md_cpacr  =%016llx\n", l->l_md.md_cpacr);
+	db_printf("\tl->l_md.md_flags  =%08x\n", l->l_md.md_flags);
+
+	db_printf("\tl->l_cpu          =%p\n", l->l_cpu);
+	db_printf("\tl->l_proc         =%p\n", l->l_proc);
+	db_printf("\tl->l_name         =%s\n", SAFESTRPTR(l->l_name));
+	db_printf("\tl->l_wmesg        =%s\n", SAFESTRPTR(l->l_wmesg));
+}
+
+void
+db_md_sysreg_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
 {
 #define SHOW_ARMREG(x)	\
 	db_printf("%-16s = %016llx\n", #x, reg_ ## x ## _read())
@@ -254,7 +309,7 @@ db_show_sysreg_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *
 }
 
 void
-db_show_tlb_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+db_md_tlb_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
 {
 #if 0
 	int way, idx;
@@ -276,20 +331,6 @@ db_show_tlb_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *mod
 	}
 #endif
 
-}
-
-void
-db_show_frame_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
-{
-	struct trapframe *tf;
-
-	if (!have_addr) {
-		db_printf("frame: <address>\n");
-		return;
-	}
-
-	tf = (struct trapframe *)addr;
-	dump_trapframe(tf, db_printf);
 }
 
 int
