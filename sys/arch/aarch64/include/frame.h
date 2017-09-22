@@ -40,7 +40,6 @@ struct trapframe {
 	struct reg tf_regs __aligned(16);
 	uint64_t tf_esr;		// 32-bit register
 	uint64_t tf_far;		// 64-bit register
-	struct trapframe *tf_chain;
 #define tf_reg		tf_regs.r_reg
 #define tf_lr		tf_regs.r_reg[30]
 #define tf_pc		tf_regs.r_pc
