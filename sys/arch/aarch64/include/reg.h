@@ -37,7 +37,7 @@
 struct reg {
 	uint64_t r_reg[31];
 	uint64_t r_sp;
-	uint64_t r_pc;
+	uint64_t r_pc;	/* aka elr */
 	uint64_t r_spsr;
 	uint64_t r_tpidr;
 };

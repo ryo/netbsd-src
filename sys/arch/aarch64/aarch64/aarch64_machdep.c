@@ -176,8 +176,8 @@ initarm64(void)
 	pmap_bootstrap(kernend_l2, VM_MAX_KERNEL_ADDRESS);
 
 
-	tf = (struct trapframe *)(lwp0uspace + USPACE - TF_SIZE);
-	memset(tf, 0, TF_SIZE);
+	tf = (struct trapframe *)(lwp0uspace + USPACE) - 1;
+	memset(tf, 0, sizeof(struct trapframe));
 
 	uvm_lwp_setuarea(&lwp0, lwp0uspace);
 	memset(&lwp0.l_md, 0, sizeof(lwp0.l_md));

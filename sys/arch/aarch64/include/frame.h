@@ -49,7 +49,12 @@ struct trapframe {
 #define tf_tpidr	tf_regs.r_tpidr
 };
 
-#define TF_SIZE		roundup(sizeof(struct trapframe), 16)
+#if defined(_KERNEL)
+/* size of trapframe (stack pointer) must be 16byte aligned */
+__CTASSERT((sizeof(struct trapframe) & 15) == 0);
+#endif
+
+#define TF_SIZE		sizeof(struct trapframe)
 
 #elif defined(__arm__)
 
