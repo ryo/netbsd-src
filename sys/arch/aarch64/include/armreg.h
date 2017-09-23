@@ -32,8 +32,6 @@
 #ifndef _AARCH64_ARMREG_H_
 #define _AARCH64_ARMREG_H_
 
-#include <arm/cputypes.h>
-
 #ifdef __aarch64__
 
 #include <sys/types.h>
