@@ -116,9 +116,8 @@ cpu_lwp_fork(struct lwp *l1, struct lwp *l2, void *stack, size_t stacksize,
 
 	/* fabricate an initial switchframe to go */
 	struct trapframe * const ktf = utf - 1;
-	ktf->tf_chain = utf;
-	ktf->tf_reg[27] = (u_int)func;
-	ktf->tf_reg[28] = (u_int)arg;
+	ktf->tf_reg[27] = func;
+	ktf->tf_reg[28] = arg;
 	ktf->tf_reg[29] = 0;
 	KASSERT(reg_daif_read() == 0);
 	ktf->tf_spsr = SPSR_M_EL1T;

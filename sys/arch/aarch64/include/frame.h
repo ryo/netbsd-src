@@ -40,7 +40,6 @@ struct trapframe {
 	struct reg tf_regs __aligned(16);
 	uint64_t tf_esr;		// 32-bit register
 	uint64_t tf_far;		// 64-bit register
-	struct trapframe *tf_chain;
 #define tf_reg		tf_regs.r_reg
 #define tf_lr		tf_regs.r_reg[30]
 #define tf_pc		tf_regs.r_pc
@@ -49,7 +48,12 @@ struct trapframe {
 #define tf_tpidr	tf_regs.r_tpidr
 };
 
-#define TF_SIZE		roundup(sizeof(struct trapframe), 16)
+#if defined(_KERNEL)
+/* size of trapframe (stack pointer) must be 16byte aligned */
+__CTASSERT((sizeof(struct trapframe) & 15) == 0);
+#endif
+
+#define TF_SIZE		sizeof(struct trapframe)
 
 #elif defined(__arm__)
 

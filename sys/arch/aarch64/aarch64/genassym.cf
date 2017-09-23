@@ -64,6 +64,7 @@ define	__HAVE_FAST_SOFTINTS	1
 
 define	MAXCPUS			MAXCPUS
 define	VM_MIN_KERNEL_ADDRESS	VM_MIN_KERNEL_ADDRESS
+define	VM_MAX_KERNEL_ADDRESS	VM_MAX_KERNEL_ADDRESS
 define	AARCH64_KSEG_START	AARCH64_KSEG_START
 define	UPAGES			UPAGES
 define	USPACE			(UPAGES * PAGE_SIZE)
@@ -171,7 +172,6 @@ define	TF_SPSR			offsetof(struct trapframe, tf_spsr)
 define	TF_TPIDR		offsetof(struct trapframe, tf_tpidr)
 define	TF_ESR			offsetof(struct trapframe, tf_esr)
 define	TF_FAR			offsetof(struct trapframe, tf_far)
-define	TF_CHAIN		offsetof(struct trapframe, tf_chain)
 define	TF_SIZE			TF_SIZE
 
 
