@@ -67,17 +67,10 @@ ENTRY_NP(cpu_switchto)
 	stp	x29, x30, [sp, #TF_X29]
 
 	/*
-	 * Save the previous trapframe pointer and EL0 thread ID in the
-	 * switchframe.
+	 * Save the EL0 thread ID in the switchframe.
 	 */
-	ldr	x5, [x0, #L_MD_KTF]
 	mrs	x4, tpidr_el0
-#if TF_TPIDR + 8 == TF_CHAIN
-	stp	x4, x5, [sp, #TF_TPIDR]
-#else
 	str	x4, [sp, #TF_TPIDR]
-	str	x5, [sp, #TF_CHAIN]
-#endif
 
 	/*
 	 * Save the current stack pointer and the CPACR and save them in
