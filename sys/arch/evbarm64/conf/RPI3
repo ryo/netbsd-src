@@ -1,186 +1,92 @@
 # $NetBSD$
 #
-# This machine description file is used to generate the default NetBSD
-# kernel.
+# RPI3 - Raspberry Pi 3
 #
-# The machine description file can be customised for your specific
-# machine to reduce the kernel size and improve its performance.
-#
-# For further information on compiling NetBSD kernels, see the config(8)
-# man page.
-#
-# For further information on hardware support for this architecture, see
-# the intro(4) man page.  For further information about kernel options
-# for this architecture, see the options(4) man page.  For an explanation
-# of each device driver in this file see the section 4 man page for the
-# device.
 
 include 	"arch/evbarm64/conf/std.rpi"
+include 	"arch/evbarm64/conf/GENERIC.common"
 
-options 	INCLUDE_CONFIG_FILE	# embed config file in kernel binary
-
-#ident		"RPI3-$Revision$"
-
-maxusers 32
-
-# CPU Support
+# CPU options
 options 	CPU_CORTEXA53
 options 	BCM2836
 
+# XXX
 options 	MEMSIZE=1008		# SDRAM: 0x00000000-0x3f000000
 options 	VERBOSE_LOCORE
 options 	VERBOSE_INIT_ARM
-
-# Standard system options
-options 	KTRACE			# System call tracing support
-#options 	NTP			# kernel PLL for NTP
-
-# Enable experimental buffer queue strategy for better responsiveness under
-# high disk I/O load. Use it with caution - it's not proven to be stable yet.
-#options 	BUFQ_READPRIO
-#options 	BUFQ_PRIOCSCAN
-
-# Diagnostic/debugging support options
-options 	DIAGNOSTIC		# Cheap kernel consistency checks
-options 	DEBUG			# Expensive debugging checks/support
-options 	DDB			# kernel debugger
-options 	DB_MAX_WIDTH=0
-options 	DB_MAX_LINE=1024
-#options 	DDB_HISTORY_SIZE=512	# enable history editing in DDB
-makeoptions	DEBUG="-g"
-#makeoptions	DEBUGLIST="pattern1 pattern2 ..."
-
-#options 	KGDB			# Remote kernel GDB support
-#options 	KGDB_DEVNAME="\"com\""	# device to use for KGDB
-
 options 	MSGBUFSIZE=32768
 
+# XXX for DEBUG
+no file-system	MFS
+no file-system	EXT2FS
+no file-system	NTFS
+no file-system	CD9660
+no file-system	MSDOSFS
+no file-system	OVERLAY
+no file-system	PROCFS
+no file-system	PUFFS
+no pseudo-device	putter
+no file-system	SMBFS
+no pseudo-device	nsmb
+no file-system	UMAPFS
+no file-system	UNION
+
+options 	DEBUG
+no options	INET6
+no options	IPSEC
+no options	BPFJIT
+no options	KDTRACE_HOOKS
+no pseudo-device	bridge
+no pseudo-device	vlan
+no pseudo-device	ppp
+no pseudo-device	pppoe
+no pseudo-device	tun
+no pseudo-device	tap
+no pseudo-device	gre
+no pseudo-device	npf
+no pseudo-device	veriexec
+no options	FILEASSOC
+
+no options VERIFIED_EXEC_FP_SHA256
+no options VERIFIED_EXEC_FP_SHA384
+no options VERIFIED_EXEC_FP_SHA512
+
+no options 	PAX_ASLR_DEBUG
+no options 	PAX_SEGVGUARD
+no options 	PAX_MPROTECT
+no options 	PAX_MPROTECT_DEBUG
+no options 	PAX_ASLR
+
+
+# Architecture options
+
+# Development and Debugging options
+options 	DB_MAX_WIDTH=0
+options 	DB_MAX_LINE=256
+#options 	KGDB,KGDB_PLCOMUNIT=0,KGDB_DEVRATE=115200,KGDB_CONMODE=0xB00
+makeoptions	DEBUG="-g"	# compile full symbol table
 makeoptions	COPY_SYMTAB=1
+options 	PLCONSOLE
+#options 	PLCONSOLE,PLCOMCNUNIT=0,PLCONSPEED=115200,PLCONMODE=0xB00
 
-# File systems
-file-system	FFS		# Fast file system
-file-system	MFS		# Memory-based file system
-#file-system	LFS		# Log-structured file system
-file-system	CD9660		# ISO-9660 CD-ROM FS (w/RockRidge extensions)
-#file-system	ADOSFS		# AmigaDOS-compatible file system
-file-system	MSDOSFS		# MS-DOS-compatible file system
-#file-system	NTFS		# Windows/NT file system (experimental)
-file-system	EXT2FS		# Linux ext2 file system
-file-system	NFS		# Sun NFS-compatible file system client
-file-system	NULLFS		# Null file system layer
-file-system	KERNFS		# Kernel variable file system (/kern)
-file-system	FDESC		# File descriptor file system (/dev/fd)
-#file-system	PUFFS		# Userspace file systems (e.g. ntfs-3g & sshfs)
-#file-system	UMAPFS		# User-mapping file system layer
-file-system	PROCFS		# Process file system (/proc)
-#file-system	UNION		# union file system
-file-system	CODA		# CODA distributed file system
-#file-system	SMBFS		# experimental - CIFS; also needs nsmb (below)
-file-system	PTYFS		# /dev/pts/N support
-file-system	TMPFS		# Efficient memory file-system
-#file-system	UDF		# experimental - OSTA UDF CD/DVD file-system
+## USB Debugging options
+options USB_DEBUG
+#options DWC2_DEBUG
+#options UHUB_DEBUG
 
-# File system options
-#options 	QUOTA		# legacy UFS quotas
-#options 	QUOTA2		# new, in-filesystem UFS quotas
-options 	DISKLABEL_EI	# disklabel Endian Independent support
-options 	FFS_EI		# FFS Endian Independent support
-options 	WAPBL		# File system journaling support
-#options 	UFS_DIRHASH	# UFS Large Directory Hashing - Experimental
-options 	NFSSERVER	# Sun NFS-compatible file system server
-#options 	FFS_NO_SNAPSHOT	# No FFS snapshot support
 
-# Networking options
-#options 	GATEWAY		# packet forwarding
-options 	INET		# IP + ICMP + TCP + UDP
-#options 	INET6		# IPV6
-#options 	IPSEC		# IP security
-#options 	IPSEC_DEBUG	# debug for IP security
-#options 	MROUTING	# IP multicast routing
-#options 	PIM		# Protocol Independent Multicast
-#options 	NETATALK	# AppleTalk networking protocols
-#options 	PPP_BSDCOMP	# BSD-Compress compression support for PPP
-#options 	PPP_DEFLATE	# Deflate compression support for PPP
-#options 	PPP_FILTER	# Active filter support for PPP (requires bpf)
-#options 	IPFILTER_LOG	# ipmon(8) log support
-#options 	IPFILTER_LOOKUP	# ippool(8) support
-#options 	IPFILTER_COMPAT # Compat for IP-Filter
-#options 	IPFILTER_DEFAULT_BLOCK	# block all packets by default
-#options 	TCP_DEBUG	# Record last TCP_NDEBUG packets with SO_DEBUG
+# Valid options for BOOT_ARGS:
+#  single		Boot to single user only
+#  kdb			Give control to kernel debugger
+#  ask			Ask for file name to reboot from
+#  pmapdebug=<n>	If PMAP_DEBUG, set pmap_debug_level to <n>
+#  memorydisk=<n>	Set memorydisk size to <n> KB
+#  quiet		Show aprint_naive output
+#  verbose		Show aprint_normal and aprint_verbose output
+#options		BOOT_ARGS="\"\""
 
-#options 	ALTQ		# Manipulate network interfaces' output queues
-#options 	ALTQ_BLUE	# Stochastic Fair Blue
-#options 	ALTQ_CBQ	# Class-Based Queueing
-#options 	ALTQ_CDNR	# Diffserv Traffic Conditioner
-#options 	ALTQ_FIFOQ	# First-In First-Out Queue
-#options 	ALTQ_FLOWVALVE	# RED/flow-valve (red-penalty-box)
-#options 	ALTQ_HFSC	# Hierarchical Fair Service Curve
-#options 	ALTQ_LOCALQ	# Local queueing discipline
-#options 	ALTQ_PRIQ	# Priority Queueing
-#options 	ALTQ_RED	# Random Early Detection
-#options 	ALTQ_RIO	# RED with IN/OUT
-#options 	ALTQ_WFQ	# Weighted Fair Queueing
 
-# 4.3BSD compatibility.  Should be optional, but necessary for now.
-options 	COMPAT_43
-
-# Binary compatibility with previous versions of NetBSD.
-#options 	COMPAT_09	# NetBSD 0.9,
-#options 	COMPAT_10	# NetBSD 1.0,
-#options 	COMPAT_11	# NetBSD 1.1,
-#options 	COMPAT_12	# NetBSD 1.2,
-#options 	COMPAT_13	# NetBSD 1.3,
-#options 	COMPAT_14	# NetBSD 1.4,
-#options 	COMPAT_15	# NetBSD 1.5,
-#options 	COMPAT_16	# NetBSD 1.6,
-#options 	COMPAT_20	# NetBSD 2.0,
-#options 	COMPAT_30	# NetBSD 3.0,
-#options 	COMPAT_40	# NetBSD 4.0,
-#options 	COMPAT_50	# NetBSD 5.0,
-#options 	COMPAT_60	# NetBSD 6.0, and
-options 	COMPAT_70	# NetBSD 7.0 binary compatibility.
-# OSF/1 binary compatibility
-
-# Linux binary compatibility
-#options 	COMPAT_LINUX
-#options 	COMPAT_BSDPTY	# /dev/[pt]ty?? ptys.
-
-# System V-like message queues
-options 	SYSVMSG
-
-# System V-like semaphores
-options 	SYSVSEM
-
-# System V-like shared memory
-options 	SYSVSHM
-
-# p1003.1b semaphore support
-
-# Loadable Kernel Modules
-
-# Disable kernel security.
-#options 	INSECURE
-
-# Misc. options
-#options 	PCIVERBOSE		# recognize "unknown" PCI devices
-#options 	MIIVERBOSE		# verbose PHY autoconfig messages
-#options 	PCI_CONFIG_DUMP		# verbosely dump PCI config space
-#options 	SCSIVERBOSE		# Verbose SCSI errors
-#options 	USBVERBOSE		# verbose USB device autoconfig messages
-#options 	EXTENT_DEBUG		# extent alloc/dealloc code debugging
-#options 	NO_KERNEL_RCSIDS	# don't include kernel file RCS IDs
-options 	USERCONF		# userconf(4) support
-#options 	PIPE_SOCKETPAIR		# smaller, but slower pipe(2)
-options 	SYSCTL_INCLUDE_DESCR	# Include sysctl descriptions in kernel
-
-# The Alpha console firmware network boots using the BOOTP
-# protocol, so we ask the NFS code to use BOOTP/DHCP as well,
-# in case we have NFS root.
-options 	NFS_BOOT_DHCP		# superset of BOOTP
-
-config		netbsd	root on ? type ?
-#config		netbsd	root on sd0 type ffs
-#config		netbsd	root on ? type nfs
+config		netbsd		root on ? type ?
 
 mainbus0 at	root
 cpunode0	at mainbus0
@@ -196,11 +102,14 @@ obio0		at mainbus?
 bcmicu0		at obio?
 
 # VC Mailbox
-#bcmmbox0	at obio?
-#vcmbox0 	at bcmmbox0
+bcmmbox0	at obio?
+vcmbox0 	at bcmmbox0
 
 # DMA Controller
-#bcmdmac0	at obio?
+bcmdmac0	at obio?
+
+# VCHIQ
+#vchiq0		at obio?
 
 # AUDS
 #vcaudio0	at vchiq0
@@ -220,63 +129,60 @@ wsdisplay*	at genfb?
 options		VCONS_DRAW_INTR
 #options 	RPI_HWCURSOR
 
-# System timer
-#bcmtmr0 	at obio?
-
 # Power management, Reset controller and Watchdog registers
 bcmpm0		at obio?
 
 # Random number generator
-#bcmrng0 	at obio?
+bcmrng0 	at obio?
 
 # GPIO
-#bcmgpio0	at obio?	# pins  0 ... 31
-#bcmgpio1	at obio?	# pins 32 ... 53
+bcmgpio0	at obio?	# pins  0 ... 31
+bcmgpio1	at obio?	# pins 32 ... 53
 
 # Arasan SD/MMC Interface
-#sdhc* at obio?
-#sdmmc*  at sdhc?
+sdhc*		at obio?
+sdmmc*		at sdhc?
 
 # SD host controller
-#sdhost* at obio?
-#sdmmc* at sdhost?
-#
-#ld*     at sdmmc?
+sdhost*		at obio?
+sdmmc*		at sdhost?
+
+ld*		at sdmmc?
 
 # On-board USB
-#dwctwo* 	at obio?
-#usb* 		at dwctwo?
+dwctwo* 	at obio?
+usb*		at dwctwo?
 
-# USB device drivers
-#include "dev/usb/usbdevices.config"
-
-#midi*		at midibus?
-
-# MII/PHY support
-#exphy* 		at mii? phy ?		# 3Com internal PHYs
-#gentbi* 	at mii? phy ?		# Generic Ten-Bit 1000BASE-[CLS]X PHYs
-#glxtphy*	at mii? phy ?		# Level One LXT-1000 PHYs
-#gphyter* 	at mii? phy ?		# NS83861 Gig-E PHY
-#icsphy*		at mii? phy ?		# Integrated Circuit Systems ICS189x
-#igphy*		at mii? phy ?		# Intel IGP01E1000
-#ihphy*		at mii? phy ?		# Intel 82577 PHYs
-#ikphy*		at mii? phy ?		# Intel 82563 PHYs
-#inphy*		at mii? phy ?		# Intel 82555 PHYs
-#iophy*		at mii? phy ?		# Intel 82553 PHYs
-#lxtphy*		at mii? phy ?		# Level One LXT-970 PHYs
-#makphy*		at mii? phy ?		# Marvell Semiconductor 88E1000 PHYs
-#nsphy*		at mii? phy ?		# NS83840 PHYs
-#nsphyter*	at mii? phy ? 		# NS83843 PHYs
-#pnaphy*		at mii? phy ?		# generic HomePNA PHYs
-#qsphy*		at mii? phy ?		# Quality Semiconductor QS6612 PHYs
-#rdcphy*		at mii? phy ?		# RDC R6040 10/100 PHY
-#rgephy*		at mii? phy ?		# Realtek 8169S/8110S internal PHYs
-#rlphy*		at mii? phy ?		# Realtek 8139/8201L PHYs
-#sqphy*		at mii? phy ?		# Seeq 80220/80221/80223 PHYs
-#tlphy*		at mii? phy ?		# ThunderLAN PHYs
-#tqphy*		at mii? phy ?		# TDK Semiconductor PHYs
-#urlphy*		at mii? phy ?		# Realtek RTL8150L internal PHYs
-#ukphy*		at mii? phy ?		# generic unknown PHYs
+#	# USB device drivers
+#	include "dev/usb/usbdevices.config"
+#	
+#	midi*		at midibus?
+#	
+#	# MII/PHY support
+#	exphy*		at mii? phy ?		# 3Com internal PHYs
+#	gentbi* 	at mii? phy ?		# Generic Ten-Bit 1000BASE-[CLS]X PHYs
+#	glxtphy*	at mii? phy ?		# Level One LXT-1000 PHYs
+#	gphyter*	at mii? phy ?		# NS83861 Gig-E PHY
+#	icsphy* 	at mii? phy ?		# Integrated Circuit Systems ICS189x
+#	igphy*		at mii? phy ?		# Intel IGP01E1000
+#	ihphy*		at mii? phy ?		# Intel 82577 PHYs
+#	ikphy*		at mii? phy ?		# Intel 82563 PHYs
+#	inphy*		at mii? phy ?		# Intel 82555 PHYs
+#	iophy*		at mii? phy ?		# Intel 82553 PHYs
+#	lxtphy* 	at mii? phy ?		# Level One LXT-970 PHYs
+#	makphy* 	at mii? phy ?		# Marvell Semiconductor 88E1000 PHYs
+#	nsphy*		at mii? phy ?		# NS83840 PHYs
+#	nsphyter*	at mii? phy ? 		# NS83843 PHYs
+#	pnaphy* 	at mii? phy ?		# generic HomePNA PHYs
+#	qsphy*		at mii? phy ?		# Quality Semiconductor QS6612 PHYs
+#	rdcphy* 	at mii? phy ?		# RDC R6040 10/100 PHY
+#	rgephy* 	at mii? phy ?		# Realtek 8169S/8110S internal PHYs
+#	rlphy*		at mii? phy ?		# Realtek 8139/8201L PHYs
+#	sqphy*		at mii? phy ?		# Seeq 80220/80221/80223 PHYs
+#	tlphy*		at mii? phy ?		# ThunderLAN PHYs
+#	tqphy*		at mii? phy ?		# TDK Semiconductor PHYs
+#	urlphy* 	at mii? phy ?		# Realtek RTL8150L internal PHYs
+#	ukphy*		at mii? phy ?		# generic unknown PHYs
 
 # Broadcom Serial Control (I2C)
 bsciic* at obio?
@@ -293,86 +199,72 @@ iic* at i2cbus?
 bcmspi* at obio?
 spi* at spibus?
 
+# MCP3x0x ADC
+# flags selects the actual chip, refer to mcp3kadc(4)
+#mcp3kadc0 at spi? slave 0 flags 0
 
+# PIFace or other boards using that chip (needs gpio)
+#mcp23s17gpio0 at spi? slave 0 flags 0
+#mcp23s17gpio1 at spi? slave 0 flags 1
+#mcp23s17gpio2 at spi? slave 0 flags 2
+#mcp23s17gpio3 at spi? slave 0 flags 3
 
-#
-# accept filters
-#pseudo-device	accf_data		# "dataready" accept filter
-#pseudo-device	accf_http		# "httpready" accept filter
+# gpio support (e. g. mcp23s17gpio, bcmgpio)
+gpio*		at gpiobus?
 
-pseudo-device 	crypto			# /dev/crypto device
-pseudo-device	swcrypto		# software crypto implementation
+# various options for wscons - we try to look as much like a standard
+# sun console as possible
+options 	WSEMUL_VT100		# sun terminal emulation
+options 	WS_DEFAULT_FG=WSCOL_WHITE
+options 	WS_DEFAULT_BG=WSCOL_BLACK
+options 	WS_KERNEL_FG=WSCOL_GREEN
+options 	WS_KERNEL_BG=WSCOL_BLACK
+options 	WSDISPLAY_COMPAT_PCVT		# emulate some ioctls
+options 	WSDISPLAY_COMPAT_SYSCONS	# emulate some more ioctls
+options 	WSDISPLAY_COMPAT_USL		# wsconscfg VT handling
+options 	WSDISPLAY_COMPAT_RAWKBD		# can get raw scancodes
+options 	WSDISPLAY_DEFAULTSCREENS=4
 
-pseudo-device	bpfilter
+#options 	FONT_QVSS8x15
+#options 	FONT_GALLANT12x22	# the console font
+
+# Pseudo-Devices
+
+# network pseudo-devices
 #pseudo-device	carp			# Common Address Redundancy Protocol
-#pseudo-device	ccd		
-#pseudo-device	cgd			# cryptographic disk devices
-#pseudo-device	raid			# RAIDframe disk driver
-#options 	RAID_AUTOCONFIG		# auto-configuration of RAID components
-# Options to enable various other RAIDframe RAID types.
-#options 	RF_INCLUDE_EVENODD=1
-#options 	RF_INCLUDE_RAID5_RS=1
-#options 	RF_INCLUDE_PARITYLOGGING=1
-#options 	RF_INCLUDE_CHAINDECLUSTER=1
-#options 	RF_INCLUDE_INTERDECLUSTER=1
-#options 	RF_INCLUDE_PARITY_DECLUSTERING=1
-#options 	RF_INCLUDE_PARITY_DECLUSTERING_DS=1
-#pseudo-device	fss			# file system snapshot device
-#pseudo-device	ipfilter
-pseudo-device	loop
-pseudo-device	md		
-#pseudo-device	ppp		
+#pseudo-device	ipfilter		# IP filter (firewall) and NAT
+#pseudo-device	kttcp			# network loopback
+#pseudo-device	ppp			# Point-to-Point Protocol
 #pseudo-device	pppoe			# PPP over Ethernet (RFC 2516)
-pseudo-device	pty			# pseudo-terminals
-#pseudo-device	sl		
-#pseudo-device	strip		
-pseudo-device	tun		
-pseudo-device	tap			# virtual Ethernet
-pseudo-device	vnd		
-#options 	VND_COMPRESSION		# compressed vnd(4)
+#options 	PPPOE_SERVER		# Enable PPPoE server via link0
+#pseudo-device	sl			# Serial Line IP
+#pseudo-device	strip			# Starmode Radio IP (Metricom)
+#pseudo-device	irframetty		# IrDA frame line discipline
+#pseudo-device	tap			# virtual Ethernet
+#pseudo-device	tun			# network tunneling over tty
 #pseudo-device	gre			# generic L3 over IP tunnel
-pseudo-device	gif			# IPv[46] over IPv[46] tunnel (RFC1933)
-#pseudo-device	faith			# IPv[46] tcp relay translation i/f
+#pseudo-device	gif			# IPv[46] over IPv[46] tunnel (RFC 1933)
+#pseudo-device	faith			# IPv[46] TCP relay translation i/f
 #pseudo-device	stf			# 6to4 IPv6 over IPv4 encapsulation
-pseudo-device	vlan			# IEEE 802.1q encapsulation
-pseudo-device	bridge			# simple inter-network bridging
-#options 	BRIDGE_IPF		# bridge uses IP/IPv6 pfil hooks too
+#pseudo-device	vlan			# IEEE 802.1q encapsulation
+#pseudo-device	bridge			# simple inter-network bridging
+#options	BRIDGE_IPF		# bridge uses IP/IPv6 pfil hooks too
 #pseudo-device	agr			# IEEE 802.3ad link aggregation
-#pseudo-device	sequencer		# MIDI sequencer
-#options 	RND_COM			# use "com" randomness too
-# a pseudo device needed for Coda	# also needs CODA (above)
-pseudo-device	vcoda			# coda minicache <-> venus comm.
-# a pseudo device needed for SMBFS
-pseudo-device	nsmb			# experimental - SMB requester
-pseudo-device	clockctl		# user control of clock subsystem
-pseudo-device	wsfont
-pseudo-device	wsmux			# mouse and keyboad multiplexing
-pseudo-device	ksyms			# /dev/ksyms
 #pseudo-device	pf			# PF packet filter
 #pseudo-device	pflog			# PF log if
-pseudo-device	lockstat		# lock profiling
-#pseudo-device	bcsp			# BlueCore Serial Protocol
-#pseudo-device	btuart			# Bluetooth HCI UART (H4)
-pseudo-device	putter			# for puffs and pud
 
-#options	FILEASSOC		# fileassoc(9) - required for Veriexec
-					# and PAX_SEGVGUARD
+# miscellaneous pseudo-devices
 
-# Veriexec
-#
-# a pseudo device needed for veriexec
-#pseudo-device	veriexec
-#
-# Uncomment the fingerprint methods below that are desired. Note that
-# removing fingerprint methods will have almost no impact on the kernel
-# code size.
-#
-#options 	VERIFIED_EXEC_FP_RMD160
-#options 	VERIFIED_EXEC_FP_SHA256
-#options 	VERIFIED_EXEC_FP_SHA384
-#options 	VERIFIED_EXEC_FP_SHA512
-#options 	VERIFIED_EXEC_FP_SHA1
-#options 	VERIFIED_EXEC_FP_MD5
+# wscons pseudo-devices
+pseudo-device	wsmux			# mouse & keyboard multiplexor
+pseudo-device	wsfont
 
-#options PAX_MPROTECT=0			# PaX mprotect(2) restrictions
-#options PAX_ASLR=0			# PaX Address Space Layout Randomization
+# userland interface to drivers, including autoconf and properties retrieval
+
+# local configuration
+cinclude "arch/evbarm/conf/RPI.local"
+
+# Bluetooth serial UART devices
+pseudo-device	btuart
+pseudo-device	bcsp
+pseudo-device	bthfive
