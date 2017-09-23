@@ -109,16 +109,63 @@ struct pmap_devmap {
 	paddr_t pd_pa;		/* physical address */
 	psize_t pd_size;	/* size of region */
 	vm_prot_t pd_prot;	/* protection code */
-	int pd_cache;		/* cache attributes */
+	u_int pd_flags;		/* flags for pmap_kenter_pa() */
 };
 void pmap_devmap_register(const struct pmap_devmap *);
+void pmap_devmap_bootstrap(const struct pmap_devmap *);
 const struct pmap_devmap *pmap_devmap_find_pa(paddr_t, psize_t);
 const struct pmap_devmap *pmap_devmap_find_va(vaddr_t, vsize_t);
+vaddr_t pmap_devmap_phystov(paddr_t);
+paddr_t pmap_devmap_vtophys(paddr_t);
+
+/* devmap use L2 blocks. (2Mbyte) */
+#define DEVMAP_TRUNC_ADDR(x)	((x) & ~L2_OFFSET)
+#define DEVMAP_ROUND_SIZE(x)	(((x) + L2_SIZE - 1) & ~(L2_SIZE - 1))
+
+
+/* mmap cookie and flags */
+#define AARCH64_MMAP_FLAG_SHIFT		(64 - PGSHIFT)
+#define AARCH64_MMAP_FLAG_MASK		0xf
+#define AARCH64_MMAP_WRITEBACK		0
+#define AARCH64_MMAP_NOCACHE		1
+#define AARCH64_MMAP_DEVICE		3
+static inline u_int
+aarch64_mmap_flags(paddr_t mdpgno)
+{
+	u_int nflag, pflag;
+
+	/*
+	 * aarch64 arch has 4 memory attribute:
+	 *
+	 *  WriteBack      - write back cache
+	 *  WriteThru      - wite through cache
+	 *  NoCache        - no cache
+	 *  Device(nGnRnE) - no Gathering, no Reordering, no Early write ack
+	 *
+	 * but pmap has PMAP_{NOCACHE,WRITE_COMBINE,WRITE_BACK} flags.
+	 */
+
+	nflag = (mdpgno >> AARCH64_MMAP_FLAG_SHIFT) & AARCH64_MMAP_FLAG_MASK;
+	switch (nflag) {
+	case AARCH64_MMAP_WRITEBACK:
+		pflag = PMAP_WRITE_BACK;
+		break;
+	default:
+	case AARCH64_MMAP_NOCACHE:
+	case AARCH64_MMAP_DEVICE:
+		pflag = PMAP_NOCACHE;
+		break;
+	}
+	return pflag;
+}
+#define pmap_phys_address(pa)	aarch64_ptob((pa))
+#define pmap_mmap_flags(ppn)	aarch64_mmap_flags((ppn))
+
 
 #elif defined(__arm__)
 
 #include <arm/pmap.h>
 
-#endif
+#endif /* __arm__/__aarch64__ */
 
-#endif /* !_AARCH64_PMAP_H_ */
+#endif /* !_AARCH64_PMAP_ */
