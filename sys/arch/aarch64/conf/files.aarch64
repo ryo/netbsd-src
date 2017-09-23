@@ -87,7 +87,6 @@ file	arch/aarch64/aarch64/aarch64_reboot.c
 file	arch/aarch64/aarch64/core_machdep.c
 file	arch/aarch64/aarch64/cpu_in_cksum.S		(inet | inet6) & cpu_in_cksum
 file	arch/aarch64/aarch64/cpu_machdep.c
-file	arch/aarch64/aarch64/locore.S
 file	arch/aarch64/aarch64/cpufunc_asm_armv8.S
 file	arch/aarch64/aarch64/exec_machdep.c
 file	arch/aarch64/aarch64/idle_machdep.S
