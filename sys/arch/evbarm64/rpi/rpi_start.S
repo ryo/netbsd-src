@@ -60,7 +60,6 @@ RCSID("$NetBSD$")
 
 #define PRINT(string)	stp x0,lr,[sp,#-16]!;bl xprint;.asciz string;.align 2;ldp x0,lr,[sp],#16
 
-#define VERBOSE_LOCORE
 //#define DEBUG_LOCORE
 //#define DEBUG_MMU
 
@@ -698,6 +697,16 @@ mmu_enable:
 	isb
 
 	ret
+
+ENTRY(clear_ttbr0_l1tables)
+	/* clear ttbr0_l1table for PA=VA */
+	adr	x0, ttbr0_l1table
+	add	x1, x0, PAGE_SIZE
+1:	stp	xzr, xzr, [x0], #16
+	cmp	x0, x1
+	bcc	1b
+	ret
+END(clear_ttbr0_l1tables)
 
 	.align 3
 mair:
