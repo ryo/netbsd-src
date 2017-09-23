@@ -47,29 +47,28 @@ __KERNEL_RCSID(0, "$NetBSD: bcm2835_obio.c,v 1.28 2017/07/30 23:48:32 jmcneill E
 #include <arm/broadcom/bcm2835var.h>
 #include <arm/broadcom/bcm_amba.h>
 
-#include <arm/cortex/mpcore_var.h>
-#include <arm/cortex/gtmr_var.h>
+#include <aarch64/dev/a64gtmr_var.h>
 
 struct obio_softc {
-	device_t		sc_dev;
-	bus_dma_tag_t		sc_dmat;
-	struct aarch64_dma_range	sc_dmarange[1];
-	bus_space_tag_t		sc_iot;
-	bus_space_handle_t	sc_ioh;
-	bus_addr_t		sc_base;
-	bus_size_t		sc_size;
+	device_t sc_dev;
+	bus_dma_tag_t sc_dmat;
+	struct aarch64_dma_range sc_dmarange[1];
+	bus_space_tag_t sc_iot;
+	bus_space_handle_t sc_ioh;
+	bus_addr_t sc_base;
+	bus_size_t sc_size;
 };
 
 static bool obio_attached;
 
 /* prototypes */
-static int	obio_match(device_t, cfdata_t, void *);
-static void	obio_attach(device_t, device_t, void *);
-static int	obio_print(void *, const char *);
+static int obio_match(device_t, cfdata_t, void *);
+static void obio_attach(device_t, device_t, void *);
+static int obio_print(void *, const char *);
 
 /* attach structures */
 CFATTACH_DECL_NEW(obio, sizeof(struct obio_softc),
-	obio_match, obio_attach, NULL, NULL);
+    obio_match, obio_attach, NULL, NULL);
 
 /*
  * List of port-specific devices to attach to the AMBA AXI bus.
@@ -82,13 +81,6 @@ static const struct ambadev_locators bcm2835_ambadev_locs[] = {
 		.ad_size = BCM2835_ARMICU_SIZE,
 		.ad_intr = -1,
 	},
-#if defined(BCM2836)
-	{
-		/* GTMR */
-		.ad_name = "armgtmr",
-		.ad_intr = BCM2836_INT_CNTVIRQ_CPUN(0),
-	},
-#endif
 	{
 		/* Mailbox */
 		.ad_name = "bcmmbox",
@@ -231,7 +223,6 @@ static const struct ambadev_locators bcm2835_ambadev_locs[] = {
 static int
 obio_match(device_t parent, cfdata_t match, void *aux)
 {
-
 	return 1;
 }
 
@@ -271,8 +262,8 @@ obio_attach(device_t parent, device_t self, void *aux)
 	aaa.aaa_dmat = sc->sc_dmat;
 
 #if defined(BCM2836)
-	if (bus_space_map(al_iot, BCM2836_ARM_LOCAL_BASE, BCM2836_ARM_LOCAL_SIZE,
-	    0, &al_ioh)) {
+	if (bus_space_map(al_iot, BCM2836_ARM_LOCAL_BASE,
+	    BCM2836_ARM_LOCAL_SIZE, 0, &al_ioh)) {
 		aprint_error(": unable to map local space\n");
 		return;
 	}
@@ -284,15 +275,6 @@ obio_attach(device_t parent, device_t self, void *aux)
 	for (; ad->ad_name != NULL; ad++) {
 		aprint_debug("dev=%s[%u], addr=%lx:+%lx\n",
 		    ad->ad_name, ad->ad_instance, ad->ad_addr, ad->ad_size);
-		if (strcmp(ad->ad_name, "armgtmr") == 0) {
-			struct mpcore_attach_args mpcaa = {
-				.mpcaa_name = "armgtmr",
-				.mpcaa_irq = ad->ad_intr,
-			};
-
-			config_found(self, &mpcaa, NULL);
-			continue;
-		}
 
 		aaa.aaa_name = ad->ad_name;
 		aaa.aaa_addr = ad->ad_addr;
