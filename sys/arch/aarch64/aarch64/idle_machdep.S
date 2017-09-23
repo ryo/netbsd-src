@@ -35,42 +35,47 @@
 RCSID("$NetBSD: idle_machdep.S,v 1.1 2014/08/10 05:47:37 matt Exp $");
 
 ENTRY(cpu_idle)
-	sub	sp, sp, #TF_SIZE		// allocate trapfame
-	str	x28, [sp, #TF_X28]
-	str	x30, [sp, #TF_X30]
-	msr	daifset, #DAIF_I|DAIF_F		// disable interrupts
-	wfi
+	sub	sp, sp, #TF_SIZE		/* allocate trapfame */
 
-	mrs	x1, tpidr_el1			// get curcpu()
-	ldr	w28, [x1, #CI_INTR_DEPTH]
+	str	x28, [sp, #TF_X28]
+	stp	x29, x30, [sp, #TF_X29]
+#ifdef DDB
+	add	x29, sp, #TF_X29		/* link frame for backtrace */
+#endif
+
+	mrs	x1, tpidr_el1			/* get curcpu() */
+	ldr	w28, [x1, #CI_INTR_DEPTH]	/* save intr_depth to w28 */
 	add	w2, w28, #1
 	str	w2, [x1, #CI_INTR_DEPTH]
 	ldr	x3, [x1, #CI_CC_NINTR]
 	add	x3, x3, #1
 	str	x3, [x1, #CI_CC_NINTR]
 
-	mov	x0, sp				// get pointer to trapframe
-	mov	x4, #SPSR_M_EL1T		// what our spsr should be
+	/* fill dummy trapframe */
+	mov	x2, #SPSR_M_EL1H		/* what our spsr should be */
 	str	x2, [sp, #TF_SPSR]
+	mov	x0, sp				/* get pointer to trapframe */
+
+	msr	daifset, #DAIF_I|DAIF_F		/* disable interrupts */
+	wfi
 
 	bl	bcm2835_irq_handler		//XXXAARCH64 process irq
 
-	mrs	x1, tpidr_el1			// get curcpu()
-	str	w28, [x1, #CI_INTR_DEPTH]	// restore intr depth
+	mrs	x1, tpidr_el1			/* get curcpu() */
+	str	w28, [x1, #CI_INTR_DEPTH]	/* restore intr_depth */
 
-	ldr	x28, [sp, #TF_X28]		// restore registers
-	ldr	x30, [sp, #TF_X30]		// restore registers
-	add	sp, sp, #TF_SIZE		// pop trapframe
+	ldr	x28, [sp, #TF_X28]		/* restore registers */
+	ldp	x29, x30, [sp, #TF_X29]		/* restore registers */
+	add	sp, sp, #TF_SIZE		/* pop trapframe */
 
-	msr	daifclr, #DAIF_I|DAIF_F		// enable interrupts
+	msr	daifclr, #DAIF_I|DAIF_F		/* enable interrupts */
 
-	ldr	w3, [x1, #CI_SOFTINTS]		// Get pending softint mask
+	ldr	w3, [x1, #CI_SOFTINTS]		/* Get pending softint mask */
 #if 0
-	// CPL should be 0
-	ldr	w2, [x1, #CI_CPL]		// Get current priority level
-	lsr	w3, w3, w2			// shift mask by cpl
+	/* CPL should be 0 */
+	ldr	w2, [x1, #CI_CPL]		/* Get current priority level */
+	lsr	w3, w3, w2			/* shift mask by cpl */
 #endif
-	cbnz	w3, _C_LABEL(dosoftints)	// tailcall dosoftints(void)
-
+	cbnz	w3, _C_LABEL(dosoftints)	/* tailcall dosoftints(void) */
 	ret
 END(cpu_idle)
