@@ -32,6 +32,8 @@
 #ifndef _AARCH64_ARMREG_H_
 #define _AARCH64_ARMREG_H_
 
+#include <arm/cputypes.h>
+
 #ifdef __aarch64__
 
 #include <sys/types.h>
@@ -183,20 +185,16 @@ static const uintmax_t
     CCSIDR_LINESIZE	= __BITS(2,0);	/* Number of bytes in cache line */
 
 AARCH64REG_READ_INLINE(currentel)
-AARCH64REG_READ_INLINE(id_afr0_el1)
-AARCH64REG_READ_INLINE(id_adr0_el1)
-AARCH64REG_READ_INLINE(id_isar0_el1)
-AARCH64REG_READ_INLINE(id_isar1_el1)
-AARCH64REG_READ_INLINE(id_isar2_el1)
-AARCH64REG_READ_INLINE(id_isar3_el1)
-AARCH64REG_READ_INLINE(id_isar4_el1)
-AARCH64REG_READ_INLINE(id_isar5_el1)
-AARCH64REG_READ_INLINE(id_mmfr0_el1)
-AARCH64REG_READ_INLINE(id_mmfr1_el1)
-AARCH64REG_READ_INLINE(id_mmfr2_el1)
-AARCH64REG_READ_INLINE(id_mmfr3_el1)
-AARCH64REG_READ_INLINE(id_prf0_el1)
-AARCH64REG_READ_INLINE(id_prf1_el1)
+AARCH64REG_READ_INLINE(id_aa64afr0_el1)
+AARCH64REG_READ_INLINE(id_aa64afr1_el1)
+AARCH64REG_READ_INLINE(id_aa64dfr0_el1)
+AARCH64REG_READ_INLINE(id_aa64dfr1_el1)
+AARCH64REG_READ_INLINE(id_aa64isar0_el1)
+AARCH64REG_READ_INLINE(id_aa64isar1_el1)
+AARCH64REG_READ_INLINE(id_aa64mmfr0_el1)
+AARCH64REG_READ_INLINE(id_aa64mmfr1_el1)
+AARCH64REG_READ_INLINE(id_aa64pfr0_el1)
+AARCH64REG_READ_INLINE(id_aa64pfr1_el1)
 AARCH64REG_READ_INLINE(isr_el1)
 AARCH64REG_READ_INLINE(midr_el1)
 AARCH64REG_READ_INLINE(mpidr_el1)
@@ -253,43 +251,107 @@ AARCH64REG_WRITE_INLINE(esr_el1)
 
 static const uintmax_t
     ESR_EC =		__BITS(31,26),	/* Exception Cause */
-     ESR_EC_UNKNOWN	= 0,	/* AXX: Unknown Reason */
-     ESR_EC_WFX		= 1,	/* AXX: WFI or WFE instruction execution */
-     ESR_EC_CP15_RT	= 3,	/* A32: MCR/MRC access to CP15 !EC=0 */
-     ESR_EC_CP15_RRT	= 4,	/* A32: MCRR/MRRC access to CP15 !EC=0 */
-     ESR_EC_CP14_RT	= 5,	/* A32: MCR/MRC access to CP14 */
-     ESR_EC_CP14_DT	= 6,	/* A32: LDC/STC access to CP14 */
-     ESR_EC_FP_ACCESS	= 7,	/* AXX: Access to SIMD/FP Registers */
-     ESR_EC_FPID	= 8,	/* A32: MCR/MRC access to CP10 !EC=7 */
-     ESR_EC_CP14_RRT	= 12,	/* A32: MRRC access to CP14 */
-     ESR_EC_ILL_STATE	= 14,	/* AXX: Illegal Execution State */
-     ESR_EC_SVC_A32	= 17,	/* A32: SVC Instruction Execution */
-     ESR_EC_HVC_A32	= 18,	/* A32: HVC Instruction Execution */
-     ESR_EC_SMC_A32	= 19,	/* A32: SMC Instruction Execution */
-     ESR_EC_SVC_A64	= 21,	/* A64: SVC Instruction Execution */
-     ESR_EC_HVC_A64	= 22,	/* A64: HVC Instruction Execution */
-     ESR_EC_SMC_A64	= 23,	/* A64: SMC Instruction Execution */
-     ESR_EC_SYS_REG	= 24,	/* A64: MSR/MRS/SYS instruction (!EC0/1/7) */
-     ESR_EC_INSN_ABT_EL0 = 32,	/* AXX: Instruction Abort (EL0) */
-     ESR_EC_INSN_ABT_EL1 = 33,	/* AXX: Instruction Abort (EL1) */
-     ESR_EC_PC_ALIGNMENT = 34,	/* AXX: Misaligned PC */
-     ESR_EC_DATA_ABT_EL0 = 36,	/* AXX: Data Abort (EL0) */
-     ESR_EC_DATA_ABT_EL1 = 37,	/* AXX: Data Abort (EL1) */
-     ESR_EC_SP_ALIGNMENT = 38,	/* AXX: Misaligned SP */
-     ESR_EC_FP_TRAP_A32 = 40,	/* A32: FP Exception */
-     ESR_EC_FP_TRAP_A64 = 44,	/* A64: FP Exception */
-     ESR_EC_SERROR	= 47,	/* AXX: SError Interrupt */
-     ESR_EC_BRKPNT_EL0 = 48,	/* AXX: Breakpoint Exception (EL0) */
-     ESR_EC_BRKPNT_EL1 = 49,	/* AXX: Breakpoint Exception (EL1) */
-     ESR_EC_SW_STEP_EL0 = 50,	/* AXX: Software Step (EL0) */
-     ESR_EC_SW_STEP_EL1 = 51,	/* AXX: Software Step (EL1) */
-     ESR_EC_WTCHPNT_EL0 = 52,	/* AXX: Watchpoint (EL0) */
-     ESR_EC_WTCHPNT_EL1 = 53,	/* AXX: Watchpoint (EL1) */
-     ESR_EC_BKPT_INSN_A32 = 56,	/* A32: BKPT Instruction Execution */
-     ESR_EC_VECTOR_CATCH = 58,	/* A32: Vector Catch Exception */
-     ESR_EC_BKPT_INSN_A64 = 60,	/* A64: BKPT Instruction Execution */
+     ESR_EC_UNKNOWN		= 0x00,	/* AXX:Unknown Reason */
+     ESR_EC_WFX			= 0x01,	/* AXX:WFI or WFE Insn Execution */
+     ESR_EC_CP15_RT		= 0x03,	/* A32:MCR/MRC access to CP15 !EC=0 */
+     ESR_EC_CP15_RRT		= 0x04,	/* A32:MCRR/MRRC access to CP15 !EC=0 */
+     ESR_EC_CP14_RT		= 0x05,	/* A32:MCR/MRC access to CP14 */
+     ESR_EC_CP14_DT		= 0x06,	/* A32:LDC/STC access to CP14 */
+     ESR_EC_FP_ACCESS		= 0x07,	/* AXX:Access to SIMD/FP Registers */
+     ESR_EC_FPID		= 0x08,	/* A32:MCR/MRC access to CP10 !EC=7 */
+     ESR_EC_CP14_RRT		= 0x0c,	/* A32:MRRC access to CP14 */
+     ESR_EC_ILL_STATE		= 0x0e,	/* AXX:Illegal Execution State */
+     ESR_EC_SVC_A32		= 0x11,	/* A32:SVC Instruction Execution */
+     ESR_EC_HVC_A32		= 0x12,	/* A32:HVC Instruction Execution */
+     ESR_EC_SMC_A32		= 0x13,	/* A32:SMC Instruction Execution */
+     ESR_EC_SVC_A64		= 0x15,	/* A64:SVC Instruction Execution */
+     ESR_EC_HVC_A64		= 0x16,	/* A64:HVC Instruction Execution */
+     ESR_EC_SMC_A64		= 0x17,	/* A64:SMC Instruction Execution */
+     ESR_EC_SYS_REG		= 0x18,	/* A64:MSR/MRS/SYS insn (!EC0/1/7) */
+     ESR_EC_INSN_ABT_EL0	= 0x20,	/* AXX:Instruction Abort (EL0) */
+     ESR_EC_INSN_ABT_EL1	= 0x21,	/* AXX:Instruction Abort (EL1) */
+     ESR_EC_PC_ALIGNMENT	= 0x22,	/* AXX:Misaligned PC */
+     ESR_EC_DATA_ABT_EL0	= 0x24,	/* AXX:Data Abort (EL0) */
+     ESR_EC_DATA_ABT_EL1	= 0x25,	/* AXX:Data Abort (EL1) */
+     ESR_EC_SP_ALIGNMENT	= 0x26,	/* AXX:Misaligned SP */
+     ESR_EC_FP_TRAP_A32		= 0x28,	/* A32:FP Exception */
+     ESR_EC_FP_TRAP_A64		= 0x2c,	/* A64:FP Exception */
+     ESR_EC_SERROR		= 0x2f,	/* AXX:SError Interrupt */
+     ESR_EC_BRKPNT_EL0		= 0x30,	/* AXX:Breakpoint Exception (EL0) */
+     ESR_EC_BRKPNT_EL1		= 0x31,	/* AXX:Breakpoint Exception (EL1) */
+     ESR_EC_SW_STEP_EL0		= 0x32,	/* AXX:Software Step (EL0) */
+     ESR_EC_SW_STEP_EL1		= 0x33,	/* AXX:Software Step (EL1) */
+     ESR_EC_WTCHPNT_EL0		= 0x34,	/* AXX:Watchpoint (EL0) */
+     ESR_EC_WTCHPNT_EL1		= 0x35,	/* AXX:Watchpoint (EL1) */
+     ESR_EC_BKPT_INSN_A32	= 0x38,	/* A32:BKPT Instruction Execution */
+     ESR_EC_VECTOR_CATCH	= 0x3a,	/* A32:Vector Catch Exception */
+     ESR_EC_BKPT_INSN_A64	= 0x3c,	/* A64:BKPT Instruction Execution */
     ESR_IL =		__BIT(25),	/* Instruction Length (1=32-bit) */
-    ESR_ISS =		__BITS(24,0);	/* Instruction Specific Syndrome */
+    ESR_ISS =		__BITS(24,0),	/* Instruction Specific Syndrome */
+    ESR_ISS_CV =		__BIT(24),	/* common */
+    ESR_ISS_COND =		__BITS(23,20),	/* common */
+    ESR_ISS_WFX_TRAP_INSN =	__BIT(0),	/* for ESR_EC_WFX */
+    ESR_ISS_MRC_OPC2 =		__BITS(19,17),	/* for ESR_EC_CP15_RT */
+    ESR_ISS_MRC_OPC1 =		__BITS(16,14),	/* for ESR_EC_CP15_RT */
+    ESR_ISS_MRC_CRN =		__BITS(13,10),	/* for ESR_EC_CP15_RT */
+    ESR_ISS_MRC_RT =		__BITS(9,5),	/* for ESR_EC_CP15_RT */
+    ESR_ISS_MRC_CRM =		__BITS(4,1),	/* for ESR_EC_CP15_RT */
+    ESR_ISS_MRC_DIRECTION =	__BIT(0),	/* for ESR_EC_CP15_RT */
+    ESR_ISS_MCRR_OPC1 =		__BITS(19,16),	/* for ESR_EC_CP15_RRT */
+    ESR_ISS_MCRR_RT2 =		__BITS(14,10),	/* for ESR_EC_CP15_RRT */
+    ESR_ISS_MCRR_RT =		__BITS(9,5),	/* for ESR_EC_CP15_RRT */
+    ESR_ISS_MCRR_CRM =		__BITS(4,1),	/* for ESR_EC_CP15_RRT */
+    ESR_ISS_MCRR_DIRECTION =	__BIT(0),	/* for ESR_EC_CP15_RRT */
+    ESR_ISS_HVC_IMM16 =		__BITS(15,0),	/* for ESR_EC_{SVC,HVC} */
+//	...
+    ESR_ISS_INSNABORT_EA =	__BIT(9),	/* for ESC_RC_INSN_ABT_EL[01] */
+    ESR_ISS_INSNABORT_S1PTW =	__BIT(7),	/* for ESC_RC_INSN_ABT_EL[01] */
+    ESR_ISS_INSNABORT_IFSC =	__BITS(0,5),	/* for ESC_RC_INSN_ABT_EL[01] */
+    ESR_ISS_DATAABORT_ISV =	__BIT(24),	/* for ESC_RC_DATA_ABT_EL[01] */
+    ESR_ISS_DATAABORT_SAS =	__BITS(23,22),	/* for ESC_RC_DATA_ABT_EL[01] */
+    ESR_ISS_DATAABORT_SSE =	__BIT(21),	/* for ESC_RC_DATA_ABT_EL[01] */
+    ESR_ISS_DATAABORT_SRT =	__BITS(19,16),	/* for ESC_RC_DATA_ABT_EL[01] */
+    ESR_ISS_DATAABORT_SF =	__BIT(15),	/* for ESC_RC_DATA_ABT_EL[01] */
+    ESR_ISS_DATAABORT_AR =	__BIT(14),	/* for ESC_RC_DATA_ABT_EL[01] */
+    ESR_ISS_DATAABORT_EA =	__BIT(9),	/* for ESC_RC_DATA_ABT_EL[01] */
+    ESR_ISS_DATAABORT_CM =	__BIT(8),	/* for ESC_RC_DATA_ABT_EL[01] */
+    ESR_ISS_DATAABORT_S1PTW =	__BIT(7),	/* for ESC_RC_DATA_ABT_EL[01] */
+    ESR_ISS_DATAABORT_WnR =	__BIT(6),	/* for ESC_RC_DATA_ABT_EL[01] */
+    ESR_ISS_DATAABORT_DFSC =	__BITS(0,5);	/* for ESC_RC_DATA_ABT_EL[01] */
+
+static const uintmax_t	/* ESR_ISS_{INSN,DATA}ABORT_FSC */
+    ESR_ISS_FSC_ADDRESS_SIZE_FAULT_0		= 0x00,
+    ESR_ISS_FSC_ADDRESS_SIZE_FAULT_1		= 0x01,
+    ESR_ISS_FSC_ADDRESS_SIZE_FAULT_2		= 0x02,
+    ESR_ISS_FSC_ADDRESS_SIZE_FAULT_3		= 0x03,
+    ESR_ISS_FSC_TRANSLATION_FAULT_0		= 0x04,
+    ESR_ISS_FSC_TRANSLATION_FAULT_1		= 0x05,
+    ESR_ISS_FSC_TRANSLATION_FAULT_2		= 0x06,
+    ESR_ISS_FSC_TRANSLATION_FAULT_3		= 0x07,
+    ESR_ISS_FSC_ACCESS_FAULT_0			= 0x08,
+    ESR_ISS_FSC_ACCESS_FAULT_1			= 0x09,
+    ESR_ISS_FSC_ACCESS_FAULT_2			= 0x0a,
+    ESR_ISS_FSC_ACCESS_FAULT_3			= 0x0b,
+    ESR_ISS_FSC_PERM_FAULT_0			= 0x0c,
+    ESR_ISS_FSC_PERM_FAULT_1			= 0x0d,
+    ESR_ISS_FSC_PERM_FAULT_2			= 0x0e,
+    ESR_ISS_FSC_PERM_FAULT_3			= 0x0f,
+    ESR_ISS_FSC_SYNC_EXTERNAL_ABORT		= 0x10,
+    ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_0	= 0x14,
+    ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_1	= 0x15,
+    ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_2	= 0x16,
+    ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_3	= 0x17,
+    ESR_ISS_FSC_SYNC_PARITY_ERROR		= 0x18,
+    ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_0	= 0x1c,
+    ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_1	= 0x1d,
+    ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_2	= 0x1e,
+    ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_3	= 0x1f,
+    ESR_ISS_FSC_ALIGNMENT_FAULT			= 0x21,
+    ESR_ISS_FSC_TLB_CONFLICT_FAULT		= 0x30,
+    ESR_ISS_FSC_LOCKDOWN_ABORT			= 0x34,
+    ESR_ISS_FSC_UNSUPPORTED_EXCLUSIVE		= 0x35,
+    ESR_ISS_FSC_FIRST_LEVEL_DOMAIN_FAULT	= 0x3d,
+    ESR_ISS_FSC_SECOND_LEVEL_DOMAIN_FAULT	= 0x3e;
 
 
 AARCH64REG_READ_INLINE(far_el1)		/* Fault Address Register */
@@ -440,10 +502,7 @@ AARCH64REG_WRITE_INLINE(tpidr_el1)
 
 AARCH64REG_WRITE_INLINE(tpidrro_el0)	/* Thread ID Register (RO for EL0) */
 
-AARCH64REG_READ_INLINE(ttbr0_el0) /* Translation Table Base Register 0 EL0 */
-AARCH64REG_WRITE_INLINE(ttbr0_el0)
-
-AARCH64REG_READ_INLINE(ttbr0_el1) /* Translation Table Base Register 0 EL0 */
+AARCH64REG_READ_INLINE(ttbr0_el1) /* Translation Table Base Register 0 EL1 */
 AARCH64REG_WRITE_INLINE(ttbr0_el1)
 
 AARCH64REG_READ_INLINE(ttbr1_el1) /* Translation Table Base Register 1 EL1 */

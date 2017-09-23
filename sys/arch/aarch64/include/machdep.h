@@ -32,25 +32,33 @@
 extern paddr_t physical_start;
 extern paddr_t physical_end;
 
+extern void (*cpu_reset_address0)(void);
 extern void (*cpu_reset_address)(void);
 extern void (*cpu_powerdown_address)(void);
 
 extern char *booted_kernel;
 
-void	lwp_trampoline(void);
-void	cpu_dosoftints(void);
-void	cpu_switchto_softint(struct lwp *, int);
-void	trap(struct trapframe *, int);
-void	trap_doast(struct trapframe *);
-void	trap_bad(struct trapframe *, int);
-void	trap_a32(struct trapframe *, int);
-void	interrupt(struct trapframe *);
-void	dumpsys(void);
-void	initarm64(void);
-void	dosoftints(void);
-void dump_trapframe(struct trapframe *, void (*)(const char *, ...));
+void initarm64(void);
+void aarch64_cpu_configured(void);
+void dumpsys(void);
+
 paddr_t vtophys(vaddr_t);
-#define VTOPHYS_FAILED ((paddr_t)-1L)
+#define VTOPHYS_FAILED	((paddr_t)-1L)
+
+#define KERN_VTOPHYS(va)	((paddr_t)((vaddr_t)va - VM_MIN_KERNEL_ADDRESS))
+#define KERN_PHYSTOV(pa)	((vaddr_t)((paddr_t)pa + VM_MIN_KERNEL_ADDRESS))
+
+/* trap.c */
+struct trapframe;
+void lwp_trampoline(void);
+void cpu_dosoftints(void);
+void cpu_switchto_softint(struct lwp *, int);
+void trap(struct trapframe *, int);
+void trap_doast(struct trapframe *);
+void trap_bad(struct trapframe *, int);
+void trap_a32(struct trapframe *, int);
+void interrupt(struct trapframe *);
+void dosoftints(void);
 
 #include <sys/pcu.h>
 
