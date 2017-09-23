@@ -140,10 +140,16 @@ void delay(unsigned int);
 #endif
 #endif /* _KERNEL */
 
-/* for compatible arm */
-#define arm_btop(x)		((unsigned long)(x) >> PGSHIFT)
-#define arm_ptob(x)		((unsigned long)(x) << PGSHIFT)
-#define arm_trunc_page(x)	((unsigned long)(x) & ~PGSHIFT)
+#define aarch64_btop(x)		((unsigned long)(x) >> PGSHIFT)
+#define aarch64_ptob(x)		((unsigned long)(x) << PGSHIFT)
+#define aarch64_trunc_page(x)	((unsigned long)(x) & ~PGSHIFT)
+#define aarch64_round_page(x)	((((unsigned long)(x)) + PGOFSET) & ~PGOFSET)
+
+/* compatibility for arm */
+#define arm_btop(x)		aarch64_btop(x)
+#define arm_ptob(x)		aarch64_ptob(x)
+#define arm_trunc_page(x)	aarch64_trunc_page(x)
+#define arm_round_page(x)	aarch64_round_page(x)
 
 #elif defined(__arm__)
 
