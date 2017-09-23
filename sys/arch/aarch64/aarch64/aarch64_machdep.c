@@ -51,13 +51,15 @@ __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp
 #include <aarch64/pmap.h>
 #include <aarch64/pte.h>
 
-char cpu_model[32]; 
+char cpu_model[32];
 char machine[] = MACHINE;
 char machine_arch[] = MACHINE_ARCH;
 
 const pcu_ops_t * const pcu_ops_md_defs[PCU_UNIT_COUNT] = {
 	[PCU_FPU] = &pcu_fpu_ops,
 };
+
+uint32_t cputype;
 
 struct vm_map *phys_map;
 
@@ -108,8 +110,7 @@ initarm64(void)
 	vaddr_t kernstart_l2, kernend_l2;	/* L2 table 2MB aligned */
 	paddr_t kernstart_phys, kernend_phys;
 
-	if (set_cpufuncs() != 0)
-		panic("cpu not recognized!");
+	cputype = cpu_idnum();	/* for compatible arm */
 
 	kernstart = trunc_page((vaddr_t)__kernel_text);
 	kernend = round_page((vaddr_t)_end);
@@ -124,20 +125,24 @@ initarm64(void)
 
 #ifdef VERBOSE_INIT_ARM
 	printf(
+	    "------------------------------------------\n"
 	    "physical_start        = 0x%016lx\n"
-	    "physical_end          = 0x%016lx\n"
 	    "kernel_start_phys     = 0x%016lx\n"
 	    "kernel_end_phys       = 0x%016lx\n"
+	    "physical_end          = 0x%016lx\n"
 	    "VM_MIN_KERNEL_ADDRESS = 0x%016lx\n"
 	    "kernel_start_l2       = 0x%016lx\n"
 	    "kernel_start          = 0x%016lx\n"
 	    "kernel_end            = 0x%016lx\n"
 	    "kernel_end_l2         = 0x%016lx\n"
-	    "VM_MAX_KERNEL_ADDRESS = 0x%016lx\n",
+	    "(kernel va area)\n"
+	    "(devmap va area)\n"
+	    "VM_MAX_KERNEL_ADDRESS = 0x%016lx\n"
+	    "------------------------------------------\n",
 	    physical_start,
-	    physical_end,
 	    kernstart_phys,
 	    kernend_phys,
+	    physical_end,
 	    VM_MIN_KERNEL_ADDRESS,
 	    kernstart_l2,
 	    kernstart,
@@ -165,20 +170,33 @@ initarm64(void)
 	    VM_FREELIST_DEFAULT);
 
 	/*
-	 * kernel image is mapped L2 table (2M*n)
+	 * kernel image is mapped L2 table (2M*n) by locore.S
 	 * virtual space start from 2MB aligned kernend
 	 */
 	pmap_bootstrap(kernend_l2, VM_MAX_KERNEL_ADDRESS);
 
 
-	tf = (void *)(lwp0uspace + USPACE - TF_SIZE);
-	memset(tf, 0, TF_SIZE);
+	tf = (struct trapframe *)(lwp0uspace + USPACE) - 1;
+	memset(tf, 0, sizeof(struct trapframe));
 
 	uvm_lwp_setuarea(&lwp0, lwp0uspace);
 	memset(&lwp0.l_md, 0, sizeof(lwp0.l_md));
 	memset(lwp_getpcb(&lwp0), 0, sizeof(struct pcb));
 	tf->tf_spsr = SPSR_M_EL0T;
 	lwp0.l_md.md_utf = lwp0.l_md.md_ktf = tf;
+}
+
+void clear_ttbr0_l1tables(void);	/* XXX in locore.S */
+
+/* call from cpu_configure() */
+void
+aarch64_cpu_configured(void)
+{
+	/* clear cpu reset hook for early boot */
+	cpu_reset_address0 = NULL;
+
+	/* clear PA=VA mapping */
+	clear_ttbr0_l1tables();
 }
 
 bool
@@ -193,7 +211,7 @@ mm_md_direct_mapped_phys(paddr_t pa, vaddr_t *vap)
 }
 
 int
-mm_md_physacc(paddr_t pa, vm_prot_t prot) 
+mm_md_physacc(paddr_t pa, vm_prot_t prot)
 {
 	if (physical_start <= pa && pa < physical_end)
 		return 0;
