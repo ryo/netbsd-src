@@ -33,15 +33,14 @@
 
 __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 
+#include "opt_arm_intr_impl.h"
+
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/cpu.h>
 #include <sys/proc.h>
 #include <sys/atomic.h>
 #include <sys/systm.h>
-
-#include <uvm/uvm.h>
-
 #include <sys/signal.h>
 #include <sys/signalvar.h>
 #include <sys/siginfo.h>
@@ -59,19 +58,29 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 #error ARM_IRQ_HANDLER not defined
 #endif
 
+#include <uvm/uvm.h>
+#include <aarch64/pmap.h>
+#include <aarch64/pte.h>
+
 #include <aarch64/userret.h>
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
-#include <aarch64/pmap.h>
-#include <aarch64/pte.h>
 #include <aarch64/armreg.h>
+
+#ifdef KDB
+#include <machine/db_machdep.h>
+#endif
+#ifdef DDB
+#include <ddb/db_output.h>
+#include <machine/db_machdep.h>
+#endif
 
 static bool pagefault(struct trapframe *, ksiginfo_t *ksi);
 static bool pagefault_refmod(struct trapframe *, struct pmap *);
 static void trap_ksi_init(ksiginfo_t *, int, int, vaddr_t, register_t);
 
 static const char * const causenames[] = {
-	[ESR_EC_UNKNOWN]	= "Unknown Reason",
+	[ESR_EC_UNKNOWN]	= "Unknown Reason (Illegal Instruction)",
 	[ESR_EC_SERROR]		= "SError Interrupt",
 	[ESR_EC_WFX]		= "WFI or WFE instruction execution",
 	[ESR_EC_ILL_STATE]	= "Illegal Execution State",
@@ -113,55 +122,6 @@ static const char * const causenames[] = {
 	[ESR_EC_BKPT_INSN_A32]	= "A32: BKPT Instruction Execution",
 	[ESR_EC_VECTOR_CATCH]	= "A32: Vector Catch Exception"
 };
-
-void
-dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
-{
-	(*pr)( "   pc=%016"PRIxREGISTER
-	    ",     sp=%016"PRIxREGISTER
-	    ",   spsr=%016"PRIxREGISTER
-	    ",    esr=%016"PRIxREGISTER"\n",
-	    tf->tf_pc, tf->tf_sp + TF_SIZE, tf->tf_spsr, tf->tf_esr);
-	(*pr)( "   x0=%016"PRIxREGISTER
-	    ",     x1=%016"PRIxREGISTER
-	    ",     x2=%016"PRIxREGISTER
-	    ",     x3=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[0], tf->tf_reg[1], tf->tf_reg[2], tf->tf_reg[3]);
-	(*pr)( "   x4=%016"PRIxREGISTER
-	    ",     x5=%016"PRIxREGISTER
-	    ",     x6=%016"PRIxREGISTER
-	    ",     x7=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[4], tf->tf_reg[5], tf->tf_reg[6], tf->tf_reg[7]);
-	(*pr)( "   x8=%016"PRIxREGISTER
-	    ",     x9=%016"PRIxREGISTER
-	    ",    x10=%016"PRIxREGISTER
-	    ",    x11=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[8], tf->tf_reg[9], tf->tf_reg[10], tf->tf_reg[11]);
-	(*pr)( "  x12=%016"PRIxREGISTER
-	    ",    x13=%016"PRIxREGISTER
-	    ",    x14=%016"PRIxREGISTER
-	    ",    x15=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[12], tf->tf_reg[13], tf->tf_reg[14], tf->tf_reg[15]);
-	(*pr)( "  x16=%016"PRIxREGISTER
-	    ",    x17=%016"PRIxREGISTER
-	    ",    x18=%016"PRIxREGISTER
-	    ",    x19=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[16], tf->tf_reg[17], tf->tf_reg[18], tf->tf_reg[19]);
-	(*pr)( "  x20=%016"PRIxREGISTER
-	    ",    x21=%016"PRIxREGISTER
-	    ",    x22=%016"PRIxREGISTER
-	    ",    x23=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[20], tf->tf_reg[21], tf->tf_reg[22], tf->tf_reg[23]);
-	(*pr)( "  x24=%016"PRIxREGISTER
-	    ",    x25=%016"PRIxREGISTER
-	    ",    x26=%016"PRIxREGISTER
-	    ",    x27=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[24], tf->tf_reg[25], tf->tf_reg[26], tf->tf_reg[27]);
-	(*pr)( "  x28=%016"PRIxREGISTER
-	    ", fp=x29=%016"PRIxREGISTER
-	    ", lr=x30=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[28], tf->tf_reg[29], tf->tf_reg[30]);
-}
 
 void
 userret(struct lwp *l)
