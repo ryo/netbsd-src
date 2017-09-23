@@ -339,6 +339,7 @@ ENTRY(cpu_set_onfault)
 	ldr	x2, [x3, #CI_CURLWP]	/* curlwp = curcpu()->ci_curlwp */
 	str	x0, [x2, #L_MD_ONFAULT] /* l_md.md_onfault = fb */
 	mov	x0, #0
+	ret
 END(cpu_set_onfault)
 
 /*
