@@ -150,7 +150,7 @@ EMULNAME(syscall)(struct trapframe *tf)
 				goto bad;
 			for (size_t i = 0; i < diff; i++) {
 				args[nargs + i] = args32[i];
-			} 
+			}
 		}
 		params = args;
 	}

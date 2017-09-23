@@ -38,6 +38,7 @@ __KERNEL_RCSID(0, "$NetBSD: rpi_machdep.c,v 1.80 2017/08/16 20:54:19 jmcneill Ex
 #include "opt_ddb.h"
 #include "opt_evbarm_boardtype.h"
 #include "opt_kgdb.h"
+#include "opt_multiprocessor.h"
 #include "opt_rpi.h"
 #include "opt_vcprop.h"
 
@@ -626,6 +627,7 @@ rpi_bootparams(void)
 static void
 rpi_bootstrap(void)
 {
+#ifdef MULTIPROCESSOR
 #if defined(BCM2836)
 	arm_cpu_max = 4;
 	extern int cortex_mmuinfo;
@@ -638,6 +640,7 @@ rpi_bootstrap(void)
 #ifdef VERBOSE_INIT_ARM
 	printf("%s: cortex_mmuinfo %x\n", __func__, cortex_mmuinfo);
 #endif
+#endif /* MULTIPROCESSOR */
 
 	extern void cortex_mpstart(void);
 

@@ -35,8 +35,6 @@
 
 #include <uvm/uvm_extern.h>
 
-#include <arm/arm32/machdep.h>
-
 #include <arm/broadcom/bcm2835reg.h>
 #include <arm/broadcom/bcm2835var.h>
 #include <arm/broadcom/bcm2835_pmvar.h>
