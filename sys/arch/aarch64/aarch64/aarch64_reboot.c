@@ -136,6 +136,7 @@ __KERNEL_RCSID(0, "$NetBSD: arm32_reboot.c,v 1.10 2015/11/11 14:50:08 jmcneill E
 #include <aarch64/machdep.h>
 #include <aarch64/armreg.h>
 
+void (*cpu_reset_address0)(void);
 void (*cpu_reset_address)(void);
 void (*cpu_powerdown_address)(void);
 
@@ -162,8 +163,10 @@ docpureset(int howto)
 	}
 
 	printf("rebooting...\r\n");
-	if (cpu_reset_address)
+	if (cpu_reset_address != NULL)
 		(*cpu_reset_address)();
+	if (cpu_reset_address0 != NULL)
+		(*cpu_reset_address0)();
 
 	for (;;)
 		asm("wfi");
@@ -218,7 +221,7 @@ cpu_reboot(int howto, char *bootstr)
 	 * that it cannot page part of the binary in as the filesystem has
 	 * been unmounted.
 	 */
-	if (!(howto & RB_NOSYNC))
+	if ((howto & RB_NOSYNC) != 0)
 		bootsync();
 
 	/* Say NO to interrupts for the duration of the dump */
