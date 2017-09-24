@@ -35,15 +35,16 @@
 #ifdef __aarch64__
 
 #if defined(_KERNEL) || defined(_KMEMUSER)
+#include <aarch64/frame.h>
+
 struct clockframe {
-	uintptr_t cf_pc;
-	uint32_t cf_psr;
-	int cf_intr_depth;
+	struct trapframe cf_tf;
 };
 
-#define CLKF_USERMODE(cf)	(((cf)->cf_psr & 0x0f) == 0)
-#define CLKF_PC(cf)		((cf)->cf_pc)
-#define CLKF_INTR(cf)		((cf)->cf_intr_depth > 0)
+/* (spsr & 15) == SPSR_M_EL0T(64bit,0) or USER(32bit,0) */
+#define CLKF_USERMODE(cf)	((((cf)->cf_tf.tf_spsr) & 0x0f) == 0)
+#define CLKF_PC(cf)		((cf)->cf_tf.tf_pc)
+#define CLKF_INTR(cf)		((void)(cf), curcpu()->ci_intr_depth > 1)
 
 #include <sys/cpu_data.h>
 #include <sys/device_if.h>
