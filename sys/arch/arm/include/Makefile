@@ -4,7 +4,7 @@ INCSDIR= /usr/include/arm
 
 INCS=	aeabi.h ansi.h aout_machdep.h apmvar.h armreg.h asm.h atomic.h \
 	bswap.h byte_swap.h \
-	cdefs.h cpu.h cpuconf.h \
+	cdefs.h cpu.h cpuconf.h cputypes.h \
 	disklabel.h \
 	elf_machdep.h endian.h endian_machdep.h \
 	fenv.h float.h frame.h \

@@ -72,6 +72,7 @@
 ./usr/include/arm/cdefs.h			comp-c-include
 ./usr/include/arm/cpu.h				comp-c-include
 ./usr/include/arm/cpuconf.h			comp-c-include
+./usr/include/arm/cputypes.h			comp-c-include
 ./usr/include/arm/disklabel.h			comp-c-include
 ./usr/include/arm/elf_machdep.h			comp-c-include
 ./usr/include/arm/endian.h			comp-c-include

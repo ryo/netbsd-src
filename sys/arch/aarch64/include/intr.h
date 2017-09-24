@@ -44,22 +44,21 @@
 #endif
 
 /* Interrupt priority "levels". */
-#define IPL_NONE	0		/* nothing */
-#define IPL_SOFTCLOCK	1		/* clock */
-#define IPL_SOFTBIO	2		/* block I/O */
-#define IPL_SOFTNET	3		/* software network interrupt */
-#define IPL_SOFTSERIAL	4		/* software serial interrupt */
-#define IPL_VM		5		/* memory allocation */
-#define IPL_SCHED	6		/* clock interrupt */
-#define IPL_HIGH	7		/* everything */
-
-#define NIPL		8
+#define IPL_NONE		0	/* nothing */
+#define IPL_SOFTCLOCK		1	/* clock */
+#define IPL_SOFTBIO		2	/* block I/O */
+#define IPL_SOFTNET		3	/* software network interrupt */
+#define IPL_SOFTSERIAL		4	/* software serial interrupt */
+#define IPL_VM			5	/* memory allocation */
+#define IPL_SCHED		6	/* clock interrupt */
+#define IPL_HIGH		7	/* everything */
+#define NIPL			8
 
 /* Interrupt sharing types. */
-#define IST_NONE	0	/* none */
-#define IST_PULSE	1	/* pulsed */
-#define IST_EDGE	2	/* edge-triggered */
-#define IST_LEVEL	3	/* level-triggered */
+#define IST_NONE		0	/* none */
+#define IST_PULSE		1	/* pulsed */
+#define IST_EDGE		2	/* edge-triggered */
+#define IST_LEVEL		3	/* level-triggered */
 
 #define IST_LEVEL_LOW		IST_LEVEL
 #define IST_LEVEL_HIGH		4
@@ -71,17 +70,24 @@
 #define IST_MPSAFE		0x100	/* interrupt is MPSAFE */
 
 
+#ifndef _LKM
 #ifndef ARM_INTR_IMPL
 #error ARM_INTR_IMPL not defined.
 #endif
-
 #include ARM_INTR_IMPL
+#endif /* _LKM */
 
 #ifdef _LOCORE
 
 #include "assym.h"
 
 #else /* _LOCORE */
+
+#ifdef _LKM
+int _splraise(int);
+int _spllower(int);
+void splx(int);
+#endif /* _LKM */
 
 typedef uint8_t ipl_t;
 typedef struct {
@@ -100,7 +106,7 @@ splraiseipl(ipl_cookie_t icookie)
 	return _splraise(icookie._ipl);
 }
 
-#define spl0()		_spllower(IPL_NONE);
+#define spl0()	_spllower(IPL_NONE);
 
 #include <sys/spl.h>
 

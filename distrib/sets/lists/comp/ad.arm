@@ -133,6 +133,7 @@
 ./usr/include/arm/cdefs.h			comp-c-include
 ./usr/include/arm/cpu.h				comp-c-include
 ./usr/include/arm/cpuconf.h			comp-c-include
+./usr/include/arm/cputypes.h			comp-c-include
 ./usr/include/arm/db_machdep.h			comp-obsolete		obsolete
 ./usr/include/arm/disklabel.h			comp-c-include
 ./usr/include/arm/disklabel_acorn.h		comp-obsolete		obsolete
