@@ -50,6 +50,7 @@ __KERNEL_RCSID(1, "$NetBSD: exec_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp $"
 #include <compat/netbsd32/netbsd32_exec.h>
 #endif
 
+#include <aarch64/armreg.h>
 #include <aarch64/frame.h>
 
 #if EXEC_ELF64
