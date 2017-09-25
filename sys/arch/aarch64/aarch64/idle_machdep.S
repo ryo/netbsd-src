@@ -60,6 +60,8 @@ ENTRY(cpu_idle)
 	/* fill dummy trapframe */
 	mov	x2, #SPSR_M_EL1H		/* what our spsr should be */
 	str	x2, [sp, #TF_SPSR]
+	adr	x0, 1f
+	str	x0, [sp, #TF_PC]		/* CLKF_PC refer to tf_pc */
 
 	mrs	x1, tpidr_el1			/* get curcpu() */
 	ldr	w28, [x1, #CI_INTR_DEPTH]	/* w28 = ci->ci_intr_depth */
@@ -72,7 +74,7 @@ ENTRY(cpu_idle)
 
 	str	w2, [x1, #CI_INTR_DEPTH]	/* ci->ci_intr_depth++ */
 	bl	ARM_IRQ_HANDLER			/* irqhandler(trapframe) */
-
+1:
 	mrs	x1, tpidr_el1			/* get curcpu() */
 	str	w28, [x1, #CI_INTR_DEPTH]	/* ci->ci_intr_depth = old */
 
