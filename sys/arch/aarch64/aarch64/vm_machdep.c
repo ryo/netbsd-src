@@ -103,10 +103,10 @@ cpu_lwp_fork(struct lwp *l1, struct lwp *l2, void *stack, size_t stacksize,
 	vaddr_t uv = uvm_lwp_getuarea(l2);
 
 #ifdef STACKCHECKS
-	/* XXXAARCH64: TODO stack check */
-#else
-	/* clear initial stack */
-	memset(uv + (sizeof(struct pcb)), 0, USPACE - (sizeof(struct pcb)));
+#define PCB_END(l)	((char *)lwp_getpcb((l)) + sizeof(struct pcb))
+#define UAREA_END(l)	((char *)uvm_lwp_getuarea((l)) + USPACE)
+	/* fill 0xdd for STACKCHECKS */
+	memset(PCB_END(l2), 0xdd, UAREA_END(l2) - PCB_END(l2));
 #endif
 
 	struct trapframe * const utf = (struct trapframe *)(uv + USPACE) - 1;
@@ -145,6 +145,18 @@ cpu_lwp_fork(struct lwp *l1, struct lwp *l2, void *stack, size_t stacksize,
 void
 cpu_lwp_free(struct lwp *l, int proc)
 {
+#ifdef STACKCHECKS
+	/* Report how much stack has been used - debugging */
+	u_char *stop, *sbottom, *ptr;
+	u_int cnt;
+
+	stop = PCB_END(l);
+	sbottom = UAREA_END(l);
+	for (cnt = 0, ptr = stop; *ptr == 0xdd && ptr <= sbottom; cnt++, ptr++)
+		;
+	log(LOG_INFO, "lwp: %p: %u/%ld bytes are used for svc stack\n",
+	    l, cnt, sbottom - stop);
+#endif
 }
 
 void
