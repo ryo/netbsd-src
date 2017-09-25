@@ -57,23 +57,24 @@ ENTRY(cpu_idle)
 	add	x29, sp, #TF_X29		/* link frame for backtrace */
 #endif
 
-	mrs	x1, tpidr_el1			/* get curcpu() */
-	ldr	w28, [x1, #CI_INTR_DEPTH]	/* save intr_depth to w28 */
-	add	w2, w28, #1
-	str	w2, [x1, #CI_INTR_DEPTH]
-
 	/* fill dummy trapframe */
 	mov	x2, #SPSR_M_EL1H		/* what our spsr should be */
 	str	x2, [sp, #TF_SPSR]
+
+	mrs	x1, tpidr_el1			/* get curcpu() */
+	ldr	w28, [x1, #CI_INTR_DEPTH]	/* w28 = ci->ci_intr_depth */
+	add	w2, w28, #1			/* w2 = intr_depth + 1 */
+
 	mov	x0, sp				/* get pointer to trapframe */
 
 	DISABLE_INTERRUPT
 	wfi
 
+	str	w2, [x1, #CI_INTR_DEPTH]	/* ci->ci_intr_depth++ */
 	bl	ARM_IRQ_HANDLER			/* irqhandler(trapframe) */
 
 	mrs	x1, tpidr_el1			/* get curcpu() */
-	str	w28, [x1, #CI_INTR_DEPTH]	/* restore intr_depth */
+	str	w28, [x1, #CI_INTR_DEPTH]	/* ci->ci_intr_depth = old */
 
 	ldr	x28, [sp, #TF_X28]		/* restore registers */
 	ldp	x29, x30, [sp, #TF_X29]		/* restore registers */
