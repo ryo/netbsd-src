@@ -34,6 +34,7 @@
 __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 
 #include "opt_arm_intr_impl.h"
+#include "opt_compat_netbsd32.h"
 
 #include <sys/param.h>
 #include <sys/types.h>
@@ -78,7 +79,7 @@ const char * const trap_names[] = {
 	[ESR_EC_WFX]		= "WFI or WFE instruction execution",
 	[ESR_EC_ILL_STATE]	= "Illegal Execution State",
 
-	[ESR_EC_SYS_REG]	= "MSR/MRS/SYS instruction (!EC0/1/7)",
+	[ESR_EC_SYS_REG]	= "MSR/MRS/SYS instruction",
 	[ESR_EC_SVC_A64]	= "SVC Instruction Execution",
 	[ESR_EC_HVC_A64]	= "HVC Instruction Execution",
 	[ESR_EC_SMC_A64]	= "SMC Instruction Execution",
@@ -102,61 +103,29 @@ const char * const trap_names[] = {
 	[ESR_EC_WTCHPNT_EL1]	= "Watchpoint (EL1)",
 	[ESR_EC_BKPT_INSN_A64]	= "BKPT Instruction Execution",
 
-	[ESR_EC_CP15_RT]	= "A32: MCR/MRC access to CP15 !EC=0",
-	[ESR_EC_CP15_RRT]	= "A32: MCRR/MRRC access to CP15 !EC=0",
+	[ESR_EC_CP15_RT]	= "A32: MCR/MRC access to CP15",
+	[ESR_EC_CP15_RRT]	= "A32: MCRR/MRRC access to CP15",
 	[ESR_EC_CP14_RT]	= "A32: MCR/MRC access to CP14",
 	[ESR_EC_CP14_DT]	= "A32: LDC/STC access to CP14",
 	[ESR_EC_CP14_RRT]	= "A32: MRRC access to CP14",
 	[ESR_EC_SVC_A32]	= "A32: SVC Instruction Execution",
 	[ESR_EC_HVC_A32]	= "A32: HVC Instruction Execution",
 	[ESR_EC_SMC_A32]	= "A32: SMC Instruction Execution",
-	[ESR_EC_FPID]		= "A32: MCR/MRC access to CP10 !EC=7",
+	[ESR_EC_FPID]		= "A32: MCR/MRC access to CP10",
 	[ESR_EC_FP_TRAP_A32]	= "A32: FP Exception",
 	[ESR_EC_BKPT_INSN_A32]	= "A32: BKPT Instruction Execution",
 	[ESR_EC_VECTOR_CATCH]	= "A32: Vector Catch Exception"
 };
 
-const char * const fault_status_code[] = {
-	[ESR_ISS_FSC_ADDRESS_SIZE_FAULT_0]          = "Address Size Fault 0",
-	[ESR_ISS_FSC_ADDRESS_SIZE_FAULT_1]          = "Address Size Fault 1",
-	[ESR_ISS_FSC_ADDRESS_SIZE_FAULT_2]          = "Address Size Fault 2",
-	[ESR_ISS_FSC_ADDRESS_SIZE_FAULT_3]          = "Address Size Fault 3",
-	[ESR_ISS_FSC_TRANSLATION_FAULT_0]           = "Translation Fault 0",
-	[ESR_ISS_FSC_TRANSLATION_FAULT_1]           = "Translation Fault 1",
-	[ESR_ISS_FSC_TRANSLATION_FAULT_2]           = "Translation Fault 2",
-	[ESR_ISS_FSC_TRANSLATION_FAULT_3]           = "Translation Fault 3",
-	[ESR_ISS_FSC_ACCESS_FAULT_0]                = "Access Flag Fault 0",
-	[ESR_ISS_FSC_ACCESS_FAULT_1]                = "Access Flag Fault 1",
-	[ESR_ISS_FSC_ACCESS_FAULT_2]                = "Access Flag Fault 2",
-	[ESR_ISS_FSC_ACCESS_FAULT_3]                = "Access Flag Fault 3",
-	[ESR_ISS_FSC_PERM_FAULT_0]                  = "Permission Fault 0",
-	[ESR_ISS_FSC_PERM_FAULT_1]                  = "Permission Fault 1",
-	[ESR_ISS_FSC_PERM_FAULT_2]                  = "Permission Fault 2",
-	[ESR_ISS_FSC_PERM_FAULT_3]                  = "Permission Fault 3",
-	[ESR_ISS_FSC_SYNC_EXTERNAL_ABORT]           = "Synchronous External Abort",
-	[ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_0]  = "Synchronous External Abort on translation table walk 0",
-	[ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_1]  = "Synchronous External Abort on translation table walk 1",
-	[ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_2]  = "Synchronous External Abort on translation table walk 2",
-	[ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_3]  = "Synchronous External Abort on translation table walk 3",
-	[ESR_ISS_FSC_SYNC_PARITY_ERROR]             = "Synchronous Parity error",
-	[ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_0] = "Synchronous Parity error on translation table walk 0",
-	[ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_1] = "Synchronous Parity error on translation table walk 1",
-	[ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_2] = "Synchronous Parity error on translation table walk 2",
-	[ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_3] = "Synchronous Parity error on translation table walk 3",
-	[ESR_ISS_FSC_ALIGNMENT_FAULT]               = "Alignment Fault",
-	[ESR_ISS_FSC_TLB_CONFLICT_FAULT]            = "TLB Conflict Fault",
-	[ESR_ISS_FSC_LOCKDOWN_ABORT]                = "Lockdown Abort",
-	[ESR_ISS_FSC_UNSUPPORTED_EXCLUSIVE]         = "Unsupported exclusive",
-	[ESR_ISS_FSC_FIRST_LEVEL_DOMAIN_FAULT]      = "First Level Domain Fault",
-	[ESR_ISS_FSC_SECOND_LEVEL_DOMAIN_FAULT]     = "Second Level Domain Fault",
-};
-
-const char *const data_abort_fsc_sas[] = {
-	[0] = "Byte",
-	[1] = "Halfword",
-	[2] = "Word",
-	[3] = "Doubleword"
-};
+void
+trap_ksi_init(ksiginfo_t *ksi, int signo, int code, vaddr_t addr, int trap)
+{
+	KSI_INIT_TRAP(ksi);
+	ksi->ksi_signo = signo;
+	ksi->ksi_code = code;
+	ksi->ksi_addr = (void *)addr;
+	ksi->ksi_trap = trap;
+}
 
 void
 userret(struct lwp *l)
@@ -189,92 +158,23 @@ trap_doast(struct trapframe *tf)
 		preempt();
 }
 
-static bool
-is_fatal_abort(uint32_t esr)
-{
-	uint32_t fsc;
-
-	fsc = __SHIFTOUT(esr, ESR_ISS_DATAABORT_DFSC);
-
-	switch (fsc) {
-	case ESR_ISS_FSC_ACCESS_FAULT_0:
-	case ESR_ISS_FSC_ACCESS_FAULT_1:
-	case ESR_ISS_FSC_PERM_FAULT_0:
-	case ESR_ISS_FSC_PERM_FAULT_1:
-		return false;
-	}
-	return true;
-}
-
 void
 trap_el1_sync(struct trapframe *tf)
 {
-	uint32_t esr, esr_ec;
+	const uint32_t esr = tf->tf_esr;
+	const uint32_t eclass = __SHIFTOUT(esr, ESR_EC); /* exception class */
 	const char *trapname;
 
-	esr = tf->tf_esr;
-	esr_ec = __SHIFTOUT(esr, ESR_EC);
-
-	if (esr_ec >= __arraycount(trap_names))
+	if (eclass >= __arraycount(trap_names) || trap_names[eclass] == NULL)
 		trapname = trap_names[0];
 	else
-		trapname = trap_names[esr_ec];
-	if (trapname == NULL)
-		trapname = "Unknown";
+		trapname = trap_names[eclass];
 
-	switch (esr_ec) {
-	case ESR_EC_FP_ACCESS:
-	case ESR_EC_FP_TRAP_A64:
-		// XXXAARCH64: notyet
-		printf("%s\n", trapname);
-		panic("in kernel FP trap");
-		break;
-
+	switch (eclass) {
 	case ESR_EC_INSN_ABT_EL1:
 	case ESR_EC_DATA_ABT_EL1:
-		if (is_fatal_abort(esr)) {
-			uint32_t fsc, rw;
-			const char *faultstr;
-
-			printf("Trap: fatal %s: pc=%016llx sp=%016llx\n", trapname, tf->tf_pc, tf->tf_sp);
-
-			fsc = __SHIFTOUT(esr, ESR_ISS_DATAABORT_DFSC);	/* also IFSC */
-			rw = __SHIFTOUT(esr, ESR_ISS_DATAABORT_WnR);	/* IFSC: always 0 */
-
-			if ((fsc >= __arraycount(fault_status_code)) ||
-			    ((faultstr = fault_status_code[fsc]) == NULL))
-				printf("unknown fault status 0x%x ", fsc);
-			else
-				printf("%s", faultstr);
-
-			printf(" with %s access: ", (rw == 0) ? "read" : "write");
-
-			if (__SHIFTOUT(esr, ESR_ISS_DATAABORT_ISV) != 0) {
-				printf("SAS:%s, ",
-				    data_abort_fsc_sas[__SHIFTOUT(esr, ESR_ISS_DATAABORT_SAS)]);
-				printf("SSE=%llx, ", __SHIFTOUT(esr, ESR_ISS_DATAABORT_SSE));
-				printf("SRT/SF:%s%llu, ",
-				    (__SHIFTOUT(esr, ESR_ISS_DATAABORT_SF) == 0) ? "w" : "x",
-				    __SHIFTOUT(esr, ESR_ISS_DATAABORT_SRT));
-				printf("CM=%llx, ", __SHIFTOUT(esr, ESR_ISS_DATAABORT_CM));
-				printf("WnR=%llx, ", __SHIFTOUT(esr, ESR_ISS_DATAABORT_WnR));
-			}
-			printf("EA=%llx, ", __SHIFTOUT(esr, ESR_ISS_DATAABORT_EA));
-			printf("S1PTW=%llx, ", __SHIFTOUT(esr, ESR_ISS_DATAABORT_S1PTW));
-			printf("DFSC=%llx\n", __SHIFTOUT(esr, ESR_ISS_DATAABORT_DFSC));
-
-			panic("Abort");
-		} else {
-//XXXAARCH64
-//			pagefault(tf);
-			panic("in kernel pagefault");
-		}
-		break;
-
-	case ESR_EC_ILL_STATE:
-	case ESR_EC_PC_ALIGNMENT:
-	case ESR_EC_SP_ALIGNMENT:
-		panic("Trap: fatal %s: pc=%016llx sp=%016llx", trapname, tf->tf_pc, tf->tf_sp);
+		if (!data_abort_handler(tf, NULL, trapname))
+			panic("Fatal abort");
 		break;
 
 	case ESR_EC_BRKPNT_EL1:
@@ -287,8 +187,15 @@ trap_el1_sync(struct trapframe *tf)
 		panic("No debugger in kernel");
 #endif
 		break;
+
+	case ESR_EC_FP_ACCESS:
+	case ESR_EC_FP_TRAP_A64:
+	case ESR_EC_ILL_STATE:
+	case ESR_EC_PC_ALIGNMENT:
+	case ESR_EC_SP_ALIGNMENT:
 	default:
-		panic("%s trap. ESR_EL1=0x%08x\n", trapname, esr);
+		panic("Trap: fatal %s: pc=%016llx sp=%016llx esr=%08x", trapname,
+		    tf->tf_pc, tf->tf_sp, esr);
 		break;
 	}
 }
@@ -298,9 +205,91 @@ trap_el0_sync(struct trapframe *tf)
 {
 	struct lwp * const l = curlwp;
 	ksiginfo_t ksi;
-	bool fixup = false;
+	const uint32_t esr = tf->tf_esr;
+	const uint32_t eclass = __SHIFTOUT(esr, ESR_EC); /* exception class */
+	bool ok = false;
 
-	if (!fixup)
+	/* XXXAARCH64 */
+	const char *trapname;
+	if (eclass >= __arraycount(trap_names) || trap_names[eclass] == NULL)
+		trapname = trap_names[0];
+	else
+		trapname = trap_names[eclass];
+
+
+	switch (eclass) {
+
+#ifdef COMPAT_NETBSD32
+	case ESR_EC_SVC_A32:
+		// XXXAARCH64: notyet
+#if 0
+		ok = svc32_handler(tf);
+#else
+		printf("%s: %s\n", __func__, trapname);
+		trap_ksi_init(&ksi, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
+#endif
+		break;
+	case ESR_EC_CP15_RT:
+	case ESR_EC_CP15_RRT:
+	case ESR_EC_CP14_RT:
+	case ESR_EC_CP14_DT:
+	case ESR_EC_CP14_RRT:
+	case ESR_EC_FP_TRAP_A32:
+	case ESR_EC_BKPT_INSN_A32:
+		// XXXAARCH64: notyet
+		printf("%s: %s\n", __func__, trapname);
+		trap_ksi_init(&ksi, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
+		break;
+#endif /* COMPAT_NETBSD32 */
+
+	case ESR_EC_FP_ACCESS:
+	case ESR_EC_FP_TRAP_A64:
+		// XXXAARCH64: notyet
+#if 0
+		fpu_load(l);
+		ok = true;
+#else
+		printf("%s: %s\n", __func__, trapname);
+		trap_ksi_init(&ksi, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
+#endif
+		break;
+	case ESR_EC_SVC_A64:
+		// XXXAARCH64: notyet
+#if 0
+		ok = svc_handler(tf, &ksi);
+#else
+		printf("%s: %s\n", __func__, trapname);
+		trap_ksi_init(&ksi, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
+#endif
+		break;
+
+	case ESR_EC_INSN_ABT_EL0:
+	case ESR_EC_DATA_ABT_EL0:
+		ok = data_abort_handler(tf, &ksi, NULL);
+		break;
+
+	case ESR_EC_PC_ALIGNMENT:
+	case ESR_EC_SP_ALIGNMENT:
+		trap_ksi_init(&ksi, SIGBUS, BUS_ADRALN, tf->tf_sp, eclass);
+		break;
+
+	case ESR_EC_BKPT_INSN_A64:
+	case ESR_EC_BRKPNT_EL0:
+	case ESR_EC_SW_STEP_EL0:
+	case ESR_EC_WTCHPNT_EL0:
+		// XXXAARCH64: notyet
+		printf("%s: %s\n", __func__, trapname);
+		trap_ksi_init(&ksi, SIGTRAP, TRAP_BRKPT, tf->tf_pc, eclass);
+		break;
+
+	default:
+		// XXXAARCH64: notyet
+		printf("%s: %s\n", __func__, trapname);
+		trap_ksi_init(&ksi, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
+		break;
+	}
+
+	if (!ok)
 		(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
 	userret(l);
 }
@@ -310,7 +299,6 @@ trap_el0_32sync(struct trapframe *tf)
 {
 	panic("%s", __func__);
 }
-
 
 void
 trap_el1_bad(struct trapframe *tf)
@@ -340,7 +328,7 @@ interrupt(struct trapframe *tf)
 {
 	struct cpu_info * const ci = curcpu();
 
-	__asm("clrex; dmb sy");	/* XXXAARCH64: really need dmb ? */
+	__asm __volatile ("clrex; dmb sy");	/* XXXAARCH64: really need dmb ? */
 
 	ci->ci_intr_depth++;
 	ARM_IRQ_HANDLER(tf);
@@ -378,7 +366,6 @@ void cpu_enable_onfault(struct faultbuf *);
 void
 cpu_jump_onfault(struct trapframe *tf, const struct faultbuf *fb)
 {
-
 	tf->tf_reg[19] = fb->fb_reg[FB_X19];
 	tf->tf_reg[20] = fb->fb_reg[FB_X20];
 	tf->tf_reg[21] = fb->fb_reg[FB_X21];

@@ -29,6 +29,11 @@
 #ifndef _AARCH64_MACHDEP_H_
 #define _AARCH64_MACHDEP_H_
 
+#include <sys/siginfo.h>
+
+#define KERN_VTOPHYS(va)	((paddr_t)((vaddr_t)(va) - VM_MIN_KERNEL_ADDRESS))
+#define KERN_PHYSTOV(pa)	((vaddr_t)((paddr_t)(pa) + VM_MIN_KERNEL_ADDRESS))
+
 extern paddr_t physical_start;
 extern paddr_t physical_end;
 
@@ -38,15 +43,18 @@ extern void (*cpu_powerdown_address)(void);
 
 extern char *booted_kernel;
 
+/* aarch64_machdep.c */
 void initarm64(void);
 void aarch64_cpu_configured(void);
 void dumpsys(void);
 
-#define KERN_VTOPHYS(va)	((paddr_t)((vaddr_t)va - VM_MIN_KERNEL_ADDRESS))
-#define KERN_PHYSTOV(pa)	((vaddr_t)((paddr_t)pa + VM_MIN_KERNEL_ADDRESS))
+struct trapframe;
+
+/* fault.c */
+bool data_abort_handler(struct trapframe *, ksiginfo_t *, const char *);
 
 /* trap.c */
-struct trapframe;
+void trap_ksi_init(ksiginfo_t *, int, int, vaddr_t, int);
 void lwp_trampoline(void);
 void cpu_dosoftints(void);
 void cpu_switchto_softint(struct lwp *, int);

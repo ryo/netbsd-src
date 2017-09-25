@@ -98,6 +98,7 @@ file	arch/aarch64/aarch64/sig_machdep.c
 file	arch/aarch64/aarch64/sys_machdep.c
 file	arch/aarch64/aarch64/syscall.c
 file	arch/aarch64/aarch64/trap.c
+file	arch/aarch64/aarch64/fault.c
 file	arch/aarch64/aarch64/vectors.S
 file	arch/aarch64/aarch64/vm_machdep.c
 
