@@ -152,7 +152,7 @@ cpu_lwp_free(struct lwp *l, int proc)
 	sbottom = UAREA_END(l);
 	for (cnt = 0, ptr = stop; *ptr == 0xdd && ptr <= sbottom; cnt++, ptr++)
 		;
-	log(LOG_INFO, "lwp: %p: %u/%ld bytes are used for svc stack\n",
+	log(LOG_INFO, "lwp: %p: %u/%ld bytes are used for EL1 stack\n",
 	    l, cnt, sbottom - stop);
 #endif
 }
