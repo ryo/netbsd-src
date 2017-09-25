@@ -436,7 +436,8 @@ l0_settable:
 	stp	x0, lr, [sp, #-16]!
 
 	and	x2, x2, #~PAGE_MASK
-	orr	x2, x2, #L0_TABLE
+	mov	x8, #L0_TABLE
+	orr	x2, x2, x8
 	and	x1, x1, #L0_ADDR_BITS
 	lsr	x1, x1, #L0_SHIFT
 	str	x2, [x0, x1, lsl #3]	/* l0table[x1] = x2 */
@@ -462,7 +463,8 @@ l1_setblocks:
 	stp	x0, lr, [sp, #-16]!
 
 	and	x2, x2, #L1_ADDR_BITS
-	orr	x2, x2, #L1_BLOCK
+	mov	x8, #L1_BLOCK
+	orr	x2, x2, x8
 	orr	x2, x2, x3
 	orr	x2, x2, #LX_BLKPAG_AF
 #ifdef MULTIPROCESSOR
@@ -496,7 +498,8 @@ l1_settable:
 	stp	x0, lr, [sp, #-16]!
 
 	and	x2, x2, #~PAGE_MASK
-	orr	x2, x2, #L1_TABLE
+	mov	x8, #L1_TABLE
+	orr	x2, x2, x8
 	and	x1, x1, #L1_ADDR_BITS
 	lsr	x1, x1, #L1_SHIFT
 	str	x2, [x0, x1, lsl #3]	/* l1table[x1] = x2 */
@@ -522,7 +525,8 @@ l2_setblocks:
 	stp	x0, lr, [sp, #-16]!
 
 	and	x2, x2, #L2_ADDR_BITS
-	orr	x2, x2, #L2_BLOCK
+	mov	x8, #L2_BLOCK
+	orr	x2, x2, x8
 	orr	x2, x2, x3
 	orr	x2, x2, #LX_BLKPAG_AF
 #ifdef MULTIPROCESSOR

@@ -375,7 +375,7 @@ _pmap_grow_l2(pd_entry_t *l1, vaddr_t va)
 //			DPRINTF("new l2table(PA)=%lx (pageboot_alloc)\n", pa);
 		}
 
-		atomic_swap_64(&l1[l1pde_index(va)], pa | L1_TABLE | LX_VALID);
+		atomic_swap_64(&l1[l1pde_index(va)], pa | L1_TABLE);
 
 //		DPRINTF("add L2 table on L1(%p)[%016llx(idx=%d)] = %016llx\n",
 //		    l1, (va & L1_ADDR_BITS), (int)l1pde_index(va), pde);
@@ -422,7 +422,7 @@ _pmap_grow_l3(pd_entry_t *l2, vaddr_t va)
 //			DPRINTF("new l3table(PA)=%lx (pageboot_alloc)\n", pa);
 		}
 
-		atomic_swap_64(&l2[l2pde_index(va)], pa | L2_TABLE | LX_VALID);
+		atomic_swap_64(&l2[l2pde_index(va)], pa | L2_TABLE);
 
 //		DPRINTF("add L3 table on L2(%p)[%016llx(idx=%d)] = %016llx\n",
 //		    l2, (va & L2_ADDR_BITS), (int)l2pde_index(va), pde);
@@ -666,7 +666,7 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 		panic("%s: cannot lookup L3 PTE: 0x%016lx\n", __func__, va);
 	}
 
-	attr = _pmap_pte_update_prot(LX_VALID | L3_TYPE_PAG, prot);
+	attr = _pmap_pte_update_prot(L3_TABLE, prot);
 	attr = _pmap_pte_update_cacheflags(attr, flags);
 #ifdef MULTIPROCESSOR
 	attr |= LX_BLKPAG_SH_IS;
