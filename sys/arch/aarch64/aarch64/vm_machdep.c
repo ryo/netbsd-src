@@ -121,8 +121,6 @@ cpu_lwp_fork(struct lwp *l1, struct lwp *l2, void *stack, size_t stacksize,
 	if (stack != NULL)
 		utf->tf_sp = ((vaddr_t)(stack) + stacksize) & -16;
 
-	utf->tf_spsr = SPSR_M_EL0T;		/* for returning to userspace */
-
 	/* treat as switchframe */
 	struct trapframe * const ktf = utf - 1;
 	ktf->tf_reg[27] = func;
