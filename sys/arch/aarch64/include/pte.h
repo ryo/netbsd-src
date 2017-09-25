@@ -81,7 +81,7 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define L3_PAG_OA		__BITS(47, 12)	/* 4KB */
 
 
-/* L0 table, 512GB block */
+/* L0 table, 512GB/entry * 512 */
 #define L0_SHIFT		39
 #define L0_ADDR_BITS		__BITS(47,39)
 #define L0_SIZE			(1UL << L0_SHIFT)
@@ -90,7 +90,7 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 /*      L0_BLOCK		Level 0 doesn't support block translation */
 #define L0_TABLE		(LX_VALID | LX_TYPE_TBL)
 
-/* L1 table, 1GB block */
+/* L1 table, 1GB/entry * 512 */
 #define L1_SHIFT		30
 #define L1_ADDR_BITS		__BITS(38,30)
 #define L1_SIZE			(1UL << L1_SHIFT)
@@ -99,7 +99,7 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define L1_BLOCK		(LX_VALID | LX_TYPE_BLK)
 #define L1_TABLE		(LX_VALID | LX_TYPE_TBL)
 
-/* L2 table, 2MB block */
+/* L2 table, 2MB/entry * 512 */
 #define L2_SHIFT		21
 #define L2_ADDR_BITS		__BITS(29,21)
 #define L2_SIZE			(1UL << L2_SHIFT)
@@ -109,7 +109,7 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define L2_TABLE		(LX_VALID | LX_TYPE_TBL)
 #define L2_BLOCK_MASK		0x0000ffffffe00000UL
 
-/* L3 table, 4KB block */
+/* L3 table, 4KB/entry * 512 */
 #define L3_SHIFT		12
 #define L3_ADDR_BITS		__BITS(20,12)
 #define L3_SIZE			(1UL << L3_SHIFT)
