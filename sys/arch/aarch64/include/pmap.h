@@ -103,6 +103,12 @@ struct vm_page_md {
 void pmap_bootstrap(vaddr_t, vaddr_t);
 
 
+/* Hooks for the pool allocator */
+paddr_t vtophys(vaddr_t);
+#define VTOPHYS_FAILED		((paddr_t)-1L)	/* POOL_PADDR_INVALID */
+#define POOL_VTOPHYS(va)	vtophys((vaddr_t) (va))
+
+
 /* devmap */
 struct pmap_devmap {
 	vaddr_t pd_va;		/* virtual address */

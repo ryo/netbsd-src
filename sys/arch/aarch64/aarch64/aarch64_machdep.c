@@ -244,15 +244,3 @@ void
 cpu_dumpconf(void)
 {
 }
-
-paddr_t
-vtophys(vaddr_t va)
-{
-	paddr_t pa;
-
-	if (pmap_extract(pmap_kernel(), va, &pa) == false)
-		return VTOPHYS_FAILED;
-
-	return pa;
-}
-

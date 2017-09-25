@@ -536,6 +536,17 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 	return true;
 }
 
+paddr_t
+vtophys(vaddr_t va)
+{
+	paddr_t pa;
+
+	if (pmap_extract(pmap_kernel(), va, &pa) == false)
+		return VTOPHYS_FAILED;
+
+	return pa;
+}
+
 static pt_entry_t *
 _pmap_pte_lookup(vaddr_t va)
 {

@@ -32,8 +32,11 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <sys/param.h>
 #include <sys/types.h>
 
+#include <uvm/uvm.h>
+
 #include <aarch64/db_machdep.h>
 #include <aarch64/machdep.h>
+#include <aarch64/pmap.h>
 
 #include <ddb/db_access.h>
 #include <ddb/db_command.h>
