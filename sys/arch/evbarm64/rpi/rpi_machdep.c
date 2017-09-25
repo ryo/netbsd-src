@@ -425,7 +425,6 @@ rpi_bootparams(void)
 	const bus_space_handle_t ioh = pmap_devmap_phystov(pa);
 	uint32_t res;
 
-#if 0
 	bcm2835_mbox_write(iot, ioh, BCMMBOX_CHANPM, (
 #if (NSDHC > 0)
 	    (1 << VCPM_POWER_SDCARD) |
@@ -444,7 +443,6 @@ rpi_bootparams(void)
 	    (1 << VCPM_POWER_SPI) |
 #endif
 	    0) << 4);
-#endif
 
 	cpu_dcache_wbinv_range((vaddr_t)&vb, sizeof(vb));
 	bcm2835_mbox_write(iot, ioh, BCMMBOX_CHANARM2VC, KERN_VTOPHYS(&vb));
