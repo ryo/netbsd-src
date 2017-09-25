@@ -69,8 +69,12 @@ makeoptions	COPY_SYMTAB=1
 options 	PLCONSOLE
 #options 	PLCONSOLE,PLCOMCNUNIT=0,PLCONSPEED=115200,PLCONMODE=0xB00
 
-## USB Debugging options
-options USB_DEBUG
+options 	STACKCHECKS
+options 	DEBUG_AUTOCONF
+#options 	DWC2_DEBUG
+
+# USB Debugging options
+#options USB_DEBUG
 #options DWC2_DEBUG
 #options UHUB_DEBUG
 
@@ -86,7 +90,7 @@ options USB_DEBUG
 #options		BOOT_ARGS="\"\""
 
 
-config		netbsd		root on ? type ?
+config		netbsd		root on ld0f type ?
 
 mainbus0 at	root
 cpunode0	at mainbus0
@@ -150,10 +154,10 @@ sdmmc*		at sdhost?
 ld*		at sdmmc?
 
 # On-board USB
-dwctwo* 	at obio?
-usb*		at dwctwo?
+#dwctwo* 	at obio?
+#usb*		at dwctwo?
 
-#	# USB device drivers
+# USB device drivers
 #	include "dev/usb/usbdevices.config"
 #	
 #	midi*		at midibus?
