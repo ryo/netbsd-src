@@ -566,12 +566,19 @@ init_sysregs:
 	ret
 
 ENTRY(clear_ttbr0_l1tables)
+	stp	x29, lr, [sp, #-16]!
+	mov	x29, sp
+
 	/* clear ttbr0_l1table for PA=VA */
 	adr	x0, ttbr0_l1table
 	add	x1, x0, PAGE_SIZE
 1:	stp	xzr, xzr, [x0], #16
 	cmp	x0, x1
 	bcc	1b
+
+	bl	aarch64_tlb_flushID
+
+	ldp	x29, lr, [sp], #16
 	ret
 END(clear_ttbr0_l1tables)
 
