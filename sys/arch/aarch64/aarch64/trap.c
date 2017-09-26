@@ -147,7 +147,7 @@ trap_doast(struct trapframe *tf)
 	 * exception return.
 	 */
 
-	atomic_swap_uint(curcpu()->ci_astpending, 0);
+	atomic_swap_uint(&curcpu()->ci_astpending, 0);
 
 	if (curlwp->l_pflag & LP_OWEUPC) {
 		curlwp->l_pflag &= ~LP_OWEUPC;
