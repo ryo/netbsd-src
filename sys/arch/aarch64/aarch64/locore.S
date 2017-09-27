@@ -304,9 +304,9 @@ _C_LABEL(print_x0):
 	ret
 END(_C_LABEL(print_x0))
 
-printn_x1:
+printn_x8:
 	stp	x0, lr, [sp, #-16]!
-	mov	x0, x1
+	mov	x0, x8
 	bl	_print_x0
 	ldp	x0, lr, [sp], #16
 	ret
@@ -354,7 +354,7 @@ arm_boot_l0pt_init:
 	/* VA=PA table for L0 */
 	adr	x0, ttbr0_l0table
 	mov	x1, #0
-	adr	x2, ttbr0_l1table
+	adr	x2, ttbr0_l1table	/* PA */
 	bl	l0_settable
 
 	/* VA=PA blocks */
@@ -369,7 +369,7 @@ arm_boot_l0pt_init:
 	/* KSEG table for L0 */
 	adr	x0, ttbr1_l0table
 	mov	x1, #AARCH64_KSEG_START
-	adr	x2, ttbr1_l1table_kseg
+	adr	x2, ttbr1_l1table_kseg	/* PA */
 	bl	l0_settable
 
 	/* KSEG blocks */
@@ -385,13 +385,13 @@ arm_boot_l0pt_init:
 	/* KVA=PA table for L0 */
 	adr	x0, ttbr1_l0table
 	mov	x1, #VM_MIN_KERNEL_ADDRESS
-	adr	x2, ttbr1_l1table_kva
+	adr	x2, ttbr1_l1table_kva	/* PA */
 	bl	l0_settable
 
 	/* KVA=PA table for L1 */
 	adr	x0, ttbr1_l1table_kva
 	mov	x1, #VM_MIN_KERNEL_ADDRESS
-	adr	x2, ttbr1_l2table_kva
+	adr	x2, ttbr1_l2table_kva	/* PA */
 	bl	l1_settable
 
 	/* KVA=PA blocks */
@@ -417,7 +417,7 @@ arm_boot_l0pt_init:
 	/* devmap=PA table for L1 */
 	adr	x0, ttbr1_l1table_kva
 	ldr	x1, .L_devmap_addr
-	adr	x2, ttbr1_l2table_devmap
+	adr	x2, ttbr1_l2table_devmap	/* PA */
 	bl	l1_settable
 
 	ldp	x0, lr, [sp], #16
@@ -430,7 +430,7 @@ arm_boot_l0pt_init:
 /*
  *	x0 = l0table
  *	x1 = vaddr
- *	x2 = l1table
+ *	x2 = l1table (PA)
  */
 l0_settable:
 	stp	x0, lr, [sp, #-16]!
@@ -438,13 +438,19 @@ l0_settable:
 	and	x2, x2, #~PAGE_MASK
 	mov	x8, #L0_TABLE
 	orr	x2, x2, x8
-	and	x1, x1, #L0_ADDR_BITS
-	lsr	x1, x1, #L0_SHIFT
-	str	x2, [x0, x1, lsl #3]	/* l0table[x1] = x2 */
+	and	x8, x1, #L0_ADDR_BITS
+	lsr	x8, x8, #L0_SHIFT	/* x8 is idx */
+	str	x2, [x0, x8, lsl #3]	/* l0table[x8] = x2 */
+
+	add	x0, x0, #PAGE_SIZE	/*offsetof(struct _pde_table,va_flags)*/
+	mov	x9, #VM_MIN_KERNEL_ADDRESS
+	add	x2, x2, x9		/* KERN_PHYSTOV(x2) */
+	str	x2, [x0, x8, lsl #3]	/* va_flags[idx] = va */
+	sub	x2, x2, x9		/* KERN_VTOPHYS(x2) */
 
 #ifdef DEBUG_MMU
 	PRINT("L0 entry[")
-	bl printn_x1
+	bl printn_x8
 	PRINT("]=")
 	bl print_x2
 #endif
@@ -470,19 +476,24 @@ l1_setblocks:
 #ifdef MULTIPROCESSOR
 	orr	x2, x2, #LX_BLKPAG_SH_IS
 #endif
-	and	x1, x1, #L1_ADDR_BITS
-	lsr	x1, x1, #L1_SHIFT
+	and	x8, x1, #L1_ADDR_BITS
+	lsr	x8, x8, #L1_SHIFT
 1:
-	str	x2, [x0, x1, lsl #3]	/* l1table[x1] = x2 */
+	str	x2, [x0, x8, lsl #3]	/* l1table[x8] = x2 */
+	add	x0, x0, #PAGE_SIZE
+	str	x1, [x0, x8, lsl #3]	/* va_flags[idx] = va */
+	sub	x0, x0, #PAGE_SIZE
+
 #ifdef DEBUG_MMU
 	PRINT("L1 entry[")
-	bl printn_x1
+	bl printn_x8
 	PRINT("]=")
 	bl print_x2
 #endif
 	mov	x3, #L1_SIZE
 	add	x2, x2, x3
-	add	x1, x1, #1
+	add	x1, x1, x3
+	add	x8, x8, #1
 	subs	x4, x4, #1
 	bne	1b
 
@@ -492,7 +503,7 @@ l1_setblocks:
 /*
  *	x0 = l1table
  *	x1 = vaddr
- *	x2 = l2table
+ *	x2 = l2table (PA)
  */
 l1_settable:
 	stp	x0, lr, [sp, #-16]!
@@ -500,13 +511,19 @@ l1_settable:
 	and	x2, x2, #~PAGE_MASK
 	mov	x8, #L1_TABLE
 	orr	x2, x2, x8
-	and	x1, x1, #L1_ADDR_BITS
-	lsr	x1, x1, #L1_SHIFT
-	str	x2, [x0, x1, lsl #3]	/* l1table[x1] = x2 */
+	and	x8, x1, #L1_ADDR_BITS
+	lsr	x8, x8, #L1_SHIFT
+	str	x2, [x0, x8, lsl #3]	/* l1table[x8] = x2 */
+
+	add	x0, x0, #PAGE_SIZE	/*offsetof(struct _pde_table,va_flags)*/
+	mov	x9, #VM_MIN_KERNEL_ADDRESS
+	add	x2, x2, x9		/* KERN_PHYSTOV(x2) */
+	str	x2, [x0, x8, lsl #3]	/* va_flags[idx] = va */
+	sub	x2, x2, x9		/* KERN_VTOPHYS(x2) */
 
 #ifdef DEBUG_MMU
 	PRINT("L1 entry[")
-	bl printn_x1
+	bl printn_x8
 	PRINT("]=")
 	bl print_x2
 #endif
@@ -532,19 +549,24 @@ l2_setblocks:
 #ifdef MULTIPROCESSOR
 	orr	x2, x2, #LX_BLKPAG_SH_IS
 #endif
-	and	x1, x1, #L2_ADDR_BITS
-	lsr	x1, x1, #L2_SHIFT
+	and	x8, x1, #L2_ADDR_BITS
+	lsr	x8, x8, #L2_SHIFT
 1:
-	str	x2, [x0, x1, lsl #3]	/* l2table[x1] = x2 */
+	str	x2, [x0, x8, lsl #3]	/* l2table[x8] = x2 */
+	add	x0, x0, #PAGE_SIZE
+	str	x1, [x0, x8, lsl #3]	/* va_flags[idx] = va */
+	sub	x0, x0, #PAGE_SIZE
+
 #ifdef DEBUG_MMU
 	PRINT("L2 entry[")
-	bl printn_x1
+	bl printn_x8
 	PRINT("]=")
 	bl print_x2
 #endif
 	mov	x3, #L2_SIZE
 	add	x2, x2, x3
-	add	x1, x1, #1
+	add	x1, x1, x3
+	add	x8, x8, #1
 	subs	x4, x4, #1
 	bne	1b
 
@@ -739,9 +761,9 @@ _C_LABEL(lwp0uspace):
  * PA == VA mapping using L1 1G block (whole 32bit)
  */
 ttbr0_l0table:
-	.space	PAGE_SIZE
+	.space	PAGE_SIZE * 2	/* sizeof(struct _pde_table) */
 ttbr0_l1table:
-	.space	PAGE_SIZE
+	.space	PAGE_SIZE * 2	/* sizeof(struct _pde_table) */
 
 /*
  * KVA    => PA mapping using L2 2MB block (kernelsize, max 2MB*512=2Gbyte)
@@ -749,12 +771,12 @@ ttbr0_l1table:
  * KSEG   => PA mapping using L1 1GB block * 512
  */
 ttbr1_l0table:
-	.space	PAGE_SIZE
+	.space	PAGE_SIZE * 2	/* sizeof(struct _pde_table) */
 ttbr1_l1table_kseg:
-	.space	PAGE_SIZE
+	.space	PAGE_SIZE * 2	/* sizeof(struct _pde_table) */
 ttbr1_l1table_kva:
-	.space	PAGE_SIZE
+	.space	PAGE_SIZE * 2	/* sizeof(struct _pde_table) */
 ttbr1_l2table_kva:
-	.space	PAGE_SIZE
+	.space	PAGE_SIZE * 2	/* sizeof(struct _pde_table) */
 ttbr1_l2table_devmap:
-	.space	PAGE_SIZE
+	.space	PAGE_SIZE * 2	/* sizeof(struct _pde_table) */
