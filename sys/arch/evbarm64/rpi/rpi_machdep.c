@@ -109,6 +109,8 @@ static void rpi_uartinit(void);
 static void rpi_bootparams(void);
 static void rpi_device_register(device_t, void *);
 
+#define EARLY_CONSOLE
+
 #ifdef EARLY_CONSOLE
 static void konsinit(void);
 #endif
@@ -355,6 +357,9 @@ initarm(void)
 	/* map some peripheral registers */
 	pmap_devmap_bootstrap(rpi_devmap);
 
+#if defined(EARLY_CONSOLE) && defined(VERBOSE_INIT_ARM)
+	delay(10000);	/* waiting for uart TX fifo empty before uartinit */
+#endif
 	rpi_uartinit();
 
 	consinit();
