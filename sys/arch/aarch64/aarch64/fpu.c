@@ -37,7 +37,10 @@ __KERNEL_RCSID(1, "$NetBSD: fpu.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 #include <sys/types.h>
 #include <sys/lwp.h>
 
+#include <aarch64/reg.h>
+#include <aarch64/pcb.h>
 #include <aarch64/armreg.h>
+#include <aarch64/machdep.h>
 
 static void fpu_state_load(lwp_t *, unsigned int);
 static void fpu_state_save(lwp_t *);
@@ -53,17 +56,31 @@ const pcu_ops_t pcu_fpu_ops = {
 static void
 fpu_state_load(lwp_t *l, unsigned int flags)
 {
+	struct pcb * const pcb = lwp_getpcb(l);
 
+	KASSERT(l == curlwp);
+
+	reg_cpacr_el1_write(CPACR_FPEN_EL1);	/* fpreg access enable */
+	load_fpregs(&pcb->pcb_fpregs);
+	reg_cpacr_el1_write(CPACR_FPEN_NONE);	/* fpreg access disable */
+
+	/* allow user process to use FP */
+	l->l_md.md_cpacr = CPACR_FPEN_ALL;
 }
+
 static void
 fpu_state_save(lwp_t *l)
 {
+	struct pcb * const pcb = lwp_getpcb(l);
 
+	reg_cpacr_el1_write(CPACR_FPEN_EL1);	/* fpreg access enable */
+	save_fpregs(&pcb->pcb_fpregs);
+	reg_cpacr_el1_write(CPACR_FPEN_NONE);	/* fpreg access disable */
 }
+
 static void
 fpu_state_release(lwp_t *l)
 {
+	/* disallow user process to use FP */
 	l->l_md.md_cpacr = CPACR_FPEN_NONE;
-	if (l == curlwp)
-		reg_cpacr_el1_write(l->l_md.md_cpacr);
 }

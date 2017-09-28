@@ -69,6 +69,10 @@ void trap_el0_32error(struct trapframe *);
 void interrupt(struct trapframe *);
 void dosoftints(void);
 
+struct fpreg;
+void load_fpregs(struct fpreg *);
+void save_fpregs(struct fpreg *);
+
 #include <sys/pcu.h>
 
 extern const pcu_ops_t pcu_fpu_ops;
@@ -80,15 +84,21 @@ fpu_used_p(lwp_t *l)
 }
 
 static inline void
-fpu_discard(lwp_t *l, bool usesw)
-{
-	pcu_discard(&pcu_fpu_ops, l, usesw);
-}
-
-static inline void
 fpu_save(lwp_t *l)
 {
 	pcu_save(&pcu_fpu_ops, l);
+}
+
+static inline void
+fpu_load(lwp_t *l)
+{
+	pcu_load(&pcu_fpu_ops);
+}
+
+static inline void
+fpu_discard(lwp_t *l, bool usesw)
+{
+	pcu_discard(&pcu_fpu_ops, l, usesw);
 }
 
 #endif /* _AARCH64_MACHDEP_H_ */

@@ -370,3 +370,51 @@ ENTRY(longjmp)
 	mov	x0, #1
 	ret
 END(longjmp)
+
+ENTRY_NP(load_fpregs)
+	ldp	q0, q1, [x0, #FPREG_Q0]
+	ldp	q2, q3, [x0, #FPREG_Q2]
+	ldp	q4, q5, [x0, #FPREG_Q4]
+	ldp	q6, q7, [x0, #FPREG_Q6]
+	ldp	q8, q9, [x0, #FPREG_Q8]
+	ldp	q10, q11, [x0, #FPREG_Q10]
+	ldp	q12, q13, [x0, #FPREG_Q12]
+	ldp	q14, q15, [x0, #FPREG_Q14]
+	ldp	q16, q17, [x0, #FPREG_Q16]
+	ldp	q18, q19, [x0, #FPREG_Q18]
+	ldp	q20, q21, [x0, #FPREG_Q20]
+	ldp	q22, q23, [x0, #FPREG_Q22]
+	ldp	q24, q25, [x0, #FPREG_Q24]
+	ldp	q26, q27, [x0, #FPREG_Q26]
+	ldp	q28, q29, [x0, #FPREG_Q28]
+	ldp	q30, q31, [x0, #FPREG_Q30]
+	ldr	w8, [x0, #FPREG_FPCR]
+	ldr	w9, [x0, #FPREG_FPSR]
+	msr	fpcr, x8
+	msr	fpsr, x9
+	ret
+END(load_fpregs)
+
+ENTRY_NP(save_fpregs)
+	stp	q0, q1, [x0, #FPREG_Q0]
+	stp	q2, q3, [x0, #FPREG_Q2]
+	stp	q4, q5, [x0, #FPREG_Q4]
+	stp	q6, q7, [x0, #FPREG_Q6]
+	stp	q8, q9, [x0, #FPREG_Q8]
+	stp	q10, q11, [x0, #FPREG_Q10]
+	stp	q12, q13, [x0, #FPREG_Q12]
+	stp	q14, q15, [x0, #FPREG_Q14]
+	stp	q16, q17, [x0, #FPREG_Q16]
+	stp	q18, q19, [x0, #FPREG_Q18]
+	stp	q20, q21, [x0, #FPREG_Q20]
+	stp	q22, q23, [x0, #FPREG_Q22]
+	stp	q24, q25, [x0, #FPREG_Q24]
+	stp	q26, q27, [x0, #FPREG_Q26]
+	stp	q28, q29, [x0, #FPREG_Q28]
+	stp	q30, q31, [x0, #FPREG_Q30]
+	mrs	x8, fpcr
+	mrs	x9, fpsr
+	str	w8, [x0, #FPREG_FPCR]
+	str	w9, [x0, #FPREG_FPSR]
+	ret
+END(save_fpregs)
