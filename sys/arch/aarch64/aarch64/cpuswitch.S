@@ -272,13 +272,13 @@ ENTRY_NP(el0_trap_exit)
 .Lfullexit:
 	DISABLE_INTERRUPT		/* make sure I|F marked */
 
-	unwind_x0_x18
-
 	mrs	x8, tpidr_el1
 	ldr	x9, [x8, #CI_CURLWP]
 	ldr	x23, [x9, #L_MD_CPACR]
 	msr	cpacr_el1, x23		/* FP unit EL0 handover */
 	isb				/* necessary? */
+
+	unwind_x0_x18
 
 	ldr	x20, [sp, #TF_PC]
 	ldr	x21, [sp, #TF_SPSR]

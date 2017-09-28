@@ -182,7 +182,7 @@ ASENTRY_NP(el0_sync)
 	exception_entry 0
 	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
 	ENABLE_INTERRUPT
-1:	adr	lr, el1_trap_exit
+1:	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	trap_el0_sync
 ASEND(el0_sync)
