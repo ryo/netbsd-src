@@ -141,9 +141,7 @@ ASENTRY_NP(el0_bad_entry)
 	mrs	x24, far_el1
 	str	x23, [sp, #TF_ESR]
 	str	x24, [sp, #TF_FAR]
-	tbnz	x22, #7, 1f			/* if SPSR.I is enabled */
-	ENABLE_INTERRUPT
-1:	ldr	lr, =panic
+	ldr	lr, =panic
 	b	trap_el0_bad			/* call with x0/x1 */
 ASEND(bad_entry)
 
@@ -155,24 +153,19 @@ ASENTRY_NP(el1_bad_entry)
 	mrs	x24, far_el1
 	str	x23, [sp, #TF_ESR]
 	str	x24, [sp, #TF_FAR]
-	tbnz	x22, #7, 1f			/* if SPSR.I is enabled */
-	ENABLE_INTERRUPT
-1:	ldr	lr, =panic
+	ldr	lr, =panic
 	b	trap_el1_bad			/* call with x0/x1 */
 ASEND(bad_entry)
 
 ASENTRY_NP(el1_sync)
 	exception_entry 1
-	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
-	ENABLE_INTERRUPT
-1:	adr	lr, el1_trap_exit
+	adr	lr, el1_trap_exit
 	mov	x0, sp
 	b	trap_el1_sync
 ASEND(el1_sync)
 
 ASENTRY_NP(el1_irq)
 	exception_entry 1
-	/* leave DAIF_I marked */
 	adr	lr, el1_trap_exit
 	mov	x0, sp
 	b	interrupt
@@ -180,16 +173,13 @@ ASEND(el1_irq)
 
 ASENTRY_NP(el0_sync)
 	exception_entry 0
-	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
-	ENABLE_INTERRUPT
-1:	adr	lr, el0_trap_exit
+	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	trap_el0_sync
 ASEND(el0_sync)
 
 ASENTRY_NP(el0_irq)
 	exception_entry 0
-	/* leave DAIF_I marked */
 	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	interrupt
@@ -204,9 +194,7 @@ ASEND(el0_sync)
 
 ASENTRY_NP(el0_32sync)
 	exception_entry 0, 32
-	tbnz	x22, #7, 1f			/* if SPSR.I is unmarked */
-	ENABLE_INTERRUPT
-1:	adr	lr, el0_trap_exit
+	adr	lr, el0_trap_exit
 	mov	x0, sp
 	b	trap_el0_32sync
 ASEND(el0_32sync)
