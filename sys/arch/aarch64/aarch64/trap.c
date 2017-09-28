@@ -403,7 +403,7 @@ pmap_pte_lookup(struct pmap *pmap, vaddr_t addr)
 	}
 /*
  * XXX Or, we might be able to manage PTE lookup in RB tree aiming
- * XXX to balance implementation cost in size and runtime grain.
+ * XXX to balance implementation cost in size and runtime gain.
  */
 	return ptep;
 }
