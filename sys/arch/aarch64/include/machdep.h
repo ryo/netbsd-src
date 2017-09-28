@@ -51,10 +51,16 @@ void dumpsys(void);
 struct trapframe;
 
 /* fault.c */
-bool data_abort_handler(struct trapframe *, ksiginfo_t *, const char *);
+bool data_abort_handler(struct trapframe *, ksiginfo_t *, uint32_t, const char *);
 
 /* trap.c */
+struct faultbuf;
 void trap_ksi_init(ksiginfo_t *, int, int, vaddr_t, int);
+int cpu_set_onfault(struct faultbuf *, register_t) __returns_twice;
+void cpu_jump_onfault(struct trapframe *, const struct faultbuf *);
+void cpu_unset_onfault(void);
+struct faultbuf *cpu_disable_onfault(void);
+void cpu_enable_onfault(struct faultbuf *);
 void lwp_trampoline(void);
 void cpu_dosoftints(void);
 void cpu_switchto_softint(struct lwp *, int);
