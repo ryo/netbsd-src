@@ -43,26 +43,26 @@ ENTRY(cpu_idle)
 	add	x29, sp, #TF_X29		/* link frame for backtrace */
 #endif
 
-	mrs	x1, tpidr_el1			/* get curcpu() */
-	ldr	w28, [x1, #CI_INTR_DEPTH]	/* save intr_depth to w28 */
-	add	w2, w28, #1
-	str	w2, [x1, #CI_INTR_DEPTH]
-	ldr	x3, [x1, #CI_CC_NINTR]
-	add	x3, x3, #1
-	str	x3, [x1, #CI_CC_NINTR]
-
 	/* fill dummy trapframe */
 	mov	x2, #SPSR_M_EL1H		/* what our spsr should be */
 	str	x2, [sp, #TF_SPSR]
+	adr	x0, 1f
+	str	x0, [sp, #TF_PC]		/* CLKF_PC refer to tf_pc */
+
+	mrs	x1, tpidr_el1			/* get curcpu() */
+	ldr	w28, [x1, #CI_INTR_DEPTH]	/* w28 = ci->ci_intr_depth */
+	add	w2, w28, #1			/* w2 = intr_depth + 1 */
+
 	mov	x0, sp				/* get pointer to trapframe */
 
 	msr	daifset, #DAIF_I|DAIF_F		/* disable interrupts */
 	wfi
 
+	str	w2, [x1, #CI_INTR_DEPTH]	/* ci->ci_intr_depth++ */
 	bl	bcm2835_irq_handler		//XXXAARCH64 process irq
-
+1:
 	mrs	x1, tpidr_el1			/* get curcpu() */
-	str	w28, [x1, #CI_INTR_DEPTH]	/* restore intr_depth */
+	str	w28, [x1, #CI_INTR_DEPTH]	/* ci->ci_intr_depth = old */
 
 	ldr	x28, [sp, #TF_X28]		/* restore registers */
 	ldp	x29, x30, [sp, #TF_X29]		/* restore registers */
