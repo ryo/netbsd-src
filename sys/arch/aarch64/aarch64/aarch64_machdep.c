@@ -164,10 +164,13 @@ initarm64(void)
 	    atop(kernend_phys), atop(physical_end),
 	    atop(kernend_phys), atop(physical_end),
 	    VM_FREELIST_DEFAULT);
+#if 0
+	//XXXAARCH64: temporary comment out
 	uvm_page_physload(
 	    atop(physical_start), atop(kernend_phys),
 	    atop(physical_start), atop(kernend_phys),
 	    VM_FREELIST_DEFAULT);
+#endif
 
 	/*
 	 * kernel image is mapped L2 table (2M*n) by locore.S
