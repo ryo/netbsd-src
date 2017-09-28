@@ -173,7 +173,7 @@ trap_el1_sync(struct trapframe *tf)
 	switch (eclass) {
 	case ESR_EC_INSN_ABT_EL1:
 	case ESR_EC_DATA_ABT_EL1:
-		if (!data_abort_handler(tf, NULL, trapname))
+		if (!data_abort_handler(tf, NULL, eclass, trapname))
 			panic("Fatal abort");
 		break;
 
@@ -207,7 +207,6 @@ trap_el0_sync(struct trapframe *tf)
 	ksiginfo_t ksi;
 	const uint32_t esr = tf->tf_esr;
 	const uint32_t eclass = __SHIFTOUT(esr, ESR_EC); /* exception class */
-	bool ok = false;
 
 	/* XXXAARCH64 */
 	const char *trapname;
@@ -218,15 +217,12 @@ trap_el0_sync(struct trapframe *tf)
 
 
 	switch (eclass) {
-
 #ifdef COMPAT_NETBSD32
 	case ESR_EC_SVC_A32:
 		// XXXAARCH64: notyet
+		panic("%s:%d: %s on EL0", __func__, __LINE__, trapname);
 #if 0
-		ok = svc32_handler(tf);
-#else
-		printf("%s: %s\n", __func__, trapname);
-		trap_ksi_init(&ksi, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
+		(*l->l_proc->p_md.md_syscall)(tf);
 #endif
 		break;
 	case ESR_EC_CP15_RT:
@@ -237,40 +233,34 @@ trap_el0_sync(struct trapframe *tf)
 	case ESR_EC_FP_TRAP_A32:
 	case ESR_EC_BKPT_INSN_A32:
 		// XXXAARCH64: notyet
-		printf("%s: %s\n", __func__, trapname);
+		panic("%s:%d: %s on EL0", __func__, __LINE__, trapname);
 		trap_ksi_init(&ksi, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
+		(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
+		userret(l);
 		break;
 #endif /* COMPAT_NETBSD32 */
 
 	case ESR_EC_FP_ACCESS:
 	case ESR_EC_FP_TRAP_A64:
-		// XXXAARCH64: notyet
-#if 0
 		fpu_load(l);
-		ok = true;
-#else
-		printf("%s: %s\n", __func__, trapname);
-		trap_ksi_init(&ksi, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
-#endif
+		userret(l);
 		break;
 	case ESR_EC_SVC_A64:
-		// XXXAARCH64: notyet
-#if 0
-		ok = svc_handler(tf, &ksi);
-#else
-		printf("%s: %s\n", __func__, trapname);
-		trap_ksi_init(&ksi, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
-#endif
+		(*l->l_proc->p_md.md_syscall)(tf);
 		break;
 
 	case ESR_EC_INSN_ABT_EL0:
 	case ESR_EC_DATA_ABT_EL0:
-		ok = data_abort_handler(tf, &ksi, NULL);
+		if (!data_abort_handler(tf, &ksi, eclass, NULL))
+			(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
+		userret(l);
 		break;
 
 	case ESR_EC_PC_ALIGNMENT:
 	case ESR_EC_SP_ALIGNMENT:
 		trap_ksi_init(&ksi, SIGBUS, BUS_ADRALN, tf->tf_sp, eclass);
+		(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
+		userret(l);
 		break;
 
 	case ESR_EC_BKPT_INSN_A64:
@@ -278,20 +268,23 @@ trap_el0_sync(struct trapframe *tf)
 	case ESR_EC_SW_STEP_EL0:
 	case ESR_EC_WTCHPNT_EL0:
 		// XXXAARCH64: notyet
-		printf("%s: %s\n", __func__, trapname);
+		panic("%s:%d: %s on EL0", __func__, __LINE__, trapname);
+#if 0
 		trap_ksi_init(&ksi, SIGTRAP, TRAP_BRKPT, tf->tf_pc, eclass);
+		(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
+		userret(l);
+#endif
 		break;
 
 	default:
 		// XXXAARCH64: notyet
 		printf("%s: %s\n", __func__, trapname);
 		trap_ksi_init(&ksi, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
+		(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
+		userret(l);
 		break;
 	}
 
-	if (!ok)
-		(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
-	userret(l);
 }
 
 void
@@ -356,12 +349,6 @@ interrupt(struct trapframe *tf)
 struct faultbuf {
 	register_t fb_reg[FB_MAX];
 };
-
-int cpu_set_onfault(struct faultbuf *, register_t) __returns_twice;
-void cpu_jump_onfault(struct trapframe *, const struct faultbuf *);
-void cpu_unset_onfault(void);
-struct faultbuf *cpu_disable_onfault(void);
-void cpu_enable_onfault(struct faultbuf *);
 
 void
 cpu_jump_onfault(struct trapframe *tf, const struct faultbuf *fb)

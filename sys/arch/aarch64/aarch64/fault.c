@@ -34,9 +34,12 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <sys/proc.h>
 #include <sys/siginfo.h>
 
+#include <uvm/uvm.h>
+
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
 #include <aarch64/armreg.h>
+#include <aarch64/db_machdep.h>
 
 const char * const fault_status_code[] = {
 	[ESR_ISS_FSC_ADDRESS_SIZE_FAULT_0] = "Address Size Fault L0",
@@ -111,16 +114,27 @@ is_fatal_abort(uint32_t esr)
 }
 
 bool
-data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, const char *trapname)
+data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
+    const char *trapname)
 {
+	struct proc *p;
+	struct vm_map *map;
+	struct faultbuf *fb;
+	vaddr_t va;
+	vm_prot_t ftype;
 	const uint32_t esr = tf->tf_esr;
+	const bool user = (ksi == NULL) ? false : true;
+	uint32_t rw;
+	int error;
+
+	rw = __SHIFTOUT(esr, ESR_ISS_DATAABORT_WnR); /* 0 if IFSC */
 
 	if (is_fatal_abort(esr)) {
-		uint32_t fsc, rw;
+		uint32_t fsc;
 		const char *faultstr;
 
 		fsc = __SHIFTOUT(esr, ESR_ISS_DATAABORT_DFSC); /* also IFSC */
-		if (ksi != NULL) {
+		if (user) {
 			/*
 			 * fatal abort in usermode
 			 */
@@ -139,7 +153,6 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, const char *trapname)
 		else
 			printf(" %s", faultstr);
 
-		rw = __SHIFTOUT(esr, ESR_ISS_DATAABORT_WnR); /* 0 if IFSC */
 		if (__SHIFTOUT(esr, ESR_EC) == ESR_EC_DATA_ABT_EL1)
 			printf(" with %s access", (rw == 0) ? "read" : "write");
 
@@ -155,15 +168,56 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, const char *trapname)
 		return false;
 	}
 
-//XXXAARCH64
-#if 0
-	return pagefault(tf, ksi);
-#else
-	if (ksi == NULL)
-		panic("pagefault in kernel");
+	p = curlwp->l_proc;
+	va = trunc_page((vaddr_t)tf->tf_far);
+	if ((VM_MIN_KERNEL_ADDRESS <= va) && (va < VM_MAX_KERNEL_ADDRESS))
+		map = kernel_map;
 	else
-		panic("pagefault in usermode");
+		map = &p->p_vmspace->vm_map;
+
+
+	if ((eclass == ESR_EC_INSN_ABT_EL0) || (eclass == ESR_EC_INSN_ABT_EL1))
+		ftype = VM_PROT_READ | VM_PROT_EXECUTE;
+	else
+		ftype = (rw == 0) ? VM_PROT_READ : VM_PROT_WRITE;
+
+#if 0
+	//XXXAARCH64: DEBUG
+	if (ftype & VM_PROT_EXECUTE)
+		printf("pagefault %016lx in %s EXEC\n", va, user ? "user" : "kernel");
+	else
+		printf("pagefault %016lx in %s %s\n", va, user ? "user" : "kernel", (rw == 0) ? "read" : "write");
 #endif
 
-	return false;
+	/* reference/modified emulation */
+	if (pmap_fault_refmod(map->pmap, va, ftype))
+		return true;
+
+
+	/* page fault plus faultbail path */
+	fb = cpu_disable_onfault();
+	//printf("%s:%d: uvm_fault(map=%p, va=%016lx, ftype=%08x)\n", __func__, __LINE__, map, va, ftype);
+	error = uvm_fault(map, va, ftype);
+	//printf("%s:%d: uvm_fault done\n", __func__, __LINE__);
+	cpu_enable_onfault(fb);
+
+	if (__predict_true(error == 0)) {
+		if (user)
+			uvm_grow(p, va);
+		return true;
+	}
+
+	if (fb == NULL) {
+		if (user) {
+			trap_ksi_init(ksi, SIGSEGV, SEGV_ACCERR, va, tf->tf_pc);
+		}
+
+		//XXXAARCH64
+		printf("%s:%d fault in %s: error=%d, va=%016lx\n", __func__, __LINE__, user ? "user" : "kernel", error, va);
+		dump_trapframe(tf, printf);
+
+		return false;
+	}
+	cpu_jump_onfault(tf, fb);
+	return true;
 }
