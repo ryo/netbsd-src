@@ -201,7 +201,7 @@ bootsync(void)
 		 * did not come from a user process e.g. shutdown, but must
 		 * have come from somewhere in the kernel.
 		 */
-		IRQenable;
+		ENABLE_INTERRUPT();
 		printf("Warning IRQ's disabled during boot()\n");
 	}
 
@@ -253,7 +253,7 @@ cpu_reboot(int howto, char *bootstr)
 	doshutdownhooks();
 
 	/* Make sure IRQ's are disabled */
-	IRQdisable;
+	DISABLE_INTERRUPT();
 
 	docpureset(howto);
 	__unreachable();

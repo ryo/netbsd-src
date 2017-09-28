@@ -59,21 +59,24 @@ extern u_int arm_cpu_max;
 /* for compatibility arch/arm */
 #define I32_bit	DAIF_I
 #define F32_bit	DAIF_F
+#define cpsie(psw)	daif_enable((psw))
+#define cpsid(psw)	daif_disable((psw))
 
-static inline void cpsie(register_t psw) __attribute__((__unused__));
-static inline register_t cpsid(register_t psw) __attribute__((__unused__));
 
-#define IRQenable	cpsie(DAIF_I|DAIF_F)
-#define IRQdisable	cpsid(DAIF_I|DAIF_F)
+#define ENABLE_INTERRUPT()	daif_enable(DAIF_I|DAIF_F)
+#define DISABLE_INTERRUPT()	daif_disable(DAIF_I|DAIF_F)
+
+static inline void daif_enable(register_t psw) __attribute__((__unused__));
+static inline register_t daif_disable(register_t psw) __attribute__((__unused__));
 
 static inline void
-cpsie(register_t psw)
+daif_enable(register_t psw)
 {
 	reg_daifclr_write((psw & (DAIF_I|DAIF_F)) >> DAIF_IMM_SHIFT);
 }
 
 static inline register_t
-cpsid(register_t psw)
+daif_disable(register_t psw)
 {
 	uint32_t oldpsw = reg_daif_read();
 	reg_daifset_write((psw & (DAIF_I|DAIF_F)) >> DAIF_IMM_SHIFT);
