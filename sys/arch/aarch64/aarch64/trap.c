@@ -401,6 +401,10 @@ pmap_pte_lookup(struct pmap *pmap, vaddr_t addr)
 		KASSERT((intptr_t)addr >= 0);
 		/* traverse L0/L1/L2/L3 tree in order */
 	}
+/*
+ * XXX Or, we might be able to manage PTE lookup in RB tree aiming
+ * XXX to balance implementation cost in size and runtime grain.
+ */
 	return ptep;
 }
 
@@ -719,7 +723,7 @@ subyte(void *base, int c)
 {
 	union xubuf xu;
 
-	xu.l[0] = 0; xu.b[0] = c; // { .b[0] = c, .b[1 ... 3] = 0 }
+	xu.l[0] = 0; xu.b[0] = c;
 	return store_user_data(base, &xu, sizeof(xu.b[0])) ? 0 : -1;
 }
 
@@ -728,7 +732,7 @@ susword(void *base, short c)
 {
 	union xubuf xu;
 
-	xu.l[0] = 0; xu.w[0] = c; // { .w[0] = c, .w[1] = 0 }
+	xu.l[0] = 0; xu.w[0] = c;
 	return store_user_data(base, &xu, sizeof(xu.w[0])) ? 0 : -1;
 }
 
@@ -744,6 +748,6 @@ suword(void *base, long c)
 {
 	union xubuf xu;
 
-	xu.l[0] = c; // { .l[0] = c }
+	xu.l[0] = c;
 	return store_user_data(base, &xu, sizeof(xu.l[0])) ? 0 : -1;
 }
