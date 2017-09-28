@@ -60,6 +60,15 @@ fpu_state_load(lwp_t *l, unsigned int flags)
 
 	KASSERT(l == curlwp);
 
+#if 0
+	//XXXAARCH64
+	/* event counter */
+	if ((flags & PCU_VALID) == 0)
+		atomic_inc_ulong(&fpevent_use.ev_count);
+	else
+		atomic_inc_ulong(&fpevent_reuse.ev_count);
+#endif
+
 	reg_cpacr_el1_write(CPACR_FPEN_EL1);	/* fpreg access enable */
 	load_fpregs(&pcb->pcb_fpregs);
 	reg_cpacr_el1_write(CPACR_FPEN_NONE);	/* fpreg access disable */
