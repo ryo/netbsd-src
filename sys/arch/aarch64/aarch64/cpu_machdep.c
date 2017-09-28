@@ -329,7 +329,7 @@ cpu_need_proftick(struct lwp *l)
 	KASSERT(l->l_cpu == curcpu());
 
 	l->l_pflag |= LP_OWEUPC;
-	curcpu()->ci_astpending = 1;		/* force call to ast() */
+	atomic_swap_uint(&curcpu()->ci_astpending, 1);
 }
 
 void
