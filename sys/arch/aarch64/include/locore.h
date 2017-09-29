@@ -32,14 +32,6 @@
 #ifndef _AARCH64_LOCORE_H_
 #define _AARCH64_LOCORE_H_
 
-/*
- * XXX XXX XXX
- * This file is refered from arch/arm/ file(s) to conceal CPU design
- * difference between legacy ARM and modern ARM like ARM64.  Used to
- * be much larger but small enough now to discard in near future.
- * XXX XXX XXX
- */
-
 #ifdef __aarch64__
 
 #include <sys/types.h>
@@ -52,30 +44,36 @@
 #include <aarch64/frame.h>
 
 #ifdef MULTIPROCESSOR
+// XXXAARCH64
 /* for compatibility arch/arm */
 extern u_int arm_cpu_max;
-extern volatile u_int arm_cpu_hatched;
 #endif
 
-#define I32_bit	SPSR_I
-#define F32_bit	SPSR_F
-
-static inline void cpsie(register_t cpsr) __attribute__((__unused__));
-static inline register_t cpsid(register_t cpsr) __attribute__((__unused__));
+static inline void daif_enable(register_t daif) __attribute__((__unused__));
+static inline register_t daif_disable(register_t daif) __attribute__((__unused__));
 
 static inline void
-cpsie(register_t pstatedaif)
+daif_enable(register_t daif)
 {
-	reg_daifclr_write(pstatedaif >> 6);
+	reg_daifclr_write(daif);
 }
 
 static inline register_t
-cpsid(register_t pstatedaif)
+daif_disable(register_t daif)
 {
-	register_t olddaif = reg_daif_read();
-	reg_daifset_write(pstatedaif >> 6);
-	return olddaif; /* pstate [9:6] */
+	uint32_t olddaif = reg_daif_read() >> 6; /* DAIF := PSTATE[9:6] */
+	reg_daifset_write(daif);
+	return olddaif;
 }
+
+#define ENABLE_INTERRUPT()	daif_enable(DAIF_I|DAIF_F)
+#define DISABLE_INTERRUPT()	daif_disable(DAIF_I|DAIF_F)
+
+/* for compatibility arch/arm/pic/pic.c -- might be modified to DIAF_I|F */
+#define I32_bit	SPSR_I
+#define F32_bit	SPSR_F
+#define cpsie(ifbit)	daif_enable((ifbit)>>6)
+#define cpsid(ifbit)	daif_disable((ifbit)>>6)
 
 #elif defined(__arm__)
 
