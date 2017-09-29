@@ -50,8 +50,11 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define LX_TBL_APTABLE_RO_EL0_NOREAD	__SHIFTIN(3,LX_TBL_APTABLE)
 #define LX_TBL_UXNTABLE		__BIT(60)	/* inherited next level */
 #define LX_TBL_PXNTABLE		__BIT(59)	/* inherited next level */
-
 #define LX_BLKPAG_OS		__BITS(58, 55)
+# define LX_BLKPAG_OS_0		__SHIFTIN(1,LX_BLKPAG_OS)
+# define LX_BLKPAG_OS_1		__SHIFTIN(2,LX_BLKPAG_OS)
+# define LX_BLKPAG_OS_2		__SHIFTIN(4,LX_BLKPAG_OS)
+# define LX_BLKPAG_OS_3		__SHIFTIN(8,LX_BLKPAG_OS)
 #define LX_BLKPAG_UXN		__BIT(54)	/* Unprivileged Execute Never */
 #define LX_BLKPAG_PXN		__BIT(53)	/* Privileged Execute Never */
 #define LX_BLKPAG_CONTIG	__BIT(52)	/* Hint of TLB cache */
