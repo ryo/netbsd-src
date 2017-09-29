@@ -34,6 +34,7 @@
 __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 
 #include "opt_arm_intr_impl.h"
+#include "opt_compat_netbsd32.h"
 
 #include <sys/param.h>
 #include <sys/types.h>
@@ -157,6 +158,7 @@ trap(struct trapframe *tf, int reason)
 	switch (cause) {
 	case ESR_EC_FP_ACCESS:
 	case ESR_EC_FP_TRAP_A64:
+	case ESR_EC_FP_TRAP_A32:
 		if (usertrap_p) {
 			/* XXX handle delayed FP handover
 			fpu_load(curlwp);
@@ -186,6 +188,7 @@ trap(struct trapframe *tf, int reason)
 	case ESR_EC_SW_STEP_EL1:
 	case ESR_EC_WTCHPNT_EL1:
 	case ESR_EC_BKPT_INSN_A64:
+	case ESR_EC_BKPT_INSN_A32:
 #ifdef DDB
 		/* XXX kdb_trap(tf) XXX */
 		break;
@@ -200,8 +203,22 @@ trap(struct trapframe *tf, int reason)
 		     SIGTRAP, TRAP_BRKPT, tf->tf_far, cause);
 		ok = false;
 		break;
+#ifdef COMPAT_NETBSD32
+	case ESR_EC_CP15_RT:
+	case ESR_EC_CP15_RRT:
+	case ESR_EC_CP14_RT:
+	case ESR_EC_CP14_DT:
+	case ESR_EC_CP14_RRT:
+	case ESR_EC_HVC_A32:
+	case ESR_EC_SMC_A32:
+	case ESR_EC_FPID:
+	case ESR_EC_VECTOR_CATCH:
+		/* ok = a32_hanlder(tf, cause); */
+		break;
+#endif
 	default:
 		usertrap_p = false;
+		ok = false;
 		break;
 	}
 
@@ -243,9 +260,12 @@ static const char * const syndrome[] = {
 	[4] = "bad error exception",
 };
 
+
 #define SPSR_A32_P(psr)		((int)(psr) & 0x10)
 #define SPSR_A32_DECODE(psr)	((int)(psr) & 0x0c)
 #define SPSR_ELx_DECODE(psr)	(((int)(psr) & 0x0c) >> 2)
+
+#ifndef COMPAT_NETBSD32
 
 void
 trap_a32(struct trapframe *tf, int reason)
@@ -258,6 +278,8 @@ trap_a32(struct trapframe *tf, int reason)
 	dump_trapframe(tf, printf);
 	panic("%s: unexpected exception", __func__);
 }
+
+#endif /* !COMPAT_NETBSD32 */
 
 void
 trap_bad(struct trapframe *tf, int reason)
