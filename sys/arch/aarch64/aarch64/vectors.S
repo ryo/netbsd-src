@@ -164,7 +164,7 @@ ASENTRY_NP(el0_sync)
 	exception_entry 0
 	tbnz	x22, #7, 1f			/* if #SPSR_I is unmarked */
 	msr	daifclr, #DAIF_I		/* reenable interrupt */
- 1:	adr	lr, el1_trap_exit
+ 1:	adr	lr, el0_trap_exit
 	mov	x0, sp
 	mov	x1, xzr
 	b	trap
