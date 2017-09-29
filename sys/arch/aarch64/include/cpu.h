@@ -79,11 +79,10 @@ static inline struct cpu_info *
 curcpu(void)
 {
 	struct cpu_info *ci;
-	__asm __volatile("mrs %0, tpidr_el1" : "=r"(ci));
+	__asm __volatile ("mrs %0, tpidr_el1" : "=r"(ci));
 	return ci;
 }
-
-#define curlwp		(curcpu()->ci_curlwp)
+#define curlwp			(curcpu()->ci_curlwp)
 
 static inline cpuid_t
 cpu_number(void)
@@ -91,12 +90,12 @@ cpu_number(void)
 	return curcpu()->ci_gicid;
 }
 
-void	cpu_set_curpri(int);
-void	cpu_proc_fork(struct proc *, struct proc *);
-void	cpu_signotify(struct lwp *);
-void	cpu_need_proftick(struct lwp *l);
-void	cpu_boot_secondary_processors(void);
 #define setsoftast(ci)		atomic_or_uint(&(ci)->ci_astpending, __BIT(0))
+#define cpu_signotify(l)	setsoftast((l)->l_cpu)
+void cpu_set_curpri(int);
+void cpu_proc_fork(struct proc *, struct proc *);
+void cpu_need_proftick(struct lwp *l);
+void cpu_boot_secondary_processors(void);
 
 extern struct cpu_info *cpu_info[];
 extern struct cpu_info cpu_info_store;	/* MULTIPROCESSOR */
@@ -109,11 +108,13 @@ extern volatile u_int arm_cpu_hatched;	/* MULTIPROCESSOR */
 static inline void
 cpu_dosoftints(void)
 {
-	extern void dosoftints(void);
+#ifndef __HAVE_PIC_FAST_SOFTINTS
+	void dosoftints(void);
 	struct cpu_info * const ci = curcpu();
-	if ((ci->ci_intr_depth == 0) &&
-	    ((ci->ci_data.cpu_softints >> ci->ci_cpl) > 0))
+
+	if (ci->ci_intr_depth == 0 && (ci->ci_softints >> ci->ci_cpl) > 0)
 		dosoftints();
+#endif
 }
 
 static inline bool
