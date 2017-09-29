@@ -192,7 +192,7 @@ bootsync(void)
 		 * did not come from a user process e.g. shutdown, but must
 		 * have come from somewhere in the kernel.
 		 */
-		reg_daifset_write(DAIF_I);	/* enable IRQ */
+		daif_enable(DAIF_I);	/* enable IRQ */
 		printf("Warning IRQ's disabled during boot()\n");
 	}
 
@@ -243,8 +243,8 @@ cpu_reboot(int howto, char *bootstr)
 	/* Run any shutdown hooks */
 	doshutdownhooks();
 
-	/* Make sure IRQ's are disabled */
-	reg_daifclr_write(DAIF_I);
+	/* Make sure IRQ is disabled */
+	daif_disable(DAIF_I);
 
 	docpureset(howto);
 	__unreachable();
