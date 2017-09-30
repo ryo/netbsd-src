@@ -65,13 +65,21 @@ void lwp_trampoline(void);
 void cpu_dosoftints(void);
 void cpu_switchto_softint(struct lwp *, int);
 void trap_doast(struct trapframe *);
-void trap_el1_bad(struct trapframe *);
-void trap_el1_sync(struct trapframe *);
-void trap_el0_bad(struct trapframe *);
+
+void trap_el1t_sync(struct trapframe *);
+void trap_el1t_irq(struct trapframe *);
+void trap_el1t_fiq(struct trapframe *);
+void trap_el1t_error(struct trapframe *);
+void trap_el1h_sync(struct trapframe *);
+void trap_el1h_fiq(struct trapframe *);
+void trap_el1h_error(struct trapframe *);
 void trap_el0_sync(struct trapframe *);
+void trap_el0_fiq(struct trapframe *);
 void trap_el0_error(struct trapframe *);
 void trap_el0_32sync(struct trapframe *);
+void trap_el0_32fiq(struct trapframe *);
 void trap_el0_32error(struct trapframe *);
+
 void interrupt(struct trapframe *);
 void dosoftints(void);
 

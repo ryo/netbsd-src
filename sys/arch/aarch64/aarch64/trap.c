@@ -160,7 +160,7 @@ trap_doast(struct trapframe *tf)
 }
 
 void
-trap_el1_sync(struct trapframe *tf)
+trap_el1h_sync(struct trapframe *tf)
 {
 	const uint32_t esr = tf->tf_esr;
 	const uint32_t eclass = __SHIFTOUT(esr, ESR_EC); /* exception class */
@@ -291,36 +291,6 @@ trap_el0_sync(struct trapframe *tf)
 		userret(l);
 		break;
 	}
-
-}
-
-void
-trap_el0_32sync(struct trapframe *tf)
-{
-	panic("%s", __func__);
-}
-
-void
-trap_el1_bad(struct trapframe *tf)
-{
-	panic("%s", __func__);
-}
-
-void
-trap_el0_bad(struct trapframe *tf)
-{
-	panic("%s", __func__);
-}
-
-void
-trap_el0_error(struct trapframe *tf)
-{
-	panic("%s", __func__);
-}
-void
-trap_el0_32error(struct trapframe *tf)
-{
-	panic("%s", __func__);
 }
 
 void
@@ -338,8 +308,26 @@ interrupt(struct trapframe *tf)
 	ci->ci_intr_depth--;
 }
 
-// XXXAARCH64 might be populated in frame.h in future
+#define bad_trap_panic(trapfunc)	\
+void					\
+trapfunc(struct trapframe *tf)		\
+{					\
+	panic("%s", __func__);		\
+}
+bad_trap_panic(trap_el1t_sync)
+bad_trap_panic(trap_el1t_irq)
+bad_trap_panic(trap_el1t_fiq)
+bad_trap_panic(trap_el1t_error)
+bad_trap_panic(trap_el1h_fiq)
+bad_trap_panic(trap_el1h_error)
+bad_trap_panic(trap_el0_fiq)
+bad_trap_panic(trap_el0_error)
+bad_trap_panic(trap_el0_32sync)
+bad_trap_panic(trap_el0_32fiq)
+bad_trap_panic(trap_el0_32error)
 
+
+// XXXAARCH64 might be populated in frame.h in future
 #define FB_X19	0
 #define FB_X20	1
 #define FB_X21	2
