@@ -239,16 +239,35 @@ db_md_sysreg_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *mo
 #define SHOW_ARMREG(x)	\
 	db_printf("%-16s = %016llx\n", #x, reg_ ## x ## _read())
 
+	SHOW_ARMREG(cbar_el1);
+	SHOW_ARMREG(ccsidr_el1);
+	SHOW_ARMREG(clidr_el1);
+	SHOW_ARMREG(cntfrq_el0);
+	SHOW_ARMREG(cntkctl_el1);
+	SHOW_ARMREG(cntp_ctl_el0);
+	SHOW_ARMREG(cntp_cval_el0);
+	SHOW_ARMREG(cntp_tval_el0);
+	SHOW_ARMREG(cntpct_el0);
+//	SHOW_ARMREG(cntps_ctl_el1);	/* need secure state */
+//	SHOW_ARMREG(cntps_cval_el1);	/* need secure state */
+//	SHOW_ARMREG(cntps_tval_el1);	/* need secure state */
+	SHOW_ARMREG(cntv_ctl_el0);
+	SHOW_ARMREG(cntv_ctl_el0);
+	SHOW_ARMREG(cntv_cval_el0);
+	SHOW_ARMREG(cntv_tval_el0);
+	SHOW_ARMREG(cntv_tval_el0);
+	SHOW_ARMREG(cntvct_el0);
+	SHOW_ARMREG(cpacr_el1);
+	SHOW_ARMREG(csselr_el1);
 	SHOW_ARMREG(ctr_el0);
+	SHOW_ARMREG(currentel);
+	SHOW_ARMREG(daif);
 	SHOW_ARMREG(dczid_el0);
+	SHOW_ARMREG(elr_el1);
+	SHOW_ARMREG(esr_el1);
+	SHOW_ARMREG(far_el1);
 //	SHOW_ARMREG(fpcr);	/* FP trap */
 //	SHOW_ARMREG(fpsr);	/* FP trap */
-	SHOW_ARMREG(nzcv);
-	SHOW_ARMREG(tpidr_el0);
-	SHOW_ARMREG(cbar_el1);
-	SHOW_ARMREG(clidr_el1);
-	SHOW_ARMREG(ccsidr_el1);
-	SHOW_ARMREG(currentel);
 	SHOW_ARMREG(id_aa64afr0_el1);
 	SHOW_ARMREG(id_aa64afr1_el1);
 	SHOW_ARMREG(id_aa64dfr0_el1);
@@ -260,52 +279,29 @@ db_md_sysreg_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *mo
 	SHOW_ARMREG(id_aa64pfr0_el1);
 	SHOW_ARMREG(id_aa64pfr1_el1);
 	SHOW_ARMREG(isr_el1);
+	SHOW_ARMREG(l2ctlr_el1);
+	SHOW_ARMREG(mair_el1);
 	SHOW_ARMREG(midr_el1);
 	SHOW_ARMREG(mpidr_el1);
 	SHOW_ARMREG(mvfr0_el1);
 	SHOW_ARMREG(mvfr1_el1);
 	SHOW_ARMREG(mvfr2_el1);
-	SHOW_ARMREG(revidr_el1);
-	SHOW_ARMREG(l2ctlr_el1);
-	SHOW_ARMREG(csselr_el1);
-	SHOW_ARMREG(cpacr_el1);
-	SHOW_ARMREG(elr_el1);
-	SHOW_ARMREG(esr_el1);
-	SHOW_ARMREG(far_el1);
-	SHOW_ARMREG(mair_el1);
+	SHOW_ARMREG(nzcv);
 	SHOW_ARMREG(par_el1);
-#if 0
-	SHOW_ARMREG(rmr_el1);		/* unknown reason trap */
-	SHOW_ARMREG(rvbar_el1);
-#endif
+	SHOW_ARMREG(pmccfiltr_el0);
+	SHOW_ARMREG(pmccntr_el0);
+	SHOW_ARMREG(revidr_el1);
+//	SHOW_ARMREG(rmr_el1);		/* unknown reason trap */
+//	SHOW_ARMREG(rvbar_el1);
 	SHOW_ARMREG(sctlr_el1);
 	SHOW_ARMREG(spsel);
-	SHOW_ARMREG(daif);
 	SHOW_ARMREG(spsr_el1);
 	SHOW_ARMREG(tcr_el1);
+	SHOW_ARMREG(tpidr_el0);
 	SHOW_ARMREG(tpidr_el1);
 	SHOW_ARMREG(ttbr0_el1);
 	SHOW_ARMREG(ttbr1_el1);
 	SHOW_ARMREG(vbar_el1);
-	SHOW_ARMREG(pmccfiltr_el0);
-	SHOW_ARMREG(pmccntr_el0);
-	SHOW_ARMREG(cntfrq_el0);
-	SHOW_ARMREG(cntkctl_el1);
-	SHOW_ARMREG(cntp_ctl_el0);
-	SHOW_ARMREG(cntp_cval_el0);
-	SHOW_ARMREG(cntp_tval_el0);
-	SHOW_ARMREG(cntpct_el0);
-#if 0
-	SHOW_ARMREG(cntps_ctl_el1);	/* need secure state */
-	SHOW_ARMREG(cntps_cval_el1);	/* need secure state */
-	SHOW_ARMREG(cntps_tval_el1);	/* need secure state */
-#endif
-	SHOW_ARMREG(cntv_ctl_el0);
-	SHOW_ARMREG(cntv_ctl_el0);
-	SHOW_ARMREG(cntv_cval_el0);
-	SHOW_ARMREG(cntv_tval_el0);
-	SHOW_ARMREG(cntv_tval_el0);
-	SHOW_ARMREG(cntvct_el0);
 }
 
 void

@@ -46,6 +46,12 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 #define MAXBACKTRACE	128	/* against infinite loop */
 
+
+#define IN_USER_VM_ADDRESS(addr)	\
+	((VM_MIN_ADDRESS <= (addr)) && ((addr) < VM_MAX_ADDRESS))
+#define IN_KERNEL_VM_ADDRESS(addr)	\
+	((VM_MIN_KERNEL_ADDRESS <= (addr)) && ((addr) < VM_MAX_KERNEL_ADDRESS))
+
 static void
 pr_traceaddr(const char *prefix, uint64_t frame, uint64_t pc, const char **name,
     void (*pr)(const char *, ...))
@@ -107,7 +113,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		 *  -> some-kernel-function()
 		 *     ---INTERRUPT!---
 		 *  -> <push TRAPFRAME>
-		 *  -> el1_{sync,irq}() without fp
+		 *  -> el[01]_{sync,irq}() without fp
 		 *  -> interrupt()
 		 *  -> ARM_IRQ_HANDLER()
 		 *  ->        :
@@ -115,7 +121,9 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		 */
 
 		extern char el1_trap[];	/* XXX */
-		if ((char *)(lr - 4) == (char *)el1_trap) {
+		extern char el0_trap[];	/* XXX */
+		if (((char *)(lr - 4) == (char *)el0_trap) ||
+		    ((char *)(lr - 4) == (char *)el1_trap)) {
 
 			struct trapframe *tf;
 
@@ -149,5 +157,8 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 			db_read_bytes(frame + 8, sizeof(lr), (char *)&lr);
 			db_read_bytes(frame, sizeof(frame), (char *)&frame);
 		}
+
+		if (!IN_USER_VM_ADDRESS(lr) && !IN_KERNEL_VM_ADDRESS(lr))
+			break;
 	}
 }
