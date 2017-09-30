@@ -31,6 +31,7 @@
 __KERNEL_RCSID(0, "$NetBSD$");
 
 #include <sys/param.h>
+#include <sys/proc.h>
 
 #include <aarch64/db_machdep.h>
 #include <aarch64/machdep.h>
@@ -76,8 +77,10 @@ void
 db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
     const char *modif, void (*pr)(const char *, ...))
 {
-	uint64_t sp, lr, lastlr;
-	uint64_t frame, lastframe;
+	struct lwp *l;
+	uint64_t lr, lastlr;
+	uint64_t fp, lastfp;
+	struct trapframe *tf;
 
 #if 0
 	db_printf("%s: addr=%016llx have_addr=%d, count=%lld, modif=%s\n",
@@ -85,19 +88,19 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 #endif
 
 	if (!have_addr) {
-		frame = DDB_REGS->tf_reg[29];	/* fp = x29 */
-		sp = DDB_REGS->tf_sp;
+		fp = DDB_REGS->tf_reg[29];	/* fp = x29 */
 		lr = DDB_REGS->tf_lr;
 	} else {
-		//XXXAARCH64
-		db_printf("%s: %016llx: not supported now\n", __func__, addr);
-		return;
+		l = (struct lwp *)addr;
+		db_read_bytes(&l->l_md.md_ktf, sizeof(tf), (char *)&tf);
+		db_read_bytes(&tf->tf_reg[29], sizeof(fp), (char *)&fp);
+		db_read_bytes(&tf->tf_reg[30], sizeof(lr), (char *)&lr);
 	}
 
 	if (count > MAXBACKTRACE)
 		count = MAXBACKTRACE;
 
-	for (; (count > 0) && (frame != 0); count--) {
+	for (; (count > 0) && (fp != 0); count--) {
 		const char *name = NULL;
 
 		/*
@@ -125,18 +128,16 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		if (((char *)(lr - 4) == (char *)el0_trap) ||
 		    ((char *)(lr - 4) == (char *)el1_trap)) {
 
-			struct trapframe *tf;
-
-			tf = (struct trapframe *)(lastframe + 16);
+			tf = (struct trapframe *)(lastfp + 16);
 			pr_traceaddr("tf", tf, lr - 4, &name, pr);
 
 			lastlr = lr;
-			lastframe = frame;
+			lastfp = fp;
 
 			db_read_bytes(&tf->tf_pc, sizeof(tf->tf_pc),
 			    (char *)&lr);
 			db_read_bytes(&tf->tf_reg[29], sizeof(tf->tf_lr),
-			    (char *)&frame);
+			    (char *)&fp);
 
 			(*pr)("--- trapframe %016llx ---\n", tf);
 			dump_trapframe(tf, pr);
@@ -149,16 +150,19 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 			 *  fp[0]  saved fp(x29) value
 			 *  fp[1]  saved lr(x30) value
 			 */
-			pr_traceaddr("fp", frame, lr - 4, &name, pr);
+			pr_traceaddr("fp", fp, lr - 4, &name, pr);
 
 			lastlr = lr;
-			lastframe = frame;
+			lastfp = fp;
 
-			db_read_bytes(frame + 8, sizeof(lr), (char *)&lr);
-			db_read_bytes(frame, sizeof(frame), (char *)&frame);
+			db_read_bytes(fp + 8, sizeof(lr), (char *)&lr);
+			db_read_bytes(fp, sizeof(fp), (char *)&fp);
 		}
 
-		if (!IN_USER_VM_ADDRESS(lr) && !IN_KERNEL_VM_ADDRESS(lr))
+		if (have_addr && !IN_KERNEL_VM_ADDRESS(lastfp))
+			break;
+
+		if (!IN_USER_VM_ADDRESS(lastfp) && !IN_KERNEL_VM_ADDRESS(lastfp))
 			break;
 	}
 }
