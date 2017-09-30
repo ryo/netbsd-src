@@ -63,6 +63,7 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
 #include <aarch64/armreg.h>
+#include <aarch64/locore.h>
 
 #ifdef KDB
 #include <machine/db_machdep.h>
@@ -165,6 +166,9 @@ trap_el1_sync(struct trapframe *tf)
 	const uint32_t eclass = __SHIFTOUT(esr, ESR_EC); /* exception class */
 	const char *trapname;
 
+	/* enable traps and interrupts */
+	daif_enable(DAIF_D|DAIF_A|DAIF_I|DAIF_F);
+
 	if (eclass >= __arraycount(trap_names) || trap_names[eclass] == NULL)
 		trapname = trap_names[0];
 	else
@@ -207,6 +211,9 @@ trap_el0_sync(struct trapframe *tf)
 	ksiginfo_t ksi;
 	const uint32_t esr = tf->tf_esr;
 	const uint32_t eclass = __SHIFTOUT(esr, ESR_EC); /* exception class */
+
+	/* enable traps and interrupts */
+	daif_enable(DAIF_D|DAIF_A|DAIF_I|DAIF_F);
 
 	/* XXXAARCH64 */
 	const char *trapname;
@@ -322,6 +329,9 @@ interrupt(struct trapframe *tf)
 	struct cpu_info * const ci = curcpu();
 
 	__asm __volatile ("clrex; dmb sy");	/* XXXAARCH64: really need dmb ? */
+
+	/* enable traps */
+	daif_enable(DAIF_D|DAIF_A);
 
 	ci->ci_intr_depth++;
 	ARM_IRQ_HANDLER(tf);

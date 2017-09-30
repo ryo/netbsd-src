@@ -69,17 +69,19 @@ extern u_int arm_cpu_max;
 static inline void daif_enable(register_t psw) __attribute__((__unused__));
 static inline register_t daif_disable(register_t psw) __attribute__((__unused__));
 
+#define DAIF_MASK	(DAIF_D|DAIF_A|DAIF_I|DAIF_F)
+
 static inline void
 daif_enable(register_t psw)
 {
-	reg_daifclr_write((psw & (DAIF_I|DAIF_F)) >> DAIF_IMM_SHIFT);
+	reg_daifclr_write((psw & DAIF_MASK) >> DAIF_IMM_SHIFT);
 }
 
 static inline register_t
 daif_disable(register_t psw)
 {
 	uint32_t oldpsw = reg_daif_read();
-	reg_daifset_write((psw & (DAIF_I|DAIF_F)) >> DAIF_IMM_SHIFT);
+	reg_daifset_write((psw & DAIF_MASK) >> DAIF_IMM_SHIFT);
 	return oldpsw;
 }
 

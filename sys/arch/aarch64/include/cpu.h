@@ -120,6 +120,10 @@ cpu_dosoftints(void)
 static inline bool
 cpu_intr_p(void)
 {
+#ifdef __HAVE_PIC_FAST_SOFTINTS
+	if (ci->ci_cpl < IPL_VM)
+		return false;
+#endif
 	return curcpu()->ci_intr_depth > 0;
 }
 
