@@ -101,7 +101,7 @@
 	.global _C_LABEL(el1_vectors)
 _C_LABEL(el1_vectors):
 /*
- * Exception taken from current Exception Level with SP_EL1.
+ * Exception taken from current Exception Level with SP_EL0.
  * (These shouldn't happen)
  */
 	VECT_INVAL	1, BAD_SYNC		/* Synchronous EL1t */
@@ -109,7 +109,7 @@ _C_LABEL(el1_vectors):
 	VECT_INVAL	1, BAD_FIQ		/* FIQ EL1t */
 	VECT_INVAL	1, BAD_ERROR		/* Error EL1t */
 /*
- * Exception taken from current Exception Level with SP.
+ * Exception taken from current Exception Level with SP_EL1.
  * There are entries for exceptions caused in EL1 (kernel exceptions).
  */
 	VECT_ENTRY	el1_sync		/* Synchronous EL1h */
