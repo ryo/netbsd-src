@@ -106,7 +106,7 @@ uint32_t cpu_boot_mbox;
  * SOFTIPLMASK(IPL_SOFTNET)	= 0x00000008
  * SOFTIPLMASK(IPL_SOFTSERIAL)	= 0x00000000
  */
-#define	SOFTIPLMASK(ipl) ((0x0f << (ipl)) & 0x0f)
+#define SOFTIPLMASK(ipl) ((0x0f << (ipl)) & 0x0f)
 
 void
 softint_trigger(uintptr_t mask)
@@ -150,7 +150,7 @@ dosoftints(void)
 			splx(opl);
 			return;
 		}
-#define	DOSOFTINT(n) \
+#define DOSOFTINT(n) \
 		if (ci->ci_softints & (1 << (IPL_SOFT ## n - IPL_SOFTCLOCK))) { \
 			ci->ci_softints &= \
 			    ~(1 << (IPL_SOFT ## n - IPL_SOFTCLOCK)); \
