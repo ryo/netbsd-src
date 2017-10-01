@@ -75,6 +75,7 @@ struct cpu_info *cpu_info[NCPUINFO] = {
 
 uint32_t cpu_boot_mbox;
 
+#ifdef __HAVE_FAST_SOFTINTS
 #if IPL_VM != IPL_SOFTSERIAL + 1
 #error IPLs are screwed up
 #elif IPL_SOFTSERIAL != IPL_SOFTNET + 1
@@ -90,12 +91,12 @@ uint32_t cpu_boot_mbox;
 #endif
 
 #ifndef __HAVE_PIC_FAST_SOFTINTS
-#define	SOFTINT2IPLMAP \
+#define SOFTINT2IPLMAP \
 	(((IPL_SOFTSERIAL - IPL_SOFTCLOCK) << (SOFTINT_SERIAL * 4)) | \
 	 ((IPL_SOFTNET    - IPL_SOFTCLOCK) << (SOFTINT_NET    * 4)) | \
 	 ((IPL_SOFTBIO    - IPL_SOFTCLOCK) << (SOFTINT_BIO    * 4)) | \
 	 ((IPL_SOFTCLOCK  - IPL_SOFTCLOCK) << (SOFTINT_CLOCK  * 4)))
-#define	SOFTINT2IPL(l)	((SOFTINT2IPLMAP >> ((l) * 4)) & 0x0f)
+#define SOFTINT2IPL(l)	((SOFTINT2IPLMAP >> ((l) * 4)) & 0x0f)
 
 /*
  * This returns a mask of softint IPLs that be dispatch at <ipl>
@@ -164,8 +165,8 @@ dosoftints(void)
 		panic("dosoftints wtf (softints=%u?, ipl=%d)", softints, opl);
 	}
 }
-
 #endif /* !__HAVE_PIC_FAST_SOFTINTS */
+#endif /* __HAVE_FAST_SOFTINTS */
 
 int
 cpu_mcontext_validate(struct lwp *l, const mcontext_t *mcp)
