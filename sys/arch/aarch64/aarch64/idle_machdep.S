@@ -84,12 +84,12 @@ ENTRY(cpu_idle)
 
 	ENABLE_INTERRUPT
 
+#if defined(__HAVE_FAST_SOFTINTS) && !defined(__HAVE_PIC_FAST_SOFTINTS)
 	ldr	w3, [x1, #CI_SOFTINTS]		/* Get pending softint mask */
-#if 0
 	/* CPL should be 0 */
 	ldr	w2, [x1, #CI_CPL]		/* Get current priority level */
 	lsr	w3, w3, w2			/* shift mask by cpl */
-#endif
 	cbnz	w3, _C_LABEL(dosoftints)	/* tailcall dosoftints(void) */
+#endif
 	ret
 END(cpu_idle)
