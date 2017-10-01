@@ -170,11 +170,13 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 
 	p = curlwp->l_proc;
 	va = trunc_page((vaddr_t)tf->tf_far);
-	if ((VM_MIN_KERNEL_ADDRESS <= va) && (va < VM_MAX_KERNEL_ADDRESS))
-		map = kernel_map;
-	else
-		map = &p->p_vmspace->vm_map;
 
+	//XXXAARCH64
+	if ((VM_MIN_KERNEL_ADDRESS <= va) && (va < VM_MAX_KERNEL_ADDRESS)) {
+		map = kernel_map;
+	} else {
+		map = &p->p_vmspace->vm_map;
+	}
 
 	if ((eclass == ESR_EC_INSN_ABT_EL0) || (eclass == ESR_EC_INSN_ABT_EL1))
 		ftype = VM_PROT_READ | VM_PROT_EXECUTE;
@@ -190,7 +192,7 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 #endif
 
 	/* reference/modified emulation */
-	if (pmap_fault_refmod(map->pmap, va, ftype))
+	if (pmap_fault_fixup(map->pmap, va, ftype))
 		return true;
 
 
