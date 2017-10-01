@@ -85,7 +85,7 @@ cpu_lwp_fork(struct lwp *l1, struct lwp *l2, void *stack, size_t stacksize,
 #ifdef PMAP_DEBUG
 	if (pmap_debug_level > 0)
 		printf("cpu_lwp_fork: %p %p %p %p\n", l1, l2, curlwp, &lwp0);
-#endif	/* PMAP_DEBUG */
+#endif /* PMAP_DEBUG */
 
 	/* Copy the pcb */
 	*pcb2 = *pcb1;
