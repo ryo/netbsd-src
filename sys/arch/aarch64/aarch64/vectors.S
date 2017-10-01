@@ -59,7 +59,7 @@
 	str	x24, [sp, #TF_FAR]
 	.endif
 
-	adr	lr, el\()\el\()_trap_exit	/* el[01]_trap_exit */
+	adr	lr, el\el\()_trap_exit	/* el[01]_trap_exit */
 	mov	x0, sp
 	b	\label
 	.endm
