@@ -41,48 +41,48 @@
  * an ucontext_t is different from System V.
  */
 
-#define	_NGREG	35		/* GR0-30, SP, PC, APSR, TPIDR */
+#define _NGREG	35		/* GR0-30, SP, PC, APSR, TPIDR */
 
-typedef	__int64_t	__greg_t;
-typedef	__greg_t	__gregset_t[_NGREG];
+typedef __uint64_t	__greg_t;
+typedef __greg_t	__gregset_t[_NGREG];
 
-#define	_REG_X0		0
-#define	_REG_X1		1
-#define	_REG_X2		2
-#define	_REG_X3		3
-#define	_REG_X4		4
-#define	_REG_X5		5
-#define	_REG_X6		6
-#define	_REG_X7		7
-#define	_REG_X8		8
-#define	_REG_X9		9
-#define	_REG_X10	10
-#define	_REG_X11	11
-#define	_REG_X12	12
-#define	_REG_X13	13
-#define	_REG_X14	14
-#define	_REG_X15	15
-#define	_REG_X16	16
-#define	_REG_X17	17
-#define	_REG_X18	18
-#define	_REG_X19	19
-#define	_REG_X20	20
-#define	_REG_X21	21
-#define	_REG_X22	22
-#define	_REG_X23	23
-#define	_REG_X24	24
-#define	_REG_X25	25
-#define	_REG_X26	26
-#define	_REG_X27	27
-#define	_REG_X28	28
-#define	_REG_X29	29
-#define	_REG_X30	30
-#define	_REG_SP		31
-#define	_REG_PC		32
-#define	_REG_SPSR	33
-#define	_REG_TPIDR	34
+#define _REG_X0		0
+#define _REG_X1		1
+#define _REG_X2		2
+#define _REG_X3		3
+#define _REG_X4		4
+#define _REG_X5		5
+#define _REG_X6		6
+#define _REG_X7		7
+#define _REG_X8		8
+#define _REG_X9		9
+#define _REG_X10	10
+#define _REG_X11	11
+#define _REG_X12	12
+#define _REG_X13	13
+#define _REG_X14	14
+#define _REG_X15	15
+#define _REG_X16	16
+#define _REG_X17	17
+#define _REG_X18	18
+#define _REG_X19	19
+#define _REG_X20	20
+#define _REG_X21	21
+#define _REG_X22	22
+#define _REG_X23	23
+#define _REG_X24	24
+#define _REG_X25	25
+#define _REG_X26	26
+#define _REG_X27	27
+#define _REG_X28	28
+#define _REG_X29	29
+#define _REG_X30	30
+#define _REG_SP		31
+#define _REG_PC		32
+#define _REG_SPSR	33
+#define _REG_TPIDR	34
 
-#define	_NFREG	32			/* Number of SIMD registers */
+#define _NFREG	32			/* Number of SIMD registers */
 
 typedef struct {
 	union __freg {
@@ -91,7 +91,7 @@ typedef struct {
 		__uint32_t	__s32[4];
 		__uint64_t	__d64[2];
 		__uint128_t	__q128[1];
-	} 	__qregs[_NFREG] __aligned(16);
+	}		__qregs[_NFREG] __aligned(16);
 	__uint32_t	__fpcr;		/* FPCR */
 	__uint32_t	__fpsr;		/* FPSR */
 } __fregset_t;
@@ -103,15 +103,17 @@ typedef struct {
 } mcontext_t;
 
 /* Machine-dependent uc_flags */
-#define	_UC_TLSBASE	0x00080000	/* see <sys/ucontext.h> */
+#define _UC_TLSBASE	0x00080000	/* see <sys/ucontext.h> */
 
 #define _UC_MACHINE_SP(uc)	((uc)->uc_mcontext.__gregs[_REG_SP])
 #define _UC_MACHINE_PC(uc)	((uc)->uc_mcontext.__gregs[_REG_PC])
 #define _UC_MACHINE_INTRV(uc)	((uc)->uc_mcontext.__gregs[_REG_X0])
 
-#define	_UC_MACHINE_SET_PC(uc, pc)	_UC_MACHINE_PC(uc) = (pc)
+#define _UC_MACHINE_SET_PC(uc, pc)	_UC_MACHINE_PC(uc) = (pc)
 
-#if defined(_RTLD_SOURCE) || defined(_LIBC_SOURCE) || defined(__LIBPTHREAD_SOURCE__)
+#if defined(_RTLD_SOURCE) || defined(_LIBC_SOURCE) || \
+    defined(__LIBPTHREAD_SOURCE__)
+
 #include <sys/tls.h>
 
 static __inline void *
