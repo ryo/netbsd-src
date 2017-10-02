@@ -260,12 +260,6 @@ startlwp(void *arg)
 }
 
 void
-cpu_signotify(struct lwp *l)
-{
-	atomic_swap_uint(&l->l_cpu->ci_astpending, 1);
-}
-
-void
 cpu_need_resched(struct cpu_info *ci, int flags)
 {
 	struct lwp * const l = ci->ci_data.cpu_onproc;
@@ -309,12 +303,12 @@ cpu_need_resched(struct cpu_info *ci, int flags)
 #ifdef __HAVE_PREEMPTION
 		atomic_or_uint(&l->l_dopreempt, DOPREEMPT_ACTIVE);
 		if (ci != cur_ci) {
-                        intr_ipi_send(ci->ci_kcpuset, IPI_KPREEMPT);
-                }
+			intr_ipi_send(ci->ci_kcpuset, IPI_KPREEMPT);
+		}
 #endif
 		return;
 	}
-	atomic_swap_uint(&ci->ci_astpending, 1); /* force call to ast() */
+	setsoftast(ci);	/* force call to ast() */
 #ifdef MULTIPROCESSOR
 	if (ci != cur_ci && (flags & RESCHED_IMMED)) {
 		intr_ipi_send(ci->ci_kcpuset, IPI_AST);
@@ -329,7 +323,7 @@ cpu_need_proftick(struct lwp *l)
 	KASSERT(l->l_cpu == curcpu());
 
 	l->l_pflag |= LP_OWEUPC;
-	atomic_swap_uint(&curcpu()->ci_astpending, 1);
+	setsoftast(l->l_cpu);
 }
 
 void
