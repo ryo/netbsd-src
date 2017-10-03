@@ -139,9 +139,9 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 			db_read_bytes(&tf->tf_reg[29], sizeof(tf->tf_lr),
 			    (char *)&fp);
 
-			(*pr)("--- trapframe %016llx ---\n", tf);
+			(*pr)("--- trapframe %016llx (%d bytes) ---\n", tf, sizeof(*tf));
 			dump_trapframe(tf, pr);
-			(*pr)("----------------------------------\n");
+			(*pr)("----------------------------------------------\n");
 
 		} else {
 			/*
