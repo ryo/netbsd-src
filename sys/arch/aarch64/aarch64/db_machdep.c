@@ -35,6 +35,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/lwp.h>
+#include <sys/intr.h>
 
 #include <aarch64/db_machdep.h>
 #include <aarch64/armreg.h>
@@ -50,6 +51,12 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <dev/cons.h>
 
 const struct db_command db_machine_command_table[] = {
+	{
+		DDB_ADD_CMD(
+		    "cpuinfo", db_md_cpuinfo_cmd, 0,
+		    "Displays the cpuinfo",
+		    NULL, NULL)
+	},
 	{
 		DDB_ADD_CMD(
 		    "frame", db_md_frame_cmd, 0,
@@ -71,12 +78,14 @@ const struct db_command db_machine_command_table[] = {
 		    "Displays system registers",
 		    NULL, NULL)
 	},
+#if 0
 	{
 		DDB_ADD_CMD(
 		    "tlb", db_md_tlb_cmd, 0,
 		    "Displays the TLB",
 		    NULL, NULL)
 	},
+#endif
 #endif
 #if defined(_KERNEL) && defined(MULTIPROCESSOR)
 //XXXAARCH64
@@ -185,6 +194,50 @@ dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 	    ", fp=x29=%016"PRIxREGISTER
 	    ", lr=x30=%016"PRIxREGISTER"\n",
 	    tf->tf_reg[28], tf->tf_reg[29], tf->tf_reg[30]);
+}
+
+static const char *
+softintname(int i)
+{
+	switch (i) {
+	case (IPL_SOFTCLOCK  - IPL_SOFTCLOCK):
+		return "SOFTINT_CLOCK";
+	case (IPL_SOFTBIO    - IPL_SOFTCLOCK):
+		return "SOFTINT_BIO";
+	case (IPL_SOFTNET    - IPL_SOFTCLOCK):
+		return "SOFTINT_NET";
+	case (IPL_SOFTSERIAL - IPL_SOFTCLOCK):
+		return "SOFTINT_SERIAL";
+	}
+	return "?";
+}
+
+
+
+void
+db_md_cpuinfo_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+{
+	struct cpu_info *ci, cpuinfobuf;
+	cpuid_t cpuid;
+	int i;
+
+	ci = curcpu();
+	db_read_bytes(ci, sizeof(cpuinfobuf), (char *)&cpuinfobuf);
+
+	cpuid = cpuinfobuf.ci_cpuid;
+	db_printf("cpu[%lu].ci_cpuid        = %lu\n", cpuid, cpuinfobuf.ci_cpuid);
+	db_printf("cpu[%lu].ci_gicid        = %lu\n", cpuid, cpuinfobuf.ci_gicid);
+	db_printf("cpu[%lu].ci_curlwp       = %p\n", cpuid, cpuinfobuf.ci_curlwp);
+	for (i = 0; i < SOFTINT_COUNT; i++) {
+		db_printf("cpu[%lu].ci_softlwps[%d(%s)] = %p\n", cpuid,
+		    i, softintname(i), cpuinfobuf.ci_softlwps[i]);
+	}
+	db_printf("cpu[%lu].ci_lastintr     = %llu\n", cpuid, cpuinfobuf.ci_lastintr);
+	db_printf("cpu[%lu].ci_want_resched = %d\n", cpuid, cpuinfobuf.ci_want_resched);
+	db_printf("cpu[%lu].ci_cpl          = %d\n", cpuid, cpuinfobuf.ci_cpl);
+	db_printf("cpu[%lu].ci_softints     = 0x%08x\n", cpuid, cpuinfobuf.ci_softints);
+	db_printf("cpu[%lu].ci_astpending   = 0x%08x\n", cpuid, cpuinfobuf.ci_astpending);
+	db_printf("cpu[%lu].ci_intr_depth   = %u\n", cpuid, cpuinfobuf.ci_intr_depth);
 }
 
 void
@@ -326,7 +379,6 @@ db_md_tlb_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif
 		}
 	}
 #endif
-
 }
 
 int
