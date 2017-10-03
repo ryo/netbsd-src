@@ -437,47 +437,18 @@ static const uintmax_t
 AARCH64REG_READ_INLINE(sp_el0)		/* Stack Pointer */
 AARCH64REG_WRITE_INLINE(sp_el0)
 
-#if 1 /* DAIF_DEBUG */
+static uint64_t inline
+reg_sp_read(void)
+{
+	uint64_t __rv;
+	__asm __volatile ("mov %0, sp" : "=r"(__rv));
+	return __rv;
+}
+
 AARCH64REG_READ_INLINE(daif)		/* Debug Async Irq Fiq mask register */
 AARCH64REG_WRITE_INLINE(daif)
 AARCH64REG_WRITEIMM_INLINE(daifclr)
 AARCH64REG_WRITEIMM_INLINE(daifset)
-#else
-/* DAIF read/write trace */
-static uint64_t inline
-_reg_daif_read(void)
-{
-	uint64_t __rv;
-	__asm __volatile ("mrs %0, daif" : "=r"(__rv));
-	return __rv;
-}
-static uint64_t inline
-reg_daif_read(void)
-{
-	uint64_t __rv;
-	__asm __volatile ("mrs %0, daif" : "=r"(__rv));
-	printf("reg_daif_read = %016llx\n", __rv);
-	return __rv;
-}
-static void inline
-reg_daif_write(uint64_t val)
-{
-	__asm __volatile ("msr daif, %0" :: "r"(val));
-	printf("reg_daif_write(%016llx) -> %016llx\n", val, _reg_daif_read());
-}
-static void inline
-reg_daifclr_write(uint64_t val)
-{
-	__asm __volatile ("msr daifclr, %0" :: "n"(val));
-	printf("reg_daifclr_write(%016llx) -> %016llx\n", val, _reg_daif_read());
-}
-static void inline
-reg_daifset_write(uint64_t val)
-{
-	__asm __volatile ("msr daifset, %0" :: "n"(val));
-	printf("reg_daifset_write(%016llx) -> %016llx\n", val, _reg_daif_read());
-}
-#endif /* DAIF_DEBUG */
 
 static const uintmax_t
     DAIF_D		= __BIT(9),	/* Debug Exception Mask */
