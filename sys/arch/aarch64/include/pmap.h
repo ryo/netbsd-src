@@ -36,6 +36,7 @@
 
 #include <sys/types.h>
 #include <sys/pool.h>
+#include <sys/queue.h>
 #include <uvm/uvm_pglist.h>
 
 #include <aarch64/pte.h>
@@ -43,65 +44,56 @@
 #define PMAP_GROWKERNEL
 #define PMAP_STEAL_MEMORY
 
-struct pmap {
-	kmutex_t pm_lock;
-//	struct pool *pm_pvpool;
-//	struct pglist pm_pglist;
-	pd_entry_t *pm_l0table;	/* L0 table: 512G*512 */
-	pd_entry_t *pm_l1table;	/* L1 table: 2G*512 */
-	struct pmap_statistics pm_stats;
-	unsigned int pm_refcnt;
-//	uint16_t pm_asid;
-};
-
 #define __HAVE_VM_PAGE_MD
 
+struct pv_entry;
 struct vm_page_md {
-	uint32_t mdpg_attrs;
-#define VM_PAGE_MD_MODIFIED	0x01
-#define VM_PAGE_MD_REFERENCED	0x02
-#define VM_PAGE_MD_EXECUTABLE	0x04
-//XXXAARCH64
-//	vm_page_pv_info_t mdpg_pv;
+	uint32_t mdpg_flags;	/* VM_PROT_(READ,WRITE), PMAP_WIRED */
+
+	TAILQ_HEAD(, pv_entry) mdpg_pvhead;
+	uint32_t mdpg_pvnum;	/* num of entries of mdpg_pvhead (DEBUG) */
+	struct pv_entry *mdpg_pa_owner;
+	kmutex_t mdpg_pvlock;
 };
 
-#define	VM_MDPAGE_INIT(pg)			\
-	do {					\
-		(pg)->mdpage.mdpg_attrs = 0;	\
-		VM_MDPAGE_PV_INIT(pg);		\
+#define	VM_MDPAGE_INIT(pg)				\
+	do {						\
+		(pg)->mdpage.mdpg_flags = 0;		\
+		TAILQ_INIT(&(pg)->mdpage.mdpg_pvhead);	\
+		(pg)->mdpage.mdpg_pvnum = 0;		\
+		(pg)->mdpage.mdpg_pa_owner = NULL;	\
+		mutex_init(&(pg)->mdpage.mdpg_pvlock,	\
+		    MUTEX_DEFAULT, IPL_NONE);		\
 	} while (/*CONSTCOND*/ 0)
 
-/* XXXAARCH64 */
-#define	VM_MDPAGE_PV_INIT(pg)			\
-	do {					\
-	} while (/*CONSTCOND*/ 0)
-
-
-#define l0pde_pa(pde)		((pde) & LX_TBL_PA)
+#define l0pde_pa(pde)		((paddr_t)((pde) & LX_TBL_PA))
 #define l0pde_index(v)		(((vaddr_t)(v) & L0_ADDR_BITS) >> L0_SHIFT)
 #define l0pde_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
 /* l0pte always contains table entries */
 
-#define l1pde_pa(pde)		((pde) & LX_TBL_PA)
+#define l1pde_pa(pde)		((paddr_t)((pde) & LX_TBL_PA))
 #define l1pde_index(v)		(((vaddr_t)(v) & L1_ADDR_BITS) >> L1_SHIFT)
 #define l1pde_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
 #define l1pde_is_block(pde)	(((pde) & LX_TYPE) == LX_TYPE_BLK)
 #define l1pde_is_table(pde)	(((pde) & LX_TYPE) == LX_TYPE_TBL)
 
-#define l2pde_pa(pde)		((pde) & LX_TBL_PA)
+#define l2pde_pa(pde)		((paddr_t)((pde) & LX_TBL_PA))
 #define l2pde_index(v)		(((vaddr_t)(v) & L2_ADDR_BITS) >> L2_SHIFT)
 #define l2pde_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
 #define l2pde_is_block(pde)	(((pde) & LX_TYPE) == LX_TYPE_BLK)
 #define l2pde_is_table(pde)	(((pde) & LX_TYPE) == LX_TYPE_TBL)
 
-#define l3pte_pa(pde)		((pde) & LX_TBL_PA)
+#define l3pte_pa(pde)		((paddr_t)((pde) & LX_TBL_PA))
+#define l3pte_executable(pde)	\
+    (((pde) & (LX_BLKPAG_UXN|LX_BLKPAG_PXN)) != (LX_BLKPAG_UXN|LX_BLKPAG_PXN))
 #define l3pte_index(v)		(((vaddr_t)(v) & L3_ADDR_BITS) >> L3_SHIFT)
 #define l3pte_valid(pde)	(((pde) & LX_VALID) == LX_VALID)
 #define l3pte_is_page(pde)	(((pde) & LX_TYPE) == L3_TYPE_PAG)
 /* l3pte contains always page entries */
 
 void pmap_bootstrap(vaddr_t, vaddr_t);
-
+bool pmap_fault_fixup(struct pmap *, vaddr_t, vm_prot_t);
+void pmap_db_pteinfo(vaddr_t, void (*)(const char *, ...));
 
 /* Hooks for the pool allocator */
 paddr_t vtophys(vaddr_t);

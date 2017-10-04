@@ -29,6 +29,8 @@
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD$");
 
+#include "opt_uvmhist.h"
+
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/proc.h>
@@ -40,6 +42,8 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <aarch64/machdep.h>
 #include <aarch64/armreg.h>
 #include <aarch64/db_machdep.h>
+
+UVMHIST_DECL(pmaphist);
 
 const char * const fault_status_code[] = {
 	[ESR_ISS_FSC_ADDRESS_SIZE_FAULT_0] = "Address Size Fault L0",
@@ -127,6 +131,9 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 	uint32_t rw;
 	int error;
 
+	UVMHIST_FUNC(__func__);
+	UVMHIST_CALLED(pmaphist);
+
 	rw = __SHIFTOUT(esr, ESR_ISS_DATAABORT_WnR); /* 0 if IFSC */
 
 	if (is_fatal_abort(esr)) {
@@ -171,7 +178,7 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 	p = curlwp->l_proc;
 	va = trunc_page((vaddr_t)tf->tf_far);
 
-	//XXXAARCH64
+	//XXXAARCH64: how onfault case?
 	if ((VM_MIN_KERNEL_ADDRESS <= va) && (va < VM_MAX_KERNEL_ADDRESS)) {
 		map = kernel_map;
 	} else {
@@ -183,29 +190,31 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 	else
 		ftype = (rw == 0) ? VM_PROT_READ : VM_PROT_WRITE;
 
-#if 0
-	//XXXAARCH64: DEBUG
-	if (ftype & VM_PROT_EXECUTE)
-		printf("pagefault %016lx in %s EXEC\n", va, user ? "user" : "kernel");
-	else
-		printf("pagefault %016lx in %s %s\n", va, user ? "user" : "kernel", (rw == 0) ? "read" : "write");
+#ifdef UVMHIST
+	if (ftype & VM_PROT_EXECUTE) {
+		UVMHIST_LOG(pmaphist, "pagefault %016lx in %s EXEC", va, user ? "user" : "kernel", 0, 0);
+	} else {
+		UVMHIST_LOG(pmaphist, "pagefault %016lx in %s %s\n", va, user ? "user" : "kernel", (rw == 0) ? "read" : "write", 0);
+	}
 #endif
 
 	/* reference/modified emulation */
-	if (pmap_fault_fixup(map->pmap, va, ftype))
+	if (pmap_fault_fixup(map->pmap, va, ftype)) {
+		UVMHIST_LOG(pmaphist, "fixed: va=%016llx", tf->tf_far, 0, 0, 0);
 		return true;
+	}
 
 
 	/* page fault plus faultbail path */
 	fb = cpu_disable_onfault();
-	//printf("%s:%d: uvm_fault(map=%p, va=%016lx, ftype=%08x)\n", __func__, __LINE__, map, va, ftype);
 	error = uvm_fault(map, va, ftype);
-	//printf("%s:%d: uvm_fault done\n", __func__, __LINE__);
 	cpu_enable_onfault(fb);
 
 	if (__predict_true(error == 0)) {
 		if (user)
 			uvm_grow(p, va);
+
+		UVMHIST_LOG(pmaphist, "uvm_fault success: va=%016llx", tf->tf_far, 0, 0, 0);
 		return true;
 	}
 
@@ -215,7 +224,7 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 		}
 
 		//XXXAARCH64
-		printf("%s:%d fault in %s: error=%d, va=%016lx\n", __func__, __LINE__, user ? "user" : "kernel", error, va);
+		printf("%s:%d fault in %s: error=%d, va=%016llx\n", __func__, __LINE__, user ? "user" : "kernel", error, tf->tf_far);
 		dump_trapframe(tf, printf);
 
 		return false;
