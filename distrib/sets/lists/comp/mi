@@ -1,4 +1,4 @@
-#	$NetBSD: mi,v 1.2145 2017/08/12 08:21:30 maxv Exp $
+#	$NetBSD: mi,v 1.2147 2017/09/26 16:01:58 maya Exp $
 #
 # Note: don't delete entries from here - mark them as "obsolete" instead.
 ./etc/mtree/set.comp				comp-sys-root
@@ -5977,6 +5977,7 @@
 ./usr/share/man/cat3/des_string_to_key.0	comp-c-catman		.cat
 ./usr/share/man/cat3/des_xcbc_encrypt.0		comp-c-catman		.cat
 ./usr/share/man/cat3/devname.0			comp-c-catman		.cat
+./usr/share/man/cat3/devname_r.0		comp-c-catman		.cat
 ./usr/share/man/cat3/dgettext.0			comp-c-catman		.cat
 ./usr/share/man/cat3/dh.0			comp-obsolete		obsolete
 ./usr/share/man/cat3/difftime.0			comp-c-catman		.cat
@@ -6946,6 +6947,7 @@
 ./usr/share/man/cat3/humanize_number.0		comp-c-catman		.cat
 ./usr/share/man/cat3/hypot.0			comp-c-catman		.cat
 ./usr/share/man/cat3/hypotf.0			comp-c-catman		.cat
+./usr/share/man/cat3/hypotl.0			comp-c-catman		.cat
 ./usr/share/man/cat3/i2d_CMS_bio_stream.0	comp-c-catman		.cat
 ./usr/share/man/cat3/i2d_PKCS7_bio_stream.0	comp-c-catman		.cat
 ./usr/share/man/cat3/iconv.0			comp-c-catman		.cat
@@ -13565,6 +13567,7 @@
 ./usr/share/man/html3/des_string_to_key.html	comp-c-htmlman		html
 ./usr/share/man/html3/des_xcbc_encrypt.html	comp-c-htmlman		html
 ./usr/share/man/html3/devname.html		comp-c-htmlman		html
+./usr/share/man/html3/devname_r.html		comp-c-htmlman		html
 ./usr/share/man/html3/dgettext.html		comp-c-htmlman		html
 ./usr/share/man/html3/difftime.html		comp-c-htmlman		html
 ./usr/share/man/html3/dir.html			comp-c-htmlman		html
@@ -14529,6 +14532,7 @@
 ./usr/share/man/html3/humanize_number.html	comp-c-htmlman		html
 ./usr/share/man/html3/hypot.html		comp-c-htmlman		html
 ./usr/share/man/html3/hypotf.html		comp-c-htmlman		html
+./usr/share/man/html3/hypotl.html		comp-c-htmlman		html
 ./usr/share/man/html3/i2d_CMS_bio_stream.html		comp-c-htmlman	html
 ./usr/share/man/html3/i2d_PKCS7_bio_stream.html		comp-c-htmlman	html
 ./usr/share/man/html3/iconv.html		comp-c-htmlman		html
@@ -21060,6 +21064,7 @@
 ./usr/share/man/man3/des_string_to_key.3	comp-c-man		.man
 ./usr/share/man/man3/des_xcbc_encrypt.3		comp-c-man		.man
 ./usr/share/man/man3/devname.3			comp-c-man		.man
+./usr/share/man/man3/devname_r.3		comp-c-man		.man
 ./usr/share/man/man3/dgettext.3			comp-c-man		.man
 ./usr/share/man/man3/dh.3			comp-obsolete		obsolete
 ./usr/share/man/man3/difftime.3			comp-c-man		.man
@@ -22029,6 +22034,7 @@
 ./usr/share/man/man3/humanize_number.3		comp-c-man		.man
 ./usr/share/man/man3/hypot.3			comp-c-man		.man
 ./usr/share/man/man3/hypotf.3			comp-c-man		.man
+./usr/share/man/man3/hypotl.3			comp-c-man		.man
 ./usr/share/man/man3/i2d_CMS_bio_stream.3		comp-c-man	.man
 ./usr/share/man/man3/i2d_PKCS7_bio_stream.3		comp-c-man	.man
 ./usr/share/man/man3/iconv.3			comp-c-man		.man

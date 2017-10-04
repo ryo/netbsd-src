@@ -1,6 +1,6 @@
-/*	$NetBSD: machdep.c,v 1.260 2017/07/25 17:43:44 maxv Exp $	*/
+/*	$NetBSD: machdep.c,v 1.262 2017/09/30 11:43:57 maxv Exp $	*/
 
-/*-
+/*
  * Copyright (c) 1996, 1997, 1998, 2000, 2006, 2007, 2008, 2011
  *     The NetBSD Foundation, Inc.
  * All rights reserved.
@@ -73,10 +73,9 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
  */
 
-/*-
+/*
  * Copyright (c) 1982, 1987, 1990 The Regents of the University of California.
  * All rights reserved.
  *
@@ -111,7 +110,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: machdep.c,v 1.260 2017/07/25 17:43:44 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: machdep.c,v 1.262 2017/09/30 11:43:57 maxv Exp $");
 
 /* #define XENDEBUG_LOW  */
 
@@ -265,6 +264,7 @@ paddr_t ldt_paddr;
 vaddr_t module_start, module_end;
 static struct vm_map module_map_store;
 extern struct vm_map *module_map;
+extern struct bootspace bootspace;
 vaddr_t kern_end;
 
 struct vm_map *phys_map = NULL;
@@ -322,6 +322,7 @@ int dump_header_finish(void);
 int dump_seg_count_range(paddr_t, paddr_t);
 int dumpsys_seg(paddr_t, paddr_t);
 
+void init_bootspace(void);
 void init_x86_64(paddr_t);
 
 /*
@@ -1439,7 +1440,7 @@ cpu_init_idt(void)
 	struct region_descriptor region;
 
 	setregion(&region, idt, NIDT * sizeof(idt[0]) - 1);
-	lidt(&region); 
+	lidt(&region);
 #else
 	if (HYPERVISOR_set_trap_table(xen_idt))
 		panic("HYPERVISOR_set_trap_table() failed");
@@ -1488,6 +1489,41 @@ init_x86_64_ksyms(void)
 }
 
 void
+init_bootspace(void)
+{
+	extern char __rodata_start;
+	extern char __data_start;
+	extern char __kernel_end;
+
+	memset(&bootspace, 0, sizeof(bootspace));
+
+	bootspace.text.va = KERNTEXTOFF;
+	bootspace.text.pa = KERNTEXTOFF - KERNBASE;
+	bootspace.text.sz = (size_t)&__rodata_start - KERNTEXTOFF;
+
+	bootspace.rodata.va = (vaddr_t)&__rodata_start;
+	bootspace.rodata.pa = (paddr_t)&__rodata_start - KERNBASE;
+	bootspace.rodata.sz = (size_t)&__data_start - (size_t)&__rodata_start;
+
+	bootspace.data.va = (vaddr_t)&__data_start;
+	bootspace.data.pa = (paddr_t)&__data_start - KERNBASE;
+	bootspace.data.sz = (size_t)&__kernel_end - (size_t)&__data_start;
+
+	bootspace.boot.va = (vaddr_t)&__kernel_end;
+	bootspace.boot.pa = (paddr_t)&__kernel_end - KERNBASE;
+	bootspace.boot.sz = (size_t)(atdevbase + IOM_SIZE) -
+	    (size_t)&__kernel_end;
+
+	/* In locore.S, we allocated a tmp va. We will use it now. */
+	bootspace.spareva = KERNBASE + NKL2_KIMG_ENTRIES * NBPD_L2;
+
+	/* Virtual address of the L4 page */
+	bootspace.pdir = (vaddr_t)(PDPpaddr + KERNBASE);
+
+	bootspace.emodule = KERNBASE + NKL2_KIMG_ENTRIES * NBPD_L2;
+}
+
+void
 init_x86_64(paddr_t first_avail)
 {
 	extern void consinit(void);
@@ -1495,6 +1531,7 @@ init_x86_64(paddr_t first_avail)
 	struct mem_segment_descriptor *ldt_segp;
 	int x;
 	struct pcb *pcb;
+	extern vaddr_t lwp0uarea;
 #ifndef XEN
 	extern paddr_t local_apic_pa;
 	int ist;
@@ -1505,9 +1542,9 @@ init_x86_64(paddr_t first_avail)
 #ifdef XEN
 	KASSERT(HYPERVISOR_shared_info != NULL);
 	cpu_info_primary.ci_vcpu = &HYPERVISOR_shared_info->vcpu_info[0];
+#endif
 
-	__PRINTK(("init_x86_64(0x%lx)\n", first_avail));
-#endif /* XEN */
+	uvm_lwp_setuarea(&lwp0, lwp0uarea);
 
 	cpu_probe(&cpu_info_primary);
 	cpu_init_msrs(&cpu_info_primary, true);
@@ -1518,7 +1555,8 @@ init_x86_64(paddr_t first_avail)
 #ifdef XEN
 	mutex_init(&pte_lock, MUTEX_DEFAULT, IPL_VM);
 	pcb->pcb_cr3 = xen_start_info.pt_base - KERNBASE;
-	__PRINTK(("pcb_cr3 0x%lx\n", xen_start_info.pt_base - KERNBASE));
+#else
+	pcb->pcb_cr3 = PDPpaddr;
 #endif
 
 #if NISA > 0 || NPCI > 0
@@ -1566,7 +1604,7 @@ init_x86_64(paddr_t first_avail)
 
 	/* The area for the module map. */
 	module_start = kern_end;
-	module_end = KERNBASE + NKL2_KIMG_ENTRIES * NBPD_L2;
+	module_end = bootspace.emodule;
 
 	/*
 	 * Call pmap initialization to make new kernel address space.
@@ -1790,7 +1828,7 @@ cpu_reset(void)
 	 * invalid and causing a fault.
 	 */
 	kpreempt_disable();
-	pmap_changeprot_local(idt_vaddr, VM_PROT_READ|VM_PROT_WRITE);           
+	pmap_changeprot_local(idt_vaddr, VM_PROT_READ|VM_PROT_WRITE);
 	memset((void *)idt, 0, NIDT * sizeof(idt[0]));
 	kpreempt_enable();
 	breakpoint();
@@ -1801,7 +1839,7 @@ cpu_reset(void)
 	 * entire address space and doing a TLB flush.
 	 */
 	memset((void *)PTD, 0, PAGE_SIZE);
-	tlbflush(); 
+	tlbflush();
 #endif
 #endif	/* XEN */
 
@@ -1950,7 +1988,7 @@ cpu_initclocks(void)
 int
 mm_md_kernacc(void *ptr, vm_prot_t prot, bool *handled)
 {
-	extern int start, __data_start;
+	extern char start, __data_start;
 	const vaddr_t v = (vaddr_t)ptr;
 
 	if (v >= (vaddr_t)&start && v < (vaddr_t)kern_end) {
@@ -2040,7 +2078,6 @@ cpu_fsgs_reload(struct lwp *l, int fssel, int gssel)
 	tf->tf_gs = gssel;
 	kpreempt_enable();
 }
-
 
 #ifdef __HAVE_DIRECT_MAP
 bool

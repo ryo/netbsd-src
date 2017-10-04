@@ -1,4 +1,4 @@
-/* $NetBSD: sunxi_emac.c,v 1.4 2017/07/07 21:40:56 jmcneill Exp $ */
+/* $NetBSD: sunxi_emac.c,v 1.8 2017/10/01 15:05:09 jmcneill Exp $ */
 
 /*-
  * Copyright (c) 2016-2017 Jared McNeill <jmcneill@invisible.ca>
@@ -33,7 +33,7 @@
 #include "opt_net_mpsafe.h"
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: sunxi_emac.c,v 1.4 2017/07/07 21:40:56 jmcneill Exp $");
+__KERNEL_RCSID(0, "$NetBSD: sunxi_emac.c,v 1.8 2017/10/01 15:05:09 jmcneill Exp $");
 
 #include <sys/param.h>
 #include <sys/bus.h>
@@ -95,7 +95,6 @@ __KERNEL_RCSID(0, "$NetBSD: sunxi_emac.c,v 1.4 2017/07/07 21:40:56 jmcneill Exp 
 #define	BURST_LEN_DEFAULT	8
 #define	RX_TX_PRI_DEFAULT	0
 #define	PAUSE_TIME_DEFAULT	0x400
-#define	TX_INTERVAL_DEFAULT	64
 
 /* syscon EMAC clock register */
 #define	EMAC_CLK_EPHY_ADDR	(0x1f << 20)	/* H3 */
@@ -125,17 +124,16 @@ static int sunxi_emac_rx_tx_pri = RX_TX_PRI_DEFAULT;
 /* Pause time field in the transmitted control frame */
 static int sunxi_emac_pause_time = PAUSE_TIME_DEFAULT;
 
-/* Request a TX interrupt every <n> descriptors */
-static int sunxi_emac_tx_interval = TX_INTERVAL_DEFAULT;
-
 enum sunxi_emac_type {
 	EMAC_A83T = 1,
 	EMAC_H3,
+	EMAC_A64,
 };
 
 static const struct of_compat_data compat_data[] = {
 	{ "allwinner,sun8i-a83t-emac",	EMAC_A83T },
 	{ "allwinner,sun8i-h3-emac",	EMAC_H3 },
+	{ "allwinner,sun50i-a64-emac",	EMAC_A64 },
 	{ NULL }
 };
 
@@ -186,6 +184,8 @@ struct sunxi_emac_softc {
 	struct fdtbus_reset	*rst_ephy;
 	struct fdtbus_regulator	*reg_phy;
 	struct fdtbus_gpio_pin	*pin_reset;
+
+	int			phy_id;
 
 	kmutex_t		mtx;
 	struct ethercom		ec;
@@ -333,8 +333,6 @@ sunxi_emac_setup_txdesc(struct sunxi_emac_softc *sc, int index, int flags,
 	} else {
 		status = TX_DESC_CTL;
 		size = flags | len;
-		if ((index & (sunxi_emac_tx_interval - 1)) == 0)
-			size |= TX_INT_CTL;
 		++sc->tx.queued;
 	}
 
@@ -376,7 +374,7 @@ sunxi_emac_setup_txbuf(struct sunxi_emac_softc *sc, int index, struct mbuf *m)
 	for (cur = index, i = 0; i < nsegs; i++) {
 		sc->tx.buf_map[cur].mbuf = (i == 0 ? m : NULL);
 		if (i == nsegs - 1)
-			flags |= TX_LAST_DESC;
+			flags |= TX_LAST_DESC | TX_INT_CTL;
 
 		sunxi_emac_setup_txdesc(sc, cur, flags, segs[i].ds_addr,
 		    segs[i].ds_len);
@@ -736,15 +734,14 @@ sunxi_emac_rxintr(struct sunxi_emac_softc *sc)
 
 			if ((ifp->if_capenable & IFCAP_CSUM_IPv4_Rx) != 0 &&
 			    (status & RX_FRM_TYPE) != 0) {
-				m->m_pkthdr.csum_flags = M_CSUM_IPv4;
+				m->m_pkthdr.csum_flags = M_CSUM_IPv4 |
+				    M_CSUM_TCPv4 | M_CSUM_UDPv4;
 				if ((status & RX_HEADER_ERR) != 0)
 					m->m_pkthdr.csum_flags |=
 					    M_CSUM_IPv4_BAD;
-				if ((status & RX_PAYLOAD_ERR) == 0) {
+				if ((status & RX_PAYLOAD_ERR) != 0)
 					m->m_pkthdr.csum_flags |=
-					    M_CSUM_DATA;
-					m->m_pkthdr.csum_data = 0xffff;
-				}
+					    M_CSUM_TCP_UDP_BAD;
 			}
 
 			++npkt;
@@ -1283,7 +1280,7 @@ sunxi_emac_get_resources(struct sunxi_emac_softc *sc)
 
 	if ((sc->rst_ahb = fdtbus_reset_get(phandle, "ahb")) == NULL)
 		return ENXIO;
-	sc->rst_ahb = fdtbus_reset_get(phandle, "ephy");
+	sc->rst_ephy = fdtbus_reset_get(phandle, "ephy");
 
 	/* Regulator is optional */
 	sc->reg_phy = fdtbus_regulator_acquire(phandle, "phy-supply");
@@ -1293,6 +1290,21 @@ sunxi_emac_get_resources(struct sunxi_emac_softc *sc)
 	    "allwinner,reset-gpio", GPIO_PIN_OUTPUT);
 
 	return 0;
+}
+
+static int
+sunxi_emac_get_phyid(struct sunxi_emac_softc *sc)
+{
+	bus_addr_t addr;
+
+	const int phy_phandle = fdtbus_get_phandle(sc->phandle, "phy");
+	if (phy_phandle == -1)
+		return MII_PHY_ANY;
+
+	if (fdtbus_get_reg(phy_phandle, 0, &addr, NULL) != 0)
+		return MII_PHY_ANY;
+
+	return (int)addr;
 }
 
 static int
@@ -1319,6 +1331,7 @@ sunxi_emac_attach(device_t parent, device_t self, void *aux)
 	sc->bst = faa->faa_bst;
 	sc->dmat = faa->faa_dmat;
 	sc->type = of_search_compatible(phandle, compat_data)->data;
+	sc->phy_id = sunxi_emac_get_phyid(sc);
 
 	if (sunxi_emac_get_resources(sc) != 0) {
 		aprint_error(": cannot allocate resources for device\n");
@@ -1393,7 +1406,7 @@ sunxi_emac_attach(device_t parent, device_t self, void *aux)
 	mii->mii_readreg = sunxi_emac_mii_readreg;
 	mii->mii_writereg = sunxi_emac_mii_writereg;
 	mii->mii_statchg = sunxi_emac_mii_statchg;
-	mii_attach(self, mii, 0xffffffff, MII_PHY_ANY, MII_OFFSET_ANY,
+	mii_attach(self, mii, 0xffffffff, sc->phy_id, MII_OFFSET_ANY,
 	    MIIF_DOPAUSE);
 
 	if (LIST_EMPTY(&mii->mii_phys)) {

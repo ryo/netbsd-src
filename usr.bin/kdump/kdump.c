@@ -1,4 +1,4 @@
-/*	$NetBSD: kdump.c,v 1.125 2016/09/05 00:40:29 sevan Exp $	*/
+/*	$NetBSD: kdump.c,v 1.129 2017/09/10 10:09:40 wiz Exp $	*/
 
 /*-
  * Copyright (c) 1988, 1993
@@ -39,7 +39,7 @@ __COPYRIGHT("@(#) Copyright (c) 1988, 1993\
 #if 0
 static char sccsid[] = "@(#)kdump.c	8.4 (Berkeley) 4/28/95";
 #else
-__RCSID("$NetBSD: kdump.c,v 1.125 2016/09/05 00:40:29 sevan Exp $");
+__RCSID("$NetBSD: kdump.c,v 1.129 2017/09/10 10:09:40 wiz Exp $");
 #endif
 #endif /* not lint */
 
@@ -71,6 +71,11 @@ __RCSID("$NetBSD: kdump.c,v 1.125 2016/09/05 00:40:29 sevan Exp $");
 #include "setemul.h"
 
 #include <sys/syscall.h>
+
+#define TIMESTAMP_NONE		0x0
+#define TIMESTAMP_ABSOLUTE	0x1
+#define TIMESTAMP_ELAPSED	0x2
+#define TIMESTAMP_RELATIVE	0x4
 
 static int timestamp, decimal, plain, tail, maxdata = -1, numeric;
 static int word_size = 0;
@@ -104,6 +109,7 @@ static const char * const linux_ptrace_ops[] = {
 
 static int	fread_tail(void *, size_t, size_t);
 static int	dumpheader(struct ktr_header *);
+static int	output_ts(const struct timespec *);
 static void	output_long(u_long, int);
 static void	ioctldecode(u_long);
 static void	ktrsyscall(struct ktr_syscall *);
@@ -162,9 +168,14 @@ main(int argc, char **argv)
 		}
 		return 0;
 	}
-		
-	while ((ch = getopt(argc, argv, "e:f:dlm:Nnp:RTt:xX:")) != -1) {
+
+	timestamp = TIMESTAMP_NONE;
+
+	while ((ch = getopt(argc, argv, "Ee:f:dlm:Nnp:RTt:xX:")) != -1) {
 		switch (ch) {
+		case 'E':
+			timestamp |= TIMESTAMP_ELAPSED;
+			break;
 		case 'e':
 			emul_name = strdup(optarg); /* it's safer to copy it */
 			break;
@@ -194,10 +205,10 @@ main(int argc, char **argv)
 			plain++;
 			break;
 		case 'R':
-			timestamp = 2;	/* relative timestamp */
+			timestamp |= TIMESTAMP_RELATIVE;
 			break;
 		case 'T':
-			timestamp = 1;
+			timestamp |= TIMESTAMP_ABSOLUTE;
 			break;
 		case 't':
 			trset = 1;
@@ -329,13 +340,13 @@ dumpheader(struct ktr_header *kth)
 {
 	char unknown[64];
 	const char *type;
-	union holdtime {
-		struct timeval tv;
-		struct timespec ts;
-	};
-	static union holdtime prevtime;
-	union holdtime temp;
+	static struct timespec starttime, prevtime;
+	struct timespec temp;
 	int col;
+
+	if (__predict_false(kth->ktr_version != KTRFAC_VERSION(KTRFACv2)))
+		errx(EXIT_FAILURE, "Unsupported ktrace version %x",
+		     kth->ktr_version);
 
 	switch (kth->ktr_type) {
 	case KTR_SYSCALL:
@@ -383,72 +394,65 @@ dumpheader(struct ktr_header *kth)
 		type = unknown;
 	}
 
-	col = printf("%6d ", kth->ktr_pid);
-	if (kth->ktr_version > KTRFACv0)
-		col += printf("%6d ", kth->ktr_lid);
+	col = printf("%6d %6d ", kth->ktr_pid, kth->ktr_lid);
 	col += printf("%-8.*s ", MAXCOMLEN, kth->ktr_comm);
 	if (timestamp) {
-		(void)&prevtime;
-		if (timestamp == 2) {
-			switch (kth->ktr_version) {
-			case KTRFAC_VERSION(KTRFACv0):
-				if (prevtime.tv.tv_sec == 0)
-					temp.tv.tv_sec = temp.tv.tv_usec = 0;
-				else
-					timersub(&kth->ktr_otv,
-					    &prevtime.tv, &temp.tv);
-				prevtime.tv.tv_sec = kth->ktr_otv.tv_sec;
-				prevtime.tv.tv_usec = kth->ktr_otv.tv_usec;
-				break;
-			case KTRFAC_VERSION(KTRFACv1):
-				if (prevtime.ts.tv_sec == 0)
-					temp.ts.tv_sec = temp.ts.tv_nsec = 0;
-				else
-					timespecsub(&kth->ktr_ots,
-					    &prevtime.ts, &temp.ts);
-				prevtime.ts.tv_sec = kth->ktr_ots.tv_sec;
-				prevtime.ts.tv_nsec = kth->ktr_ots.tv_nsec;
-				break;
-			case KTRFAC_VERSION(KTRFACv2):
-				if (prevtime.ts.tv_sec == 0)
-					temp.ts.tv_sec = temp.ts.tv_nsec = 0;
-				else
-					timespecsub(&kth->ktr_ts,
-					    &prevtime.ts, &temp.ts);
-				prevtime.ts.tv_sec = kth->ktr_ts.tv_sec;
-				prevtime.ts.tv_nsec = kth->ktr_ts.tv_nsec;
-				break;
-			default:
-				goto badversion;
-			}
-		} else {
-			switch (kth->ktr_version) {
-			case KTRFAC_VERSION(KTRFACv0):
-				temp.tv.tv_sec = kth->ktr_otv.tv_sec;
-				temp.tv.tv_usec = kth->ktr_otv.tv_usec;
-				break;
-			case KTRFAC_VERSION(KTRFACv1):
-				temp.ts.tv_sec = kth->ktr_ots.tv_sec;
-				temp.ts.tv_nsec = kth->ktr_ots.tv_nsec;
-				break;
-			case KTRFAC_VERSION(KTRFACv2):
-				temp.ts.tv_sec = kth->ktr_ts.tv_sec;
-				temp.ts.tv_nsec = kth->ktr_ts.tv_nsec;
-				break;
-			default:
-			badversion:
-				err(1, "Unsupported ktrace version %x",
-				    kth->ktr_version);
-			}
+		if (timestamp & TIMESTAMP_ABSOLUTE) {
+			temp.tv_sec = kth->ktr_ts.tv_sec;
+			temp.tv_nsec = kth->ktr_ts.tv_nsec;
+			col += output_ts(&temp);
 		}
-		if (kth->ktr_version == KTRFACv0)
-			col += printf("%lld.%06ld ",
-			    (long long)temp.tv.tv_sec, (long)temp.tv.tv_usec);
-		else
-			col += printf("%lld.%09ld ",
-			    (long long)temp.ts.tv_sec, (long)temp.ts.tv_nsec);
+
+		if (timestamp & TIMESTAMP_ELAPSED) {
+			if (starttime.tv_sec == 0) {
+				starttime.tv_sec = kth->ktr_ts.tv_sec;
+				starttime.tv_nsec = kth->ktr_ts.tv_nsec;
+				temp.tv_sec = temp.tv_nsec = 0;
+			} else
+				timespecsub(&kth->ktr_ts, &starttime, &temp);
+			col += output_ts(&temp);
+		}
+
+		if (timestamp & TIMESTAMP_RELATIVE) {
+			if (prevtime.tv_sec == 0)
+				temp.tv_sec = temp.tv_nsec = 0;
+			else
+				timespecsub(&kth->ktr_ts, &prevtime, &temp);
+			prevtime.tv_sec = kth->ktr_ts.tv_sec;
+			prevtime.tv_nsec = kth->ktr_ts.tv_nsec;
+			col += output_ts(&temp);
+		}
 	}
 	col += printf("%-4s  ", type);
+	return col;
+}
+
+static int
+output_ts(const struct timespec *ts)
+{
+	int col;
+
+	if (__predict_true(ts->tv_sec >= 0))
+	    col = printf("%lld.%09ld ",
+			 (long long)ts->tv_sec, (long)ts->tv_nsec);
+	else {
+	    /*
+	     * The time represented by a timespec object ts is always
+	     *
+	     *   ts.tv_sec + ts.tv_nsec * 1e-9
+	     *
+	     * where ts.tv_sec may be negative but ts.tv_nsec is
+	     * always in [0, 1e9).  So, for example, -1/4 second is
+	     * represented by the struct timespec object
+	     *
+	     *   { .tv_sec = -1, .tv_nsec = 750000000 }
+	     */
+	    const struct timespec zero_ts = { 0, 0 };
+	    struct timespec abs_ts;
+	    timespecsub(&zero_ts, ts, &abs_ts);
+	    col = printf("-%lld.%09ld ",
+			 (long long)abs_ts.tv_sec, (long)abs_ts.tv_nsec);
+	}
 	return col;
 }
 
@@ -1196,7 +1200,7 @@ usage(void)
 		(void)fprintf(stderr, "Usage: %s [-e emulation] <ioctl> ...\n",
 		    getprogname());
 	} else {
-		(void)fprintf(stderr, "Usage: %s [-dlNnRT] [-e emulation] "
+		(void)fprintf(stderr, "Usage: %s [-dElNnRT] [-e emulation] "
 		   "[-f file] [-m maxdata] [-p pid]\n             [-t trstr] "
 		   "[-x | -X size] [file]\n", getprogname());
 	}

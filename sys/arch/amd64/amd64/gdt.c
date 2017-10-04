@@ -1,4 +1,4 @@
-/*	$NetBSD: gdt.c,v 1.41 2017/09/02 12:57:03 maxv Exp $	*/
+/*	$NetBSD: gdt.c,v 1.43 2017/09/10 10:51:13 maxv Exp $	*/
 
 /*
  * Copyright (c) 1996, 1997, 2009 The NetBSD Foundation, Inc.
@@ -37,7 +37,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: gdt.c,v 1.41 2017/09/02 12:57:03 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: gdt.c,v 1.43 2017/09/10 10:51:13 maxv Exp $");
 
 #include "opt_multiprocessor.h"
 #include "opt_xen.h"
@@ -130,7 +130,11 @@ gdt_init(void)
 	struct cpu_info *ci = &cpu_info_primary;
 
 	/* Initialize the global values */
+#ifdef XEN
+	gdt_size = FIRST_RESERVED_GDT_BYTE;
+#else
 	gdt_size = MAXGDTSIZ;
+#endif
 	memset(&gdt_bitmap.busy, 0, sizeof(gdt_bitmap.busy));
 	gdt_bitmap.nslots = NSLOTS(gdt_size);
 
@@ -296,12 +300,12 @@ void
 lgdt(struct region_descriptor *desc)
 {
 	paddr_t frames[16];
-	int i;
+	size_t i;
 	vaddr_t va;
 
 	/*
-	 * XXX: Xen even checks descriptors AFTER limit.
-	 * Zero out last frame after limit if needed.
+	 * Xen even checks descriptors AFTER limit. Zero out last frame after
+	 * limit if needed.
 	 */
 	va = desc->rd_base + desc->rd_limit + 1;
 	memset((void *)va, 0, roundup(va, PAGE_SIZE) - va);
@@ -311,11 +315,10 @@ lgdt(struct region_descriptor *desc)
 	 * Xen. Mark pages R/O too, otherwise Xen will refuse to use them.
 	 */
 	for (i = 0; i < roundup(desc->rd_limit, PAGE_SIZE) >> PAGE_SHIFT; i++) {
-		frames[i] = ((paddr_t) xpmap_ptetomach(
-		    (pt_entry_t *)(desc->rd_base + (i << PAGE_SHIFT)))) >>
+		va = desc->rd_base + (i << PAGE_SHIFT);
+		frames[i] = ((paddr_t)xpmap_ptetomach((pt_entry_t *)va)) >>
 		    PAGE_SHIFT;
-		pmap_pte_clearbits(kvtopte(desc->rd_base + (i << PAGE_SHIFT)),
-		    PG_RW);
+		pmap_pte_clearbits(kvtopte(va), PG_RW);
 	}
 
 	if (HYPERVISOR_set_gdt(frames, (desc->rd_limit + 1) >> 3))

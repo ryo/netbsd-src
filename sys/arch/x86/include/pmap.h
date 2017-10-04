@@ -1,4 +1,4 @@
-/*	$NetBSD: pmap.h,v 1.67 2017/06/17 08:07:03 maxv Exp $	*/
+/*	$NetBSD: pmap.h,v 1.69 2017/09/30 11:43:57 maxv Exp $	*/
 
 /*
  * Copyright (c) 1997 Charles D. Cranor and Washington University.
@@ -111,6 +111,45 @@
 #include <sys/kcpuset.h>
 #include <uvm/pmap/pmap_pvt.h>
 
+struct bootspace {
+	/* Kernel segments. */
+	struct {
+		vaddr_t va;
+		paddr_t pa;
+		size_t sz;
+	} text;
+	struct {
+		vaddr_t va;
+		paddr_t pa;
+		size_t sz;
+	} rodata;
+	struct {
+		vaddr_t va;
+		paddr_t pa;
+		size_t sz;
+	} data;
+
+	/*
+	 * The area used by the early kernel bootstrap. It contains the kernel
+	 * symbols, the preloaded modules, the bootstrap tables, and the ISA I/O
+	 * mem.
+	 */
+	struct {
+		vaddr_t va;
+		paddr_t pa;
+		size_t sz;
+	} boot;
+
+	/* A magic VA usable by the bootstrap code. */
+	vaddr_t spareva;
+
+	/* Virtual address of the page directory. */
+	vaddr_t pdir;
+
+	/* End of the area dedicated to kernel modules (amd64 only). */
+	vaddr_t emodule;
+};
+
 /*
  * pmap data structures: see pmap.c for details of locking.
  */
@@ -200,6 +239,7 @@ extern u_long PDPpaddr;
 
 extern pd_entry_t pmap_pg_g;			/* do we support PG_G? */
 extern pd_entry_t pmap_pg_nx;			/* do we support PG_NX? */
+extern int pmap_largepages;
 extern long nkptp[PTP_LEVELS];
 
 /*

@@ -1,4 +1,4 @@
-/*	$NetBSD: a9_mpsubr.S,v 1.49 2017/07/24 19:37:41 joerg Exp $	*/
+/*	$NetBSD: a9_mpsubr.S,v 1.51 2017/09/22 06:31:02 skrll Exp $	*/
 /*-
  * Copyright (c) 2012 The NetBSD Foundation, Inc.
  * All rights reserved.
@@ -39,7 +39,7 @@
 
 //#define MPDEBUG
 
-// Marco to call routines in .text
+// Macro to call routines in .text
 #if defined(KERNEL_BASES_EQUAL)
 #define CALL(f)		bl	_C_LABEL(f)
 #else
@@ -166,7 +166,8 @@ arm_boot_l1pt_init:
 // bits to clear in the Control Register
 //
 #define CPU_CONTROL_CLR \
-	(CPU_CONTROL_AFLT_ENABLE_CLR)
+	(CPU_CONTROL_AFLT_ENABLE_CLR	|	\
+	 CPU_CONTROL_TR_ENABLE)
 
 arm_cpuinit:
 	// Because the MMU may already be on do a typical sequence to set
@@ -253,9 +254,7 @@ arm_cpuinit:
 	movt	r3, #:upper16:CPU_CONTROL_SET
 #endif
 	orr	r0, r1, r3
-#if defined(CPU_CONTROL_CLR) && (CPU_CONTROL_CLR != 0)
 	bic	r0, r0, #CPU_CONTROL_CLR
-#endif
 	//cmp	r0, r1			// any changes to SCTLR?
 	//bxeq	ip			//    no, then return.
 

@@ -1,3 +1,4 @@
+/*	$NetBSD: elf32_powerpc_merge.x,v 1.7 2017/10/02 01:03:31 uwe Exp $ */
 OUTPUT_ARCH(powerpc)
 SECTIONS
 {
@@ -40,6 +41,7 @@ SECTIONS
   .dtors     : { *(.dtors)   }
   _etext = .;
   PROVIDE (etext = .);
+  .pad       : { LONG(0) }
   /* Read-write section, merged into data segment: */
   . = (. + 0x0FFF) & 0xFFFFF000;
   .data    :

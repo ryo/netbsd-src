@@ -1,4 +1,4 @@
-/* $NetBSD: ofwoea_machdep.c,v 1.39 2016/12/22 14:47:58 cherry Exp $ */
+/* $NetBSD: ofwoea_machdep.c,v 1.41 2017/09/22 04:45:56 macallan Exp $ */
 
 /*-
  * Copyright (c) 2007 The NetBSD Foundation, Inc.
@@ -30,7 +30,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: ofwoea_machdep.c,v 1.39 2016/12/22 14:47:58 cherry Exp $");
+__KERNEL_RCSID(0, "$NetBSD: ofwoea_machdep.c,v 1.41 2017/09/22 04:45:56 macallan Exp $");
 
 #include "opt_ppcarch.h"
 #include "opt_compat_netbsd.h"
@@ -309,7 +309,7 @@ ofwoea_initppc(u_int startkernel, u_int endkernel, char *args)
 void
 set_timebase(void)
 {
-	int qhandle, phandle, msr, scratch;
+	int qhandle, phandle, msr, scratch, node;
 	char type[32];
 
 	if (timebase_freq != 0) {
@@ -317,7 +317,14 @@ set_timebase(void)
 		goto found;
 	}
 
-	for (qhandle = OF_peer(0); qhandle; qhandle = phandle) {
+	node = OF_finddevice("/cpus/@0");
+	if (OF_getprop(node, "timebase-frequency",
+			&ticks_per_sec, sizeof ticks_per_sec) > 0) {
+		goto found;
+	}
+
+	node = OF_finddevice("/");
+	for (qhandle = node; qhandle; qhandle = phandle) {
 		if (OF_getprop(qhandle, "device_type", type, sizeof type) > 0
 		    && strcmp(type, "cpu") == 0
 		    && OF_getprop(qhandle, "timebase-frequency",
@@ -551,7 +558,13 @@ find_ranges(int base, rangemap_t *regions, int *cur, int type)
 		goto rec;
 	if (type == RANGE_TYPE_ISA && strcmp("isa", tmp) != 0)
 		goto rec;
-	len = OF_getprop(node, "ranges", map, sizeof(map));
+	if (type == RANGE_TYPE_MACIO && strcmp("memory-controller", tmp) == 0) {
+		len = OF_getprop(node, "reg", map, sizeof(map));
+		acells = 1;
+		scells = 1;
+	} else {
+		len = OF_getprop(node, "ranges", map, sizeof(map));
+	}
 	if (len == -1)
 		goto rec;
 	if (OF_getprop(OF_parent(node), "#address-cells", &parent_acells,
@@ -612,6 +625,17 @@ find_ranges(int base, rangemap_t *regions, int *cur, int type)
 				    map[i*reclen + acells + scells];
 				(*cur)++;
 			}
+			break;
+		case RANGE_TYPE_MACIO:
+			regions[*cur].type = RANGE_MEM;
+			if (len == 8) {
+				regions[*cur].size = map[1];
+				regions[*cur].addr = map[0];
+			} else {
+				regions[*cur].size = map[2];
+				regions[*cur].addr = map[1];
+			}				
+			(*cur)++;		
 			break;
 	}
 	DPRINTF("returning with CUR=%d\n", *cur);
@@ -764,7 +788,7 @@ ofwoea_map_space(int rangetype, int iomem, int node,
 		    holes[i].size, holes[i].type);
 	/* AT THIS POINT WE MAP IT */
 
-	if (rangetype == RANGE_TYPE_PCI) {
+	if ((rangetype == RANGE_TYPE_PCI) || (rangetype == RANGE_TYPE_MACIO)) {
 		if (exmap == EXSTORAGE_MAX)
 			panic("Not enough ex_storage space. "
 			    "Increase EXSTORAGE_MAX");

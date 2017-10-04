@@ -1,4 +1,4 @@
-.\" $NetBSD: sys_info.1,v 1.6 2017/08/27 20:39:26 wiz Exp $
+.\" $NetBSD: sys_info.1,v 1.8 2017/09/21 07:07:28 wiz Exp $
 .\"
 .\" Copyright (c) 2016 Alistair Crooks <agc@NetBSD.org>
 .\" All rights reserved.
@@ -23,7 +23,7 @@
 .\" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 .\" THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 .\"
-.Dd August 23, 2017
+.Dd September 20, 2017
 .Dt SYS_INFO 1
 .Os
 .Sh NAME
@@ -32,6 +32,7 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl v
+.Op Fl d Ar destination-dir
 .Op Fl L Ar lib-path
 .Op Fl P Ar path
 .Op Ar component No ...
@@ -48,6 +49,15 @@ information from the installed utilities.
 .Sh OPTIONS
 The following options are available:
 .Bl -tag -width inits
+.It Fl d
+This option provides a destination directory, used
+as the root directory of an alternative set of programs
+and libraries.
+This can be useful for finding versions of utilities
+and libraries rooted in the file system directory,
+such as the destination directory from a
+.Dv build.sh
+run.
 .It Fl L
 Give a list of directories
 .Pq "colon separated"

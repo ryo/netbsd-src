@@ -1,4 +1,4 @@
-# $NetBSD: mi,v 1.1559 2017/06/16 22:39:34 pgoyette Exp $
+# $NetBSD: mi,v 1.1562 2017/10/01 20:49:25 maya Exp $
 #
 # Note: don't delete entries from here - mark them as "obsolete" instead.
 #
@@ -555,6 +555,7 @@
 ./usr/share/man/cat1/systat.0			man-util-catman		.cat
 ./usr/share/man/cat1/systrace.0			man-obsolete		obsolete
 ./usr/share/man/cat1/tabs.0			man-util-catman		.cat
+./usr/share/man/cat1/tac.0			man-util-catman		.cat
 ./usr/share/man/cat1/tail.0			man-util-catman		.cat
 ./usr/share/man/cat1/talk.0			man-netutil-catman	.cat
 ./usr/share/man/cat1/tar.0			man-util-catman		.cat
@@ -1624,7 +1625,7 @@
 ./usr/share/man/cat4/sbt.0			man-sys-catman		.cat
 ./usr/share/man/cat4/sbus.0			man-sys-catman		.cat
 ./usr/share/man/cat4/sc.0			man-sys-catman		.cat
-./usr/share/man/cat4/scc.0			man-sys-catman		.cat
+./usr/share/man/cat4/scc.0			man-obsolete		obsolete
 ./usr/share/man/cat4/schide.0			man-sys-catman		.cat
 ./usr/share/man/cat4/scsi.0			man-sys-catman		.cat
 ./usr/share/man/cat4/scsibus.0			man-sys-catman		.cat
@@ -1840,6 +1841,7 @@
 ./usr/share/man/cat4/uhmodem.0			man-sys-catman		.cat
 ./usr/share/man/cat4/uhso.0			man-sys-catman		.cat
 ./usr/share/man/cat4/uhub.0			man-sys-catman		.cat
+./usr/share/man/cat4/uipad.0			man-sys-catman		.cat
 ./usr/share/man/cat4/uipaq.0			man-sys-catman		.cat
 ./usr/share/man/cat4/uirda.0			man-sys-catman		.cat
 ./usr/share/man/cat4/uk.0			man-sys-catman		.cat
@@ -3731,6 +3733,7 @@
 ./usr/share/man/html1/sysstat.html		man-util-htmlman	html
 ./usr/share/man/html1/systat.html		man-util-htmlman	html
 ./usr/share/man/html1/tabs.html			man-util-htmlman	html
+./usr/share/man/html1/tac.html			man-util-htmlman	html
 ./usr/share/man/html1/tail.html			man-util-htmlman	html
 ./usr/share/man/html1/talk.html			man-netutil-htmlman	html
 ./usr/share/man/html1/tar.html			man-util-htmlman	html
@@ -4674,7 +4677,7 @@
 ./usr/share/man/html4/sbt.html			man-sys-htmlman		html
 ./usr/share/man/html4/sbus.html			man-sys-htmlman		html
 ./usr/share/man/html4/sc.html			man-sys-htmlman		html
-./usr/share/man/html4/scc.html			man-sys-htmlman		html
+./usr/share/man/html4/scc.html			man-obsolete		obsolete
 ./usr/share/man/html4/schide.html		man-sys-htmlman		html
 ./usr/share/man/html4/scsi.html			man-sys-htmlman		html
 ./usr/share/man/html4/scsibus.html		man-sys-htmlman		html
@@ -4881,6 +4884,7 @@
 ./usr/share/man/html4/uhmodem.html		man-sys-htmlman		html
 ./usr/share/man/html4/uhso.html			man-sys-htmlman		html
 ./usr/share/man/html4/uhub.html			man-sys-htmlman		html
+./usr/share/man/html4/uipad.html		man-sys-htmlman		html
 ./usr/share/man/html4/uipaq.html		man-sys-htmlman		html
 ./usr/share/man/html4/uirda.html		man-sys-htmlman		html
 ./usr/share/man/html4/uk.html			man-sys-htmlman		html
@@ -6561,6 +6565,7 @@
 ./usr/share/man/man1/systat.1			man-util-man		.man
 ./usr/share/man/man1/systrace.1			man-obsolete		obsolete
 ./usr/share/man/man1/tabs.1			man-util-man		.man
+./usr/share/man/man1/tac.1			man-util-man		.man
 ./usr/share/man/man1/tail.1			man-util-man		.man
 ./usr/share/man/man1/talk.1			man-netutil-man		.man
 ./usr/share/man/man1/tar.1			man-util-man		.man
@@ -7630,7 +7635,7 @@
 ./usr/share/man/man4/sbt.4			man-sys-man		.man
 ./usr/share/man/man4/sbus.4			man-sys-man		.man
 ./usr/share/man/man4/sc.4			man-sys-man		.man
-./usr/share/man/man4/scc.4			man-sys-man		.man
+./usr/share/man/man4/scc.4			man-obsolete		obsolete
 ./usr/share/man/man4/schide.4			man-sys-man		.man
 ./usr/share/man/man4/scsi.4			man-sys-man		.man
 ./usr/share/man/man4/scsibus.4			man-sys-man		.man
@@ -7846,6 +7851,7 @@
 ./usr/share/man/man4/uhmodem.4			man-sys-man		.man
 ./usr/share/man/man4/uhso.4			man-sys-man		.man
 ./usr/share/man/man4/uhub.4			man-sys-man		.man
+./usr/share/man/man4/uipad.4			man-sys-man		.man
 ./usr/share/man/man4/uipaq.4			man-sys-man		.man
 ./usr/share/man/man4/uirda.4			man-sys-man		.man
 ./usr/share/man/man4/uk.4			man-sys-man		.man

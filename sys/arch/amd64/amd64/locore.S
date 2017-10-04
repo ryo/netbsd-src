@@ -1,4 +1,4 @@
-/*	$NetBSD: locore.S,v 1.128 2017/08/31 10:30:58 maxv Exp $	*/
+/*	$NetBSD: locore.S,v 1.131 2017/09/30 11:43:57 maxv Exp $	*/
 
 /*
  * Copyright-o-rama!
@@ -328,7 +328,9 @@
 	.globl	_C_LABEL(bootinfo)
 	.globl	_C_LABEL(biosbasemem)
 	.globl	_C_LABEL(biosextmem)
+	.globl	_C_LABEL(lwp0uarea)
 	.globl	do_sysret
+	.globl	do_iret
 
 	.type	_C_LABEL(tablesize), @object
 _C_LABEL(tablesize):	.long	TABLESIZE
@@ -368,6 +370,9 @@ LABEL(biosextmem)	.long	0	/* extended memory reported by BIOS */
 LABEL(biosextmem)	.long	REALEXTMEM
 #endif
 END(biosextmem)
+	.type	_C_LABEL(lwp0uarea), @object
+LABEL(lwp0uarea)	.quad	0
+END(lwp0uarea)
 
 #ifndef XEN
 	.globl	gdt64_lo
@@ -871,9 +876,8 @@ longmode_hi:
 	/* Set up bootstrap stack. */
 	leaq	(PROC0_STK_OFF)(%rsi),%rax
 	addq	%r8,%rax
-	movq	%rax,(_C_LABEL(lwp0)+L_PCB)(%rip) /* XXX L_PCB != uarea */
+	movq	%rax,_C_LABEL(lwp0uarea)(%rip)
 	leaq	(USPACE-FRAMESIZE)(%rax),%rsp
-	movq	%rsi,PCB_CR3(%rax)		/* pcb->pcb_cr3 */
 	xorq	%rbp,%rbp			/* mark end of frames */
 
 	xorw	%ax,%ax
@@ -953,7 +957,7 @@ longmode_hi:
 	 * use it as the UAREA, and set up the stack here.
 	 */
 	movq	%rax,%rsi
-	movq	%rsi,(_C_LABEL(lwp0)+L_PCB)	/* XXX L_PCB != uarea */
+	movq	%rsi,_C_LABEL(lwp0uarea)(%rip)
 	leaq	(USPACE-FRAMESIZE)(%rsi),%rsp
 	xorq	%rbp,%rbp
 
@@ -968,6 +972,9 @@ longmode_hi:
 	subq	$KERNBASE,%rdi	/* init_x86_64 wants a physical address */
 #endif	/* XEN */
 
+	pushq	%rdi
+	call	_C_LABEL(init_bootspace)
+	popq	%rdi
 	call	_C_LABEL(init_x86_64)
 	call 	_C_LABEL(main)
 END(start)
@@ -1304,12 +1311,19 @@ do_syscall:
 	jne	spl_error
 #endif
 
+	/*
+	 * If the syscall might have modified some registers, or we are a 32bit
+	 * process we must return to user with an 'iret' instruction.
+	 * If the iret faults in kernel (assumed due to illegal register values)
+	 * then a SIGSEGV will be signalled.
+	 */
 	testl	$(MDL_IRET|MDL_COMPAT32),L_MD_FLAGS(%r14)
 	INTR_RESTORE_GPRS
 	movw	TF_ES(%rsp),%es
 	movw	TF_DS(%rsp),%ds
 	SWAPGS
-	jnz	2f
+	jnz	.Lkexit
+
 #ifndef XEN
 	movq	TF_RIP(%rsp),%rcx	/* %rip for sysret */
 	movq	TF_RFLAGS(%rsp),%r11	/* %flags for sysret */
@@ -1321,16 +1335,6 @@ do_sysret:
 	pushq	$256	/* VGCF_IN_SYSCALL */
 	jmp	HYPERVISOR_iret
 #endif
-
-/*
- * If the syscall might have modified some registers, or we are a 32bit
- * process we must return to user with an 'iret' instruction.
- * If the iret faults in kernel (assumed due to illegal register values)
- * then a SIGSEGV will be signalled.
- */
-2:
-	addq	$TF_RIP,%rsp
-	iretq
 
 #ifdef DIAGNOSTIC
 	/* Report SPL error */
@@ -1441,7 +1445,6 @@ END(sse2_idlezero_page)
  *
  * Zero a page without polluting the cache.
  */
-
 ENTRY(pagezero)
 	movq	$-PAGE_SIZE,%rdx
 	subq	%rdx,%rdi
@@ -1460,3 +1463,20 @@ ENTRY(pagezero)
 	sfence
 	ret
 END(pagezero)
+
+ENTRY(intrfastexit)
+	INTR_RESTORE_GPRS
+	testq	$SEL_UPL,TF_CS(%rsp)	/* interrupted %cs */
+	jz	.Lkexit
+
+	/* Disable interrupts until the 'iret', user registers loaded. */
+	NOT_XEN(cli;)
+	movw	TF_ES(%rsp),%es
+	movw	TF_DS(%rsp),%ds
+	SWAPGS
+
+.Lkexit:
+	addq	$TF_REGSIZE+16,%rsp	/* + T_xxx and error code */
+do_iret:
+	iretq
+END(intrfastexit)

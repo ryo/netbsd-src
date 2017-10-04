@@ -1,4 +1,4 @@
-$NetBSD: acronyms,v 1.257 2017/08/22 02:36:48 pgoyette Exp $
+$NetBSD: acronyms,v 1.260 2017/09/18 03:14:02 riastradh Exp $
 10Q	thank you
 10X	thanks
 1337	elite ("leet")
@@ -106,7 +106,10 @@ DBEYR	don't believe everything you read
 DIAFYO	did I ask for your opinion?
 DIY	do it yourself
 DKDC	don't know, don't care
+DM	direct message
 DM	dungeon master
+DME	durable medical equipment
+DMEPOS	durable medical equipment, prosthetics, orthotics and supplies
 DMZ	demilitarized zone
 DND	do not disturb
 DNF	did not finish
@@ -203,6 +206,7 @@ HF	have fun
 HHIS	hanging head in shame
 HHOS	ha ha, only serious
 HICA	here it comes again
+HME	home medical equipment
 HNY	happy new year
 HOAS	hold on a second
 HOPS	half-operator status
@@ -229,6 +233,8 @@ IDK	I don't know
 IDRC	I don't really care
 IDTS	I don't think so
 IDTT	I drink to that
+IFF	if and only if
+IFTTT	if this then that
 IHBW	I have been wrong
 IIANM	if I am not mistaken
 IIRC	if I {recall,remember} correctly

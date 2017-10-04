@@ -1,4 +1,4 @@
-/* $NetBSD: ixgbe_type.h,v 1.26 2017/08/30 08:49:18 msaitoh Exp $ */
+/* $NetBSD: ixgbe_type.h,v 1.29 2017/10/04 08:47:26 msaitoh Exp $ */
 
 /******************************************************************************
 
@@ -3424,6 +3424,8 @@ typedef u64 ixgbe_physical_layer;
 #define IXGBE_PHYSICAL_LAYER_1000BASE_SX	0x04000
 #define IXGBE_PHYSICAL_LAYER_10BASE_T		0x08000
 #define IXGBE_PHYSICAL_LAYER_2500BASE_KX	0x10000
+#define IXGBE_PHYSICAL_LAYER_2500BASE_T		0x20000
+#define IXGBE_PHYSICAL_LAYER_5GBASE_T		0x40000
 
 /* Flow Control Data Sheet defined values
  * Calculation and defines taken from 802.1bb Annex O
@@ -3799,6 +3801,11 @@ struct ixgbe_fc_info {
 /* Statistics counters collected by the MAC */
 struct ixgbe_hw_stats {
 	char namebuf[32];
+	struct evcnt ipcs;
+	struct evcnt ipcs_bad;
+	struct evcnt l4cs;
+	struct evcnt l4cs_bad;
+
 	struct evcnt crcerrs;
 	struct evcnt illerrc;
 	struct evcnt errbc;
@@ -3878,10 +3885,6 @@ struct ixgbe_hw_stats {
 	struct evcnt o2bspc;
 	struct evcnt legint;	/* legacy interrupts */
 	struct evcnt intzero;	/* no legacy interrupt conditions */
-	struct evcnt ipcs;
-	struct evcnt ipcs_bad;
-	struct evcnt l4cs;
-	struct evcnt l4cs_bad;
 };
 
 /* forward declaration */
@@ -4136,12 +4139,12 @@ struct ixgbe_mbx_operations {
 };
 
 struct ixgbe_mbx_stats {
-	u32 msgs_tx;
-	u32 msgs_rx;
+	struct evcnt msgs_tx;
+	struct evcnt msgs_rx;
 
-	u32 acks;
-	u32 reqs;
-	u32 rsts;
+	struct evcnt acks;
+	struct evcnt reqs;
+	struct evcnt rsts;
 };
 
 struct ixgbe_mbx_info {

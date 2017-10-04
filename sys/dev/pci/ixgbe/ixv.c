@@ -1,4 +1,4 @@
-/*$NetBSD: ixv.c,v 1.58 2017/08/30 08:49:18 msaitoh Exp $*/
+/*$NetBSD: ixv.c,v 1.69 2017/10/04 11:03:20 msaitoh Exp $*/
 
 /******************************************************************************
 
@@ -193,23 +193,16 @@ TUNABLE_INT("hw.ixv.tx_process_limit", &ixv_tx_process_limit);
  * setting higher than RX as this seems
  * the better performing choice.
  */
-static int ixv_txd = DEFAULT_TXD;
+static int ixv_txd = PERFORM_TXD;
 TUNABLE_INT("hw.ixv.txd", &ixv_txd);
 
 /* Number of RX descriptors per ring */
-static int ixv_rxd = DEFAULT_RXD;
+static int ixv_rxd = PERFORM_RXD;
 TUNABLE_INT("hw.ixv.rxd", &ixv_rxd);
 
 /* Legacy Transmit (single queue) */
 static int ixv_enable_legacy_tx = 0;
 TUNABLE_INT("hw.ixv.enable_legacy_tx", &ixv_enable_legacy_tx);
-
-/*
- * Shadow VFTA table, this is needed because
- * the real filter table gets cleared during
- * a soft reset and we need to repopulate it.
- */
-static u32 ixv_shadow_vfta[IXGBE_VFTA_SIZE];
 
 #ifdef NET_MPSAFE
 #define IXGBE_MPSAFE		1
@@ -290,6 +283,9 @@ ixv_attach(device_t parent, device_t dev, void *aux)
 	pcireg_t	id, subid;
 	ixgbe_vendor_info_t *ent;
 	const struct pci_attach_args *pa = aux;
+	const char *apivstr;
+	const char *str;
+	char buf[256];
 
 	INIT_DEBUGOUT("ixv_attach: begin");
 
@@ -353,18 +349,23 @@ ixv_attach(device_t parent, device_t dev, void *aux)
 	switch (hw->device_id) {
 	case IXGBE_DEV_ID_82599_VF:
 		hw->mac.type = ixgbe_mac_82599_vf;
+		str = "82599 VF";
 		break;
 	case IXGBE_DEV_ID_X540_VF:
 		hw->mac.type = ixgbe_mac_X540_vf;
+		str = "X540 VF";
 		break;
 	case IXGBE_DEV_ID_X550_VF:
 		hw->mac.type = ixgbe_mac_X550_vf;
+		str = "X550 VF";
 		break;
 	case IXGBE_DEV_ID_X550EM_X_VF:
 		hw->mac.type = ixgbe_mac_X550EM_x_vf;
+		str = "X550EM X VF";
 		break;
 	case IXGBE_DEV_ID_X550EM_A_VF:
 		hw->mac.type = ixgbe_mac_X550EM_a_vf;
+		str = "X550EM A VF";
 		break;
 	default:
 		/* Shouldn't get here since probe succeeded */
@@ -373,6 +374,7 @@ ixv_attach(device_t parent, device_t dev, void *aux)
 		goto err_out;
 		break;
 	}
+	aprint_normal_dev(dev, "device %s\n", str);
 
 	ixv_init_device_features(adapter);
 
@@ -408,17 +410,38 @@ ixv_attach(device_t parent, device_t dev, void *aux)
 		error = EIO;
 		goto err_out;
 	}
-	
+
 	/* Negotiate mailbox API version */
 	error = ixv_negotiate_api(adapter);
 	if (error)
 		aprint_normal_dev(dev,
 		    "MBX API negotiation failed during attach!\n");
+	switch (hw->api_version) {
+	case ixgbe_mbox_api_10:
+		apivstr = "1.0";
+		break;
+	case ixgbe_mbox_api_20:
+		apivstr = "2.0";
+		break;
+	case ixgbe_mbox_api_11:
+		apivstr = "1.1";
+		break;
+	case ixgbe_mbox_api_12:
+		apivstr = "1.2";
+		break;
+	case ixgbe_mbox_api_13:
+		apivstr = "1.3";
+		break;
+	default:
+		apivstr = "unknown";
+		break;
+	}
+	aprint_normal_dev(dev, "Mailbox API %s\n", apivstr);
 
 	/* If no mac address was assigned, make a random one */
 	if (!ixv_check_ether_addr(hw->mac.addr)) {
 		u8 addr[ETHER_ADDR_LEN];
-		uint64_t rndval = cprng_fast64();
+		uint64_t rndval = cprng_strong64();
 
 		memcpy(addr, &rndval, sizeof(addr));
 		addr[0] &= 0xFE;
@@ -459,7 +482,7 @@ ixv_attach(device_t parent, device_t dev, void *aux)
 		adapter->num_rx_desc = ixv_rxd;
 
 	/* Setup MSI-X */
-	error = ixv_configure_interrupts(adapter); 
+	error = ixv_configure_interrupts(adapter);
 	if (error)
 		goto err_out;
 
@@ -490,6 +513,11 @@ ixv_attach(device_t parent, device_t dev, void *aux)
 	if (adapter->feat_en & IXGBE_FEATURE_NETMAP)
 		ixgbe_netmap_attach(adapter);
 
+	snprintb(buf, sizeof(buf), IXGBE_FEATURE_FLAGS, adapter->feat_cap);
+	aprint_verbose_dev(dev, "feature cap %s\n", buf);
+	snprintb(buf, sizeof(buf), IXGBE_FEATURE_FLAGS, adapter->feat_en);
+	aprint_verbose_dev(dev, "feature ena %s\n", buf);
+
 	INIT_DEBUGOUT("ixv_attach: end");
 	adapter->osdep.attached = true;
 
@@ -519,6 +547,7 @@ static int
 ixv_detach(device_t dev, int flags)
 {
 	struct adapter  *adapter = device_private(dev);
+	struct ixgbe_hw *hw = &adapter->hw;
 	struct ix_queue *que = adapter->queues;
 	struct tx_ring *txr = adapter->tx_rings;
 	struct rx_ring *rxr = adapter->rx_rings;
@@ -621,6 +650,13 @@ ixv_detach(device_t dev, int flags)
 	evcnt_detach(&stats->vfgotc);
 	evcnt_detach(&stats->vfgptc);
 
+	/* Mailbox Stats */
+	evcnt_detach(&hw->mbx.stats.msgs_tx);
+	evcnt_detach(&hw->mbx.stats.msgs_rx);
+	evcnt_detach(&hw->mbx.stats.acks);
+	evcnt_detach(&hw->mbx.stats.reqs);
+	evcnt_detach(&hw->mbx.stats.rsts);
+
 	ixgbe_free_transmit_structures(adapter);
 	ixgbe_free_receive_structures(adapter);
 	free(adapter->queues, M_DEVBUF);
@@ -646,13 +682,16 @@ ixv_init_locked(struct adapter *adapter)
 	struct ifnet	*ifp = adapter->ifp;
 	device_t 	dev = adapter->dev;
 	struct ixgbe_hw *hw = &adapter->hw;
+	struct ix_queue	*que = adapter->queues;
 	int             error = 0;
+	uint32_t mask;
+	int i;
 
 	INIT_DEBUGOUT("ixv_init_locked: begin");
 	KASSERT(mutex_owned(&adapter->core_mtx));
 	hw->adapter_stopped = FALSE;
 	hw->mac.ops.stop_adapter(hw);
-        callout_stop(&adapter->timer);
+	callout_stop(&adapter->timer);
 
 	/* reprogram the RAR[0] in case user changed it. */
 	hw->mac.ops.set_rar(hw, 0, hw->mac.addr, 0, IXGBE_RAH_AV);
@@ -720,7 +759,10 @@ ixv_init_locked(struct adapter *adapter)
 	ixv_configure_ivars(adapter);
 
 	/* Set up auto-mask */
-	IXGBE_WRITE_REG(hw, IXGBE_VTEIAM, IXGBE_EICS_RTX_QUEUE);
+	mask = (1 << adapter->vector);
+	for (i = 0; i < adapter->num_queues; i++, que++)
+		mask |= (1 << que->msix);
+	IXGBE_WRITE_REG(hw, IXGBE_VTEIAM, mask);
 
 	/* Set moderation on the Link interrupt */
 	IXGBE_WRITE_REG(hw, IXGBE_VTEITR(adapter->vector), IXGBE_LINK_ITR);
@@ -729,6 +771,7 @@ ixv_init_locked(struct adapter *adapter)
 	ixv_init_stats(adapter);
 
 	/* Config/Enable Link */
+	hw->mac.get_link_status = TRUE;
 	hw->mac.ops.check_link(hw, &adapter->link_speed, &adapter->link_up,
 	    FALSE);
 
@@ -787,7 +830,6 @@ ixv_msix_que(void *arg)
 {
 	struct ix_queue	*que = arg;
 	struct adapter  *adapter = que->adapter;
-	struct ifnet    *ifp = adapter->ifp;
 	struct tx_ring	*txr = que->txr;
 	struct rx_ring	*rxr = que->rxr;
 	bool		more;
@@ -805,19 +847,6 @@ ixv_msix_que(void *arg)
 
 	IXGBE_TX_LOCK(txr);
 	ixgbe_txeof(txr);
-	/*
-	 * Make certain that if the stack
-	 * has anything queued the task gets
-	 * scheduled to handle it.
-	 */
-	if (!(adapter->feat_en & IXGBE_FEATURE_LEGACY_TX))
-		if (!ixgbe_mq_ring_empty(ifp, txr->txr_interq))
-			ixgbe_mq_start_locked(ifp, txr);
-		/* Only for queue 0 */
-		/* NetBSD still needs this for CBQ */
-		if ((&adapter->queues[0] == que)
-		    && (!ixgbe_legacy_ring_empty(ifp, NULL)))
-			ixgbe_legacy_start_locked(ifp, txr);
 	IXGBE_TX_UNLOCK(txr);
 
 	/* Do AIM now? */
@@ -830,7 +859,7 @@ ixv_msix_que(void *arg)
 	 *  - Calculate based on average size over
 	 *    the last interval.
 	 */
-        if (que->eitr_setting)
+	if (que->eitr_setting)
 		IXGBE_WRITE_REG(&adapter->hw, IXGBE_VTEITR(que->msix),
 		    que->eitr_setting);
 
@@ -883,20 +912,15 @@ ixv_msix_mbx(void *arg)
 {
 	struct adapter	*adapter = arg;
 	struct ixgbe_hw *hw = &adapter->hw;
-	u32		reg;
 
 	++adapter->link_irq.ev_count;
-
-	/* First get the cause */
-	reg = IXGBE_READ_REG(hw, IXGBE_VTEICS);
-	/* Clear interrupt with write */
-	IXGBE_WRITE_REG(hw, IXGBE_VTEICR, reg);
+	/* NetBSD: We use auto-clear, so it's not required to write VTEICR */
 
 	/* Link status change */
-	if (reg & IXGBE_EICR_LSC)
-		softint_schedule(adapter->link_si);
+	hw->mac.get_link_status = TRUE;
+	softint_schedule(adapter->link_si);
 
-	IXGBE_WRITE_REG(hw, IXGBE_VTEIMS, IXGBE_EIMS_OTHER);
+	IXGBE_WRITE_REG(hw, IXGBE_VTEIMS, (1 << adapter->vector));
 
 	return 1;
 } /* ixv_msix_mbx */
@@ -908,7 +932,7 @@ ixv_msix_mbx(void *arg)
  *   the interface using ifconfig.
  ************************************************************************/
 static void
-ixv_media_status(struct ifnet * ifp, struct ifmediareq * ifmr)
+ixv_media_status(struct ifnet *ifp, struct ifmediareq *ifmr)
 {
 	struct adapter *adapter = ifp->if_softc;
 
@@ -1182,7 +1206,7 @@ ixv_update_link_status(struct adapter *adapter)
 					bpsmsg = "unknown speed";
 					break;
 				}
-				device_printf(dev,"Link is up %s %s \n",
+				device_printf(dev, "Link is up %s %s \n",
 				    bpsmsg, "Full Duplex");
 			}
 			adapter->link_active = TRUE;
@@ -1191,7 +1215,7 @@ ixv_update_link_status(struct adapter *adapter)
 	} else { /* Link down */
 		if (adapter->link_active == TRUE) {
 			if (bootverbose)
-				device_printf(dev,"Link is Down\n");
+				device_printf(dev, "Link is Down\n");
 			if_link_state_change(ifp, LINK_STATE_DOWN);
 			adapter->link_active = FALSE;
 		}
@@ -1698,7 +1722,9 @@ ixv_initialize_receive_units(struct adapter *adapter)
 static void
 ixv_setup_vlan_support(struct adapter *adapter)
 {
+	struct ethercom *ec = &adapter->osdep.ec;
 	struct ixgbe_hw *hw = &adapter->hw;
+	struct rx_ring  *rxr;
 	u32		ctrl, vid, vfta, retry;
 
 	/*
@@ -1707,29 +1733,35 @@ ixv_setup_vlan_support(struct adapter *adapter)
 	 * the VFTA and other state, so if there
 	 * have been no vlan's registered do nothing.
 	 */
-	if (!VLAN_ATTACHED(&adapter->osdep.ec))
+	if (!VLAN_ATTACHED(ec))
 		return;
 
 	/* Enable the queues */
 	for (int i = 0; i < adapter->num_queues; i++) {
-		ctrl = IXGBE_READ_REG(hw, IXGBE_VFRXDCTL(i));
+		rxr = &adapter->rx_rings[i];
+		ctrl = IXGBE_READ_REG(hw, IXGBE_VFRXDCTL(rxr->me));
 		ctrl |= IXGBE_RXDCTL_VME;
-		IXGBE_WRITE_REG(hw, IXGBE_VFRXDCTL(i), ctrl);
+		IXGBE_WRITE_REG(hw, IXGBE_VFRXDCTL(rxr->me), ctrl);
 		/*
 		 * Let Rx path know that it needs to store VLAN tag
 		 * as part of extra mbuf info.
 		 */
-		adapter->rx_rings[i].vtag_strip = TRUE;
+		rxr->vtag_strip = TRUE;
 	}
 
+#if 1
+	/* XXX dirty hack. Enable all VIDs */
+	for (int i = 0; i < IXGBE_VFTA_SIZE; i++)
+	  adapter->shadow_vfta[i] = 0xffffffff;
+#endif
 	/*
 	 * A soft reset zero's out the VFTA, so
 	 * we need to repopulate it now.
 	 */
 	for (int i = 0; i < IXGBE_VFTA_SIZE; i++) {
-		if (ixv_shadow_vfta[i] == 0)
+		if (adapter->shadow_vfta[i] == 0)
 			continue;
-		vfta = ixv_shadow_vfta[i];
+		vfta = adapter->shadow_vfta[i];
 		/*
 		 * Reconstruct the vlan id's
 		 * based on the bits set in each
@@ -1773,7 +1805,7 @@ ixv_register_vlan(void *arg, struct ifnet *ifp, u16 vtag)
 	IXGBE_CORE_LOCK(adapter);
 	index = (vtag >> 5) & 0x7F;
 	bit = vtag & 0x1F;
-	ixv_shadow_vfta[index] |= (1 << bit);
+	adapter->shadow_vfta[index] |= (1 << bit);
 	/* Re-init to load the changes */
 	ixv_init_locked(adapter);
 	IXGBE_CORE_UNLOCK(adapter);
@@ -1800,7 +1832,7 @@ ixv_unregister_vlan(void *arg, struct ifnet *ifp, u16 vtag)
 	IXGBE_CORE_LOCK(adapter);
 	index = (vtag >> 5) & 0x7F;
 	bit = vtag & 0x1F;
-	ixv_shadow_vfta[index] &= ~(1 << bit);
+	adapter->shadow_vfta[index] &= ~(1 << bit);
 	/* Re-init to load the changes */
 	ixv_init_locked(adapter);
 	IXGBE_CORE_UNLOCK(adapter);
@@ -1815,16 +1847,19 @@ ixv_enable_intr(struct adapter *adapter)
 {
 	struct ixgbe_hw *hw = &adapter->hw;
 	struct ix_queue *que = adapter->queues;
-	u32             mask = (IXGBE_EIMS_ENABLE_MASK & ~IXGBE_EIMS_RTX_QUEUE);
+	u32             mask;
+	int i;
 
-
-	IXGBE_WRITE_REG(hw, IXGBE_VTEIMS, mask);
-
-	mask = IXGBE_EIMS_ENABLE_MASK;
-	mask &= ~(IXGBE_EIMS_OTHER | IXGBE_EIMS_LSC);
+	/* For VTEIAC */
+	mask = (1 << adapter->vector);
+	for (i = 0; i < adapter->num_queues; i++, que++)
+		mask |= (1 << que->msix);
 	IXGBE_WRITE_REG(hw, IXGBE_VTEIAC, mask);
 
-	for (int i = 0; i < adapter->num_queues; i++, que++)
+	/* For VTEIMS */
+	IXGBE_WRITE_REG(hw, IXGBE_VTEIMS, (1 << adapter->vector));
+	que = adapter->queues;
+	for (i = 0; i < adapter->num_queues; i++, que++)
 		ixv_enable_queue(adapter, que->msix);
 
 	IXGBE_WRITE_FLUSH(hw);
@@ -1889,7 +1924,7 @@ ixv_configure_ivars(struct adapter *adapter)
 		/* ... and the TX */
 		ixv_set_ivar(adapter, i, que->msix, 1);
 		/* Set an initial value in EITR */
-                IXGBE_WRITE_REG(&adapter->hw, IXGBE_VTEITR(que->msix),
+		IXGBE_WRITE_REG(&adapter->hw, IXGBE_VTEITR(que->msix),
 		    IXGBE_EITR_DEFAULT);
 	}
 
@@ -1924,7 +1959,7 @@ ixv_save_stats(struct adapter *adapter)
 		    stats->vfmprc.ev_count - stats->base_vfmprc;
 	}
 } /* ixv_save_stats */
- 
+
 /************************************************************************
  * ixv_init_stats
  ************************************************************************/
@@ -1980,7 +2015,7 @@ ixv_init_stats(struct adapter *adapter)
 void
 ixv_update_stats(struct adapter *adapter)
 {
-        struct ixgbe_hw *hw = &adapter->hw;
+	struct ixgbe_hw *hw = &adapter->hw;
 	struct ixgbevf_hw_stats *stats = &adapter->stats.vf;
 
         UPDATE_STAT_32(IXGBE_VFGPRC, stats->last_vfgprc, stats->vfgprc);
@@ -2060,6 +2095,7 @@ ixv_add_stats_sysctls(struct adapter *adapter)
 	struct tx_ring          *txr = adapter->tx_rings;
 	struct rx_ring          *rxr = adapter->rx_rings;
 	struct ixgbevf_hw_stats *stats = &adapter->stats.vf;
+	struct ixgbe_hw *hw = &adapter->hw;
 	const struct sysctlnode *rnode;
 	struct sysctllog **log = &adapter->sysctllog;
 	const char *xname = device_xname(dev);
@@ -2220,6 +2256,19 @@ ixv_add_stats_sysctls(struct adapter *adapter)
 	    xname, "Good Packets Transmitted");
 	evcnt_attach_dynamic(&stats->vfgotc, EVCNT_TYPE_MISC, NULL,
 	    xname, "Good Octets Transmitted");
+
+	/* Mailbox Stats */
+	evcnt_attach_dynamic(&hw->mbx.stats.msgs_tx, EVCNT_TYPE_MISC, NULL,
+	    xname, "message TXs");
+	evcnt_attach_dynamic(&hw->mbx.stats.msgs_rx, EVCNT_TYPE_MISC, NULL,
+	    xname, "message RXs");
+	evcnt_attach_dynamic(&hw->mbx.stats.acks, EVCNT_TYPE_MISC, NULL,
+	    xname, "ACKs");
+	evcnt_attach_dynamic(&hw->mbx.stats.reqs, EVCNT_TYPE_MISC, NULL,
+	    xname, "REQs");
+	evcnt_attach_dynamic(&hw->mbx.stats.rsts, EVCNT_TYPE_MISC, NULL,
+	    xname, "RSTs");
+
 } /* ixv_add_stats_sysctls */
 
 /************************************************************************
@@ -2265,7 +2314,7 @@ ixv_print_debug_info(struct adapter *adapter)
         struct lro_ctrl *lro;
 #endif /* LRO */
 
-	device_printf(dev,"Error Byte Count = %u \n",
+	device_printf(dev, "Error Byte Count = %u \n",
 	    IXGBE_READ_REG(hw, IXGBE_ERRBC));
 
 	for (int i = 0; i < adapter->num_queues; i++, que++) {
@@ -2274,21 +2323,21 @@ ixv_print_debug_info(struct adapter *adapter)
 #ifdef LRO
 		lro = &rxr->lro;
 #endif /* LRO */
-		device_printf(dev,"QUE(%d) IRQs Handled: %lu\n",
+		device_printf(dev, "QUE(%d) IRQs Handled: %lu\n",
 		    que->msix, (long)que->irqs.ev_count);
-		device_printf(dev,"RX(%d) Packets Received: %lld\n",
+		device_printf(dev, "RX(%d) Packets Received: %lld\n",
 		    rxr->me, (long long)rxr->rx_packets.ev_count);
-		device_printf(dev,"RX(%d) Bytes Received: %lu\n",
+		device_printf(dev, "RX(%d) Bytes Received: %lu\n",
 		    rxr->me, (long)rxr->rx_bytes.ev_count);
 #ifdef LRO
-		device_printf(dev,"RX(%d) LRO Queued= %lld\n",
+		device_printf(dev, "RX(%d) LRO Queued= %lld\n",
 		    rxr->me, (long long)lro->lro_queued);
-		device_printf(dev,"RX(%d) LRO Flushed= %lld\n",
+		device_printf(dev, "RX(%d) LRO Flushed= %lld\n",
 		    rxr->me, (long long)lro->lro_flushed);
 #endif /* LRO */
-		device_printf(dev,"TX(%d) Packets Sent: %lu\n",
+		device_printf(dev, "TX(%d) Packets Sent: %lu\n",
 		    txr->me, (long)txr->total_packets.ev_count);
-		device_printf(dev,"TX(%d) NO Desc Avail: %lu\n",
+		device_printf(dev, "TX(%d) NO Desc Avail: %lu\n",
 		    txr->me, (long)txr->no_desc_avail.ev_count);
 	}
 
@@ -2398,6 +2447,9 @@ ixv_ifflags_cb(struct ethercom *ec)
 
 	if ((change & ~(IFF_CANTCHANGE | IFF_DEBUG)) != 0)
 		rc = ENETRESET;
+
+	/* Set up VLAN support and filter */
+	ixv_setup_vlan_support(adapter);
 
 	IXGBE_CORE_UNLOCK(adapter);
 
@@ -2524,6 +2576,7 @@ ixv_handle_que(void *context)
 			if (!ixgbe_mq_ring_empty(ifp, txr->txr_interq))
 				ixgbe_mq_start_locked(ifp, txr);
 		/* Only for queue 0 */
+		/* NetBSD still needs this for CBQ */
 		if ((&adapter->queues[0] == que)
 		    && (!ixgbe_legacy_ring_empty(ifp, NULL)))
 			ixgbe_legacy_start_locked(ifp, txr);
@@ -2691,7 +2744,7 @@ ixv_configure_interrupts(struct adapter *adapter)
 	/* Must have at least 2 MSI-X vectors */
 	msgs = pci_msix_count(adapter->osdep.pc, adapter->osdep.tag);
 	if (msgs < 2) {
-		aprint_error_dev(dev,"MSIX config error\n");
+		aprint_error_dev(dev, "MSIX config error\n");
 		return (ENXIO);
 	}
 	msgs = MIN(msgs, IXG_MAX_NINTR);

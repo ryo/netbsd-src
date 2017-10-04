@@ -1,4 +1,4 @@
-# $NetBSD: mi,v 1.224 2017/08/16 13:53:19 joerg Exp $
+# $NetBSD: mi,v 1.226 2017/10/02 13:01:11 mlelstv Exp $
 ./etc/mtree/set.debug                           comp-sys-root
 ./usr/lib					comp-sys-usr		compatdir
 ./usr/lib/i18n/libBIG5_g.a			comp-c-debuglib		debuglib,compatfile
@@ -1663,6 +1663,7 @@
 ./usr/libdata/debug/usr/tests/include/sys/t_bitops.debug		tests-include-tests	debug,atf,compattestfile
 ./usr/libdata/debug/usr/tests/include/sys/t_bootblock.debug		tests-include-tests	debug,atf,compattestfile
 ./usr/libdata/debug/usr/tests/include/sys/t_cdefs.debug			tests-include-tests	debug,atf,compattestfile
+./usr/libdata/debug/usr/tests/include/sys/t_list.debug			tests-include-tests	debug,atf
 ./usr/libdata/debug/usr/tests/include/sys/t_pslist.debug		tests-include-tests	debug,atf,compattestfile
 ./usr/libdata/debug/usr/tests/include/sys/t_socket.debug		tests-include-tests	debug,atf,rump
 ./usr/libdata/debug/usr/tests/include/sys/t_tree.debug			tests-include-tests	debug,atf,compattestfile
@@ -2306,6 +2307,7 @@
 ./usr/libdata/debug/usr/tests/rump/rumpkern/t_signals.debug		tests-syscall-debug	debug,atf,rump
 ./usr/libdata/debug/usr/tests/rump/rumpkern/t_threads.debug		tests-syscall-debug	debug,atf,rump
 ./usr/libdata/debug/usr/tests/rump/rumpkern/t_tsleep.debug		tests-syscall-debug	debug,atf,rump
+./usr/libdata/debug/usr/tests/rump/rumpkern/t_workqueue.debug		tests-syscall-debug	debug,atf,rump
 ./usr/libdata/debug/usr/tests/rump/rumpkern/t_vm.debug			tests-syscall-debug	debug,atf,rump
 ./usr/libdata/debug/usr/tests/rump/rumpvfs/t_basic.debug		tests-syscall-debug	debug,atf,rump
 ./usr/libdata/debug/usr/tests/rump/rumpvfs/t_etfs.debug		tests-syscall-debug	debug,atf,rump

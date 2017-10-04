@@ -1,4 +1,4 @@
-/*	$NetBSD: ipsec.c,v 1.118 2017/08/10 06:11:24 ozaki-r Exp $	*/
+/*	$NetBSD: ipsec.c,v 1.121 2017/10/03 08:25:21 ozaki-r Exp $	*/
 /*	$FreeBSD: /usr/local/www/cvsroot/FreeBSD/src/sys/netipsec/ipsec.c,v 1.2.2.2 2003/07/01 01:38:13 sam Exp $	*/
 /*	$KAME: ipsec.c,v 1.103 2001/05/24 07:14:18 sakane Exp $	*/
 
@@ -32,7 +32,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: ipsec.c,v 1.118 2017/08/10 06:11:24 ozaki-r Exp $");
+__KERNEL_RCSID(0, "$NetBSD: ipsec.c,v 1.121 2017/10/03 08:25:21 ozaki-r Exp $");
 
 /*
  * IPsec controller part.
@@ -139,6 +139,12 @@ int ip4_esp_randpad = -1;
 
 u_int ipsec_spdgen = 1;		/* SPD generation # */
 
+static struct secpolicy ipsec_dummy_sp __read_mostly = {
+	.state		= IPSEC_SPSTATE_ALIVE,
+	/* If ENTRUST, the dummy SP never be used. See ipsec_getpolicybysock. */
+	.policy		= IPSEC_POLICY_ENTRUST,
+};
+
 static struct secpolicy *ipsec_checkpcbcache (struct mbuf *,
 	struct inpcbpolicy *, int);
 static int ipsec_fillpcbcache (struct inpcbpolicy *, struct mbuf *,
@@ -206,7 +212,7 @@ static int ipsec_set_policy (struct secpolicy **, int, const void *, size_t,
 static int ipsec_get_policy (struct secpolicy *, struct mbuf **);
 static void ipsec_destroy_policy(struct secpolicy *);
 static void vshiftl (unsigned char *, int, int);
-static size_t ipsec_hdrsiz (const struct secpolicy *);
+static size_t ipsec_hdrsiz(const struct secpolicy *, const struct mbuf *);
 
 /*
  * Try to validate and use cached policy on a PCB.
@@ -795,22 +801,23 @@ ipsec4_forward(struct mbuf *m, int *destmtu)
 	 * Find the correct route for outer IPv4 header, compute tunnel MTU.
 	 */
 	if (sp->req) {
-		struct route *ro;
-		struct rtentry *rt;
-		struct secasvar *sav = NULL;
+		struct secasvar *sav;
 
-		error = key_checkrequest(sp->req, &sav);
-		if (error != 0)
-			return error;
-		ro = &sav->sah->sa_route;
-		rt = rtcache_validate(ro);
-		if (rt && rt->rt_ifp) {
-			*destmtu = rt->rt_rmx.rmx_mtu ?
-			    rt->rt_rmx.rmx_mtu : rt->rt_ifp->if_mtu;
-			*destmtu -= ipsechdr;
+		sav = ipsec_lookup_sa(sp->req, m);
+		if (sav != NULL) {
+			struct route *ro;
+			struct rtentry *rt;
+
+			ro = &sav->sah->sa_route;
+			rt = rtcache_validate(ro);
+			if (rt && rt->rt_ifp) {
+				*destmtu = rt->rt_rmx.rmx_mtu ?
+				    rt->rt_rmx.rmx_mtu : rt->rt_ifp->if_mtu;
+				*destmtu -= ipsechdr;
+			}
+			rtcache_unref(rt, ro);
+			KEY_SA_UNREF(&sav);
 		}
-		rtcache_unref(rt, ro);
-		KEY_SA_UNREF(&sav);
 	}
 	KEY_SP_UNREF(&sp);
 	return 0;
@@ -1126,8 +1133,7 @@ ipsec6_get_ulp(struct mbuf *m, struct secpolicyindex *spidx,
 	KASSERT(m != NULL);
 
 	if (KEYDEBUG_ON(KEYDEBUG_IPSEC_DUMP)) {
-		printf("%s:\n", __func__);
-		kdebug_mbuf(m);
+		kdebug_mbuf(__func__, m);
 	}
 
 	/* set default */
@@ -1247,27 +1253,10 @@ ipsec_init_policy(struct socket *so, struct inpcbpolicy **policy)
 		new->priv = 0;
 
 	/*
-	 * These SPs are dummy. Never be used because the policy
-	 * is ENTRUST. See ipsec_getpolicybysock.
+	 * Set dummy SPs. Actual SPs will be allocated later if needed.
 	 */
-	new->sp_in = kmem_intr_zalloc(sizeof(struct secpolicy), KM_NOSLEEP);
-	if (new->sp_in == NULL) {
-		ipsec_delpcbpolicy(new);
-		return ENOBUFS;
-	}
-	new->sp_in->state = IPSEC_SPSTATE_ALIVE;
-	new->sp_in->policy = IPSEC_POLICY_ENTRUST;
-	new->sp_in->created = 0; /* Indicates dummy */
-
-	new->sp_out = kmem_intr_zalloc(sizeof(struct secpolicy), KM_NOSLEEP);
-	if (new->sp_out == NULL) {
-		kmem_intr_free(new->sp_in, sizeof(struct secpolicy));
-		ipsec_delpcbpolicy(new);
-		return ENOBUFS;
-	}
-	new->sp_out->state = IPSEC_SPSTATE_ALIVE;
-	new->sp_out->policy = IPSEC_POLICY_ENTRUST;
-	new->sp_out->created = 0; /* Indicates dummy */
+	new->sp_in = &ipsec_dummy_sp;
+	new->sp_out = &ipsec_dummy_sp;
 
 	*policy = new;
 
@@ -1350,9 +1339,8 @@ static void
 ipsec_destroy_policy(struct secpolicy *sp)
 {
 
-	if (sp->created == 0)
-		/* It's dummy. We can simply free it */
-		kmem_intr_free(sp, sizeof(*sp));
+	if (sp == &ipsec_dummy_sp)
+		; /* It's dummy. No need to free it. */
 	else {
 		/*
 		 * We cannot destroy here because it can be called in
@@ -1387,8 +1375,7 @@ ipsec_set_policy(
 	xpl = (const struct sadb_x_policy *)request;
 
 	if (KEYDEBUG_ON(KEYDEBUG_IPSEC_DUMP)) {
-		printf("%s: passed policy\n", __func__);
-		kdebug_sadb_x_policy((const struct sadb_ext *)xpl);
+		kdebug_sadb_xpolicy("set passed policy", request);
 	}
 
 	/* check policy type */
@@ -1443,8 +1430,7 @@ ipsec_get_policy(struct secpolicy *policy, struct mbuf **mp)
 
 	(*mp)->m_type = MT_DATA;
 	if (KEYDEBUG_ON(KEYDEBUG_IPSEC_DUMP)) {
-		printf("%s:\n", __func__);
-		kdebug_mbuf(*mp);
+		kdebug_mbuf(__func__, *mp);
 	}
 
 	return 0;
@@ -1875,7 +1861,7 @@ ipsec6_in_reject(struct mbuf *m, struct in6pcb *in6p)
  * NOTE: SP passed is free in this function.
  */
 static size_t
-ipsec_hdrsiz(const struct secpolicy *sp)
+ipsec_hdrsiz(const struct secpolicy *sp, const struct mbuf *m)
 {
 	struct ipsecrequest *isr;
 	size_t siz;
@@ -1898,21 +1884,20 @@ ipsec_hdrsiz(const struct secpolicy *sp)
 	siz = 0;
 	for (isr = sp->req; isr != NULL; isr = isr->next) {
 		size_t clen = 0;
-		struct secasvar *sav = NULL;
-		int error;
+		struct secasvar *sav;
 
 		switch (isr->saidx.proto) {
 		case IPPROTO_ESP:
-			error = key_checkrequest(isr, &sav);
-			if (error == 0) {
+			sav = ipsec_lookup_sa(isr, m);
+			if (sav != NULL) {
 				clen = esp_hdrsiz(sav);
 				KEY_SA_UNREF(&sav);
 			} else
 				clen = esp_hdrsiz(NULL);
 			break;
 		case IPPROTO_AH:
-			error = key_checkrequest(isr, &sav);
-			if (error == 0) {
+			sav = ipsec_lookup_sa(isr, m);
+			if (sav != NULL) {
 				clen = ah_hdrsiz(sav);
 				KEY_SA_UNREF(&sav);
 			} else
@@ -1969,7 +1954,7 @@ ipsec4_hdrsiz(struct mbuf *m, u_int dir, struct inpcb *inp)
 					   (struct inpcb_hdr *)inp, &error);
 
 	if (sp != NULL) {
-		size = ipsec_hdrsiz(sp);
+		size = ipsec_hdrsiz(sp, m);
 		KEYDEBUG_PRINTF(KEYDEBUG_IPSEC_DATA, "size:%lu.\n",
 		    (unsigned long)size);
 
@@ -2006,7 +1991,7 @@ ipsec6_hdrsiz(struct mbuf *m, u_int dir, struct in6pcb *in6p)
 
 	if (sp == NULL)
 		return 0;
-	size = ipsec_hdrsiz(sp);
+	size = ipsec_hdrsiz(sp, m);
 	KEYDEBUG_PRINTF(KEYDEBUG_IPSEC_DATA, "size:%zu.\n", size);
 	KEY_SP_UNREF(&sp);
 

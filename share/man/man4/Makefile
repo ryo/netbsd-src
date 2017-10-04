@@ -1,4 +1,4 @@
-#	$NetBSD: Makefile,v 1.641 2017/06/16 22:39:34 pgoyette Exp $
+#	$NetBSD: Makefile,v 1.643 2017/09/30 12:27:26 sevan Exp $
 #	@(#)Makefile	8.1 (Berkeley) 6/18/93
 
 MAN=	aac.4 ac97.4 acardide.4 aceride.4 acphy.4 \
@@ -55,7 +55,7 @@ MAN=	aac.4 ac97.4 acardide.4 aceride.4 acphy.4 \
 	pxaip.4 pxg.4 qe.4 qec.4 qsphy.4 \
 	raid.4 ral.4 ray.4 rcons.4 rdcphy.4 re.4 rgephy.4 rlphy.4 \
 	rnd.4 route.4 rs5c372rtc.4 rtk.4 rtsx.4 rtw.4 rtwn.4 rum.4 run.4 \
-	s390rtc.4 satalink.4 sbus.4 scc.4 schide.4 \
+	s390rtc.4 satalink.4 sbus.4 schide.4 \
 	scsi.4 sd.4 se.4 seeprom.4 sem.4 \
 	ses.4 sf.4 sfb.4 sgsmix.4 shb.4 shmif.4 \
 	shpcic.4 siisata.4 siop.4 sip.4 siside.4 sk.4 sl.4 slide.4 \
@@ -80,9 +80,9 @@ MAN+=	atu.4 aubtfwl.4 aue.4 axe.4 axen.4 cdce.4 cue.4 ehci.4 kue.4 ohci.4 \
 	slhci.4 stuirda.4 u3g.4 ualea.4 uatp.4 uaudio.4 uberry.4 ubsa.4 ubt.4 \
 	uchcom.4 \
 	ucom.4 ucycom.4 udav.4 udsbr.4 uftdi.4 ugen.4 ugensa.4 uhci.4 uhid.4 \
-	uhidev.4 uhmodem.4 uhso.4 uipaq.4 uirda.4 ukbd.4 ukyopon.4 ulpt.4 \
-	umass.4 umcs.4 umct.4 umidi.4 umodem.4 ums.4 upgt.4 upl.4 uplcom.4 \
-	urio.4 url.4 urndis.4 urtw.4 urtwn.4 \
+	uhidev.4 uhmodem.4 uhso.4 uipad.4 uipaq.4 uirda.4 ukbd.4 ukyopon.4 \
+	ulpt.4 umass.4 umcs.4 umct.4 umidi.4 umodem.4 ums.4 upgt.4 upl.4 \
+	uplcom.4 urio.4 url.4 urndis.4 urtw.4 urtwn.4 \
 	usb.4 uscanner.4 uslsa.4 usmsc.4 usscanner.4 \
 	ustir.4 uthum.4 utoppy.4 uts.4 uvideo.4 uvisor.4 uvscom.4 uyap.4 \
 	uyurex.4 \

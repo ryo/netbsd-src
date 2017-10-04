@@ -1,5 +1,5 @@
 #
-#	$NetBSD: SUNXI,v 1.26 2017/08/29 09:55:25 jmcneill Exp $
+#	$NetBSD: SUNXI,v 1.33 2017/10/02 22:50:29 jmcneill Exp $
 #
 #	Allwinner sunxi family
 #
@@ -7,6 +7,8 @@
 include	"arch/evbarm/conf/std.sunxi"
 include	"arch/evbarm/conf/GENERIC.common"
 
+makeoptions	DTSGNUARCH="arm arm64"
+makeoptions	DTSSUBDIR="allwinner"
 makeoptions	DTS="
 	sun5i-a13-difrnce-dit4350.dts
 	sun5i-a13-empire-electronix-d709.dts
@@ -46,15 +48,24 @@ makeoptions	DTS="
 	sun8i-h3-orangepi-pc.dts
 	sun8i-h3-orangepi-plus.dts
 	sun8i-h3-orangepi-plus2e.dts
+
+	sun50i-a64-bananapi-m64.dts
+	sun50i-a64-pine64-plus.dts
+	sun50i-a64-pine64.dts
+	sun50i-a64-pinebook.dts
 "
+
+options 	MULTIPROCESSOR
 
 options 	CPU_CORTEXA7
 options 	CPU_CORTEXA8
+options 	CPU_CORTEXA53
+
 options 	SOC_SUN5I_A13
 options 	SOC_SUN6I_A31
 options 	SOC_SUN8I_A83T
 options 	SOC_SUN8I_H3
-options 	MULTIPROCESSOR
+options 	SOC_SUN50I_A64
 
 pseudo-device 	openfirm	# /dev/openfirm
 
@@ -79,15 +90,18 @@ fdt*		at fdtbus?
 # CPUs
 cpus*		at fdt? pass 0
 cpu*		at cpus?
+cpufreqdt*	at cpu?
 
 # Power state coordination interface
 psci*		at fdt?
 
 # Clock and reset controllers
-sun5ia13ccu*	at fdt? pass 4		# A13 CCU
-sun6ia31ccu*	at fdt? pass 4		# A31 CCU
-sun8ia83tccu*	at fdt? pass 4		# A83T CCU
-sun8ih3ccu*	at fdt? pass 4		# H3 CCU
+sun5ia13ccu*	at fdt? pass 2		# A13 CCU
+sun6ia31ccu*	at fdt? pass 2		# A31 CCU
+sun8ia83tccu*	at fdt? pass 2		# A83T CCU
+sun8ih3ccu*	at fdt? pass 2		# H3 CCU
+sun8ih3rccu*	at fdt? pass 2		# H3 CCU (PRCM)
+sun50ia64ccu*	at fdt? pass 2		# A64 CCU
 sunxiresets*	at fdt? pass 1		# Misc. clock resets
 sunxigates*	at fdt? pass 1		# Misc. clock gates
 
@@ -120,7 +134,7 @@ sun6idma*	at fdt?			# DMA controller (sun6i)
 # Clock and Reset controller
 
 # GPIO controller
-sunxigpio*	at fdt? pass 2		# GPIO
+sunxigpio*	at fdt? pass 3		# GPIO
 gpio*		at gpiobus?
 
 # Ethernet
@@ -140,6 +154,7 @@ iic*		at i2cbus?
 tcakp*		at iic?			# TI TCA8418 Keypad Scan IC
 wskbd*		at tcakp? console ?
 axp20x*		at iic?			# AXP209 Power Management IC
+sy8106a*	at iic?			# Silergy SY81061 regulator
 
 # RTC
 sunxirtc*	at fdt?			# RTC
@@ -186,8 +201,11 @@ pseudo-device	wsmux
 sunxiusbphy*	at fdt?	pass 9		# USB PHY
 ehci*		at fdt?			# EHCI
 ohci*		at fdt?			# OHCI
+motg*		at fdt?			# USB OTG
+options 	MOTG_ALLWINNER		# XXX this should be a driver flag
 usb*		at ehci?
 usb*		at ohci?
+usb*		at motg?
 
 include "dev/usb/usbdevices.config"
 midi*		at midibus?

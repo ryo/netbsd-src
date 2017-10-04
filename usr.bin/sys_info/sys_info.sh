@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $NetBSD: sys_info.sh,v 1.13 2017/08/27 20:40:22 wiz Exp $
+# $NetBSD: sys_info.sh,v 1.17 2017/09/28 18:08:04 agc Exp $
 
 # Copyright (c) 2016 Alistair Crooks <agc@NetBSD.org>
 # All rights reserved.
@@ -26,7 +26,7 @@
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-SYS_INFO_VERSION=20170824
+SYS_INFO_VERSION=20170928
 
 PATH=$(sysctl -n user.cs_path)
 export PATH
@@ -110,10 +110,10 @@ getversion() {
 		run "named -v | awk '{ gsub(\"-\", \"\", \$2); gsub(\"P\", \"pl\", \$2); print tolower(\$1) \"-\" \$2 }'"
 		$all || return 0 ;&
 	bozohttpd|httpd)
-		v=$(run "/usr/libexec/httpd -G" 2>/dev/null)
+		v=$(run "${destdir}/usr/libexec/httpd -G" 2>/dev/null)
 		case "${v}" in
 		"")
-			run  "strings -a /usr/libexec/httpd | awk -F/ '\$1 == \"bozohttpd\" && NF == 2 { print \$1 \"-\" \$2; exit }'"
+			run  "strings -a ${destdir}/usr/libexec/httpd | awk -F/ '\$1 == \"bozohttpd\" && NF == 2 { print \$1 \"-\" \$2; exit }'"
 			;;
 		*)
 			printf '%s\n' "bozohttpd-${v##*/}"
@@ -132,6 +132,9 @@ getversion() {
 		$all || return 0 ;&
 	dhcpcd)
 		run  "dhcpcd --version | sed -e 's/ /-/g' -e 1q"
+		$all || return 0 ;&
+	dtc)
+		run "dtc --version | sed 's/Version: DTC /dtc-/'"
 		$all || return 0 ;&
 	ftpd)
 		run "strings -a /usr/libexec/ftpd | awk '\$1 == \"NetBSD-ftpd\" { print \"ftpd-\" \$2 }'"
@@ -184,6 +187,11 @@ getversion() {
 	openssl)
 		run "openssl version 2>/dev/null | awk '{ print tolower(\$1) \"-\" \$2 }'"
 		$all || return 0 ;&
+	pcap)
+		if which_prog tcpdumppath tcpdump; then
+			run "${tcpdumppath} -h 2>&1 | awk '\$1 == \"libpcap\" { sub(\" version \", \"-\"); print }'"
+		fi
+		$all || return 0 ;&
 	pkg_info|pkg_install)
 		if which_prog infopath pkg_info; then
 			run "printf 'pkg_install-%s\n' \$(${infopath} -V)"
@@ -198,14 +206,19 @@ getversion() {
 	sys_info)
 		run "printf '%s\n' sys_info-${SYS_INFO_VERSION}"
 		$all || return 0 ;&
+	tcpdump)
+		if which_prog tcpdumppath tcpdump; then
+			run "${tcpdumppath} -h 2>&1 | awk '\$1 == \"tcpdump\" { sub(\" version \", \"-\"); print }'"
+		fi
+		$all || return 0 ;&
 	tcsh)
 		if which_prog tcshpath tcsh; then
 			run "${tcshpath} --version | awk '{ print \$1 \"-\" \$2 }'"
 		fi
 		$all || return 0 ;&
 	tzdata)
-		if [ -f /usr/share/zoneinfo/TZDATA_VERSION ]; then
-			run "cat /usr/share/zoneinfo/TZDATA_VERSION"
+		if [ -f ${destdir}/usr/share/zoneinfo/TZDATA_VERSION ]; then
+			run "cat ${destdir}/usr/share/zoneinfo/TZDATA_VERSION"
 		else
 			run "printf '%s\n' tzdata-too-old-to-matter"
 		fi
@@ -218,7 +231,12 @@ getversion() {
 		fi
 		$all || return 0 ;&
 	[uU]ser[lL]and|release)
-		run "sed </etc/release -e 's/ /-/g' -e 's/^/userland-/' -e 1q"
+		run "sed <${destdir}/etc/release -e 's/ /-/g' -e 's/^/userland-/' -e 1q"
+		$all || return 0 ;&
+	wpa_supplicant)
+		if which_prog wpapath wpa_supplicant; then
+			run "${wpapath} -v | awk 'NF == 2 { sub(\" v\", \"-\"); print }'"
+		fi
 		$all || return 0 ;&
 	xz)
 		run "xz --version | awk '{ print \$1 \"-\" \$4; exit }'"
@@ -237,14 +255,18 @@ getversion() {
 }
 
 verbose=false
+destdir=""
 # check if we have our only option
-while getopts "L:P:v" a; do
+while getopts "L:P:d:v" a; do
 	case "$a" in
-	v)	verbose=true;;
 	L)	LIBRARY_PATH=${OPTARG};;
 	P)	PATH=${OPTARG};;
+	d)	PATH=${OPTARG}/bin:${OPTARG}/sbin:${OPTARG}/usr/bin:${OPTARG}/usr/sbin
+		LIBRARY_PATH=${OPTARG}/usr/lib:${OPTARG}/usr.X11R7/lib
+		destdir=${OPTARG};;
+	v)	verbose=true;;
 	\?)	printf >&2 '%s\n' \
-		    "Usage: $0 [-v] [-L lib-path] [-P path] [component ...]"
+		    "Usage: $0 [-v] [-d destdir] [-L libdirs] [-P path] [system...]"
 		exit 2
 	esac
 done

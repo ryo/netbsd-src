@@ -1,4 +1,4 @@
-# $NetBSD: mi,v 1.761 2017/08/16 13:53:20 joerg Exp $
+# $NetBSD: mi,v 1.764 2017/10/02 04:16:32 pgoyette Exp $
 #
 # Note: don't delete entries from here - mark them as "obsolete" instead.
 #
@@ -1589,6 +1589,7 @@
 ./usr/tests/include/sys/t_bitops		tests-include-tests	compattestfile,atf
 ./usr/tests/include/sys/t_bootblock		tests-include-tests	compattestfile,atf
 ./usr/tests/include/sys/t_cdefs			tests-include-tests	compattestfile,atf
+./usr/tests/include/sys/t_list			tests-include-tests	compattestfile,atf
 ./usr/tests/include/sys/t_pslist		tests-include-tests	compattestfile,atf
 ./usr/tests/include/sys/t_socket		tests-include-tests	atf,rump
 ./usr/tests/include/sys/t_tree			tests-include-tests	compattestfile,atf
@@ -3379,6 +3380,7 @@
 ./usr/tests/net/route/t_flags			tests-net-tests		atf,rump
 ./usr/tests/net/route/t_flags6			tests-net-tests		atf,rump
 ./usr/tests/net/route/t_route			tests-net-tests		atf,rump
+./usr/tests/net/route/t_rtcache			tests-net-tests		atf,rump
 ./usr/tests/net/sys				tests-net-tests		compattestfile,atf
 ./usr/tests/net/sys/Atffile			tests-net-tests		compattestfile,atf
 ./usr/tests/net/sys/Kyuafile			tests-net-tests		compattestfile,atf,kyua
@@ -3415,6 +3417,7 @@
 ./usr/tests/rump/rumpkern/t_sp			tests-rump-tests	atf,rump
 ./usr/tests/rump/rumpkern/t_threads		tests-rump-tests	atf,rump
 ./usr/tests/rump/rumpkern/t_tsleep		tests-rump-tests	atf,rump
+./usr/tests/rump/rumpkern/t_workqueue		tests-rump-tests	atf,rump
 ./usr/tests/rump/rumpkern/t_vm			tests-rump-tests	atf,rump
 ./usr/tests/rump/rumpnet			tests-rump-tests	compattestfile,atf
 ./usr/tests/rump/rumpnet/Atffile		tests-rump-tests	atf,rump
