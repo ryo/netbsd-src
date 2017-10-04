@@ -466,7 +466,8 @@ l1_setblocks:
 	mov	x8, #L1_BLOCK
 	orr	x2, x2, x8
 	orr	x2, x2, x3
-	orr	x2, x2, #LX_BLKPAG_AF
+	mov	x8, #(LX_BLKPAG_AF|LX_BLKPAG_AP_RW)
+	orr	x2, x2, x8
 #ifdef MULTIPROCESSOR
 	orr	x2, x2, #LX_BLKPAG_SH_IS
 #endif
@@ -528,7 +529,8 @@ l2_setblocks:
 	mov	x8, #L2_BLOCK
 	orr	x2, x2, x8
 	orr	x2, x2, x3
-	orr	x2, x2, #LX_BLKPAG_AF
+	mov	x8, #(LX_BLKPAG_AF|LX_BLKPAG_AP_RW)
+	orr	x2, x2, x8
 #ifdef MULTIPROCESSOR
 	orr	x2, x2, #LX_BLKPAG_SH_IS
 #endif

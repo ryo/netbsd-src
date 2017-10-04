@@ -66,11 +66,10 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define LX_BLKPAG_SH_NS		__SHIFTIN(0,LX_BLKPAG_SH) /* Non Shareable */
 #define LX_BLKPAG_SH_OS		__SHIFTIN(2,LX_BLKPAG_SH) /* Outer Shareable */
 #define LX_BLKPAG_SH_IS		__SHIFTIN(3,LX_BLKPAG_SH) /* Inner Shareable */
-#define LX_BLKPAG_AP		__BITS(7,6)
-#define LX_BLKPAG_AP_RW_NONE	__SHIFTIN(0,LX_BLKPAG_AP) /* EL1:RW, EL0:None */
-#define LX_BLKPAG_AP_RW_RW	__SHIFTIN(1,LX_BLKPAG_AP) /* EL1:RW, EL0:RW */
-#define LX_BLKPAG_AP_RO_NONE	__SHIFTIN(2,LX_BLKPAG_AP) /* EL1:RO, EL0:None */
-#define LX_BLKPAG_AP_RO_RO	__SHIFTIN(3,LX_BLKPAG_AP) /* EL1:RO, EL0:RO */
+#define LX_BLKPAG_AP		__BIT(7)
+#define LX_BLKPAG_AP_RW		__SHIFTIN(0,LX_BLKPAG_AP) /* RW */
+#define LX_BLKPAG_AP_RO		__SHIFTIN(1,LX_BLKPAG_AP) /* RO */
+#define LX_BLKPAG_APUSER	__BIT(6)
 #define LX_BLKPAG_NS		__BIT(5)
 #define LX_BLKPAG_ATTR_INDX	__BITS(4,2)	/* refer MAIR_EL1 attr<n> */
 #define LX_TYPE			__BIT(1)
