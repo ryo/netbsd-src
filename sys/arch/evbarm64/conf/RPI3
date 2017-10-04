@@ -31,7 +31,13 @@ no pseudo-device	nsmb
 no file-system	UMAPFS
 no file-system	UNION
 
+#options 	HZ=16
+#options 	SYSCALL_DEBUG
 options 	DEBUG
+options 	UVMHIST
+options 	UVMHIST_MAPHIST_SIZE=5000
+options 	UVMHIST_PDHIST_SIZE=5000
+
 no options	INET6
 no options	IPSEC
 no options	BPFJIT
