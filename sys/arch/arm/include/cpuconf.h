@@ -133,15 +133,8 @@
 #define ARM_ARCH_7	0
 #endif
 
-#ifdef __aarch64__
-#define ARM_ARCH_8	1
-#else
-#define ARM_ARCH_8	0
-#endif
-
 #define	ARM_NARCH	(ARM_ARCH_2 + ARM_ARCH_3 + ARM_ARCH_4 + \
-			 ARM_ARCH_5 + ARM_ARCH_6 + ARM_ARCH_7 + \
-			 ARM_ARCH_8)
+			 ARM_ARCH_5 + ARM_ARCH_6 + ARM_ARCH_7)
 #if ARM_NARCH == 0
 #error ARM_NARCH is 0
 #endif
@@ -181,8 +174,6 @@
  *                              Multiprocessor support needs this mode.
  *
  *	ARM_MMU_V7		ARM v7 MMU.
- *
- *	ARM_MMU_V8		ARM v8 MMU. (aarch64)
  */
 #if !defined(_KERNEL_OPT) ||						\
     (defined(CPU_ARM2) || defined(CPU_ARM250) || defined(CPU_ARM3))
@@ -238,13 +229,6 @@
 #define	ARM_MMU_V7		0
 #endif
 
-#if !defined(_KERNEL_OPT) ||						\
-    defined(CPU_ARMV8)
-#define	ARM_MMU_V8		1
-#else
-#define	ARM_MMU_V8		0
-#endif
-
 /*
  * Can we use the ASID support in armv6+ MMUs?
  */
@@ -252,7 +236,7 @@
 #define	ARM_MMU_EXTENDED	((ARM_MMU_MEMC + ARM_MMU_GENERIC	\
 				  + ARM_MMU_SA1 + ARM_MMU_XSCALE	\
 				  + ARM_MMU_V6C) == 0			\
-				 && (ARM_MMU_V6N + ARM_MMU_V7 + ARM_MMU_V8) > 0)
+				 && (ARM_MMU_V6N + ARM_MMU_V7) > 0)
 #if ARM_MMU_EXTENDED == 0
 #undef ARM_MMU_EXTENDED
 #endif
@@ -260,8 +244,7 @@
 
 #define	ARM_NMMUS		(ARM_MMU_MEMC + ARM_MMU_GENERIC +	\
 				 ARM_MMU_SA1 + ARM_MMU_XSCALE +		\
-				 ARM_MMU_V6N + ARM_MMU_V6C +		\
-				 ARM_MMU_V7 + ARM_MMU_V8)
+				 ARM_MMU_V6N + ARM_MMU_V6C + ARM_MMU_V7)
 #if ARM_NMMUS == 0
 #error ARM_NMMUS is 0
 #endif
