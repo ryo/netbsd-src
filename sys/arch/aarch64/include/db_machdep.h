@@ -195,11 +195,6 @@ db_addr_t db_branch_taken(db_expr_t, db_addr_t, db_regs_t *);
 
 #define DB_MACHINE_COMMANDS
 void dump_trapframe(struct trapframe *, void (*)(const char *, ...));
-void db_md_cpuinfo_cmd(db_expr_t, bool, db_expr_t, const char *);
-void db_md_frame_cmd(db_expr_t, bool, db_expr_t, const char *);
-void db_md_lwp_cmd(db_expr_t, bool, db_expr_t, const char *);
-void db_md_sysreg_cmd(db_expr_t, bool, db_expr_t, const char *);
-void db_md_tlb_cmd(db_expr_t, bool, db_expr_t, const char *);
 
 #elif defined(__arm__)
 

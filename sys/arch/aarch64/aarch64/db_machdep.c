@@ -32,13 +32,18 @@
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD$");
 
+#include "opt_uvmhist.h"
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/lwp.h>
 #include <sys/intr.h>
 
+#include <uvm/uvm.h>
+
 #include <aarch64/db_machdep.h>
 #include <aarch64/armreg.h>
+#include <aarch64/pmap.h>
 
 #include <ddb/db_access.h>
 #include <ddb/db_command.h>
@@ -49,6 +54,16 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <ddb/db_interface.h>
 
 #include <dev/cons.h>
+
+void db_md_cpuinfo_cmd(db_expr_t, bool, db_expr_t, const char *);
+void db_md_frame_cmd(db_expr_t, bool, db_expr_t, const char *);
+void db_md_lwp_cmd(db_expr_t, bool, db_expr_t, const char *);
+#ifdef UVMHIST
+void db_md_pmaphist_cmd(db_expr_t, bool, db_expr_t, const char *);
+#endif
+void db_md_pte_cmd(db_expr_t, bool, db_expr_t, const char *);
+void db_md_sysreg_cmd(db_expr_t, bool, db_expr_t, const char *);
+void db_md_tlb_cmd(db_expr_t, bool, db_expr_t, const char *);
 
 const struct db_command db_machine_command_table[] = {
 	{
@@ -71,7 +86,22 @@ const struct db_command db_machine_command_table[] = {
 		    "<address>",
 		    "\taddress:\taddress of lwp to display")
 	},
-#if defined(_KERNEL)
+#ifdef UVMHIST
+	{
+		DDB_ADD_CMD(
+		    "pmaphist", db_md_pmaphist_cmd, 0,
+		    "Dump the entire contents of the pmap history",
+		    NULL, NULL)
+	},
+#endif /* UVMHIST */
+	{
+		DDB_ADD_CMD(
+		    "pte", db_md_pte_cmd, 0,
+		    "Display information of pte",
+		    "<address>",
+		    "\taddress:\tvirtual address of page")
+	},
+#ifdef _KERNEL
 	{
 		DDB_ADD_CMD(
 		    "sysreg", db_md_sysreg_cmd, 0,
@@ -86,7 +116,7 @@ const struct db_command db_machine_command_table[] = {
 		    NULL, NULL)
 	},
 #endif
-#endif
+#endif /* _KERNEL */
 #if defined(_KERNEL) && defined(MULTIPROCESSOR)
 //XXXAARCH64
 //	{
@@ -284,6 +314,25 @@ db_md_lwp_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif
 	db_printf("\tl->l_proc         =%p\n", l->l_proc);
 	db_printf("\tl->l_name         =%s\n", SAFESTRPTR(l->l_name));
 	db_printf("\tl->l_wmesg        =%s\n", SAFESTRPTR(l->l_wmesg));
+}
+
+#ifdef UVMHIST
+void
+db_md_pmaphist_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+{
+	UVMHIST_DECL(pmaphist);
+	kernhist_dump(&pmaphist, db_printf);
+}
+#endif
+
+void
+db_md_pte_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+{
+	if (!have_addr) {
+		db_printf("pte: <address>\n");
+		return;
+	}
+	pmap_db_pteinfo(addr, db_printf);
 }
 
 void
