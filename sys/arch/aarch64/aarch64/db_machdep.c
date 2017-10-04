@@ -222,8 +222,9 @@ dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 	    tf->tf_reg[24], tf->tf_reg[25], tf->tf_reg[26], tf->tf_reg[27]);
 	(*pr)( "  x28=%016"PRIxREGISTER
 	    ", fp=x29=%016"PRIxREGISTER
-	    ", lr=x30=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[28], tf->tf_reg[29], tf->tf_reg[30]);
+	    ", lr=x30=%016"PRIxREGISTER
+	    ",    far=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[28], tf->tf_reg[29], tf->tf_reg[30],  tf->tf_far);
 }
 
 static const char *
