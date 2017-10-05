@@ -189,17 +189,11 @@ initarm64(void)
 	lwp0.l_md.md_utf = lwp0.l_md.md_ktf = tf;
 }
 
-void clear_ttbr0_l1tables(void);	/* XXX in locore.S */
-
-/* call from cpu_configure() */
 void
-aarch64_cpu_configured(void)
+machdep_init(void)
 {
 	/* clear cpu reset hook for early boot */
 	cpu_reset_address0 = NULL;
-
-	/* clear PA=VA mapping */
-	clear_ttbr0_l1tables();
 }
 
 bool

@@ -50,9 +50,6 @@ cpu_configure(void)
 	if (config_rootfound("mainbus", NULL) == NULL)
 		panic("no mainbus found");
 
-	/* do postinit */
-	aarch64_cpu_configured();
-
 	/* Turn on interrupt! */
 	spl0();
 }
