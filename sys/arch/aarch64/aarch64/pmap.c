@@ -1113,7 +1113,7 @@ pmap_activate(struct lwp *l)
 		pm->pm_asid = l->l_proc->p_pid;
 
 	ttbr0 = ((uint64_t)pm->pm_asid << 48) | pm->pm_l0table_pa;
-	reg_ttbr0_el1_write(ttbr0);
+	aarch64_set_ttbr0(ttbr0);
 
 	pm->pm_activated = true;
 }

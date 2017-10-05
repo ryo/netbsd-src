@@ -65,6 +65,7 @@ void aarch64_dcache_inv_range(vaddr_t, vsize_t);
 void aarch64_dcache_wb_range(vaddr_t, vsize_t);
 void aarch64_drain_writebuf(void);
 
+void aarch64_set_ttbr0(uint64_t);
 void aarch64_tlbi_all(void);			/* all ASID, all VA */
 void aarch64_tlbi_by_asid(int);			/*  an ASID, all VA */
 void aarch64_tlbi_by_va(vaddr_t);		/* all ASID, a VA */

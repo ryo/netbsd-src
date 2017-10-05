@@ -159,6 +159,15 @@ END(aarch64_drain_writebuf)
  * TLB ops
  */
 
+/* void aarch64_set_ttbr0(uint64_t ttbr0) */
+ENTRY(aarch64_set_ttbr0)
+	dsb	ish
+	msr	ttbr0_el1, x0
+	dsb	ish
+	isb
+	ret
+END(aarch64_set_ttbr0)
+
 /* void aarch64_tlbi_all(void) */
 ENTRY(aarch64_tlbi_all)
 	dsb	ishst
