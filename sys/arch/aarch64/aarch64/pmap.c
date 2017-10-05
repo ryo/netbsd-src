@@ -205,6 +205,9 @@ pm_addr_check(struct pmap *pm, vaddr_t va, const char *prefix)
 }
 #define PM_ADDR_CHECK(pm, va)		pm_addr_check(pm, va, __func__)
 
+#define IN_KSEG_ADDR(va)	((AARCH64_KSEG_START <= (va)) && ((va) < AARCH64_KSEG_END))
+
+
 
 static const struct pmap_devmap *pmap_devmap_table;
 
@@ -960,8 +963,7 @@ pmap_kremove(vaddr_t va, vsize_t size)
 	KDASSERT((va & PGOFSET) == 0);
 	KDASSERT((size & PGOFSET) == 0);
 
-	if (AARCH64_KSEG_START <= va && va < AARCH64_KSEG_END)
-		return;
+	KASSERT(!IN_KSEG_ADDR(va));
 
 	eva = va + size;
 	KDASSERT(VM_MIN_KERNEL_ADDRESS <= va && eva < VM_MAX_KERNEL_ADDRESS);
@@ -1031,6 +1033,8 @@ pmap_protect(struct pmap *pm, vaddr_t sva, vaddr_t eva, vm_prot_t prot)
 	UVMHIST_LOG(pmaphist, "pm=%p, sva=%016lx, eva=%016lx, prot=%08x", pm, sva, eva, prot);
 
 	PM_ADDR_CHECK(pm, sva);
+
+	KASSERT(!IN_KSEG_ADDR(sva));
 
 	if ((prot & VM_PROT_READ) == VM_PROT_NONE) {
 		pmap_remove(pm, sva, eva);
@@ -1413,6 +1417,8 @@ pmap_remove(struct pmap *pm, vaddr_t sva, vaddr_t eva)
 	PM_ADDR_CHECK(pm, sva);
 
 	PM_LOCK(pm);
+
+	KASSERT(!IN_KSEG_ADDR(sva));
 
 	for (va = sva; va < eva; va += PAGE_SIZE)
 		_pmap_remove(pm, va, false);
