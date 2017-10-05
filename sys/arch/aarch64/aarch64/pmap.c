@@ -238,7 +238,7 @@ _pmap_map_chunk(pd_entry_t *l2, vaddr_t va, paddr_t pa, vsize_t size,
 		pte = pa | attr;
 
 		atomic_swap_64(&l2[l2pde_index(va)], pte);
-		aarch64_tlb_flushID_SE(va);
+		aarch64_tlbi_by_va(va);
 
 		if (prot & VM_PROT_EXECUTE)
 			cpu_icache_sync_range(va, L2_SIZE);
@@ -408,7 +408,7 @@ pmap_bootstrap(vaddr_t vstart, vaddr_t vend)
 		void cpucache_clean(void);
 		cpucache_clean();
 	}
-	cpu_tlb_flushID();
+	aarch64_tlbi_all();
 
 	va = vstart;
 	l0pa = reg_ttbr1_el1_read();
@@ -1015,7 +1015,7 @@ _pmap_protect_pv(struct vm_page *pg, struct pv_entry *pv, vm_prot_t prot)
 	pte = _pmap_pte_adjust_prot(pte, prot & pteprot, mdattr);
 	atomic_swap_64(ptep, pte);
 
-	cpu_tlb_flushID_SE(pv->pv_va);
+	aarch64_tlbi_by_va(pv->pv_va);
 
 	PM_UNLOCK(pv->pv_pmap);
 }
@@ -1086,7 +1086,7 @@ pmap_protect(struct pmap *pm, vaddr_t sva, vaddr_t eva, vm_prot_t prot)
 		pte = _pmap_pte_adjust_prot(pte, prot, mdattr);
 		atomic_swap_64(ptep, pte);
 
-		cpu_tlb_flushID_SE(va);
+		aarch64_tlbi_by_va(va);
 	}
 
 	PM_UNLOCK(pm);
@@ -1338,7 +1338,7 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags
 	pte = pa | attr;
 	atomic_swap_64(ptep, pte);
 
-	cpu_tlb_flushID_SE(va);
+	aarch64_tlbi_by_va(va);
 	if (kenter && (prot & VM_PROT_EXECUTE))
 		cpu_icache_sync_range(va, PAGE_SIZE);
 
@@ -1405,7 +1405,7 @@ _pmap_remove(struct pmap *pm, vaddr_t va, bool kremove)
 		}
 		atomic_swap_64(ptep, 0);
 
-		cpu_tlb_flushID_SE(va);
+		aarch64_tlbi_by_va(va);
 	}
 }
 
@@ -1587,7 +1587,7 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
 			opv_pte &= ~LX_BLKPAG_AF;
 			atomic_swap_64(opv_ptep, opv_pte);
 
-			cpu_tlb_flushID_SE(opv->pv_va);
+			aarch64_tlbi_by_va(opv->pv_va);
 
 			md->mdpg_pa_owner = pv;
 		}
@@ -1609,7 +1609,7 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
 	pmap_pv_unlock(md);
 
 	atomic_swap_64(ptep, pte);
-	cpu_tlb_flushID_SE(va);
+	aarch64_tlbi_by_va(va);
 
 	return true;
 }
@@ -1657,7 +1657,7 @@ pmap_clear_modify(struct vm_page *pg)
 			goto tryagain;
 		}
 
-		cpu_tlb_flushID_SE(va);
+		aarch64_tlbi_by_va(va);
 
 		UVMHIST_LOG(pmaphist, "va=%016llx, ptep=%p, pa=%016lx, RW -> RO", va, ptep, l3pte_pa(pte), 0);
 	}
@@ -1708,7 +1708,7 @@ pmap_clear_reference(struct vm_page *pg)
 			goto tryagain;
 		}
 
-		cpu_tlb_flushID_SE(va);
+		aarch64_tlbi_by_va(va);
 
 		UVMHIST_LOG(pmaphist, "va=%016llx, ptep=%p, pa=%016lx, unse AF", va, ptep, l3pte_pa(pte), 0);
 	}

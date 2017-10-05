@@ -588,8 +588,15 @@ mmu_enable:
 	msr	ttbr1_el1, x0
 	isb
 
-	/* Invalidate the TLB */
+	/* Invalidate all TLB */
+	dsb	ishst
+#ifdef MULTIPROCESSOR
 	tlbi	vmalle1is
+#else
+	tlbi	vmalle1
+#endif
+	dsb	ish
+	isb
 
 	ldr	x0, mair_setting
 	msr	mair_el1, x0

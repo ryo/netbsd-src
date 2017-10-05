@@ -112,38 +112,6 @@ ENTRY(aarch64_icache_line_size)
 END(aarch64_icache_line_size)
 
 /*
- * Generic functions to read/modify/write the internal coprocessor registers
- */
-ENTRY(aarch64_setttb)
-	dsb	ish
-	msr	ttbr0_el1, x0
-	dsb	ish
-	isb
-	ret
-END(aarch64_setttb)
-
-ENTRY(aarch64_tlb_flushID)
-	dsb	ishst
-#ifdef MULTIPROCESSOR
-	tlbi	vmalle1is
-#else
-	tlbi	vmalle1
-#endif
-	dsb	ish
-	isb
-	ret
-END(aarch64_tlb_flushID)
-
-ENTRY(aarch64_tlb_flushID_SE)
-	ubfx	x8, x0, #12, #44	/* VA[55:12] */
-	dsb	ishst
-	tlbi	vaae1is, x8
-	dsb	ish
-	isb
-	ret
-END(aarch64_tlb_flushID_SE)
-
-/*
  * void aarch64_dcache_wb_range(vaddr_t, vsize_t)
  */
 ENTRY(aarch64_dcache_wb_range)
@@ -185,3 +153,102 @@ ENTRY(aarch64_drain_writebuf)
 	dsb	sy
 	ret
 END(aarch64_drain_writebuf)
+
+
+/*
+ * TLB ops
+ */
+
+/* void aarch64_tlbi_all(void) */
+ENTRY(aarch64_tlbi_all)
+	dsb	ishst
+#ifdef MULTIPROCESSOR
+	tlbi	vmalle1is
+#else
+	tlbi	vmalle1
+#endif
+	dsb	ish
+	isb
+	ret
+END(aarch64_tlbi_all)
+
+/* void aarch64_tlbi_by_asid(int asid) */
+ENTRY(aarch64_tlbi_by_asid)
+	/* x8 = bit 63[ASID]48, 47[RES0]0 */
+	lsl	x8, x0, #48
+	dsb	ishst
+#ifdef MULTIPROCESSOR
+	tlbi	aside1is, x8
+#else
+	tlbi	aside1, x8
+#endif
+	dsb	ish
+	isb
+	ret
+END(aarch64_tlbi_by_asid)
+
+/* aarch64_tlbi_by_va(vaddr_t va) */
+ENTRY(aarch64_tlbi_by_va)
+	/* x8 = bit 63[RES0]44, 43[VA(55:12)]0 */
+	ubfx	x8, x0, #12, #44
+	dsb	ishst
+#ifdef MULTIPROCESSOR
+	tlbi	vaae1is, x8
+#else
+	tlbi	vaae1, x8
+#endif
+	dsb	ish
+	isb
+	ret
+END(aarch64_tlbi_by_va)
+
+/* aarch64_tlbi_by_va_ll(vaddr_t va) */
+ENTRY(aarch64_tlbi_by_va_ll)
+	/* x8 = bit 63[RES0]44, 43[VA(55:12)]0 */
+	ubfx	x8, x0, #12, #44
+	dsb	ishst
+#ifdef MULTIPROCESSOR
+	tlbi	vaale1is, x8
+#else
+	tlbi	vaale1, x8
+#endif
+	dsb	ish
+	isb
+	ret
+END(aarch64_tlbi_by_va_ll)
+
+/* aarch64_tlbi_by_asid_va(int asid, vaddr_t va) */
+ENTRY(aarch64_tlbi_by_asid_va)
+	/* x8 = bit 63[ASID]48, 47[RES0]44, 43[VA(55:12)]0 */
+	lsl	x8, x0, #48
+	bfxil	x8, x1, #12, #44
+#ifdef MULTIPROCESSOR
+	/* need dsb and isb for inner shareable? */
+	dsb	ishst
+	tlbi	vae1is, x8
+	dsb	ish
+	isb
+#else
+	/* no need dsb and isb for single entry */
+	tlbi	vae1, x8
+#endif
+	ret
+END(aarch64_tlbi_by_asid_va)
+
+/* aarch64_tlbi_by_asid_va_ll(int asid, vaddr_t va) */
+ENTRY(aarch64_tlbi_by_asid_va_ll)
+	/* x8 = bit 63[ASID]48, 47[RES0]44, 43[VA(55:12)]0 */
+	lsl	x8, x0, #48
+	bfxil	x8, x1, #12, #44
+#ifdef MULTIPROCESSOR
+	/* need dsb and isb for inner shareable? */
+	dsb	ishst
+	tlbi	vale1is, x8
+	dsb	ish
+	isb
+#else
+	/* no need dsb and isb for single entry */
+	tlbi	vale1, x8
+#endif
+	ret
+END(aarch64_tlbi_by_asid_va_ll)
