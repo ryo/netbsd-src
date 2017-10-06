@@ -687,8 +687,6 @@ sctlr_set:
 	    SCTLR_DZE |     /* Enables access to the DC ZVA instruction */ \
 	    SCTLR_I |       /* Instruction cache enable */ \
 	    SCTLR_SED |     /* SETEND instruction disable */ \
-	    SCTLR_SA0 |     /* Enable EL0 stack alignment check */ \
-	    SCTLR_SA |      /* Enable SP alignment check */ \
 	    SCTLR_C |       /* Cache enable */ \
 	    SCTLR_M |       /* MMU Enable */ \
 	    SCTLR_SA0_CONFIG | \
@@ -706,10 +704,9 @@ sctlr_clear:
 	    SCTLR_ITD |     /* IT instruction disable */ \
 	    SCTLR_THEE |    /* T32EE is not implemented */ \
 	    SCTLR_CP15BEN | /* CP15 barrier enable */ \
+	    SCTLR_SA0 |     /* Enable EL0 stack alignment check */ \
+	    SCTLR_SA |      /* Enable SP alignment check */ \
 	    SCTLR_A |       /* Alignment check enable */ \
-	    SCTLR_SA0 | \
-	    SCTLR_SA | \
-	    SCTLR_A | \
 	    0)
 
 
