@@ -192,9 +192,9 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 
 #ifdef UVMHIST
 	if (ftype & VM_PROT_EXECUTE) {
-		UVMHIST_LOG(pmaphist, "pagefault %016lx in %s EXEC", va, user ? "user" : "kernel", 0, 0);
+		UVMHIST_LOG(pmaphist, "pagefault %016lx %016lx in %s EXEC", tf->tf_far, va, user ? "user" : "kernel", 0);
 	} else {
-		UVMHIST_LOG(pmaphist, "pagefault %016lx in %s %s\n", va, user ? "user" : "kernel", (rw == 0) ? "read" : "write", 0);
+		UVMHIST_LOG(pmaphist, "pagefault %016lx %016lx in %s %s\n", tf->tf_far, va, user ? "user" : "kernel", (rw == 0) ? "read" : "write");
 	}
 #endif
 
