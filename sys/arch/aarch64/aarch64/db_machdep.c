@@ -91,7 +91,8 @@ const struct db_command db_machine_command_table[] = {
 		DDB_ADD_CMD(
 		    "pmaphist", db_md_pmaphist_cmd, 0,
 		    "Dump the entire contents of the pmap history",
-		    NULL, NULL)
+		    "<param>",
+		    "\tparam: 0=clear")
 	},
 #endif /* UVMHIST */
 	{
@@ -322,6 +323,15 @@ void
 db_md_pmaphist_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
 {
 	UVMHIST_DECL(pmaphist);
+
+	if (have_addr && (addr == 0)) {
+		/* XXX */
+		pmaphist.f = 0;
+		memset(pmaphist.e, 0, sizeof(struct kern_history_ent) * pmaphist.n);
+
+		db_printf("pmap history was cleared\n");
+	}
+
 	kernhist_dump(&pmaphist, db_printf);
 }
 #endif
