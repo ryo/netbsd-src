@@ -57,7 +57,7 @@ UVMHIST_DEFINE(pmaphist);
 #define UVMHIST_PMAPHIST_SIZE	8192
 #endif
 
-static struct kern_history_ent pmaphistbuf[UVMHIST_PMAPHIST_SIZE];
+struct kern_history_ent pmaphistbuf[UVMHIST_PMAPHIST_SIZE];
 
 static void
 pmap_hist_init(void)
@@ -1551,6 +1551,7 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
 
 	pmap_pv_lock(md);
 	if ((pte & LX_BLKPAG_AF) == 0) {
+		/* pte has no AF bit, set referenced and AF bit */
 #if 1 /* VIPT */
 		struct pv_entry *pv, *opv;
 
@@ -1579,9 +1580,12 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
 			KASSERT(opv_ptep != NULL);
 			opv_pte = *opv_ptep;
 
-			if ((opv_pte & (LX_BLKPAG_AF|LX_BLKPAG_OS_WRITE)) ==
-			    (LX_BLKPAG_AF|LX_BLKPAG_OS_WRITE)) {
+			if ((opv_pte & (LX_BLKPAG_AF|LX_BLKPAG_AP)) ==
+			    (LX_BLKPAG_AF|LX_BLKPAG_AP_RW)) {
 				cpu_dcache_wbinv_range(opv->pv_va, PAGE_SIZE);
+				/* change pte of current owner from RW to RO */
+				opv_pte &= ~LX_BLKPAG_AP;
+				opv_pte |= LX_BLKPAG_AP_RW;
 			}
 			/* remove AF from owner pv */
 			opv_pte &= ~LX_BLKPAG_AF;
@@ -1589,20 +1593,20 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
 
 			aarch64_tlbi_by_va(opv->pv_va);
 
-			md->mdpg_pa_owner = pv;
+			md->mdpg_pa_owner = pv;	/* change pa owner */
 		}
 #endif
 
 		UVMHIST_LOG(pmaphist, "REFERENCED: va=%016lx, pa=%016lx, pte_prot=%08x, accessprot=%08x", va, pa, pmap_prot, accessprot);
 		DPRINTF("REFERENCED: va=%016lx, pa=%016lx, pte_prot=%s, accessprot=%s\n", va, pa, str_vmflags(pmap_prot), str_vmflags(accessprot));
-		md->mdpg_flags |= VM_PROT_READ;
+		md->mdpg_flags |= VM_PROT_READ;		/* set referenced */
 		pte |= LX_BLKPAG_AF;
 	}
 	if ((accessprot & VM_PROT_WRITE) &&
 	    ((pte & LX_BLKPAG_AP) == LX_BLKPAG_AP_RO)) {
 		UVMHIST_LOG(pmaphist, "MODIFIED: va=%016lx, pa=%016lx, pte_prot=%08x, accessprot=%08x", va, pa, pmap_prot, accessprot);
 		DPRINTF("MODIFIED: va=%016lx, pa=%016lx, pte_prot=%s, accessprot=%s\n", va, pa, str_vmflags(pmap_prot), str_vmflags(accessprot));
-		md->mdpg_flags |= VM_PROT_WRITE;
+		md->mdpg_flags |= VM_PROT_WRITE;	/* set modified */
 		pte &= ~LX_BLKPAG_AP;
 		pte |= LX_BLKPAG_AP_RW;
 	}
