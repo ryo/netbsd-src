@@ -1741,75 +1741,81 @@ pmap_db_pte_print(pt_entry_t pte, int level, void (*pr)(const char *, ...))
 
 	} else if (level == 0) {
 		/* L0 pde */
-		pr(",%s", l1pde_is_table(pte) ? "TABLE" : "***ILLEGAL TYPE***");
+		pr(", %s", l1pde_is_table(pte) ? "TABLE" : "***ILLEGAL TYPE***");
+		pr(", %s", l0pde_valid(pte) ? "VALID" : "***INVALID***");
+
+		pr(", PA=%016lx", l0pde_pa(pte));
 
 	} else if (((level == 1) && l1pde_is_block(pte)) ||
 	    ((level == 2) && l2pde_is_block(pte)) ||
 		(level == 3)) {
+
+		if (level == 3) {
+			pr(", %s", l3pte_is_page(pte) ? " PAGE" : "***ILLEGAL TYPE***");
+			pr(", %s", l3pte_valid(pte) ? "VALID" : "***INVALID***");
+		} else {
+			pr(", %s", l1pde_is_table(pte) ? "TABLE" : "BLOCK");
+			pr(", %s", l1pde_valid(pte) ? "VALID" : "***INVALID***");
+		}
+
+		pr(", PA=%016lx", l3pte_pa(pte));
+
 		/* L[12] block, or L3 pte */
-		pr(",%s", (pte & LX_BLKPAG_UXN) ? "UXN" : "---");
-		pr(",%s", (pte & LX_BLKPAG_PXN) ? "PXN" : "---");
+		pr(", %s", (pte & LX_BLKPAG_UXN) ? "UXN" : "---");
+		pr(", %s", (pte & LX_BLKPAG_PXN) ? "PXN" : "---");
 
 		if (pte & LX_BLKPAG_CONTIG)
 			pr(",CONTIG");
 
-		pr(",%s", (pte & LX_BLKPAG_NG) ? "NG" : "--");
-		pr(",%s", (pte & LX_BLKPAG_AF) ? "AF" : "--");
+		pr(", %s", (pte & LX_BLKPAG_NG) ? "NG" : "--");
+		pr(", %s", (pte & LX_BLKPAG_AF) ? "AF" : "--");
 
 		switch (pte & LX_BLKPAG_SH) {
 		case LX_BLKPAG_SH_NS:
-			pr(",NS");
+			pr(", SH_NS");
 			break;
 		case LX_BLKPAG_SH_OS:
-			pr(",OS");
+			pr(", SH_OS");
 			break;
 		case LX_BLKPAG_SH_IS:
-			pr(",IS");
+			pr(", SH_IS");
 			break;
 		default:
-			pr(",??");
+			pr(", SH_??");
 			break;
 		}
 
-		pr(",%s", (pte & LX_BLKPAG_AP_RO) ? "RO" : "RW");
-		pr(",%s", (pte & LX_BLKPAG_APUSER) ? "EL0" : "EL1");
+		pr(", %s", (pte & LX_BLKPAG_AP_RO) ? "RO" : "RW");
+		pr(", %s", (pte & LX_BLKPAG_APUSER) ? "EL0" : "EL1");
 
 		switch (pte & LX_BLKPAG_ATTR_MASK) {
 		case LX_BLKPAG_ATTR_NORMAL_WB:
-			pr(",WriteBack");
+			pr(", WRITEBACK");
 			break;
 		case LX_BLKPAG_ATTR_NORMAL_NC:
-			pr(",NoCache  ");
+			pr(", NOCACHE");
 			break;
 		case LX_BLKPAG_ATTR_NORMAL_WT:
-			pr(",WhiteThru");
+			pr(", WHITETHRU");
 			break;
 		case LX_BLKPAG_ATTR_DEVICE_MEM:
-			pr(",DEVICE   ");
+			pr(", DEVICE");
 			break;
 		}
 
-		if (level == 3)
-			pr(",%s", l3pte_is_page(pte) ? "PAGE" : "***ILLEGAL TYPE***");
-		else
-			pr(",%s", l1pde_is_table(pte) ? "TABLE" : "BLOCK");
-
-
 		if (pte & LX_BLKPAG_OS_READ)
-			pr(",pmap_read");
+			pr(", pmap_read");
 		if (pte & LX_BLKPAG_OS_WRITE)
-			pr(",pmap_write");
+			pr(", pmap_write");
 		if ((pte & (LX_BLKPAG_UXN|LX_BLKPAG_PXN)) == 0)
-			pr(",executable");
+			pr(", executable");
 
 	} else {
 		/* L1 and L2 pde */
-		pr(",%s", l1pde_is_table(pte) ? "TABLE" : "BLOCK");
-
+		pr(", %s", l1pde_is_table(pte) ? "TABLE" : "BLOCK");
+		pr(", %s", l1pde_valid(pte) ? "VALID" : "***INVALID***");
+		pr(", PA=%016lx", l1pde_pa(pte));
 	}
-
-	pr(",%s", l1pde_valid(pte) ? "VALID" : "***INVALID***");
-	pr(", PA=%016lx", l1pde_pa(pte));
 	pr("\n");
 }
 
@@ -1819,20 +1825,17 @@ pmap_db_pteinfo(vaddr_t va, void (*pr)(const char *, ...))
 {
 	struct pmap *pm;
 	struct vm_page *pg;
+	bool user;
 
 
 	if (VM_MAXUSER_ADDRESS > va) {
 		pm = curlwp->l_proc->p_vmspace->vm_map.pmap;
+		user = true;
 	} else {
 		pm = pmap_kernel();
+		user = false;
 	}
 
-	pr("va=%016llx,  L0-index=%d, L1-index=%d, L2-index=%d, L3-index=%d\n",
-	    va,
-	    (va & L0_ADDR_BITS) >> L0_SHIFT,
-	    (va & L1_ADDR_BITS) >> L1_SHIFT,
-	    (va & L2_ADDR_BITS) >> L2_SHIFT,
-	    (va & L3_ADDR_BITS) >> L3_SHIFT);
 
 	{
 		pd_entry_t *l0, *l1, *l2, *l3;
@@ -1847,12 +1850,18 @@ pmap_db_pteinfo(vaddr_t va, void (*pr)(const char *, ...))
 		 */
 		l0 = pm->pm_l0table;
 
-		pr("L0 table: va=%016llx pa=%016llx\n", l0, pm->pm_l0table_pa);
+		pr("TTBR%d=%016llx (%016llx)", user ? 0 : 1, pm->pm_l0table_pa, l0);
+		pr(", input-va=%016llx, L0-index=%d, L1-index=%d, L2-index=%d, L3-index=%d\n",
+		    va,
+		    (va & L0_ADDR_BITS) >> L0_SHIFT,
+		    (va & L1_ADDR_BITS) >> L1_SHIFT,
+		    (va & L2_ADDR_BITS) >> L2_SHIFT,
+		    (va & L3_ADDR_BITS) >> L3_SHIFT);
 
 		idx = l0pde_index(va);
 		pde = l0[idx];
 
-		pr("L0[%3d]=%016llx, ", idx, pde);
+		pr("L0[%3d]=%016llx", idx, pde);
 		pmap_db_pte_print(pde, 0, pr);
 
 		if (!l0pde_valid(pde))
@@ -1862,7 +1871,7 @@ pmap_db_pteinfo(vaddr_t va, void (*pr)(const char *, ...))
 		idx = l1pde_index(va);
 		pde = l1[idx];
 
-		pr("L1[%3d]=%016llx, ", idx, pde);
+		pr(" L1[%3d]=%016llx", idx, pde);
 		pmap_db_pte_print(pde, 1, pr);
 
 		if (!l1pde_valid(pde) || l1pde_is_block(pde))
@@ -1872,7 +1881,7 @@ pmap_db_pteinfo(vaddr_t va, void (*pr)(const char *, ...))
 		idx = l2pde_index(va);
 		pde = l2[idx];
 
-		pr("L2[%3d]=%016llx, ", idx, pde);
+		pr("  L2[%3d]=%016llx", idx, pde);
 		pmap_db_pte_print(pde, 2, pr);
 
 		if (!l2pde_valid(pde) || l2pde_is_block(pde))
@@ -1882,17 +1891,13 @@ pmap_db_pteinfo(vaddr_t va, void (*pr)(const char *, ...))
 		idx = l3pte_index(va);
 		pte = l3[idx];
 
-		pr("L3[%3d]=%016llx, ", idx, pte);
+		pr("   L3[%3d]=%016llx", idx, pte);
 		pmap_db_pte_print(pte, 3, pr);
 
 		pa = l3pte_pa(pte);
 		pg = PHYS_TO_VM_PAGE(pa);
 		if (pg != NULL) {
 			md = VM_PAGE_TO_MD(pg);
-			pr("\n", pg);
-			pr("	pg = %p\n", pg);
-			pr("	pg->mdpg_flags = %08x\n", md->mdpg_flags);
-			pr("	pg->mdpg_pvnum = %d\n", md->mdpg_pvnum);
 			pv_dump(md, pr);
 		}
 	}
