@@ -257,19 +257,20 @@ db_md_cpuinfo_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *m
 	db_read_bytes(ci, sizeof(cpuinfobuf), (char *)&cpuinfobuf);
 
 	cpuid = cpuinfobuf.ci_cpuid;
-	db_printf("cpu[%lu].ci_cpuid        = %lu\n", cpuid, cpuinfobuf.ci_cpuid);
-	db_printf("cpu[%lu].ci_gicid        = %lu\n", cpuid, cpuinfobuf.ci_gicid);
-	db_printf("cpu[%lu].ci_curlwp       = %p\n", cpuid, cpuinfobuf.ci_curlwp);
+	db_printf("cpu_info=%p\n", ci);
+	db_printf("%p cpu[%lu].ci_cpuid        = %lu\n", &ci->ci_cpuid, cpuid, cpuinfobuf.ci_cpuid);
+	db_printf("%p cpu[%lu].ci_gicid        = %lu\n", &ci->ci_gicid, cpuid, cpuinfobuf.ci_gicid);
+	db_printf("%p cpu[%lu].ci_curlwp       = %p\n", &ci->ci_curlwp, cpuid, cpuinfobuf.ci_curlwp);
 	for (i = 0; i < SOFTINT_COUNT; i++) {
-		db_printf("cpu[%lu].ci_softlwps[%d(%s)] = %p\n", cpuid,
+		db_printf("%p cpu[%lu].ci_softlwps[%d(%s)] = %p\n", &ci->ci_softlwps[i], cpuid,
 		    i, softintname(i), cpuinfobuf.ci_softlwps[i]);
 	}
-	db_printf("cpu[%lu].ci_lastintr     = %llu\n", cpuid, cpuinfobuf.ci_lastintr);
-	db_printf("cpu[%lu].ci_want_resched = %d\n", cpuid, cpuinfobuf.ci_want_resched);
-	db_printf("cpu[%lu].ci_cpl          = %d\n", cpuid, cpuinfobuf.ci_cpl);
-	db_printf("cpu[%lu].ci_softints     = 0x%08x\n", cpuid, cpuinfobuf.ci_softints);
-	db_printf("cpu[%lu].ci_astpending   = 0x%08x\n", cpuid, cpuinfobuf.ci_astpending);
-	db_printf("cpu[%lu].ci_intr_depth   = %u\n", cpuid, cpuinfobuf.ci_intr_depth);
+	db_printf("%p cpu[%lu].ci_lastintr     = %llu\n", &ci->ci_lastintr, cpuid, cpuinfobuf.ci_lastintr);
+	db_printf("%p cpu[%lu].ci_want_resched = %d\n", &ci->ci_want_resched, cpuid, cpuinfobuf.ci_want_resched);
+	db_printf("%p cpu[%lu].ci_cpl          = %d\n", &ci->ci_cpl, cpuid, cpuinfobuf.ci_cpl);
+	db_printf("%p cpu[%lu].ci_softints     = 0x%08x\n", &ci->ci_softints, cpuid, cpuinfobuf.ci_softints);
+	db_printf("%p cpu[%lu].ci_astpending   = 0x%08x\n", &ci->ci_astpending, cpuid, cpuinfobuf.ci_astpending);
+	db_printf("%p cpu[%lu].ci_intr_depth   = %u\n", &ci->ci_intr_depth, cpuid, cpuinfobuf.ci_intr_depth);
 }
 
 void
