@@ -49,7 +49,7 @@ RCSID("$NetBSD: idle_machdep.S,v 1.1 2014/08/10 05:47:37 matt Exp $");
 
 
 ENTRY(cpu_idle)
-	sub	sp, sp, #TF_SIZE		/* allocate trapfame */
+	sub	sp, sp, #TF_SIZE		/* allocate trapframe */
 	str	x28, [sp, #TF_X28]		/* save x28 */
 	stp	x29, x30, [sp, #TF_X29]		/* save x29,x30 */
 #ifdef DDB
