@@ -306,6 +306,8 @@ interrupt(struct trapframe *tf)
 	ci->ci_intr_depth++;
 	ARM_IRQ_HANDLER(tf);
 	ci->ci_intr_depth--;
+
+	cpu_dosoftints();
 }
 
 #define bad_trap_panic(trapfunc)	\
