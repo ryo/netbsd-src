@@ -51,19 +51,18 @@ __KERNEL_RCSID(0, "$NetBSD$");
 void
 db_read_bytes(vaddr_t addr, size_t size, char *data)
 {
-	vaddr_t lastaddr;
+	vaddr_t lastpage = -1;
 	const char *src;
 
-	lastaddr = trunc_page(addr) - PAGE_SIZE;
 	for (src = (const char *)addr; size > 0;) {
 		uintptr_t tmp;
 
-		if ((lastaddr != trunc_page((vaddr_t)src)) &&
+		if ((lastpage != atop((vaddr_t)src)) &&
 		    vtophys((vaddr_t)src) == VTOPHYS_FAILED) {
 			db_printf("address %p is invalid\n", src);
 			return;
 		}
-		lastaddr = trunc_page((vaddr_t)src);
+		lastpage = atop((vaddr_t)src);
 
 		tmp = (uintptr_t)src | (uintptr_t)data;
 		if ((size >= 8) && ((tmp & 7) == 0)) {
@@ -91,20 +90,19 @@ db_read_bytes(vaddr_t addr, size_t size, char *data)
 void
 db_write_bytes(vaddr_t addr, size_t size, const char *data)
 {
-	vaddr_t lastaddr;
+	vaddr_t lastpage = -1;
 	char *dst;
 
-	//XXXAARCH64: check text segment
-	lastaddr = trunc_page(addr) - PAGE_SIZE;
+	//XXXAARCH64: check read only block/page
 	for (dst = (char *)addr; size > 0;) {
 		uintptr_t tmp;
 
-		if ((lastaddr != trunc_page((vaddr_t)dst)) &&
+		if ((lastpage != atop((vaddr_t)dst)) &&
 		    (vtophys((vaddr_t)dst) == VTOPHYS_FAILED)) {
 			db_printf("address %p is invalid\n", dst);
 			return;
 		}
-		lastaddr = trunc_page((vaddr_t)dst);
+		lastpage = atop((vaddr_t)dst);
 
 		tmp = (uintptr_t)dst | (uintptr_t)data;
 		if ((size >= 8) && ((tmp & 7) == 0)) {
