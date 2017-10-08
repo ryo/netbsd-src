@@ -182,10 +182,10 @@ void
 dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 {
 	(*pr)( "   pc=%016"PRIxREGISTER
-	    ",     sp=%016"PRIxREGISTER
 	    ",   spsr=%016"PRIxREGISTER
-	    ",    esr=%016"PRIxREGISTER"\n",
-	    tf->tf_pc, tf->tf_sp, tf->tf_spsr, tf->tf_esr);
+	    ",    esr=%016"PRIxREGISTER
+	    ",    far=%016"PRIxREGISTER"\n",
+	    tf->tf_pc, tf->tf_spsr, tf->tf_esr, tf->tf_far);
 	(*pr)( "   x0=%016"PRIxREGISTER
 	    ",     x1=%016"PRIxREGISTER
 	    ",     x2=%016"PRIxREGISTER
@@ -224,27 +224,9 @@ dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 	(*pr)( "  x28=%016"PRIxREGISTER
 	    ", fp=x29=%016"PRIxREGISTER
 	    ", lr=x30=%016"PRIxREGISTER
-	    ",    far=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[28], tf->tf_reg[29], tf->tf_reg[30],  tf->tf_far);
+	    ",     sp=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[28], tf->tf_reg[29], tf->tf_reg[30],  tf->tf_sp);
 }
-
-static const char *
-softintname(int i)
-{
-	switch (i) {
-	case (IPL_SOFTCLOCK  - IPL_SOFTCLOCK):
-		return "SOFTINT_CLOCK";
-	case (IPL_SOFTBIO    - IPL_SOFTCLOCK):
-		return "SOFTINT_BIO";
-	case (IPL_SOFTNET    - IPL_SOFTCLOCK):
-		return "SOFTINT_NET";
-	case (IPL_SOFTSERIAL - IPL_SOFTCLOCK):
-		return "SOFTINT_SERIAL";
-	}
-	return "?";
-}
-
-
 
 void
 db_md_cpuinfo_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
@@ -258,19 +240,28 @@ db_md_cpuinfo_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *m
 
 	cpuid = cpuinfobuf.ci_cpuid;
 	db_printf("cpu_info=%p\n", ci);
-	db_printf("%p cpu[%lu].ci_cpuid        = %lu\n", &ci->ci_cpuid, cpuid, cpuinfobuf.ci_cpuid);
-	db_printf("%p cpu[%lu].ci_gicid        = %lu\n", &ci->ci_gicid, cpuid, cpuinfobuf.ci_gicid);
-	db_printf("%p cpu[%lu].ci_curlwp       = %p\n", &ci->ci_curlwp, cpuid, cpuinfobuf.ci_curlwp);
+	db_printf("%p cpu[%lu].ci_cpuid        = %lu\n",
+	    &ci->ci_cpuid, cpuid, cpuinfobuf.ci_cpuid);
+	db_printf("%p cpu[%lu].ci_gicid        = %lu\n",
+	    &ci->ci_gicid, cpuid, cpuinfobuf.ci_gicid);
+	db_printf("%p cpu[%lu].ci_curlwp       = %p\n",
+	    &ci->ci_curlwp, cpuid, cpuinfobuf.ci_curlwp);
 	for (i = 0; i < SOFTINT_COUNT; i++) {
-		db_printf("%p cpu[%lu].ci_softlwps[%d(%s)] = %p\n", &ci->ci_softlwps[i], cpuid,
-		    i, softintname(i), cpuinfobuf.ci_softlwps[i]);
+		db_printf("%p cpu[%lu].ci_softlwps[%d] = %p\n",
+		    &ci->ci_softlwps[i], cpuid, i, cpuinfobuf.ci_softlwps[i]);
 	}
-	db_printf("%p cpu[%lu].ci_lastintr     = %llu\n", &ci->ci_lastintr, cpuid, cpuinfobuf.ci_lastintr);
-	db_printf("%p cpu[%lu].ci_want_resched = %d\n", &ci->ci_want_resched, cpuid, cpuinfobuf.ci_want_resched);
-	db_printf("%p cpu[%lu].ci_cpl          = %d\n", &ci->ci_cpl, cpuid, cpuinfobuf.ci_cpl);
-	db_printf("%p cpu[%lu].ci_softints     = 0x%08x\n", &ci->ci_softints, cpuid, cpuinfobuf.ci_softints);
-	db_printf("%p cpu[%lu].ci_astpending   = 0x%08x\n", &ci->ci_astpending, cpuid, cpuinfobuf.ci_astpending);
-	db_printf("%p cpu[%lu].ci_intr_depth   = %u\n", &ci->ci_intr_depth, cpuid, cpuinfobuf.ci_intr_depth);
+	db_printf("%p cpu[%lu].ci_lastintr     = %llu\n",
+	    &ci->ci_lastintr, cpuid, cpuinfobuf.ci_lastintr);
+	db_printf("%p cpu[%lu].ci_want_resched = %d\n",
+	    &ci->ci_want_resched, cpuid, cpuinfobuf.ci_want_resched);
+	db_printf("%p cpu[%lu].ci_cpl          = %d\n",
+	    &ci->ci_cpl, cpuid, cpuinfobuf.ci_cpl);
+	db_printf("%p cpu[%lu].ci_softints     = 0x%08x\n",
+	    &ci->ci_softints, cpuid, cpuinfobuf.ci_softints);
+	db_printf("%p cpu[%lu].ci_astpending   = 0x%08x\n",
+	    &ci->ci_astpending, cpuid, cpuinfobuf.ci_astpending);
+	db_printf("%p cpu[%lu].ci_intr_depth   = %u\n",
+	    &ci->ci_intr_depth, cpuid, cpuinfobuf.ci_intr_depth);
 }
 
 void
