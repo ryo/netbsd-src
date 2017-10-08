@@ -106,8 +106,7 @@ _pmap_map_chunk(pd_entry_t *l2, vaddr_t va, paddr_t pa, vsize_t size,
 
 		pte = pa | attr;
 		atomic_swap_64(&l2[l2pde_index(va)], pte);
-
-		aarch64_tlb_flushID_SE(va);
+		aarch64_tlbi_by_va(va);
 		if ((prot & VM_PROT_EXECUTE) != 0)
 			cpu_icache_sync_range(va, L2_SIZE);
 
@@ -265,7 +264,7 @@ pmap_bootstrap(vaddr_t vstart, vaddr_t vend)
 	virtual_end = vend;
 	pmap_maxkvaddr = vstart;
 
-	cpu_tlb_flushID();
+	aarch64_tlbi_all();
 
 	va = vstart;
 	l0 = AARCH64_PA_TO_KVA(reg_ttbr1_el1_read());
@@ -463,7 +462,7 @@ pmap_growkernel(vaddr_t maxkvaddr)
 		l3 = _pmap_grow_l3(l2, pmap_maxkvaddr);
 		KDASSERT(l3 != NULL);
 	}
-	cpu_tlb_flushID();
+	aarch64_tlbi_all();
 
  done:
 	mutex_exit(&kpm->pm_lock);
@@ -598,12 +597,12 @@ _pmap_pte_update_prot(pt_entry_t pte, vm_prot_t prot)
 		break;
 	case VM_PROT_READ:
 		pte |= LX_BLKPAG_AF;
-		pte |= LX_BLKPAG_AP_RO_RO;
+		pte |= LX_BLKPAG_AP_RO;
 		break;
 	case VM_PROT_WRITE:
 	case VM_PROT_READ|VM_PROT_WRITE:
 		pte |= LX_BLKPAG_AF;
-		pte |= LX_BLKPAG_AP_RW_RW;
+		pte |= LX_BLKPAG_AP_RW;
 		break;
 	}
 
@@ -667,7 +666,7 @@ pmap_kenter_pa(vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags)
 
 	atomic_swap_64(ptep, pte);
 
-	cpu_tlb_flushID_SE(va);
+	aarch64_tlbi_by_va(va);
 	if ((prot & VM_PROT_EXECUTE) != 0)
 		cpu_icache_sync_range(va, PAGE_SIZE);
 
@@ -707,7 +706,7 @@ pmap_kremove(vaddr_t va, vsize_t size)
 			continue;
 
 		atomic_swap_64(ptep, 0);
-		cpu_tlb_flushID_SE(va);
+		aarch64_tlbi_by_va(va);
 	}
 	mutex_exit(&kpm->pm_lock);
 }
@@ -760,7 +759,7 @@ pmap_protect(struct pmap *pm, vaddr_t sva, vaddr_t eva, vm_prot_t prot)
 		pte = _pmap_pte_update_prot(pte, prot);
 		atomic_swap_64(ptep, pte);
 
-		cpu_tlb_flushID_SE(va);
+		aarch64_tlbi_by_va(va);
 	}
 
 	mutex_exit(&pm->pm_lock);
