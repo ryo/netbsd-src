@@ -30,20 +30,21 @@
  */
 
 #include <aarch64/asm.h>
+#include "opt_ddb.h"
 #include "assym.h"
 
 RCSID("$NetBSD: idle_machdep.S,v 1.1 2014/08/10 05:47:37 matt Exp $");
 
 ENTRY(cpu_idle)
-	sub	sp, sp, #TF_SIZE		/* allocate trapfame */
+	sub	sp, sp, #TF_SIZE		/* allocate trapframe */
 
-	str	x28, [sp, #TF_X28]
-	stp	x29, x30, [sp, #TF_X29]
+	str	x28, [sp, #TF_X28]		/* save x28 */
+	stp	x29, x30, [sp, #TF_X29]		/* save x29,x30 */
 #ifdef DDB
 	add	x29, sp, #TF_X29		/* link frame for backtrace */
 #endif
 
-	/* fill dummy trapframe */
+	/* fill minimum in trapframe */
 	mov	x2, #SPSR_M_EL1H		/* what our spsr should be */
 	str	x2, [sp, #TF_SPSR]
 	adr	x0, 1f
@@ -64,18 +65,19 @@ ENTRY(cpu_idle)
 	mrs	x1, tpidr_el1			/* get curcpu() */
 	str	w28, [x1, #CI_INTR_DEPTH]	/* ci->ci_intr_depth = old */
 
-	ldr	x28, [sp, #TF_X28]		/* restore registers */
-	ldp	x29, x30, [sp, #TF_X29]		/* restore registers */
+	ldr	x28, [sp, #TF_X28]		/* restore x28 */
+	ldp	x29, x30, [sp, #TF_X29]		/* restore x29,x30 */
 	add	sp, sp, #TF_SIZE		/* pop trapframe */
 
 	msr	daifclr, #DAIF_I|DAIF_F		/* enable interrupts */
-
+#if defined(__HAVE_FAST_SOFTINTS) && !defined(__HAVE_PIC_FAST_SOFTINTS)
 	ldr	w3, [x1, #CI_SOFTINTS]		/* Get pending softint mask */
 #if 0
 	/* CPL should be 0 */
 	ldr	w2, [x1, #CI_CPL]		/* Get current priority level */
 	lsr	w3, w3, w2			/* shift mask by cpl */
 #endif
-	cbnz	w3, _C_LABEL(dosoftints)	/* tailcall dosoftints(void) */
+	cbnz	w3, _C_LABEL(dosoftints)	/* tailcall dosoftints() */
+#endif /* __HAVE_FAST_SOFTINTS && !__HAVE_PIC_FAST_SOFTINTS */
 	ret
 END(cpu_idle)
