@@ -50,8 +50,11 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define LX_TBL_APTABLE_RO_EL0_NOREAD	__SHIFTIN(3,LX_TBL_APTABLE)
 #define LX_TBL_UXNTABLE		__BIT(60)	/* inherited next level */
 #define LX_TBL_PXNTABLE		__BIT(59)	/* inherited next level */
-
 #define LX_BLKPAG_OS		__BITS(58, 55)
+# define LX_BLKPAG_OS_0		__SHIFTIN(1,LX_BLKPAG_OS)
+# define LX_BLKPAG_OS_1		__SHIFTIN(2,LX_BLKPAG_OS)
+# define LX_BLKPAG_OS_2		__SHIFTIN(4,LX_BLKPAG_OS)
+# define LX_BLKPAG_OS_3		__SHIFTIN(8,LX_BLKPAG_OS)
 #define LX_BLKPAG_UXN		__BIT(54)	/* Unprivileged Execute Never */
 #define LX_BLKPAG_PXN		__BIT(53)	/* Privileged Execute Never */
 #define LX_BLKPAG_CONTIG	__BIT(52)	/* Hint of TLB cache */
@@ -63,11 +66,10 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define LX_BLKPAG_SH_NS		__SHIFTIN(0,LX_BLKPAG_SH) /* Non Shareable */
 #define LX_BLKPAG_SH_OS		__SHIFTIN(2,LX_BLKPAG_SH) /* Outer Shareable */
 #define LX_BLKPAG_SH_IS		__SHIFTIN(3,LX_BLKPAG_SH) /* Inner Shareable */
-#define LX_BLKPAG_AP		__BITS(7,6)
-#define LX_BLKPAG_AP_RW_NONE	__SHIFTIN(0,LX_BLKPAG_AP) /* EL1:RW, EL0:None */
-#define LX_BLKPAG_AP_RW_RW	__SHIFTIN(1,LX_BLKPAG_AP) /* EL1:RW, EL0:RW */
-#define LX_BLKPAG_AP_RO_NONE	__SHIFTIN(2,LX_BLKPAG_AP) /* EL1:RO, EL0:None */
-#define LX_BLKPAG_AP_RO_RO	__SHIFTIN(3,LX_BLKPAG_AP) /* EL1:RO, EL0:RO */
+#define LX_BLKPAG_AP		__BIT(7)
+#define LX_BLKPAG_AP_RW		__SHIFTIN(0,LX_BLKPAG_AP) /* RW */
+#define LX_BLKPAG_AP_RO		__SHIFTIN(1,LX_BLKPAG_AP) /* RO */
+#define LX_BLKPAG_APUSER	__BIT(6)
 #define LX_BLKPAG_NS		__BIT(5)
 #define LX_BLKPAG_ATTR_INDX	__BITS(4,2)	/* refer MAIR_EL1 attr<n> */
 #define LX_TYPE			__BIT(1)
@@ -81,40 +83,41 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define L3_PAG_OA		__BITS(47, 12)	/* 4KB */
 
 
-/* L0 table, 512GB block */
+/* L0 table, 512GB/entry * 512 */
 #define L0_SHIFT		39
 #define L0_ADDR_BITS		__BITS(47,39)
 #define L0_SIZE			(1UL << L0_SHIFT)
 #define L0_OFFSET		(L0_SIZE - 1UL)
 #define L0_FRAME		(~L0_OFFSET)
 /*      L0_BLOCK		Level 0 doesn't support block translation */
-#define L0_TABLE		(LX_VALID | LX_TYPE_TBL)
+#define L0_TABLE		(LX_BLKPAG_NG | LX_TYPE_TBL | LX_VALID)
 
-/* L1 table, 1GB block */
+/* L1 table, 1GB/entry * 512 */
 #define L1_SHIFT		30
 #define L1_ADDR_BITS		__BITS(38,30)
 #define L1_SIZE			(1UL << L1_SHIFT)
 #define L1_OFFSET		(L1_SIZE - 1UL)
 #define L1_FRAME		(~L1_OFFSET)
-#define L1_BLOCK		(LX_VALID | LX_TYPE_BLK)
-#define L1_TABLE		(LX_VALID | LX_TYPE_TBL)
+#define L1_BLOCK		(LX_BLKPAG_NG | LX_TYPE_BLK | LX_VALID)
+#define L1_TABLE		(LX_BLKPAG_NG | LX_TYPE_TBL | LX_VALID)
 
-/* L2 table, 2MB block */
+/* L2 table, 2MB/entry * 512 */
 #define L2_SHIFT		21
 #define L2_ADDR_BITS		__BITS(29,21)
 #define L2_SIZE			(1UL << L2_SHIFT)
 #define L2_OFFSET		(L2_SIZE - 1UL)
 #define L2_FRAME		(~L2_OFFSET)
-#define L2_BLOCK		(LX_VALID | LX_TYPE_BLK)
-#define L2_TABLE		(LX_VALID | LX_TYPE_TBL)
+#define L2_BLOCK		(LX_BLKPAG_NG | LX_TYPE_BLK | LX_VALID)
+#define L2_TABLE		(LX_BLKPAG_NG | LX_TYPE_TBL | LX_VALID)
 #define L2_BLOCK_MASK		0x0000ffffffe00000UL
 
-/* L3 table, 4KB block */
+/* L3 table, 4KB/entry * 512 */
 #define L3_SHIFT		12
 #define L3_ADDR_BITS		__BITS(20,12)
 #define L3_SIZE			(1UL << L3_SHIFT)
 #define L3_OFFSET		(L3_SIZE - 1UL)
 #define L3_FRAME		(~L3_OFFSET)
+#define L3_TABLE		(LX_BLKPAG_NG | L3_TYPE_PAG | LX_VALID)
 
 #define Ln_ENTRIES_SHIFT	9
 #define Ln_ENTRIES		(1 << Ln_ENTRIES_SHIFT)

@@ -51,7 +51,7 @@
 #define PAGE_MASK	(PAGE_SIZE - 1)
 
 #if PAGE_SHIFT <= 14
-#define USPACE		16384
+#define USPACE		32768
 #else
 #define USPACE		65536
 #endif

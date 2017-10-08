@@ -38,10 +38,6 @@ extern u_int cputype;
 /* misc */
 #define cpu_idnum(arg...)		aarch64_cpuid(arg)
 
-/* TLB op */
-#define cpu_tlb_flushID(arg...)		aarch64_tlb_flushID(arg)
-#define cpu_tlb_flushID_SE(arg...)	aarch64_tlb_flushID_SE(arg)
-
 /* cache op */
 #define cpu_icache_line_size(arg...)	aarch64_dcache_line_size(arg)
 #define cpu_dcache_line_size(arg...)	aarch64_icache_line_size(arg)
@@ -56,11 +52,10 @@ extern u_int cputype;
 /* others */
 #define cpu_drain_writebuf(arg...)	aarch64_drain_writebuf(arg)
 
+
 /* cpufunc_asm.S */
 void aarch64_nullop(void);
 uint32_t aarch64_cpuid(void);
-void aarch64_tlb_flushID(void);
-void aarch64_tlb_flushID_SE(vaddr_t);
 int aarch64_dcache_line_size(void);
 int aarch64_icache_line_size(void);
 void aarch64_icache_sync_range(vaddr_t, vsize_t);
@@ -69,6 +64,14 @@ void aarch64_dcache_wbinv_range(vaddr_t, vsize_t);
 void aarch64_dcache_inv_range(vaddr_t, vsize_t);
 void aarch64_dcache_wb_range(vaddr_t, vsize_t);
 void aarch64_drain_writebuf(void);
+
+void aarch64_set_ttbr0(uint64_t);
+void aarch64_tlbi_all(void);			/* all ASID, all VA */
+void aarch64_tlbi_by_asid(int);			/*  an ASID, all VA */
+void aarch64_tlbi_by_va(vaddr_t);		/* all ASID, a VA */
+void aarch64_tlbi_by_va_ll(vaddr_t);		/* all ASID, a VA, lastlevel */
+void aarch64_tlbi_by_asid_va(int, vaddr_t);	/*  an ASID, a VA */
+void aarch64_tlbi_by_asid_va_ll(int, vaddr_t);	/*  an ASID, a VA, lastlevel */
 
 #endif /* _KERNEL */
 

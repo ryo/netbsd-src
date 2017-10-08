@@ -70,7 +70,7 @@ struct cpu_info {
 
 	int ci_want_resched;
 	int ci_cpl;
-	u_int ci_softints;
+	volatile u_int ci_softints;
 	volatile u_int ci_astpending;
 	volatile u_int ci_intr_depth;
 };
@@ -108,7 +108,7 @@ extern volatile u_int arm_cpu_hatched;	/* MULTIPROCESSOR */
 static inline void
 cpu_dosoftints(void)
 {
-#ifndef __HAVE_PIC_FAST_SOFTINTS
+#if defined(__HAVE_FAST_SOFTINTS) && !defined(__HAVE_PIC_FAST_SOFTINTS)
 	void dosoftints(void);
 	struct cpu_info * const ci = curcpu();
 
