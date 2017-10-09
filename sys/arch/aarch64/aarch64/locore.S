@@ -59,8 +59,7 @@ RCSID("$NetBSD$")
 #define VERBOSE(string)
 #endif
 
-	.global _ASM_LABEL(aarch64_start)
-_ASM_LABEL(aarch64_start):
+ENTRY_NP(aarch64_start)
 
 #ifdef DEBUG_LOCORE
 	mrs	x0, CurrentEL
@@ -211,6 +210,7 @@ vstart:
 	adr	x0, .Lmainreturned
 	b	_C_LABEL(panic)
 	/* NOTREACHED */
+END(aarch64_start)
 
 .Lmainreturned:
 	.asciz	"main() returned"
