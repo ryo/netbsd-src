@@ -60,17 +60,15 @@ pr_traceaddr(const char *prefix, uint64_t frame, uint64_t pc, const char **name,
 	db_expr_t offset;
 	db_sym_t sym;
 
-	(*pr)("%s %016llx ", prefix, frame);
 	sym = db_search_symbol(pc, DB_STGY_ANY, &offset);
 	if (sym != DB_SYM_NULL) {
 		db_symbol_values(sym, name, NULL);
 	} else {
 		*name = "?";
 	}
-	(*pr)("%s() at ", *name);
-	(*pr)("%016llx ", pc);
+	(*pr)("%s %016llx %s() at %016llx ", prefix, frame, *name, pc);
 	db_printsym(pc, DB_STGY_PROC, pr);
-	(*pr)("\n", pc);
+	(*pr)("\n");
 }
 
 void
@@ -78,23 +76,57 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
     const char *modif, void (*pr)(const char *, ...))
 {
 	struct lwp *l;
-	uint64_t lr, lastlr;
-	uint64_t fp, lastfp;
+	uint64_t lr, fp, lastfp;
 	struct trapframe *tf;
+	bool trace_user = false;
+	bool trace_thread = false;
+	bool trace_lwp = false;
 
-#if 0
-	db_printf("%s: addr=%016llx have_addr=%d, count=%lld, modif=%s\n",
-	    __func__, addr, have_addr, count, modif);
-#endif
+	for (; *modif != '\0'; modif++) {
+		switch (*modif) {
+		case 'a':
+			trace_lwp = true;
+			trace_thread = false;
+			break;
+		case 'l':
+			break;
+		case 't':
+			trace_thread = true;
+			trace_lwp = false;
+			break;
+		case 'u':
+			trace_user = true;
+			break;
+		default:
+			db_printf("usage: bt[/ul] [frame-address][,count]\n");
+			db_printf("       bt/t[l] [pid][,count]\n");
+			db_printf("       bt/a[ul] [lwpaddr][,count]\n");
+			return;
+		}
+	}
 
 	if (!have_addr) {
-		fp = DDB_REGS->tf_reg[29];	/* fp = x29 */
-		lr = DDB_REGS->tf_lr;
-	} else {
+		if (trace_lwp) {
+			addr = curlwp;
+		} else if (trace_thread) {
+			addr = curlwp->l_proc->p_pid;
+		} else {
+			addr = &DDB_REGS->tf_reg[29];
+		}
+	}
+
+	if (trace_lwp) {
 		l = (struct lwp *)addr;
+		tf = 0;
 		db_read_bytes(&l->l_md.md_ktf, sizeof(tf), (char *)&tf);
-		db_read_bytes(&tf->tf_reg[29], sizeof(fp), (char *)&fp);
-		db_read_bytes(&tf->tf_reg[30], sizeof(lr), (char *)&lr);
+		fp = &tf->tf_reg[29];
+		db_printf("trace lwp %p\n", l);
+	} else if (trace_thread) {
+		db_printf("bt/t: not implemented\n");
+		return;
+	} else {
+		fp = addr;
+		db_printf("trace fp %016llx\n", fp);
 	}
 
 	if (count > MAXBACKTRACE)
@@ -103,25 +135,21 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 	for (; (count > 0) && (fp != 0); count--) {
 		const char *name = NULL;
 
+		lastfp = fp;
 		/*
+		 * normal stack frame
 		 *
-		 * interrupt handler trace
+		 *  fp[0]  saved fp(x29) value
+		 *  fp[1]  saved lr(x30) value
 		 *
-		 *  XXX: depend on implementation of vectors.S and cpuswitch.S
-		 *
-		 * in case of interrupted in kernel:
-		 *
-		 *     main()
-		 *  ->        :
-		 *  -> some-kernel-function()
-		 *     ---INTERRUPT!---
-		 *  -> <push TRAPFRAME>
-		 *  -> el[01]_{sync,irq}() without fp
-		 *  -> interrupt()
-		 *  -> ARM_IRQ_HANDLER()
-		 *  ->        :
-		 *  ->        :
 		 */
+		fp = lr = 0;
+		db_read_bytes(lastfp + 0, sizeof(fp), (char *)&fp);
+		db_read_bytes(lastfp + 8, sizeof(lr), (char *)&lr);
+
+		if (!trace_user && IN_USER_VM_ADDRESS(lr))
+			break;
+
 
 		extern char el1_trap[];	/* XXX */
 		extern char el0_trap[];	/* XXX */
@@ -129,40 +157,28 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		    ((char *)(lr - 4) == (char *)el1_trap)) {
 
 			tf = (struct trapframe *)(lastfp + 16);
+
 			pr_traceaddr("tf", tf, lr - 4, &name, pr);
 
-			lastlr = lr;
-			lastfp = fp;
+			lastfp = tf;
+			lr = fp = 0;
+			db_read_bytes(&tf->tf_pc, sizeof(lr), (char *)&lr);
+			db_read_bytes(&tf->tf_reg[29] + 0, sizeof(fp), (char *)&fp);
 
-			db_read_bytes(&tf->tf_pc, sizeof(tf->tf_pc),
-			    (char *)&lr);
-			db_read_bytes(&tf->tf_reg[29], sizeof(tf->tf_lr),
-			    (char *)&fp);
+			if (lr == 0)
+				break;
 
 			(*pr)("--- trapframe %016llx (%d bytes) ---\n", tf, sizeof(*tf));
 			dump_trapframe(tf, pr);
 			(*pr)("----------------------------------------------\n");
 
+			if (!trace_user && IN_USER_VM_ADDRESS(lr))
+				break;
+
+			pr_traceaddr("fp", fp, lr, &name, pr);
+
 		} else {
-			/*
-			 * normal stack trace
-			 *
-			 *  fp[0]  saved fp(x29) value
-			 *  fp[1]  saved lr(x30) value
-			 */
 			pr_traceaddr("fp", fp, lr - 4, &name, pr);
-
-			lastlr = lr;
-			lastfp = fp;
-
-			db_read_bytes(fp + 8, sizeof(lr), (char *)&lr);
-			db_read_bytes(fp, sizeof(fp), (char *)&fp);
 		}
-
-		if (have_addr && !IN_KERNEL_VM_ADDRESS(lastfp))
-			break;
-
-		if (!IN_USER_VM_ADDRESS(lastfp) && !IN_KERNEL_VM_ADDRESS(lastfp))
-			break;
 	}
 }
