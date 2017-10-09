@@ -46,14 +46,29 @@
 
 #define __HAVE_VM_PAGE_MD
 
+struct pmap {
+	kmutex_t pm_lock;
+	int pm_s;
+	struct pool *pm_pvpool;
+	pd_entry_t *pm_l0table;			/* L0 table: 512G*512 */
+	paddr_t pm_l0table_pa;
+
+	SLIST_HEAD(, vm_page) pm_vmlist;	/* for L[0123] tables */
+
+	struct pmap_statistics pm_stats;
+	unsigned int pm_refcnt;
+	int pm_asid;
+	bool pm_activated;
+};
+
 struct pv_entry;
 struct vm_page_md {
-	uint32_t mdpg_flags;	/* VM_PROT_(READ,WRITE), PMAP_WIRED */
-
-	TAILQ_HEAD(, pv_entry) mdpg_pvhead;
-	uint32_t mdpg_pvnum;	/* num of entries of mdpg_pvhead (DEBUG) */
-	struct pv_entry *mdpg_pa_owner;
 	kmutex_t mdpg_pvlock;
+	SLIST_ENTRY(vm_page) mdpg_vmlist;	/* L[0-3] table vm_page list */
+	TAILQ_HEAD(, pv_entry) mdpg_pvhead;
+	struct pv_entry *mdpg_pa_owner;
+	uint32_t mdpg_pvnum;		/* num of entries of mdpg_pvhead */
+	uint32_t mdpg_flags;		/* VM_PROT_(READ,WRITE), PMAP_WIRED */
 };
 
 #define	VM_MDPAGE_INIT(pg)				\
@@ -156,8 +171,13 @@ aarch64_mmap_flags(paddr_t mdpgno)
 	}
 	return pflag;
 }
-#define pmap_phys_address(pa)	aarch64_ptob((pa))
-#define pmap_mmap_flags(ppn)	aarch64_mmap_flags((ppn))
+#define pmap_phys_address(pa)		aarch64_ptob((pa))
+#define pmap_mmap_flags(ppn)		aarch64_mmap_flags((ppn))
+
+#define pmap_update(pmap)		((void)0)
+#define pmap_copy(dp,sp,d,l,s)		((void)0)
+#define pmap_wired_count(pmap)		((pmap)->pm_stats.wired_count)
+#define pmap_resident_count(pmap)	((pmap)->pm_stats.resident_count)
 
 
 #elif defined(__arm__)
