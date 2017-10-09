@@ -115,6 +115,7 @@ cpu_attach(device_t parent, device_t self, void *aux)
 
 		// XXXAARCH64
 		//pmap_tlb_info_attach();
+		panic("notyet");
 	}
 #endif
 
@@ -208,7 +209,26 @@ cache_clean(int level, struct aarch64_cache_info *cinfo)
 	for (set = 0; set < cinfo->cache_sets; set++) {
 		for (way = 0; way < cinfo->cache_ways; way++) {
 			x = (way << wayshift) | (set << setshift) | (level << 1);
-			__asm __volatile ("dc csw, %0" :: "r"(x));
+			__asm __volatile ("dc csw, %0; dsb sy" :: "r"(x));
+		}
+	}
+}
+
+static inline void
+cache_wbinv(int level, struct aarch64_cache_info *cinfo)
+{
+	int set, way, setshift, wayshift;
+	uint64_t x;
+
+	setshift = ffs(cinfo->cache_line_size) - 1;
+	wayshift = 32 - (ffs(cinfo->cache_ways) - 1);
+
+	cpu_drain_writebuf();
+
+	for (set = 0; set < cinfo->cache_sets; set++) {
+		for (way = 0; way < cinfo->cache_ways; way++) {
+			x = (way << wayshift) | (set << setshift) | (level << 1);
+			__asm __volatile ("dc cisw, %0; dsb sy" :: "r"(x));
 		}
 	}
 }
@@ -220,6 +240,15 @@ cpucache_clean(void)
 {
 	cache_clean(0, &aarch64_l1_dcache);
 	cache_clean(1, &aarch64_l2_cache);
+}
+
+void cpucache_wbinv(void);
+
+void
+cpucache_wbinv(void)
+{
+	cache_wbinv(0, &aarch64_l1_dcache);
+	cache_wbinv(1, &aarch64_l2_cache);
 }
 
 static void
