@@ -43,6 +43,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <ddb/db_variables.h>
 #include <ddb/db_sym.h>
 #include <ddb/db_proc.h>
+#include <ddb/db_lwp.h>
 #include <ddb/db_extern.h>
 #include <ddb/db_interface.h>
 
@@ -73,6 +74,18 @@ pr_traceaddr(const char *prefix, uint64_t frame, uint64_t pc,
 	}
 }
 
+static bool __unused
+is_lwp(void *p)
+{
+	lwp_t *lwp;
+
+	for (lwp = db_lwp_first(); lwp != NULL; lwp = db_lwp_next(lwp)) {
+		if (lwp == p)
+			return true;
+	}
+	return false;
+}
+
 void
 db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
     const char *modif, void (*pr)(const char *, ...))
@@ -100,7 +113,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 			break;
 		default:
 			pr("usage: bt[/ul] [frame-address][,count]\n");
-			pr("       bt/t[l] [pid][,count]\n");
+			pr("       bt/t[ul] [pid][,count]\n");
 			pr("       bt/a[ul] [lwpaddr][,count]\n");
 			return;
 		}
@@ -128,6 +141,12 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		trace_thread = false;
 		trace_lwp = true;
 	}
+
+#if 1
+	/* "/a" is abbreviated? */
+	if (!trace_lwp && is_lwp(addr))
+		trace_lwp = true;
+#endif
 
 	if (trace_lwp) {
 		proc_t p;
