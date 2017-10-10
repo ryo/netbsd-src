@@ -181,8 +181,14 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 	//XXXAARCH64: how onfault case?
 	if ((VM_MIN_KERNEL_ADDRESS <= va) && (va < VM_MAX_KERNEL_ADDRESS)) {
 		map = kernel_map;
-	} else {
+		UVMHIST_LOG(pmaphist, "use kernel_map %p", map, 0, 0, 0);
+	} else if (VM_MIN_ADDRESS <= va && va <= VM_MAX_ADDRESS) {
 		map = &p->p_vmspace->vm_map;
+		UVMHIST_LOG(pmaphist, "use user vm_map %p (kernel_map=%p)", map, kernel_map, 0, 0);
+	} else {
+		if (user)
+			trap_ksi_init(ksi, SIGBUS, BUS_ADRALN, tf->tf_far, 0);
+		return false;
 	}
 
 	if ((eclass == ESR_EC_INSN_ABT_EL0) || (eclass == ESR_EC_INSN_ABT_EL1))
@@ -194,7 +200,7 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 	if (ftype & VM_PROT_EXECUTE) {
 		UVMHIST_LOG(pmaphist, "pagefault %016lx %016lx in %s EXEC", tf->tf_far, va, user ? "user" : "kernel", 0);
 	} else {
-		UVMHIST_LOG(pmaphist, "pagefault %016lx %016lx in %s %s\n", tf->tf_far, va, user ? "user" : "kernel", (rw == 0) ? "read" : "write");
+		UVMHIST_LOG(pmaphist, "pagefault %016lx %016lx in %s %s", tf->tf_far, va, user ? "user" : "kernel", (rw == 0) ? "read" : "write");
 	}
 #endif
 
@@ -221,6 +227,7 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 	if (fb == NULL) {
 		if (user) {
 			trap_ksi_init(ksi, SIGSEGV, SEGV_ACCERR, va, tf->tf_pc);
+			return false;
 		}
 
 		//XXXAARCH64
