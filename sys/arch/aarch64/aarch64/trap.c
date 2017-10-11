@@ -414,6 +414,12 @@ cpu_unset_onfault(void)
 }
 
 struct faultbuf *
+cpu_get_onfault(void)
+{
+	return curlwp->l_md.md_onfault;
+}
+
+struct faultbuf *
 cpu_disable_onfault(void)
 {
 	struct faultbuf * const fb = curlwp->l_md.md_onfault;

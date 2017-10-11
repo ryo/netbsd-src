@@ -59,6 +59,7 @@ void trap_ksi_init(ksiginfo_t *, int, int, vaddr_t, int);
 int cpu_set_onfault(struct faultbuf *, register_t) __returns_twice;
 void cpu_jump_onfault(struct trapframe *, const struct faultbuf *);
 void cpu_unset_onfault(void);
+struct faultbuf *cpu_get_onfault(void);
 struct faultbuf *cpu_disable_onfault(void);
 void cpu_enable_onfault(struct faultbuf *);
 void lwp_trampoline(void);

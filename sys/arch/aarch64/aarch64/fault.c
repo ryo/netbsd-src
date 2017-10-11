@@ -185,9 +185,8 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 		map = &p->p_vmspace->vm_map;
 		UVMHIST_LOG(pmaphist, "use user vm_map %p (kernel_map=%p)", map, kernel_map, 0, 0);
 	} else {
-		if (user)
-			trap_ksi_init(ksi, SIGBUS, BUS_ADRALN, tf->tf_far, 0);
-		return false;
+		fb = cpu_get_onfault();
+		goto do_fault;
 	}
 
 	if ((eclass == ESR_EC_INSN_ABT_EL0) || (eclass == ESR_EC_INSN_ABT_EL1))
@@ -222,6 +221,7 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 		return true;
 	}
 
+ do_fault:
 	if (fb == NULL) {
 		if (user) {
 			trap_ksi_init(ksi, SIGSEGV, SEGV_ACCERR, va, tf->tf_pc);
@@ -235,5 +235,5 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 		return false;
 	}
 	cpu_jump_onfault(tf, fb);
-	return false;
+	return true;
 }
