@@ -142,7 +142,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		trace_lwp = true;
 	}
 
-#if 1
+#if 0
 	/* "/a" is abbreviated? */
 	if (!trace_lwp && is_lwp(addr))
 		trace_lwp = true;
