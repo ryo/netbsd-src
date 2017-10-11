@@ -136,6 +136,8 @@ pmap_pv_unlock(struct vm_page_md *md)
 	mutex_exit(&md->mdpg_pvlock);
 }
 
+#define PM_LOCKED(pm)				\
+	mutex_owned(&(pm)->pm_lock)
 #define PM_LOCK(pm)				\
 	do {					\
 		mutex_enter(&(pm)->pm_lock);	\
@@ -388,11 +390,6 @@ pmap_bootstrap(vaddr_t vstart, vaddr_t vend)
 	virtual_end = vend;
 	pmap_maxkvaddr = vstart;
 
-	{
-		/* clean cache modified PA=VA */
-		void cpucache_wbinv(void);
-		cpucache_wbinv();
-	}
 	aarch64_tlbi_all();
 
 	va = vstart;
@@ -549,6 +546,7 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 {
 	static pt_entry_t *ptep;
 	paddr_t pa;
+	int pm_locked;
 
 #if 0
 	PM_ADDR_CHECK(pm, va);
@@ -561,7 +559,9 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 		return false;
 #endif
 
-	PM_LOCK(pm);
+	pm_locked = PM_LOCKED(pm);	/* in case of pmap_enter() -> pool_get() -> pmap_extract() */
+	if (!pm_locked)
+		PM_LOCK(pm);
 
 	if (AARCH64_KSEG_START <= va && va < AARCH64_KSEG_END) {
 		pa = AARCH64_KVA_TO_PA(va);
@@ -617,13 +617,16 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 		pa = l3pte_pa(pte) + (va & L3_OFFSET);
 	}
  found:
-	PM_UNLOCK(pm);
+	if (!pm_locked)
+		PM_UNLOCK(pm);
+
 	if (pap != NULL)
 		*pap = pa;
 	return true;
 
  notfound:
-	PM_UNLOCK(pm);
+	if (!pm_locked)
+		PM_UNLOCK(pm);
 	return false;
 }
 
@@ -1172,7 +1175,7 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags
 	paddr_t pdppa;
 	uint32_t mdattr;
 	unsigned int idx;
-
+	int pm_locked;
 
 	UVMHIST_FUNC(__func__);
 	UVMHIST_CALLED(pmaphist);
@@ -1189,7 +1192,9 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags
 		panic("%s:%d", __func__, __LINE__);
 	}
 
-	PM_LOCK(pm);
+	pm_locked = PM_LOCKED(pm);	/* in case of pmap_enter() -> pool_get() -> pmap_enter() */
+	if (!pm_locked)
+		PM_LOCK(pm);
 
 	if (VM_PAGE_TO_MD(pg)->mdpg_flags & PMAP_WIRED) {
 		panic("%s: physical address %016lx is already wired mapped", __func__, pa);
@@ -1324,7 +1329,8 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags
 #endif
 
 	pm->pm_stats.resident_count++;
-	PM_UNLOCK(pm);
+	if (!pm_locked)
+		PM_UNLOCK(pm);
 	return 0;
 }
 

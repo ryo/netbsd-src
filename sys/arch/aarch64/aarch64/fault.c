@@ -178,7 +178,6 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 	p = curlwp->l_proc;
 	va = trunc_page((vaddr_t)tf->tf_far);
 
-	//XXXAARCH64: how onfault case?
 	if ((VM_MIN_KERNEL_ADDRESS <= va) && (va < VM_MAX_KERNEL_ADDRESS)) {
 		map = kernel_map;
 		UVMHIST_LOG(pmaphist, "use kernel_map %p", map, 0, 0, 0);
@@ -210,7 +209,6 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 		return true;
 	}
 
-
 	/* page fault plus faultbail path */
 	fb = cpu_disable_onfault();
 	error = uvm_fault(map, va, ftype);
@@ -237,5 +235,5 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 		return false;
 	}
 	cpu_jump_onfault(tf, fb);
-	return true;
+	return false;
 }

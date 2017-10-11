@@ -224,35 +224,25 @@ trap_el0_sync(struct trapframe *tf)
 
 
 	switch (eclass) {
-#ifdef COMPAT_NETBSD32
-	case ESR_EC_SVC_A32:
-		// XXXAARCH64: notyet
-		panic("%s:%d: %s on EL0", __func__, __LINE__, trapname);
-#if 0
-		(*l->l_proc->p_md.md_syscall)(tf);
-#endif
-		break;
-	case ESR_EC_CP15_RT:
-	case ESR_EC_CP15_RRT:
-	case ESR_EC_CP14_RT:
-	case ESR_EC_CP14_DT:
-	case ESR_EC_CP14_RRT:
-	case ESR_EC_FP_TRAP_A32:
-	case ESR_EC_BKPT_INSN_A32:
-		// XXXAARCH64: notyet
-		panic("%s:%d: %s on EL0", __func__, __LINE__, trapname);
-		trap_ksi_init(&ksi, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
-		(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
-		userret(l);
-		break;
-#endif /* COMPAT_NETBSD32 */
-
 	case ESR_EC_FP_ACCESS:
 	case ESR_EC_FP_TRAP_A64:
 		fpu_load(l);
 		userret(l);
 		break;
 	case ESR_EC_SVC_A64:
+#if 0
+	//SYSCALL DEBUG
+		do {
+			extern const char *const syscallnames[];
+
+//			if ((tf->tf_esr & 0xffff) == 4)
+//				break;
+//			if (curlwp->l_proc->p_pid == 1)
+//				break;
+
+			printf("[%d] SYSCALL %llu %llu\n", curlwp->l_proc->p_pid, tf->tf_esr & 0xffff, tf->tf_reg[17]);
+		} while (0);
+#endif
 		(*l->l_proc->p_md.md_syscall)(tf);
 		break;
 
@@ -310,6 +300,55 @@ interrupt(struct trapframe *tf)
 	cpu_dosoftints();
 }
 
+void
+trap_el0_32sync(struct trapframe *tf)
+{
+	struct lwp * const l = curlwp;
+	ksiginfo_t ksi;
+	const uint32_t esr = tf->tf_esr;
+	const uint32_t eclass = __SHIFTOUT(esr, ESR_EC); /* exception class */
+
+	/* enable traps and interrupts */
+	daif_enable(DAIF_D|DAIF_A|DAIF_I|DAIF_F);
+
+	/* XXXAARCH64 */
+	const char *trapname;
+	if (eclass >= __arraycount(trap_names) || trap_names[eclass] == NULL)
+		trapname = trap_names[0];
+	else
+		trapname = trap_names[eclass];
+
+	switch (eclass) {
+#ifdef COMPAT_NETBSD32
+	case ESR_EC_SVC_A32:
+		// XXXAARCH64: notyet
+		panic("%s:%d: %s on EL0", __func__, __LINE__, trapname);
+		(*l->l_proc->p_md.md_syscall)(tf);
+		break;
+	case ESR_EC_CP15_RT:
+	case ESR_EC_CP15_RRT:
+	case ESR_EC_CP14_RT:
+	case ESR_EC_CP14_DT:
+	case ESR_EC_CP14_RRT:
+	case ESR_EC_FP_TRAP_A32:
+	case ESR_EC_BKPT_INSN_A32:
+		// XXXAARCH64: notyet
+		trap_ksi_init(&ksi, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
+		(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
+		userret(l);
+		break;
+#endif /* COMPAT_NETBSD32 */
+	default:
+		printf("%s: %s\n", __func__, trapname);
+		trap_ksi_init(&ksi, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
+		(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
+		userret(l);
+		break;
+	}
+}
+
+
+
 #define bad_trap_panic(trapfunc)	\
 void					\
 trapfunc(struct trapframe *tf)		\
@@ -324,7 +363,6 @@ bad_trap_panic(trap_el1h_fiq)
 bad_trap_panic(trap_el1h_error)
 bad_trap_panic(trap_el0_fiq)
 bad_trap_panic(trap_el0_error)
-bad_trap_panic(trap_el0_32sync)
 bad_trap_panic(trap_el0_32fiq)
 bad_trap_panic(trap_el0_32error)
 
@@ -341,8 +379,8 @@ bad_trap_panic(trap_el0_32error)
 #define FB_X27	8
 #define FB_X28	9
 #define FB_X29	10
-#define FB_SP	11
-#define FB_LR	12
+#define FB_LR	11
+#define FB_SP	12
 #define FB_V0	13
 #define FB_MAX	14
 
@@ -387,7 +425,7 @@ cpu_disable_onfault(void)
 void
 cpu_enable_onfault(struct faultbuf *fb)
 {
-	curlwp->l_md.md_onfault = NULL;
+	curlwp->l_md.md_onfault = fb;
 }
 
 /*
@@ -440,6 +478,24 @@ copyout(const void *kaddr, void *uaddr, size_t len)
 	return error;
 }
 
+static inline int
+_copystr(char *dst, const char *src, size_t len, size_t *done)
+{
+	size_t i;
+
+	for (i = 0; i < len; i++) {
+		if ((*dst++ = *src++) == '\0') {
+			if (done != NULL)
+				*done = i + 1;
+			return 0;
+		}
+	}
+	if (done != NULL)
+		*done = len;
+
+	return ENAMETOOLONG;
+}
+
 int
 copystr(const void *kfaddr, void *kdaddr, size_t len, size_t *done)
 {
@@ -447,11 +503,8 @@ copystr(const void *kfaddr, void *kdaddr, size_t len, size_t *done)
 	int error;
 
 	if ((error = cpu_set_onfault(&fb, EFAULT)) == 0) {
-		len = strlcpy(kdaddr, kfaddr, len);
+		error = _copystr(kdaddr, kfaddr, len, done);
 		cpu_unset_onfault();
-		if (done != NULL) {
-			*done = len;
-		}
 	}
 	return error;
 }
@@ -463,11 +516,8 @@ copyinstr(const void *uaddr, void *kaddr, size_t len, size_t *done)
 	int error;
 
 	if ((error = cpu_set_onfault(&fb, EFAULT)) == 0) {
-		len = strlcpy(kaddr, uaddr, len);
+		error = _copystr(kaddr, uaddr, len, done);
 		cpu_unset_onfault();
-		if (done != NULL) {
-			*done = len;
-		}
 	}
 	return error;
 }
@@ -479,11 +529,8 @@ copyoutstr(const void *kaddr, void *uaddr, size_t len, size_t *done)
 	int error;
 
 	if ((error = cpu_set_onfault(&fb, EFAULT)) == 0) {
-		len = strlcpy(uaddr, kaddr, len);
+		error = _copystr(uaddr, kaddr, len, done);
 		cpu_unset_onfault();
-		if (done != NULL) {
-			*done = len;
-		}
 	}
 	return error;
 }
@@ -544,7 +591,7 @@ fusword(const void *base)
 int
 fuswintr(const void *base)
 {
-
+	panic("%s: not implemented", __func__);
 	return -1;
 }
 
@@ -592,7 +639,7 @@ susword(void *base, short c)
 int
 suswintr(void *base, short c)
 {
-
+	panic("%s: not implemented", __func__);
 	return -1;
 }
 
