@@ -60,10 +60,11 @@ struct cpu_info {
 
 	uint64_t ci_lastintr;
 
-	struct cpu_info *ci_clu;	/* cluster ci PTR */
-	int ci_clusize;			/* cluster size */
-	void *ci_cacheop;		/* cache operation */
-	void *ci_tlbop;			/* TLB operation */
+//XXXAARCH64: notyet
+//	struct cpu_info *ci_clu;	/* cluster ci PTR */
+//	int ci_clusize;			/* cluster size */
+//	void *ci_cacheop;		/* cache operation */
+//	void *ci_tlbop;			/* TLB operation */
 
 	int ci_mtx_oldspl;
 	int ci_mtx_count;
@@ -102,8 +103,10 @@ extern struct cpu_info cpu_info_store;	/* MULTIPROCESSOR */
 extern volatile u_int arm_cpu_hatched;	/* MULTIPROCESSOR */
 
 #define CPU_INFO_ITERATOR	cpuid_t
-#define CPU_INFO_FOREACH(cii, ci) \
-	cii = 0, ci = cpu_info[0]; cii < ncpu && (ci = cpu_info[cii]) != NULL; cii++
+#define CPU_INFO_FOREACH(cii, ci)			\
+	cii = 0, ci = cpu_info[0];			\
+	cii < ncpu && (ci = cpu_info[cii]) != NULL;	\
+	cii++
 
 static inline void
 cpu_dosoftints(void)
