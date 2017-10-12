@@ -455,7 +455,7 @@ static const uintmax_t
     DAIF_A		= __BIT(8),	/* SError Abort Mask */
     DAIF_I		= __BIT(7),	/* IRQ Mask */
     DAIF_F		= __BIT(6),	/* FIQ Mask */
-    DAIF_IMM_SHIFT	= 6;		/* for daifset/daifclr #imm shift */
+    DAIF_SETCLR_SHIFT	= 6;		/* for daifset/daifclr #imm shift */
 
 AARCH64REG_READ_INLINE(spsr_el1)	/* Saved Program Status Register */
 AARCH64REG_WRITE_INLINE(spsr_el1)

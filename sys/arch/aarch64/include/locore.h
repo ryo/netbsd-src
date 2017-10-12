@@ -34,54 +34,51 @@
 
 #ifdef __aarch64__
 
+#ifdef _KERNEL_OPT
+#include "opt_multiprocessor.h"
+#endif
+
 #ifdef _LOCORE
 
-#define ENABLE_INTERRUPT	msr daifclr, #((DAIF_I|DAIF_F)>>DAIF_IMM_SHIFT)
-#define DISABLE_INTERRUPT	msr daifset, #((DAIF_I|DAIF_F)>>DAIF_IMM_SHIFT)
+#define ENABLE_INTERRUPT	\
+	msr daifclr, #((DAIF_I|DAIF_F) >> DAIF_SETCLR_SHIFT)
+#define DISABLE_INTERRUPT	\
+	msr daifset, #((DAIF_I|DAIF_F) >> DAIF_SETCLR_SHIFT)
 
 #else /* _LOCORE */
 
 #include <sys/types.h>
 
-#include <sys/cpu.h>
-#include <sys/lwp.h>
-#include <sys/bus.h>
-
 #include <aarch64/armreg.h>
-#include <aarch64/frame.h>
 
 #ifdef MULTIPROCESSOR
-// XXXAARCH64
 /* for compatibility arch/arm/pic/pic.c */
 extern u_int arm_cpu_max;
 #endif
 
 /* for compatibility arch/arm */
-#define I32_bit	DAIF_I
-#define F32_bit	DAIF_F
-#define cpsie(psw)	daif_enable((psw))
-#define cpsid(psw)	daif_disable((psw))
+#define I32_bit			DAIF_I
+#define F32_bit			DAIF_F
+#define cpsie(psw)		daif_enable((psw))
+#define cpsid(psw)		daif_disable((psw))
 
 
 #define ENABLE_INTERRUPT()	daif_enable(DAIF_I|DAIF_F)
 #define DISABLE_INTERRUPT()	daif_disable(DAIF_I|DAIF_F)
 
-static inline void daif_enable(register_t psw) __attribute__((__unused__));
-static inline register_t daif_disable(register_t psw) __attribute__((__unused__));
+#define DAIF_MASK		(DAIF_D|DAIF_A|DAIF_I|DAIF_F)
 
-#define DAIF_MASK	(DAIF_D|DAIF_A|DAIF_I|DAIF_F)
-
-static inline void
+static inline void __unused
 daif_enable(register_t psw)
 {
-	reg_daifclr_write((psw & DAIF_MASK) >> DAIF_IMM_SHIFT);
+	reg_daifclr_write((psw & DAIF_MASK) >> DAIF_SETCLR_SHIFT);
 }
 
-static inline register_t
+static inline register_t __unused
 daif_disable(register_t psw)
 {
-	uint32_t oldpsw = reg_daif_read();
-	reg_daifset_write((psw & DAIF_MASK) >> DAIF_IMM_SHIFT);
+	register_t oldpsw = reg_daif_read();
+	reg_daifset_write((psw & DAIF_MASK) >> DAIF_SETCLR_SHIFT);
 	return oldpsw;
 }
 
