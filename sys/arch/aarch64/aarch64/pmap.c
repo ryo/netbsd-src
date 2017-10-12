@@ -559,7 +559,8 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 		return false;
 #endif
 
-	pm_locked = PM_LOCKED(pm);	/* in case of pmap_enter() -> pool_get() -> pmap_extract() */
+	/* in case of pmap_enter() -> pool_cache_get() -> pmap_extract() */
+	pm_locked = PM_LOCKED(pm);
 	if (!pm_locked)
 		PM_LOCK(pm);
 
@@ -1192,7 +1193,11 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags
 		panic("%s:%d", __func__, __LINE__);
 	}
 
-	pm_locked = PM_LOCKED(pm);	/* in case of pmap_enter() -> pool_get() -> pmap_enter() */
+	/*
+	 * _pmap_enter() may called nestedly. In case of
+	 * pmap_enter() -> _pmap_enter_pv() -> pool_cache_get() -> pmap_kenter()
+	 */
+	pm_locked = PM_LOCKED(pm);
 	if (!pm_locked)
 		PM_LOCK(pm);
 
@@ -1282,7 +1287,9 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot, u_int flags
 		VM_PAGE_TO_MD(pg)->mdpg_flags |= (PMAP_WIRED | mdattr);
 		pm->pm_stats.wired_count++;
 	} else {
+		/* _pmap_enter_pv() may call pmap_kenter() internally */
 		_pmap_enter_pv(pg, pm, va, ptep, pa, flags);
+
 #if 1 // VIPT
 		pmap_pv_lock(VM_PAGE_TO_MD(pg));
 		if (flags & PMAP_WIRED) {
@@ -1548,6 +1555,10 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
 		return false;
 	}
 
+	//xxx
+	if ((pte & LX_BLKPAG_AF) && ((pte & LX_BLKPAG_AP) == LX_BLKPAG_AP_RW)) {
+		panic("%s:%d va=%016lx pte=%08llx\n", __func__, __LINE__, va, pte);
+	}
 	KASSERT(((pte & LX_BLKPAG_AF) == 0) ||
 	    ((pte & LX_BLKPAG_AP) == LX_BLKPAG_AP_RO));
 
