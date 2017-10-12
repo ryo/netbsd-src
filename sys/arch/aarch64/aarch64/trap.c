@@ -328,8 +328,8 @@ interrupt(struct trapframe *tf)
 #define FB_X27	8
 #define FB_X28	9
 #define FB_X29	10
-#define FB_SP	11
-#define FB_LR	12
+#define FB_LR	11
+#define FB_SP	12
 #define FB_V0	13
 #define FB_MAX	14
 
@@ -557,7 +557,7 @@ void
 cpu_enable_onfault(struct faultbuf *fb)
 {
 
-	curlwp->l_md.md_onfault = NULL;
+	curlwp->l_md.md_onfault = fb;
 }
 
 /*
