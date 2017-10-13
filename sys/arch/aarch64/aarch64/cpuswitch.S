@@ -335,7 +335,7 @@ END(cpu_spinup_trampoline)
  */
 ENTRY(cpu_set_onfault)
 	mov	x9, sp
-	stp	x19, x20, [x9, #(LBL_X19 * 8)]
+	stp	x19, x20, [x0, #(LBL_X19 * 8)]
 	stp	x21, x22, [x0, #(LBL_X21 * 8)]
 	stp	x23, x24, [x0, #(LBL_X23 * 8)]
 	stp	x25, x26, [x0, #(LBL_X25 * 8)]
