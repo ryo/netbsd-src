@@ -1542,12 +1542,14 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
 		pmap_prot = (VM_PROT_READ|VM_PROT_WRITE);
 		break;
 	}
+	if ((pte & (LX_BLKPAG_UXN|LX_BLKPAG_PXN)) == 0)
+		pmap_prot |= VM_PROT_EXECUTE;
 
 	UVMHIST_LOG(pmaphist, "va=%016lx, pmapprot=%08x, accessprot=%08x", va, pmap_prot, accessprot, 0);
 
 	/* ignore except read/write */
-	accessprot &= (VM_PROT_READ|VM_PROT_WRITE);
-	accessprot |= VM_PROT_READ;	/* treat WRITE access as READ/WRITE */
+	accessprot &= (VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE);
+	accessprot |= VM_PROT_READ;	/* treat WRITE or EXECUTE access as READ with */
 
 	/* no permission to read/write for this page */
 	if ((pmap_prot & accessprot) != accessprot) {
@@ -1555,10 +1557,6 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
 		return false;
 	}
 
-	//xxx
-	if ((pte & LX_BLKPAG_AF) && ((pte & LX_BLKPAG_AP) == LX_BLKPAG_AP_RW)) {
-		panic("%s:%d va=%016lx pte=%08llx\n", __func__, __LINE__, va, pte);
-	}
 	KASSERT(((pte & LX_BLKPAG_AF) == 0) ||
 	    ((pte & LX_BLKPAG_AP) == LX_BLKPAG_AP_RO));
 
