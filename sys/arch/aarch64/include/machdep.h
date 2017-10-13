@@ -29,6 +29,8 @@
 #ifndef _AARCH64_MACHDEP_H_
 #define _AARCH64_MACHDEP_H_
 
+#include <sys/proc.h>
+#include <sys/lwp.h>
 #include <sys/siginfo.h>
 
 #define KERN_VTOPHYS(va)	((paddr_t)((vaddr_t)(va) - VM_MIN_KERNEL_ADDRESS))
@@ -51,7 +53,7 @@ void dumpsys(void);
 struct trapframe;
 
 /* fault.c */
-bool data_abort_handler(struct trapframe *, ksiginfo_t *, uint32_t, const char *);
+bool data_abort_handler(struct trapframe *, uint32_t, const char *);
 
 /* trap.c */
 struct faultbuf;
@@ -87,10 +89,22 @@ void interrupt(struct trapframe *);
 void fpu_attach(struct cpu_info *);
 void fpu_trap(struct trapframe *);
 
-
 struct fpreg;
 void load_fpregs(struct fpreg *);
 void save_fpregs(struct fpreg *);
+
+static inline void
+do_trapsignal(struct lwp *l, int signo, int code, void *addr, int trap)
+{
+	ksiginfo_t ksi;
+
+	KSI_INIT_TRAP(&ksi);
+	ksi.ksi_signo = signo;
+	ksi.ksi_code = code;
+	ksi.ksi_addr = addr;
+	ksi.ksi_trap = trap;
+	(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
+}
 
 #include <sys/pcu.h>
 

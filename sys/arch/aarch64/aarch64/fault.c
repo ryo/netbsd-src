@@ -118,8 +118,7 @@ is_fatal_abort(uint32_t esr)
 }
 
 bool
-data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
-    const char *trapname)
+data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 {
 	struct proc *p;
 	struct vm_map *map;
@@ -127,7 +126,7 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 	vaddr_t va;
 	vm_prot_t ftype;
 	const uint32_t esr = tf->tf_esr;
-	const bool user = (ksi == NULL) ? false : true;
+	const bool user = (tf->tf_spsr == SPSR_M_EL0T) ? true : false;
 	uint32_t rw;
 	int error;
 
@@ -145,7 +144,7 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
 			/*
 			 * fatal abort in usermode
 			 */
-			trap_ksi_init(ksi, SIGBUS, BUS_ADRALN, tf->tf_far, fsc);
+			do_trapsignal(curlwp, SIGBUS, BUS_ADRALN, tf->tf_far, fsc);
 			return false;
 		}
 
@@ -224,7 +223,7 @@ data_abort_handler(struct trapframe *tf, ksiginfo_t *ksi, uint32_t eclass,
  do_fault:
 	if (fb == NULL) {
 		if (user) {
-			trap_ksi_init(ksi, SIGSEGV, SEGV_ACCERR, va, tf->tf_pc);
+			do_trapsignal(curlwp, SIGSEGV, SEGV_ACCERR, va, tf->tf_pc);
 			return false;
 		}
 
