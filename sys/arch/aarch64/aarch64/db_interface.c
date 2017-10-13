@@ -60,6 +60,7 @@ db_read_bytes(vaddr_t addr, size_t size, char *data)
 		if ((lastpage != atop((vaddr_t)src)) &&
 		    vtophys((vaddr_t)src) == VTOPHYS_FAILED) {
 			db_printf("address %p is invalid\n", src);
+			memset(data, 0, size);	/* stubs are filled by zero */
 			return;
 		}
 		lastpage = atop((vaddr_t)src);
