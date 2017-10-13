@@ -1557,6 +1557,12 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
 		return false;
 	}
 
+#if 1
+	//XXXAARCH64
+	if ((pte & LX_BLKPAG_AF) && ((pte & LX_BLKPAG_AP) == LX_BLKPAG_AP_RW)) {
+		panic("%s:%d va=%016lx pte=%08llx\n", __func__, __LINE__, va, pte);
+	}
+#endif
 	KASSERT(((pte & LX_BLKPAG_AF) == 0) ||
 	    ((pte & LX_BLKPAG_AP) == LX_BLKPAG_AP_RO));
 
