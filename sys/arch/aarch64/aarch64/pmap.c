@@ -1088,6 +1088,7 @@ pmap_activate(struct lwp *l)
 	UVMHIST_LOG(pmaphist, "lwp=%p (pid=%d)", l, l->l_proc->p_pid, 0, 0);
 
 	/* XXXAARCH64 */
+	CTASSERT(PID_MAX <= 65535);	/* 16bit ASID */
 	if (pm->pm_asid == -1)
 		pm->pm_asid = l->l_proc->p_pid;
 
@@ -1549,7 +1550,6 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
 
 	/* ignore except read/write */
 	accessprot &= (VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE);
-	accessprot |= VM_PROT_READ;	/* treat WRITE or EXECUTE access as READ with */
 
 	/* no permission to read/write for this page */
 	if ((pmap_prot & accessprot) != accessprot) {
