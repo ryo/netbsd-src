@@ -46,6 +46,7 @@ __KERNEL_RCSID(1, "$NetBSD$");
 static int cpu_match(device_t, cfdata_t, void *);
 static void cpu_attach(device_t, device_t, void *);
 static void cpu_identify(device_t self, struct cpu_info *);
+static void cpu_identify2(device_t self, struct cpu_info *);
 
 CFATTACH_DECL_NEW(cpu_cpunode, 0,
     cpu_match, cpu_attach, NULL, NULL);
@@ -120,7 +121,12 @@ cpu_attach(device_t parent, device_t self, void *aux)
 #endif
 
 	cpu_identify(self, ci);
-//	vfp_attach(ci);
+
+//xxxxxxxxxxxxxxxxx
+void cpucache_wbinv(void);
+	cpucache_wbinv();
+
+	cpu_identify2(self, ci);
 }
 
 struct cpuidtab {
@@ -198,16 +204,16 @@ struct aarch64_cache_info aarch64_l2_cache;
 static inline void
 cache_clean(int level, struct aarch64_cache_info *cinfo)
 {
-	int set, way, setshift, wayshift;
 	uint64_t x;
+	unsigned int set, way, setshift, wayshift;
 
 	setshift = ffs(cinfo->cache_line_size) - 1;
 	wayshift = 32 - (ffs(cinfo->cache_ways) - 1);
 
 	cpu_drain_writebuf();
 
-	for (set = 0; set < cinfo->cache_sets; set++) {
-		for (way = 0; way < cinfo->cache_ways; way++) {
+	for (way = 0; way < cinfo->cache_ways; way++) {
+		for (set = 0; set < cinfo->cache_sets; set++) {
 			x = (way << wayshift) | (set << setshift) | (level << 1);
 			__asm __volatile ("dc csw, %0; dsb sy" :: "r"(x));
 		}
@@ -217,23 +223,44 @@ cache_clean(int level, struct aarch64_cache_info *cinfo)
 static inline void
 cache_wbinv(int level, struct aarch64_cache_info *cinfo)
 {
-	int set, way, setshift, wayshift;
 	uint64_t x;
+	unsigned int set, way, setshift, wayshift;
 
 	setshift = ffs(cinfo->cache_line_size) - 1;
 	wayshift = 32 - (ffs(cinfo->cache_ways) - 1);
 
 	cpu_drain_writebuf();
 
-	for (set = 0; set < cinfo->cache_sets; set++) {
-		for (way = 0; way < cinfo->cache_ways; way++) {
+	for (way = 0; way < cinfo->cache_ways; way++) {
+		for (set = 0; set < cinfo->cache_sets; set++) {
 			x = (way << wayshift) | (set << setshift) | (level << 1);
 			__asm __volatile ("dc cisw, %0; dsb sy" :: "r"(x));
 		}
 	}
 }
 
+static inline void
+cache_inv(int level, struct aarch64_cache_info *cinfo)
+{
+	uint64_t x;
+	unsigned int set, way, setshift, wayshift;
+
+	setshift = ffs(cinfo->cache_line_size) - 1;
+	wayshift = 32 - (ffs(cinfo->cache_ways) - 1);
+
+	cpu_drain_writebuf();
+
+	for (way = 0; way < cinfo->cache_ways; way++) {
+		for (set = 0; set < cinfo->cache_sets; set++) {
+			x = (way << wayshift) | (set << setshift) | (level << 1);
+			__asm __volatile ("dc isw, %0; dsb sy" :: "r"(x));
+		}
+	}
+}
+
 void cpucache_clean(void);
+void cpucache_wbinv(void);
+void cpucache_inv(void);
 
 void
 cpucache_clean(void)
@@ -242,13 +269,18 @@ cpucache_clean(void)
 	cache_clean(1, &aarch64_l2_cache);
 }
 
-void cpucache_wbinv(void);
-
 void
 cpucache_wbinv(void)
 {
 	cache_wbinv(0, &aarch64_l1_dcache);
 	cache_wbinv(1, &aarch64_l2_cache);
+}
+
+void
+cpucache_inv(void)
+{
+	cache_inv(0, &aarch64_l1_dcache);
+	cache_inv(1, &aarch64_l2_cache);
 }
 
 static void
@@ -418,15 +450,153 @@ cpu_identify(device_t self, struct cpu_info *ci)
 		/* L2 or higher is PIPT */
 		cachetype = "PIPT ";
 	}
+}
 
-	/* and much more... */
 
-	//  ID_AA64DFR0_EL1
-	// *ID_AA64DFR1_EL1
-	//  ID_AA64ISAR0_EL1
-	// *ID_AA64ISAR1_EL1
-	//  ID_AA64MMFR0_EL1
-	// *ID_AA64MMFR1_EL1
-	//  ID_AA64PFR0_EL1
-	// *ID_AA64PFR1_EL1
+/*
+ * identify vfp, etc.
+ */
+static void
+cpu_identify2(device_t self, struct cpu_info *ci)
+{
+	uint64_t aidr, revidr;
+	uint64_t dfr0, mmfr0;
+	uint64_t isar0, pfr0, mvfr0, mvfr1;
+
+	aidr = reg_id_aa64isar0_el1_read();
+	revidr = reg_revidr_el1_read();
+
+	dfr0 = reg_id_aa64dfr0_el1_read();
+	mmfr0 = reg_id_aa64mmfr0_el1_read();
+
+	isar0 = reg_id_aa64isar0_el1_read();
+	pfr0 = reg_id_aa64pfr0_el1_read();
+	mvfr0 = reg_mvfr0_el1_read();
+	mvfr1 = reg_mvfr1_el1_read();
+
+
+	aprint_normal_dev(self, "revID=0x%llx", revidr);
+
+	/* ID_AA64DFR0_EL1 */
+	switch (__SHIFTOUT(dfr0, ID_AA64DFR0_EL1_PMUVER)) {
+	case ID_AA64DFR0_EL1_PMUVER_V3:
+		aprint_normal(", PMCv3");
+		break;
+	case ID_AA64DFR0_EL1_PMUVER_NOV3:
+		aprint_normal(", PMC");
+		break;
+	}
+
+	/* ID_AA64MMFR0_EL1 */
+	switch (__SHIFTOUT(mmfr0, ID_AA64MMFR0_EL1_TGRAN4)) {
+	case ID_AA64MMFR0_EL1_TGRAN4_4KB:
+		aprint_normal(", 4k table");
+		break;
+	}
+	switch (__SHIFTOUT(mmfr0, ID_AA64MMFR0_EL1_TGRAN16)) {
+	case ID_AA64MMFR0_EL1_TGRAN16_16KB:
+		aprint_normal(", 16k table");
+		break;
+	}
+	switch (__SHIFTOUT(mmfr0, ID_AA64MMFR0_EL1_TGRAN64)) {
+	case ID_AA64MMFR0_EL1_TGRAN64_64KB:
+		aprint_normal(", 64k table");
+		break;
+	}
+
+	switch (__SHIFTOUT(mmfr0, ID_AA64MMFR0_EL1_ASIDBITS)) {
+	case ID_AA64MMFR0_EL1_ASIDBITS_8BIT:
+		aprint_normal(", 8bit ASID");
+		break;
+	case ID_AA64MMFR0_EL1_ASIDBITS_16BIT:
+		aprint_normal(", 16bit ASID");
+		break;
+	}
+	aprint_normal("\n");
+
+
+
+	aprint_normal_dev(self, "auxID=0x%llx", aidr);
+
+	/* PFR0 */
+	switch (__SHIFTOUT(pfr0, ID_AA64PFR0_EL1_GIC)) {
+	case ID_AA64PFR0_EL1_GIC_CPUIF_EN:
+		aprint_normal(", GICv3");
+		break;
+	}
+	switch (__SHIFTOUT(pfr0, ID_AA64PFR0_EL1_FP)) {
+	case ID_AA64PFR0_EL1_FP_IMPL:
+		aprint_normal(", FP");
+		break;
+	}
+
+	/* ISAR0 */
+	switch (__SHIFTOUT(isar0, ID_AA64ISAR0_EL1_CRC32)) {
+	case ID_AA64ISAR0_EL1_CRC32_CRC32X:
+		aprint_normal(", CRC32");
+		break;
+	}
+	switch (__SHIFTOUT(isar0, ID_AA64ISAR0_EL1_SHA1)) {
+	case ID_AA64ISAR0_EL1_SHA1_SHA1CPMHSU:
+		aprint_normal(", SHA1");
+		break;
+	}
+	switch (__SHIFTOUT(isar0, ID_AA64ISAR0_EL1_SHA2)) {
+	case ID_AA64ISAR0_EL1_SHA2_SHA256HSU:
+		aprint_normal(", SHA256");
+		break;
+	}
+	switch (__SHIFTOUT(isar0, ID_AA64ISAR0_EL1_AES)) {
+	case ID_AA64ISAR0_EL1_AES_AES:
+		aprint_normal(", AES");
+		break;
+	case ID_AA64ISAR0_EL1_AES_PMUL:
+		aprint_normal(", AES+PMULL");
+		break;
+	}
+
+
+	/* PFR0:AdvSIMD */
+	switch (__SHIFTOUT(pfr0, ID_AA64PFR0_EL1_ADVSIMD)) {
+	case ID_AA64PFR0_EL1_ADV_SIMD_IMPL:
+		aprint_normal(", NEON");
+		break;
+	}
+
+	/* MVFR0/MVFR1 */
+	switch (__SHIFTOUT(mvfr0, MVFR0_FPROUND)) {
+	case MVFR0_FPROUND_ALL:
+		aprint_normal(", rounding");
+		break;
+	}
+	switch (__SHIFTOUT(mvfr0, MVFR0_FPTRAP)) {
+	case MVFR0_FPTRAP_TRAP:
+		aprint_normal(", exceptions");
+		break;
+	}
+	switch (__SHIFTOUT(mvfr1, MVFR1_FPDNAN)) {
+	case MVFR1_FPDNAN_NAN:
+		aprint_normal(", NaN propagation");
+		break;
+	}
+	switch (__SHIFTOUT(mvfr1, MVFR1_FPFTZ)) {
+	case MVFR1_FPFTZ_DENORMAL:
+		aprint_normal(", denormals");
+		break;
+	}
+	switch (__SHIFTOUT(mvfr0, MVFR0_SIMDREG)) {
+	case MVFR0_SIMDREG_16x64:
+		aprint_normal(", 16x64bitRegs");
+		break;
+	case MVFR0_SIMDREG_32x64:
+		aprint_normal(", 32x64bitRegs");
+		break;
+	}
+	switch (__SHIFTOUT(mvfr1, MVFR1_SIMDFMAC)) {
+	case MVFR1_SIMDFMAC_FMAC:
+		aprint_normal(", Fused Multiply-Add");
+		break;
+	}
+
+	aprint_normal("\n");
 }
