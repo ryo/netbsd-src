@@ -219,6 +219,7 @@ END(lwp_trampoline)
 	ldp	x16, x17, [sp, #TF_X16]
 	ldr	x18, [sp, #TF_X18]
 	.endm
+
 	.macro unwind_x19_x30
 	ldp	x19, x20, [sp, #TF_X19]
 	ldp	x21, x22, [sp, #TF_X21]
@@ -240,8 +241,12 @@ ENTRY_NP(el1_trap_exit)
 
 	unwind_x0_x18
 
+#if TF_PC + 8 == TF_SPSR
+	ldp	x20, x21, [sp, #TF_PC]
+#else
 	ldr	x20, [sp, #TF_PC]
 	ldr	x21, [sp, #TF_SPSR]
+#endif
 	msr	elr_el1, x20		/* exception pc */
 	msr	spsr_el1, x21		/* exception pstate */
 
@@ -280,8 +285,12 @@ ENTRY_NP(el0_trap_exit)
 
 	unwind_x0_x18
 
+#if TF_PC + 8 == TF_SPSR
+	ldp	x20, x21, [sp, #TF_PC]
+#else
 	ldr	x20, [sp, #TF_PC]
 	ldr	x21, [sp, #TF_SPSR]
+#endif
 	ldr	x22, [sp, #TF_SP]
 	msr	elr_el1, x20		/* exception pc */
 	msr	spsr_el1, x21		/* exception pstate */
