@@ -212,7 +212,7 @@ trap_el0_sync(struct trapframe *tf)
 		userret(l);
 		break;
 	case ESR_EC_FP_TRAP_A64:
-		do_trapsignal(l, SIGFPE, FPE_FLTUND, NULL, eclass);	/* XXXAARCH64 */
+		do_trapsignal(l, SIGFPE, FPE_FLTUND, NULL, esr);	/* XXXAARCH64 */
 		userret(l);
 		break;
 	case ESR_EC_SVC_A64:
@@ -226,8 +226,11 @@ trap_el0_sync(struct trapframe *tf)
 		break;
 
 	case ESR_EC_PC_ALIGNMENT:
+		do_trapsignal(l, SIGBUS, BUS_ADRALN, tf->tf_pc, esr);
+		userret(l);
+		break;
 	case ESR_EC_SP_ALIGNMENT:
-		do_trapsignal(l, SIGBUS, BUS_ADRALN, tf->tf_sp, eclass);
+		do_trapsignal(l, SIGBUS, BUS_ADRALN, tf->tf_sp, esr);
 		userret(l);
 		break;
 
@@ -237,14 +240,14 @@ trap_el0_sync(struct trapframe *tf)
 	case ESR_EC_WTCHPNT_EL0:
 		// XXXAARCH64: notyet
 		printf("%s: %s\n", __func__, trapname);
-		do_trapsignal(l, SIGTRAP, TRAP_BRKPT, tf->tf_pc, eclass);
+		do_trapsignal(l, SIGTRAP, TRAP_BRKPT, tf->tf_pc, esr);
 		userret(l);
 		break;
 
 	default:
 		// XXXAARCH64: notyet
 		printf("%s:%d: %s\n", __func__, __LINE__, trapname);
-		do_trapsignal(l, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
+		do_trapsignal(l, SIGILL, ILL_ILLTRP, tf->tf_pc, esr);
 		userret(l);
 		break;
 	}
@@ -298,14 +301,14 @@ trap_el0_32sync(struct trapframe *tf)
 	case ESR_EC_BKPT_INSN_A32:
 		// XXXAARCH64: notyet
 		printf("%s:%d: %s\n", __func__, __LINE__, trapname);
-		do_trapsignal(l SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
+		do_trapsignal(l SIGILL, ILL_ILLTRP, tf->tf_pc, esr);
 		userret(l);
 		break;
 #endif /* COMPAT_NETBSD32 */
 	default:
 		// XXXAARCH64: notyet
 		printf("%s:%d: %s\n", __func__, __LINE__, trapname);
-		do_trapsignal(l, SIGILL, ILL_ILLTRP, tf->tf_pc, eclass);
+		do_trapsignal(l, SIGILL, ILL_ILLTRP, tf->tf_pc, esr);
 		userret(l);
 		break;
 	}

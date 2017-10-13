@@ -84,9 +84,11 @@ void cpu_jump_onfault(struct trapframe *, const label_t *);
 static inline label_t *
 cpu_unset_onfault(void)
 {
-	label_t * const label = curlwp->l_md.md_onfault;
+	label_t *label;
 
-	curlwp->l_md.md_onfault = NULL;
+	label = curlwp->l_md.md_onfault;
+	if (label != NULL)
+		curlwp->l_md.md_onfault = NULL;
 	return label;
 }
 

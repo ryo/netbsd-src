@@ -124,55 +124,20 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 	struct vm_map *map;
 	label_t *label;
 	vaddr_t va;
+	uint32_t esr, fsc, rw;
 	vm_prot_t ftype;
-	const uint32_t esr = tf->tf_esr;
-	const bool user = (tf->tf_spsr == SPSR_M_EL0T) ? true : false;
-	uint32_t rw;
 	int error;
+	const bool user = (tf->tf_spsr == SPSR_M_EL0T) ? true : false;
+	const char *faultstr;
 
 	UVMHIST_FUNC(__func__);
 	UVMHIST_CALLED(pmaphist);
 
+	esr = tf->tf_esr;
 	rw = __SHIFTOUT(esr, ESR_ISS_DATAABORT_WnR); /* 0 if IFSC */
 
-	if (is_fatal_abort(esr)) {
-		uint32_t fsc;
-		const char *faultstr;
-
-		fsc = __SHIFTOUT(esr, ESR_ISS_DATAABORT_DFSC); /* also IFSC */
-		if (user) {
-			/*
-			 * fatal abort in usermode
-			 */
-			do_trapsignal(curlwp, SIGBUS, BUS_ADRALN, tf->tf_far, fsc);
-			return false;
-		}
-
-		/*
-		 * fatal abort in kernel
-		 */
-		printf("Trap: %s:", trapname);
-
-		if ((fsc >= __arraycount(fault_status_code)) ||
-		    ((faultstr = fault_status_code[fsc]) == NULL))
-			printf(" unknown fault status 0x%x ", fsc);
-		else
-			printf(" %s", faultstr);
-
-		if (__SHIFTOUT(esr, ESR_EC) == ESR_EC_DATA_ABT_EL1)
-			printf(" with %s access", (rw == 0) ? "read" : "write");
-
-		if (__SHIFTOUT(esr, ESR_ISS_DATAABORT_EA) != 0)
-			printf(", External abort");
-
-		if (__SHIFTOUT(esr, ESR_ISS_DATAABORT_S1PTW) != 0)
-			printf(", State 2 Fault");
-
-		printf("\n      pc=%016llx sp=%016llx far=%016llx\n",
-		    tf->tf_pc, tf->tf_sp, tf->tf_far);
-
-		return false;
-	}
+	if (is_fatal_abort(esr))
+		goto do_fault;
 
 	p = curlwp->l_proc;
 	va = trunc_page((vaddr_t)tf->tf_far);
@@ -215,6 +180,7 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 		return true;
 	}
 
+
  do_fault:
 	/* faultbail path? */
 	label = cpu_unset_onfault();
@@ -223,13 +189,88 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 		return true;
 	}
 
+	fsc = __SHIFTOUT(esr, ESR_ISS_DATAABORT_DFSC); /* also IFSC */
 	if (user) {
-		do_trapsignal(curlwp, SIGSEGV, SEGV_ACCERR, va, tf->tf_pc);
+		/*
+		 * fatal abort in usermode
+		 */
+		switch (esr) {
+		case ESR_ISS_FSC_ACCESS_FAULT_0:
+		case ESR_ISS_FSC_ACCESS_FAULT_1:
+		case ESR_ISS_FSC_ACCESS_FAULT_2:
+		case ESR_ISS_FSC_ACCESS_FAULT_3:
+		case ESR_ISS_FSC_PERM_FAULT_0:
+		case ESR_ISS_FSC_PERM_FAULT_1:
+		case ESR_ISS_FSC_PERM_FAULT_2:
+		case ESR_ISS_FSC_PERM_FAULT_3:
+			do_trapsignal(curlwp, SIGSEGV, SEGV_ACCERR,
+			    tf->tf_far, esr);
+			break;
+		case ESR_ISS_FSC_TRANSLATION_FAULT_0:
+		case ESR_ISS_FSC_TRANSLATION_FAULT_1:
+		case ESR_ISS_FSC_TRANSLATION_FAULT_2:
+		case ESR_ISS_FSC_TRANSLATION_FAULT_3:
+		case ESR_ISS_FSC_TLB_CONFLICT_FAULT:
+		case ESR_ISS_FSC_LOCKDOWN_ABORT:
+		case ESR_ISS_FSC_UNSUPPORTED_EXCLUSIVE:
+		case ESR_ISS_FSC_FIRST_LEVEL_DOMAIN_FAULT:
+		case ESR_ISS_FSC_SECOND_LEVEL_DOMAIN_FAULT:
+		default:
+			do_trapsignal(curlwp, SIGSEGV, SEGV_MAPERR,
+			    tf->tf_far, esr);
+			break;
+		case ESR_ISS_FSC_ADDRESS_SIZE_FAULT_0:
+		case ESR_ISS_FSC_ADDRESS_SIZE_FAULT_1:
+		case ESR_ISS_FSC_ADDRESS_SIZE_FAULT_2:
+		case ESR_ISS_FSC_ADDRESS_SIZE_FAULT_3:
+			do_trapsignal(curlwp, SIGBUS, BUS_ADRERR,
+			    tf->tf_far, esr);
+			break;
+		case ESR_ISS_FSC_SYNC_EXTERNAL_ABORT:
+		case ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_0:
+		case ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_1:
+		case ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_2:
+		case ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_3:
+		case ESR_ISS_FSC_SYNC_PARITY_ERROR:
+		case ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_0:
+		case ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_1:
+		case ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_2:
+		case ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_3:
+			do_trapsignal(curlwp, SIGBUS, BUS_OBJERR,
+			    tf->tf_far, esr);
+			break;
+		case ESR_ISS_FSC_ALIGNMENT_FAULT:
+			do_trapsignal(curlwp, SIGBUS, BUS_ADRALN,
+			    tf->tf_far, esr);
+			break;
+		}
 		return false;
 	}
 
-	//XXXAARCH64
-	printf("fault in kernel: error=%d, va=%016llx\n", error, tf->tf_far);
+	/*
+	 * fatal abort in kernel
+	 */
+	printf("Trap: %s:", trapname);
+
+	if ((fsc >= __arraycount(fault_status_code)) ||
+	    ((faultstr = fault_status_code[fsc]) == NULL))
+		printf(" unknown fault status 0x%x ", fsc);
+	else
+		printf(" %s", faultstr);
+
+	if (__SHIFTOUT(esr, ESR_EC) == ESR_EC_DATA_ABT_EL1)
+		printf(" with %s access", (rw == 0) ? "read" : "write");
+
+	if (__SHIFTOUT(esr, ESR_ISS_DATAABORT_EA) != 0)
+		printf(", External abort");
+
+	if (__SHIFTOUT(esr, ESR_ISS_DATAABORT_S1PTW) != 0)
+		printf(", State 2 Fault");
+
+	printf("\n      pc=%016llx sp=%016llx far=%016llx\n",
+	    tf->tf_pc, tf->tf_sp, tf->tf_far);
+
 	dump_trapframe(tf, printf);
+
 	return false;
 }
