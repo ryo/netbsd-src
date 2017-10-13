@@ -46,18 +46,18 @@
 .if \ic == 0
 	mrs	x3, ctr_el0
 	ubfx	x3, x3, #16, #4		/* x3 = D cache shift */
-	mov	x2, #4
+	mov	x2, #4			/* size of word */
 	lsl	x3, x2, x3		/* x3 = D cache line size */
 .else
 	mrs	x3, ctr_el0
-	ubfx	x2, x3, #16, #4		/* x2 = I cache shift */
-	and	x3, x3, #4		/* x3 = D cache shift */
+	ubfx	x2, x3, #16, #4		/* x2 = D cache shift */
+	and	x3, x3, #15		/* x3 = I cache shift */
 	cmp	x3, x2
 	bcs	1f
 	mov	x3, x2
-1:					/* x3 = MAX(ICACHEshift,DCACHEshift) */
-	mov	x2, #4
-	lsl	x3, x2, x3
+1:					/* x3 = MAX(IcacheShift,DcacheShift) */
+	mov	x2, #4			/* size of word */
+	lsl	x3, x2, x3		/* x3 = cache line size */
 .endif
 	sub	x4, x3, #1		/* Get the address mask */
 	and	x2, x0, x4		/* Get the low bits of the address */
@@ -95,7 +95,7 @@ END(aarch64_cpuid)
 ENTRY(aarch64_dcache_line_size)
 	mrs	x0, ctr_el0
 	ubfx	x0, x0, #16, #4		/* x0 = D cache shift */
-	mov	x1, #4
+	mov	x1, #4			/* size of word */
 	lsl	x0, x1, x0		/* x0 = D cache line size */
 	ret
 END(aarch64_dcache_line_size)
@@ -105,8 +105,8 @@ END(aarch64_dcache_line_size)
  */
 ENTRY(aarch64_icache_line_size)
 	mrs	x0, ctr_el0
-	ubfx	x0, x0, #16, #4		/* x0 = I cache shift */
-	mov	x1, #4
+	and	x0, x0, #15		/* x0 = I cache shift */
+	mov	x1, #4			/* size of word */
 	lsl	x0, x1, x0		/* x0 = I cache line size */
 	ret
 END(aarch64_icache_line_size)
