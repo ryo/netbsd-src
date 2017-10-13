@@ -36,6 +36,7 @@ __KERNEL_RCSID(1, "$NetBSD: fpu.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/lwp.h>
+#include <sys/evcnt.h>
 
 #include <aarch64/reg.h>
 #include <aarch64/pcb.h>
@@ -53,6 +54,23 @@ const pcu_ops_t pcu_fpu_ops = {
 	.pcu_state_release = fpu_state_release,
 };
 
+void
+fpu_attach(struct cpu_info *ci)
+{
+	evcnt_attach_dynamic(&ci->ci_vfp_trap, EVCNT_TYPE_TRAP, NULL,
+	    ci->ci_cpuname, "vfp trap");
+	evcnt_attach_dynamic(&ci->ci_vfp_use, EVCNT_TYPE_MISC, NULL,
+	    ci->ci_cpuname, "vfp use");
+	evcnt_attach_dynamic(&ci->ci_vfp_reuse, EVCNT_TYPE_MISC, NULL,
+	    ci->ci_cpuname, "vfp reuse");
+}
+
+void
+fpu_trap(struct trapframe *tf)
+{
+	curcpu()->ci_vfp_trap.ev_count++;
+}
+
 static void
 fpu_state_load(lwp_t *l, unsigned int flags)
 {
@@ -60,14 +78,12 @@ fpu_state_load(lwp_t *l, unsigned int flags)
 
 	KASSERT(l == curlwp);
 
-#if 0
-	//XXXAARCH64
 	/* event counter */
 	if ((flags & PCU_VALID) == 0)
-		atomic_inc_ulong(&fpevent_use.ev_count);
+		curcpu()->ci_vfp_use.ev_count++;
 	else
-		atomic_inc_ulong(&fpevent_reuse.ev_count);
-#endif
+		curcpu()->ci_vfp_reuse.ev_count++;
+
 
 	reg_cpacr_el1_write(CPACR_FPEN_EL1);	/* fpreg access enable */
 	load_fpregs(&pcb->pcb_fpregs);

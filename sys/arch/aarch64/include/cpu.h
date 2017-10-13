@@ -34,7 +34,12 @@
 
 #ifdef __aarch64__
 
+#ifdef _KERNEL_OPT
+#include "opt_multiprocessor.h"
+#endif
+
 #if defined(_KERNEL) || defined(_KMEMUSER)
+#include <sys/evcnt.h>
 #include <aarch64/frame.h>
 
 struct clockframe {
@@ -54,7 +59,6 @@ struct cpu_info {
 	struct cpu_data ci_data;
 	device_t ci_dev;
 	cpuid_t ci_cpuid;
-	cpuid_t ci_gicid;		/* used for IPIs */
 	struct lwp *ci_curlwp;
 	struct lwp *ci_softlwps[SOFTINT_COUNT];
 
@@ -62,6 +66,7 @@ struct cpu_info {
 
 //XXXAARCH64: notyet
 //	struct cpu_info *ci_clu;	/* cluster ci PTR */
+//	cpuid_t ci_gicid;		/* used for IPIs */
 //	int ci_clusize;			/* cluster size */
 //	void *ci_cacheop;		/* cache operation */
 //	void *ci_tlbop;			/* TLB operation */
@@ -74,6 +79,11 @@ struct cpu_info {
 	volatile u_int ci_softints;
 	volatile u_int ci_astpending;
 	volatile u_int ci_intr_depth;
+
+	/* event counters */
+	struct evcnt ci_vfp_trap;
+	struct evcnt ci_vfp_use;
+	struct evcnt ci_vfp_reuse;
 };
 
 static inline struct cpu_info *
@@ -84,12 +94,6 @@ curcpu(void)
 	return ci;
 }
 #define curlwp			(curcpu()->ci_curlwp)
-
-static inline cpuid_t
-cpu_number(void)
-{
-	return curcpu()->ci_gicid;
-}
 
 #define setsoftast(ci)		atomic_or_uint(&(ci)->ci_astpending, __BIT(0))
 #define cpu_signotify(l)	setsoftast((l)->l_cpu)
@@ -103,10 +107,20 @@ extern struct cpu_info cpu_info_store;	/* MULTIPROCESSOR */
 extern volatile u_int arm_cpu_hatched;	/* MULTIPROCESSOR */
 
 #define CPU_INFO_ITERATOR	cpuid_t
-#define CPU_INFO_FOREACH(cii, ci)			\
-	cii = 0, ci = cpu_info[0];			\
-	cii < ncpu && (ci = cpu_info[cii]) != NULL;	\
+#ifdef MULTIPROCESSOR
+#define cpu_number()		(curcpu()->ci_index)
+#define CPU_IS_PRIMARY(ci)	((ci)->ci_index == 0)
+#define CPU_INFO_FOREACH(cii, ci)				\
+	cii = 0, ci = cpu_info[0];				\
+	cii < ncpu && (ci = cpu_info[cii]) != NULL;		\
 	cii++
+#else /* MULTIPROCESSOR */
+#define cpu_number()		0
+#define CPU_IS_PRIMARY(ci)	true
+#define CPU_INFO_FOREACH(cii, ci)				\
+	cii = 0, __USE(cii), ci = curcpu(); ci != NULL; ci = NULL
+#endif /* MULTIPROCESSOR */
+
 
 static inline void
 cpu_dosoftints(void)

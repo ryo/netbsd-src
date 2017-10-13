@@ -65,6 +65,7 @@ void cpu_enable_onfault(struct faultbuf *);
 void lwp_trampoline(void);
 void cpu_dosoftints(void);
 void cpu_switchto_softint(struct lwp *, int);
+void dosoftints(void);
 void trap_doast(struct trapframe *);
 
 void trap_el1t_sync(struct trapframe *);
@@ -80,9 +81,12 @@ void trap_el0_error(struct trapframe *);
 void trap_el0_32sync(struct trapframe *);
 void trap_el0_32fiq(struct trapframe *);
 void trap_el0_32error(struct trapframe *);
-
 void interrupt(struct trapframe *);
-void dosoftints(void);
+
+/* fpu.c */
+void fpu_attach(struct cpu_info *);
+void fpu_trap(struct trapframe *);
+
 
 struct fpreg;
 void load_fpregs(struct fpreg *);

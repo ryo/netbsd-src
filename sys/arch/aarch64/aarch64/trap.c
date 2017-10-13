@@ -225,24 +225,15 @@ trap_el0_sync(struct trapframe *tf)
 
 	switch (eclass) {
 	case ESR_EC_FP_ACCESS:
-	case ESR_EC_FP_TRAP_A64:
 		fpu_load(l);
 		userret(l);
 		break;
+	case ESR_EC_FP_TRAP_A64:
+		trap_ksi_init(&ksi, SIGFPE, FPE_FLTUND, NULL, eclass);	/* XXXAARCH64 */
+		(*l->l_proc->p_emul->e_trapsignal)(l, &ksi);
+		userret(l);
+		break;
 	case ESR_EC_SVC_A64:
-#if 0
-	//SYSCALL DEBUG
-		do {
-			extern const char *const syscallnames[];
-
-//			if ((tf->tf_esr & 0xffff) == 4)
-//				break;
-//			if (curlwp->l_proc->p_pid == 1)
-//				break;
-
-			printf("[%d] SYSCALL %llu %llu\n", curlwp->l_proc->p_pid, tf->tf_esr & 0xffff, tf->tf_reg[17]);
-		} while (0);
-#endif
 		(*l->l_proc->p_md.md_syscall)(tf);
 		break;
 

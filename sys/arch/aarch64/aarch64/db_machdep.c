@@ -242,8 +242,6 @@ db_md_cpuinfo_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *m
 	db_printf("cpu_info=%p\n", ci);
 	db_printf("%p cpu[%lu].ci_cpuid        = %lu\n",
 	    &ci->ci_cpuid, cpuid, cpuinfobuf.ci_cpuid);
-	db_printf("%p cpu[%lu].ci_gicid        = %lu\n",
-	    &ci->ci_gicid, cpuid, cpuinfobuf.ci_gicid);
 	db_printf("%p cpu[%lu].ci_curlwp       = %p\n",
 	    &ci->ci_curlwp, cpuid, cpuinfobuf.ci_curlwp);
 	for (i = 0; i < SOFTINT_COUNT; i++) {
