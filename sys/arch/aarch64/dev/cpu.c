@@ -42,6 +42,7 @@ __KERNEL_RCSID(1, "$NetBSD$");
 #include <aarch64/cpuvar.h>
 #include <aarch64/cpu.h>
 #include <aarch64/cpufunc.h>
+#include <aarch64/machdep.h>
 
 static int cpu_match(device_t, cfdata_t, void *);
 static void cpu_attach(device_t, device_t, void *);
@@ -120,13 +121,15 @@ cpu_attach(device_t parent, device_t self, void *aux)
 	}
 #endif
 
+	fpu_attach(ci);
+
 	cpu_identify(self, ci);
+	cpu_identify2(self, ci);
 
 //xxxxxxxxxxxxxxxxx
 void cpucache_wbinv(void);
 	cpucache_wbinv();
 
-	cpu_identify2(self, ci);
 }
 
 struct cpuidtab {
