@@ -69,7 +69,7 @@ vaddr_t physical_end;
 /*
  * Upper region: 0xffffffffffffffff  Top of virtual memory
  *
- *               0xffffffffffff0000  End of KVA
+ *               0xffffffffffe00000  End of KVA
  *                                   = VM_MAX_KERNEL_ADDRESS
  *
  *               0xffffffc00???????  End of kernel
@@ -91,8 +91,8 @@ vaddr_t physical_end;
  * Lower region: 0x0000fffffffff000  End of user address space
  *                                   = VM_MAXUSER_ADDRESS
  *
- *               0x000000000???????  End of Loaded kernel image
- *               0x0000000000??????  Start of Loaded kernel image
+ *               0x000000000???????  End of Loaded kernel image (boot)
+ *               0x0000000000??????  Start of Loaded kernel image (boot)
  *                                   = LOADADDRESS
  *
  *               0x0000000000000000  Start of user address space
