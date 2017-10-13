@@ -37,7 +37,7 @@
 struct mdlwp {
 	struct trapframe *md_utf;
 	struct trapframe *md_ktf;
-	void *md_onfault;
+	label_t *md_onfault;
 	uint64_t md_cpacr;
 	uint32_t md_flags;
 };

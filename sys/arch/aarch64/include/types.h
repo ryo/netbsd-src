@@ -65,12 +65,12 @@ typedef unsigned short	tlb_asid_t;
 
 #if defined(_KERNEL)
 typedef struct label_t {	/* Used by setjmp & longjmp */
-        register_t lb_reg[13];	/* x19 .. x30, sp */
+	register_t lb_reg[13];	/* x19 .. x30, sp */
 } label_t;
 #endif
 
 #endif
-         
+
 /*
  * This should have always been an 8-bit type.
  */

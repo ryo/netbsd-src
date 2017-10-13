@@ -122,7 +122,7 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 {
 	struct proc *p;
 	struct vm_map *map;
-	struct faultbuf *fb;
+	label_t *label;
 	vaddr_t va;
 	vm_prot_t ftype;
 	const uint32_t esr = tf->tf_esr;
@@ -184,7 +184,6 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 		map = &p->p_vmspace->vm_map;
 		UVMHIST_LOG(pmaphist, "use user vm_map %p (kernel_map=%p)", map, kernel_map, 0, 0);
 	} else {
-		fb = cpu_get_onfault();
 		goto do_fault;
 	}
 
@@ -207,11 +206,7 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 		return true;
 	}
 
-	/* page fault plus faultbail path */
-	fb = cpu_disable_onfault();
 	error = uvm_fault(map, va, ftype);
-	cpu_enable_onfault(fb);
-
 	if (__predict_true(error == 0)) {
 		if (user)
 			uvm_grow(p, va);
@@ -221,18 +216,20 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 	}
 
  do_fault:
-	if (fb == NULL) {
-		if (user) {
-			do_trapsignal(curlwp, SIGSEGV, SEGV_ACCERR, va, tf->tf_pc);
-			return false;
-		}
+	/* faultbail path? */
+	label = cpu_unset_onfault();
+	if (label != NULL) {
+		cpu_jump_onfault(tf, label);
+		return true;
+	}
 
-		//XXXAARCH64
-		printf("%s:%d fault in %s: error=%d, va=%016llx\n", __func__, __LINE__, user ? "user" : "kernel", error, tf->tf_far);
-		dump_trapframe(tf, printf);
-
+	if (user) {
+		do_trapsignal(curlwp, SIGSEGV, SEGV_ACCERR, va, tf->tf_pc);
 		return false;
 	}
-	cpu_jump_onfault(tf, fb);
-	return true;
+
+	//XXXAARCH64
+	printf("fault in kernel: error=%d, va=%016llx\n", error, tf->tf_far);
+	dump_trapframe(tf, printf);
+	return false;
 }

@@ -56,14 +56,6 @@ struct trapframe;
 bool data_abort_handler(struct trapframe *, uint32_t, const char *);
 
 /* trap.c */
-struct faultbuf;
-void trap_ksi_init(ksiginfo_t *, int, int, vaddr_t, int);
-int cpu_set_onfault(struct faultbuf *, register_t) __returns_twice;
-void cpu_jump_onfault(struct trapframe *, const struct faultbuf *);
-void cpu_unset_onfault(void);
-struct faultbuf *cpu_get_onfault(void);
-struct faultbuf *cpu_disable_onfault(void);
-void cpu_enable_onfault(struct faultbuf *);
 void lwp_trampoline(void);
 void cpu_dosoftints(void);
 void cpu_switchto_softint(struct lwp *, int);
@@ -84,6 +76,19 @@ void trap_el0_32sync(struct trapframe *);
 void trap_el0_32fiq(struct trapframe *);
 void trap_el0_32error(struct trapframe *);
 void interrupt(struct trapframe *);
+
+/* onfault */
+int cpu_set_onfault(struct label_t *) __returns_twice;
+void cpu_jump_onfault(struct trapframe *, const label_t *);
+
+static inline label_t *
+cpu_unset_onfault(void)
+{
+	label_t * const label = curlwp->l_md.md_onfault;
+
+	curlwp->l_md.md_onfault = NULL;
+	return label;
+}
 
 /* fpu.c */
 void fpu_attach(struct cpu_info *);

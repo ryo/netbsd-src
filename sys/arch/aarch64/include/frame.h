@@ -48,12 +48,28 @@ struct trapframe {
 #define tf_tpidr	tf_regs.r_tpidr
 };
 
-#if defined(_KERNEL)
+#ifdef _KERNEL
 /* size of trapframe (stack pointer) must be 16byte aligned */
 __CTASSERT((sizeof(struct trapframe) & 15) == 0);
 #endif
 
 #define TF_SIZE		sizeof(struct trapframe)
+
+/* label_t in <machine/types.h> for kernel setjmp/longjmp, and onfault buf */
+#define LBL_X19	0
+#define LBL_X20	1
+#define LBL_X21	2
+#define LBL_X22	3
+#define LBL_X23	4
+#define LBL_X24	5
+#define LBL_X25	6
+#define LBL_X26	7
+#define LBL_X27	8
+#define LBL_X28	9
+#define LBL_X29	10
+#define LBL_LR	11
+#define LBL_SP	12
+#define LBL_MAX	13
 
 #elif defined(__arm__)
 

@@ -121,6 +121,21 @@ define	L_MD_KTF		offsetof(struct lwp, l_md.md_ktf)
 define	L_MD_CPACR		offsetof(struct lwp, l_md.md_cpacr)
 define	L_MD_ONFAULT		offsetof(struct lwp, l_md.md_onfault)
 
+define	LBL_X19			LBL_X19
+define	LBL_X20			LBL_X20
+define	LBL_X21			LBL_X21
+define	LBL_X22			LBL_X22
+define	LBL_X23			LBL_X23
+define	LBL_X24			LBL_X24
+define	LBL_X25			LBL_X25
+define	LBL_X26			LBL_X26
+define	LBL_X27			LBL_X27
+define	LBL_X28			LBL_X28
+define	LBL_X29			LBL_X29
+define	LBL_LR			LBL_LR
+define	LBL_SP			LBL_SP
+define	LBL_MAX			LBL_MAX
+
 define	P_RASLIST		offsetof(struct proc, p_raslist)
 define	P_MD_SYSCALL		offsetof(struct proc, p_md.md_syscall)
 

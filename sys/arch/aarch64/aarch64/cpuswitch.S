@@ -331,20 +331,20 @@ END(cpu_spinup_trampoline)
 #endif
 
 /*
- * int cpu_set_onfault(struct faultbuf *fb, register_t retval)
+ * int cpu_set_onfault(label_t *label)
  */
 ENTRY(cpu_set_onfault)
 	mov	x9, sp
-	stp	x19, x20, [x0, #0]
-	stp	x21, x22, [x0, #16]
-	stp	x23, x24, [x0, #32]
-	stp	x25, x26, [x0, #48]
-	stp	x27, x28, [x0, #64]
-	stp	x29, lr, [x0, #80]
-	stp	x9, x1, [x0, #96]
+	stp	x19, x20, [x9, #(LBL_X19 * 8)]
+	stp	x21, x22, [x0, #(LBL_X21 * 8)]
+	stp	x23, x24, [x0, #(LBL_X23 * 8)]
+	stp	x25, x26, [x0, #(LBL_X25 * 8)]
+	stp	x27, x28, [x0, #(LBL_X27 * 8)]
+	stp	x29, lr, [x0, #(LBL_X29 * 8)]
+	str	x9, [x0, #(LBL_SP * 8)]
 	mrs	x3, tpidr_el1
 	ldr	x2, [x3, #CI_CURLWP]	/* curlwp = curcpu()->ci_curlwp */
-	str	x0, [x2, #L_MD_ONFAULT] /* l_md.md_onfault = fb */
+	str	x0, [x2, #L_MD_ONFAULT] /* l_md.md_onfault = label */
 	mov	x0, #0
 	ret
 END(cpu_set_onfault)
@@ -355,26 +355,26 @@ END(cpu_set_onfault)
  * void longjmp(label_t *label);
  */
 ENTRY(setjmp)
-	stp	x19, x20, [x0, #0]
-	stp	x21, x22, [x0, #16]
-	stp	x23, x24, [x0, #32]
-	stp	x25, x26, [x0, #48]
-	stp	x27, x28, [x0, #64]
-	stp	x29, x30, [x0, #80]
+	stp	x19, x20, [x0, #(LBL_X19 * 8)]
+	stp	x21, x22, [x0, #(LBL_X21 * 8)]
+	stp	x23, x24, [x0, #(LBL_X23 * 8)]
+	stp	x25, x26, [x0, #(LBL_X25 * 8)]
+	stp	x27, x28, [x0, #(LBL_X27 * 8)]
+	stp	x29, x30, [x0, #(LBL_X29 * 8)]
 	mov	x1, sp
-	str	x1, [x0, #96]
+	str	x1, [x0, #(LBL_SP * 8)]
 	mov	x0, #0
 	ret
 END(setjmp)
 
 ENTRY(longjmp)
-	ldp	x19, x20, [x0, #0]
-	ldp	x21, x22, [x0, #16]
-	ldp	x23, x24, [x0, #32]
-	ldp	x25, x26, [x0, #48]
-	ldp	x27, x28, [x0, #64]
-	ldp	x29, x30, [x0, #80]
-	ldr	x1, [x0, #96]
+	ldp	x19, x20, [x0, #(LBL_X19 * 8)]
+	ldp	x21, x22, [x0, #(LBL_X21 * 8)]
+	ldp	x23, x24, [x0, #(LBL_X23 * 8)]
+	ldp	x25, x26, [x0, #(LBL_X25 * 8)]
+	ldp	x27, x28, [x0, #(LBL_X27 * 8)]
+	ldp	x29, x30, [x0, #(LBL_X29 * 8)]
+	ldr	x1, [x0, #(LBL_SP * 8)]
 	mov	sp, x1
 	mov	x0, #1
 	ret
