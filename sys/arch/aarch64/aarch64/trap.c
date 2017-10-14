@@ -458,7 +458,10 @@ copyoutstr(const void *kaddr, void *uaddr, size_t len, size_t *done)
 	}
 	return error;
 }
+#endif
 
+
+#if 0
 /*
  * fetch(9)
  * int fubyte(const void *base);
