@@ -306,7 +306,7 @@ END(el0_trap)
 #endif
 
 #ifdef DDB
-ENTRY(cpu_Debugger)
+ENTRY_NP(cpu_Debugger)
 	brk	#0
 	ret
 END(cpu_Debugger)
@@ -324,7 +324,7 @@ END(cpu_Debugger)
  *      jump to idle_loop() to join the cpu pool.
  * }
  */
-ENTRY(cpu_spinup_trampoline)
+ENTRY_NP(cpu_spinup_trampoline)
 	bl	_C_LABEL(cpu_hatch)
 	b	_C_LABEL(cpu_idle)
 END(cpu_spinup_trampoline)
@@ -332,29 +332,16 @@ END(cpu_spinup_trampoline)
 
 /*
  * int cpu_set_onfault(label_t *label)
- */
-ENTRY(cpu_set_onfault)
-	mov	x9, sp
-	stp	x19, x20, [x0, #(LBL_X19 * 8)]
-	stp	x21, x22, [x0, #(LBL_X21 * 8)]
-	stp	x23, x24, [x0, #(LBL_X23 * 8)]
-	stp	x25, x26, [x0, #(LBL_X25 * 8)]
-	stp	x27, x28, [x0, #(LBL_X27 * 8)]
-	stp	x29, lr, [x0, #(LBL_X29 * 8)]
-	str	x9, [x0, #(LBL_SP * 8)]
-	mrs	x3, tpidr_el1
-	ldr	x2, [x3, #CI_CURLWP]	/* curlwp = curcpu()->ci_curlwp */
-	str	x0, [x2, #L_MD_ONFAULT] /* l_md.md_onfault = label */
-	mov	x0, #0
-	ret
-END(cpu_set_onfault)
-
-/*
+ *
  * setjmp(9)
  * int setjmp(label_t *label);
  * void longjmp(label_t *label);
  */
-ENTRY(setjmp)
+ENTRY_NP(cpu_set_onfault)
+	mrs	x3, tpidr_el1
+	ldr	x2, [x3, #CI_CURLWP]	/* curlwp = curcpu()->ci_curlwp */
+	str	x0, [x2, #L_MD_ONFAULT] /* l_md.md_onfault = label */
+ENTRY_NP(setjmp)
 	stp	x19, x20, [x0, #(LBL_X19 * 8)]
 	stp	x21, x22, [x0, #(LBL_X21 * 8)]
 	stp	x23, x24, [x0, #(LBL_X23 * 8)]
@@ -366,8 +353,9 @@ ENTRY(setjmp)
 	mov	x0, #0
 	ret
 END(setjmp)
+END(cpu_set_onfault)
 
-ENTRY(longjmp)
+ENTRY_NP(longjmp)
 	ldp	x19, x20, [x0, #(LBL_X19 * 8)]
 	ldp	x21, x22, [x0, #(LBL_X21 * 8)]
 	ldp	x23, x24, [x0, #(LBL_X23 * 8)]

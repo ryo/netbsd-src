@@ -135,6 +135,7 @@ define	LBL_X29			LBL_X29
 define	LBL_LR			LBL_LR
 define	LBL_SP			LBL_SP
 define	LBL_MAX			LBL_MAX
+define	LABEL_T_SIZE		roundup(sizeof(label_t), 16)
 
 define	P_RASLIST		offsetof(struct proc, p_raslist)
 define	P_MD_SYSCALL		offsetof(struct proc, p_md.md_syscall)

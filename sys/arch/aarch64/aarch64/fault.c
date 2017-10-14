@@ -185,7 +185,7 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 	/* faultbail path? */
 	label = cpu_unset_onfault();
 	if (label != NULL) {
-		cpu_jump_onfault(tf, label);
+		cpu_jump_onfault(tf, label, EFAULT);
 		return true;
 	}
 

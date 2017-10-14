@@ -333,7 +333,7 @@ bad_trap_panic(trap_el0_32error)
 
 
 void
-cpu_jump_onfault(struct trapframe *tf, const label_t *label)
+cpu_jump_onfault(struct trapframe *tf, const label_t *label, int val)
 {
 	tf->tf_reg[19] = label->lb_reg[LBL_X19];
 	tf->tf_reg[20] = label->lb_reg[LBL_X20];
@@ -346,16 +346,30 @@ cpu_jump_onfault(struct trapframe *tf, const label_t *label)
 	tf->tf_reg[27] = label->lb_reg[LBL_X27];
 	tf->tf_reg[28] = label->lb_reg[LBL_X28];
 	tf->tf_reg[29] = label->lb_reg[LBL_X29];
-	tf->tf_reg[0] = EFAULT;
+	tf->tf_reg[0] = val;
 	tf->tf_sp = label->lb_reg[LBL_SP];
 	tf->tf_lr = label->lb_reg[LBL_LR];
 }
 
-#if 1
 /*
  * kcopy(9)
  * int kcopy(const void *src, void *dst, size_t len);
- *
+ */
+int
+kcopy(const void *src, void *dst, size_t len)
+{
+	label_t label;
+	int error;
+
+	if ((error = cpu_set_onfault(&label)) == 0) {
+		memcpy(dst, src, len);
+		cpu_unset_onfault();
+	}
+	return error;
+}
+
+#if 1
+/*
  * copy(9)
  * int copyin(const void *uaddr, void *kaddr, size_t len);
  * int copyout(const void *kaddr, void *uaddr, size_t len);
@@ -363,19 +377,6 @@ cpu_jump_onfault(struct trapframe *tf, const label_t *label)
  * int copyinstr(const void *uaddr, void *kaddr, size_t len, size_t *done);
  * int copyoutstr(const void *kaddr, void *uaddr, size_t len, size_t *done);
  */
-int
-kcopy(const void *kfaddr, void *kdaddr, size_t len)
-{
-	label_t label;
-	int error;
-
-	if ((error = cpu_set_onfault(&label)) == 0) {
-		memcpy(kdaddr, kfaddr, len);
-		cpu_unset_onfault();
-	}
-	return error;
-}
-
 int
 copyin(const void *uaddr, void *kaddr, size_t len)
 {
