@@ -77,20 +77,12 @@ void trap_el0_32fiq(struct trapframe *);
 void trap_el0_32error(struct trapframe *);
 void interrupt(struct trapframe *);
 
-/* onfault */
-int cpu_set_onfault(struct label_t *) __returns_twice;
-void cpu_jump_onfault(struct trapframe *, const label_t *);
-
-static inline label_t *
-cpu_unset_onfault(void)
-{
-	label_t *label;
-
-	label = curlwp->l_md.md_onfault;
-	if (label != NULL)
-		curlwp->l_md.md_onfault = NULL;
-	return label;
-}
+/* cpu_onfault */
+int cpu_set_onfault(struct faultbuf *) __returns_twice;
+void cpu_jump_onfault(struct trapframe *, const struct faultbuf *, int);
+void cpu_enable_onfault(struct faultbuf *);
+struct faultbuf *cpu_disable_onfault(void);
+struct faultbuf *cpu_unset_onfault(void);
 
 /* fpu.c */
 void fpu_attach(struct cpu_info *);

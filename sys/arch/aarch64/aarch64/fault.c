@@ -122,7 +122,7 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 {
 	struct proc *p;
 	struct vm_map *map;
-	label_t *label;
+	struct faultbuf *fb;
 	vaddr_t va;
 	uint32_t esr, fsc, rw;
 	vm_prot_t ftype;
@@ -171,7 +171,9 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 		return true;
 	}
 
+	fb = cpu_disable_onfault();
 	error = uvm_fault(map, va, ftype);
+	cpu_enable_onfault(fb);
 	if (__predict_true(error == 0)) {
 		if (user)
 			uvm_grow(p, va);
@@ -183,9 +185,9 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 
  do_fault:
 	/* faultbail path? */
-	label = cpu_unset_onfault();
-	if (label != NULL) {
-		cpu_jump_onfault(tf, label, EFAULT);
+	fb = cpu_unset_onfault();
+	if (fb != NULL) {
+		cpu_jump_onfault(tf, fb, EFAULT);
 		return true;
 	}
 

@@ -38,11 +38,11 @@ RCSID("$NetBSD$");
 	stp	x19, x20, [sp, #-16]!	/* save x19, x20 */
 	stp	fp, lr, [sp, #-16]!	/* save fp, sp */
 	mov	fp, sp			/* link frame pointer */
-	sub	sp, sp, #LABEL_T_SIZE	/* allocate label_t */
+	sub	sp, sp, #FB_T_SIZE	/* allocate struct faultbuf */
 	mov	x19, x0			/* x19 = arg0 */
 	mov	x20, x1			/* x20 = arg1 */
 
-	/* if (cpu_set_onfault(label_t label) != 0) return -1 */
+	/* if (cpu_set_onfault(fb) != 0) return -1 */
 	mov	x0, sp
 	bl	cpu_set_onfault
 	mvn	x8, xzr			/* temporary return value = -1 */
@@ -55,7 +55,7 @@ RCSID("$NetBSD$");
 	ldr	x0, [x0, #CI_CURLWP]		/* x0 = curlwp */
 	str	xzr, [x0, #L_MD_ONFAULT]	/* lwp->l_md_onfault = NULL */
 9:
-	add	sp, sp, #LABEL_T_SIZE		/* pop stack */
+	add	sp, sp, #FB_T_SIZE		/* pop stack */
 	ldp	fp, lr, [sp], #16		/* restore fp, sp */
 	ldp	x19, x20, [sp], #16		/* restore x19, x20 */
 	mov	x0, x8				/* x0 = return value */

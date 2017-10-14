@@ -64,8 +64,22 @@ typedef unsigned long	pmc_ctr_t;
 typedef unsigned short	tlb_asid_t;
 
 #if defined(_KERNEL)
+#define LBL_X19	0
+#define LBL_X20	1
+#define LBL_X21	2
+#define LBL_X22	3
+#define LBL_X23	4
+#define LBL_X24	5
+#define LBL_X25	6
+#define LBL_X26	7
+#define LBL_X27	8
+#define LBL_X28	9
+#define LBL_X29	10
+#define LBL_LR	11
+#define LBL_SP	12
+#define LBL_MAX	13
 typedef struct label_t {	/* Used by setjmp & longjmp */
-	register_t lb_reg[13];	/* x19 .. x30, sp */
+	register_t lb_reg[LBL_MAX];	/* x19 .. x30, sp */
 } label_t;
 #endif
 

@@ -331,16 +331,30 @@ END(cpu_spinup_trampoline)
 #endif
 
 /*
- * int cpu_set_onfault(label_t *label)
- *
- * setjmp(9)
- * int setjmp(label_t *label);
- * void longjmp(label_t *label);
+ * int cpu_set_onfault(struct faultbuf *fb)
  */
 ENTRY_NP(cpu_set_onfault)
 	mrs	x3, tpidr_el1
 	ldr	x2, [x3, #CI_CURLWP]	/* curlwp = curcpu()->ci_curlwp */
-	str	x0, [x2, #L_MD_ONFAULT] /* l_md.md_onfault = label */
+	str	x0, [x2, #L_MD_ONFAULT] /* l_md.md_onfault = fb */
+
+	stp	x19, x20, [x0, #(FB_X19 * 8)]
+	stp	x21, x22, [x0, #(FB_X21 * 8)]
+	stp	x23, x24, [x0, #(FB_X23 * 8)]
+	stp	x25, x26, [x0, #(FB_X25 * 8)]
+	stp	x27, x28, [x0, #(FB_X27 * 8)]
+	stp	x29, x30, [x0, #(FB_X29 * 8)]
+	mov	x1, sp
+	str	x1, [x0, #(FB_SP * 8)]
+	mov	x0, #0
+	ret
+END(cpu_set_onfault)
+
+/*
+ * setjmp(9)
+ * int setjmp(label_t *label);
+ * void longjmp(label_t *label);
+ */
 ENTRY_NP(setjmp)
 	stp	x19, x20, [x0, #(LBL_X19 * 8)]
 	stp	x21, x22, [x0, #(LBL_X21 * 8)]
@@ -353,7 +367,6 @@ ENTRY_NP(setjmp)
 	mov	x0, #0
 	ret
 END(setjmp)
-END(cpu_set_onfault)
 
 ENTRY_NP(longjmp)
 	ldp	x19, x20, [x0, #(LBL_X19 * 8)]

@@ -121,6 +121,22 @@ define	L_MD_KTF		offsetof(struct lwp, l_md.md_ktf)
 define	L_MD_CPACR		offsetof(struct lwp, l_md.md_cpacr)
 define	L_MD_ONFAULT		offsetof(struct lwp, l_md.md_onfault)
 
+define	FB_X19			FB_X19
+define	FB_X20			FB_X20
+define	FB_X21			FB_X21
+define	FB_X22			FB_X22
+define	FB_X23			FB_X23
+define	FB_X24			FB_X24
+define	FB_X25			FB_X25
+define	FB_X26			FB_X26
+define	FB_X27			FB_X27
+define	FB_X28			FB_X28
+define	FB_X29			FB_X29
+define	FB_LR			FB_LR
+define	FB_SP			FB_SP
+define	FB_MAX			FB_MAX
+define	FB_T_SIZE		roundup(sizeof(struct faultbuf), 16)
+
 define	LBL_X19			LBL_X19
 define	LBL_X20			LBL_X20
 define	LBL_X21			LBL_X21
@@ -135,7 +151,6 @@ define	LBL_X29			LBL_X29
 define	LBL_LR			LBL_LR
 define	LBL_SP			LBL_SP
 define	LBL_MAX			LBL_MAX
-define	LABEL_T_SIZE		roundup(sizeof(label_t), 16)
 
 define	P_RASLIST		offsetof(struct proc, p_raslist)
 define	P_MD_SYSCALL		offsetof(struct proc, p_md.md_syscall)
