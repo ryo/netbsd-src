@@ -1,4 +1,3 @@
-#if 0
 /* $NetBSD: copyinout.S,v 1.1 2014/08/10 05:47:37 matt Exp $ */
 
 /*-
@@ -35,28 +34,62 @@
 
 RCSID("$NetBSD: copyinout.S,v 1.1 2014/08/10 05:47:37 matt Exp $");
 
+
+	.macro enter_cpu_onfault
+	stp	fp, lr, [sp, #-16]!	/* save fp, sp */
+	mov	fp, sp			/* link frame pointer */
+
+	stp	x19, x20, [sp, #-16]!	/* save x19, x20 */
+	mov	x19, x0			/* x19 = arg0 */
+	mov	x20, x1			/* x20 = arg1 */
+
+	/* if (cpu_set_onfault(fb) != 0) return -1 */
+	sub	sp, sp, #FB_T_SIZE	/* allocate struct faultbuf */
+	mov	x0, sp			/* x0 = faultbuf */
+	stp	x2, x3, [sp, #-16]!	/* save x2, x3 */
+	bl	cpu_set_onfault
+	ldp	x2, x3, [sp], #16	/* restore x2, x3 */
+	mvn	x8, xzr			/* temporary return value = -1 */
+	cbnz	w0, 9f			/* return if error */
+
+	mov	x0, x19			/* x0 = x19 = arg0 */
+	mov	x1, x20			/* x1 = x20 = arg1 */
+
+	.endm
+
+	.macro exit_cpu_onfault
+	/* curlwp->l_md.md_onfault = NULL */
+	mrs	x0, tpidr_el1			/* curcpu */
+	ldr	x0, [x0, #CI_CURLWP]		/* x0 = curlwp */
+	str	xzr, [x0, #L_MD_ONFAULT]	/* lwp->l_md_onfault = NULL */
+9:
+	add	sp, sp, #FB_T_SIZE		/* pop stack */
+	ldp	x19, x20, [sp], #16		/* restore x19, x20 */
+	ldp	fp, lr, [sp], #16		/* restore fp, sp */
+	mov	x0, x8				/* x0 = return value */
+	.endm
+
+#if 0
 /* LINTSTUB: int copyin(const void *uaddr, void *kaddr, size_t len); */
 
 ENTRY(copyin)
-	mrs	x3, tpidr_el1
-	ldr	x3, [x3, #CI_CURLWP]
-	adr	x4, .Lcopyin_onfault
-	str	x4, [x3, #L_MD_ONFAULT]
+	enter_cpu_onfault
+
 	/*
 	 * How much to copy?  Less than 32 bytes?  ...
 	 */
-	lsr	x4, x2, #5
+	lsr	x4, x2, #5			/* x4 = len / 32 */
 	cbz	x4, .Lcopyin_last_suboword
 
 	/*
-	 * Subtract the amount of data we copied to get a quadword aligned
-	 * from the length: length -= 16 - offset -> length += offset - 16;
+	 * Subtract the amount of data we copied to get a octword aligned
+	 * from the length: length -= 32 - offset -> length += offset - 32;
 	 */
-	and	x5, x0, #15
+	and	x5, x0, #31
 	cbz	x5, .Lcopyin_loop
 
 	add	x2, x2, x5
-	sub	x2, x2, #16
+	sub	x2, x2, #32
 
 	tbz	x0, #0, .Lcopyin_hword_aligned
 	ldtrb	w5, [x0]
@@ -73,13 +106,16 @@ ENTRY(copyin)
 	add	x0, x0, #4
 	str	w5, [x1], #4
 .Lcopyin_dword_aligned:
-	tbz	x0, #3, .Lcopyin_dword_aligned
+	tbz	x0, #3, .Lcopyin_qword_aligned
 	ldtr	x5, [x0]
 	add	x0, x0, #8
 	str	x5, [x1], #8
 .Lcopyin_qword_aligned:
-	lsr	x4, x2, #5
-	cbz	x4, .Lcopyin_last_suboword
+	tbz	x0, #4, .Lcopyin_loop
+	ldtr	x5, [x0, #0]
+	ldtr	x6, [x0, #8]
+	add	x0, x0, #16
+	stp	x5, x6, [x1], #16
 .Lcopyin_loop:
 	ldtr	x5, [x0, #0]
 	ldtr	x6, [x0, #8]
@@ -91,7 +127,7 @@ ENTRY(copyin)
 	sub	x4, x4, #1
 	cbnz	x4, .Lcopyin_loop
 .Lcopyin_last_suboword:
-	tbz	x2, #5, .Lcopyin_last_subqword
+	tbz	x2, #4, .Lcopyin_last_subqword
 	ldtr	x5, [x0, #0]
 	ldtr	x6, [x0, #8]
 	add	x0, x0, #16
@@ -102,7 +138,7 @@ ENTRY(copyin)
 	add	x0, x0, #8
 	str	x5, [x1], #8
 .Lcopyin_last_subdword:
-	tbz	x2, #2, .Lcopyin_last_subdword
+	tbz	x2, #2, .Lcopyin_last_subword
 	ldtr	w5, [x0]
 	add	x0, x0, #4
 	str	w5, [x1], #4
@@ -116,28 +152,106 @@ ENTRY(copyin)
 	ldtrb	w5, [x0]
 	strb	w5, [x1]
 .Lcopyin_done:
-	str	xzr, [x3, #L_MD_ONFAULT]
-	mov	x0, xzr
-	ret
+	mov	x8, #0
 
-.Lcopyin_onfault:
-	str	xzr, [x3, #L_MD_ONFAULT]
-	mov	x0, #EFAULT
+	exit_cpu_onfault
 	ret
 END(copyin)
+#endif
 
+
+#if 0
 /* LINTSTUB: int copyout(const void *kaddr, void *uaddr, size_t len); */
 
 ENTRY(copyout)
+	enter_cpu_onfault
+
+	/*
+	 * How much to copy?  Less than 32 bytes?  ...
+	 */
+	lsr	x4, x2, #5			/* x4 = len / 32 */
+	cbz	x4, .Lcopyout_last_suboword
+
+	/*
+	 * Subtract the amount of data we copied to get a octword aligned
+	 * from the length: length -= 32 - offset -> length += offset - 32;
+	 */
+	and	x5, x0, #31
+	cbz	x5, .Lcopyout_loop
+
+	add	x2, x2, x5
+	sub	x2, x2, #32
+
+	tbz	x0, #0, .Lcopyout_hword_aligned
+	ldrb	w5, [x0], #1
+	sttrb	w5, [x1]
+	add	x1, x1, #1
+.Lcopyout_hword_aligned:
+	tbz	x0, #1, .Lcopyout_word_aligned
+	ldrh	w5, [x0], #2
+	sttrh	w5, [x1]
+	add	x1, x1, #2
+.Lcopyout_word_aligned:
+	tbz	x0, #2, .Lcopyout_dword_aligned
+	ldr	w5, [x0], #4
+	sttr	w5, [x1]
+	add	x1, x1, #4
+.Lcopyout_dword_aligned:
+	tbz	x0, #3, .Lcopyout_qword_aligned
+	ldr	x5, [x0], #8
+	sttr	x5, [x1]
+	add	x1, x1, #8
+.Lcopyout_qword_aligned:
+	tbz	x0, #4, .Lcopyout_loop
+	ldp	x5, x6, [x0], #16
+	sttr	x5, [x1, #0]
+	sttr	x6, [x1, #8]
+	add	x1, x1, #16
+.Lcopyout_loop:
+	ldp	x5, x6, [x0], #16
+	ldp	x7, x8, [x0], #16
+	sttr	x5, [x1, #0]
+	sttr	x6, [x1, #8]
+	sttr	x7, [x1, #16]
+	sttr	x8, [x1, #24]
+	add	x1, x1, #32
+	sub	x4, x4, #1
+	cbnz	x4, .Lcopyout_loop
+.Lcopyout_last_suboword:
+	tbz	x2, #4, .Lcopyout_last_subqword
+	ldp	x5, x6, [x0], #16
+	sttr	x5, [x1, #0]
+	sttr	x6, [x1, #8]
+	add	x1, x1, #16
+.Lcopyout_last_subqword:
+	tbz	x2, #3, .Lcopyout_last_subdword
+	ldr	x5, [x0], #8
+	sttr	x5, [x1]
+	add	x1, x1, #8
+.Lcopyout_last_subdword:
+	tbz	x2, #2, .Lcopyout_last_subword
+	ldr	w5, [x0], #4
+	sttr	w5, [x1]
+	add	x1, x1, #4
+.Lcopyout_last_subword:
+	tbz	x2, #1, .Lcopyout_last_subhword
+	ldrh	w5, [x0], #2
+	sttrh	w5, [x1]
+	add	x1, x1, #2
+.Lcopyout_last_subhword:
+	tbz	x2, #0, .Lcopyout_done
+	ldrb	w5, [x0]
+	sttrb	w5, [x1]
+.Lcopyout_done:
+	mov	x8, #0
+
+	exit_cpu_onfault
 	ret
 END(copyout)
+#endif
 
-/* LINTSTUB: int copystr(const void *kfaddr, void *kdaddr, size_t len, size_t *done); */
 
-ENTRY(copystr)
-	ret
-END(copystr)
-
+#if 0
 /* LINTSTUB: int copyinstr(const void *uaddr, void *kaddr, size_t len, size_t *done); */
 
 ENTRY(copyinstr)
@@ -149,11 +263,5 @@ END(copyinstr)
 ENTRY(copyoutstr)
 	ret
 END(copyoutstr)
-
-/* LINSTSTUB: int kcopy(const void *src, void *dst, size_t len); */
-
-ENTRY(kcopy)
-	ret
-END(kcopy)
 
 #endif

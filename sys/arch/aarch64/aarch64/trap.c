@@ -376,10 +376,6 @@ cpu_jump_onfault(struct trapframe *tf, const struct faultbuf *fb, int val)
 	tf->tf_reg[0] = val;
 }
 
-/*
- * kcopy(9)
- * int kcopy(const void *src, void *dst, size_t len);
- */
 int
 kcopy(const void *src, void *dst, size_t len)
 {
@@ -393,14 +389,36 @@ kcopy(const void *src, void *dst, size_t len)
 	return error;
 }
 
+int
+copystr(const void *kfaddr, void *kdaddr, size_t len, size_t *done)
+{
+	struct faultbuf fb;
+	size_t i;
+	int error;
+	const char *src = kfaddr;
+	char *dst = kdaddr;
+
+	if ((error = cpu_set_onfault(&fb)) == 0) {
+		for (i = 0; i < len; i++) {
+			if ((*dst++ = *src++) == '\0') {
+				i++;
+				error = 0;
+				goto done;
+			}
+		}
+		error = ENAMETOOLONG;
+ done:
+		if (done != NULL)
+			*done = i;
+		cpu_unset_onfault();
+	}
+	return error;
+}
+
 #if 1
 /*
- * copy(9)
  * int copyin(const void *uaddr, void *kaddr, size_t len);
  * int copyout(const void *kaddr, void *uaddr, size_t len);
- * int copystr(const void *kfaddr, void *kdaddr, size_t len, size_t *done);
- * int copyinstr(const void *uaddr, void *kaddr, size_t len, size_t *done);
- * int copyoutstr(const void *kaddr, void *uaddr, size_t len, size_t *done);
  */
 int
 copyin(const void *uaddr, void *kaddr, size_t len)
@@ -414,7 +432,9 @@ copyin(const void *uaddr, void *kaddr, size_t len)
 	}
 	return error;
 }
+#endif
 
+#if 1
 int
 copyout(const void *kaddr, void *uaddr, size_t len)
 {
@@ -427,7 +447,9 @@ copyout(const void *kaddr, void *uaddr, size_t len)
 	}
 	return error;
 }
+#endif
 
+#if 1
 static inline int
 _copystr(char *dst, const char *src, size_t len, size_t *done)
 {
@@ -446,19 +468,10 @@ _copystr(char *dst, const char *src, size_t len, size_t *done)
 	return ENAMETOOLONG;
 }
 
-int
-copystr(const void *kfaddr, void *kdaddr, size_t len, size_t *done)
-{
-	struct faultbuf fb;
-	int error;
-
-	if ((error = cpu_set_onfault(&fb)) == 0) {
-		error = _copystr(kdaddr, kfaddr, len, done);
-		cpu_unset_onfault();
-	}
-	return error;
-}
-
+/*
+ * int copyinstr(const void *uaddr, void *kaddr, size_t len, size_t *done);
+ * int copyoutstr(const void *kaddr, void *uaddr, size_t len, size_t *done);
+ */
 int
 copyinstr(const void *uaddr, void *kaddr, size_t len, size_t *done)
 {
