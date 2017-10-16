@@ -194,12 +194,11 @@ trap_el0_sync(struct trapframe *tf)
 	struct lwp * const l = curlwp;
 	const uint32_t esr = tf->tf_esr;
 	const uint32_t eclass = __SHIFTOUT(esr, ESR_EC); /* exception class */
+	const char *trapname;
 
 	/* enable traps and interrupts */
 	daif_enable(DAIF_D|DAIF_A|DAIF_I|DAIF_F);
 
-	/* XXXAARCH64 */
-	const char *trapname;
 	if (eclass >= __arraycount(trap_names) || trap_names[eclass] == NULL)
 		trapname = trap_names[0];
 	else
@@ -221,7 +220,7 @@ trap_el0_sync(struct trapframe *tf)
 
 	case ESR_EC_INSN_ABT_EL0:
 	case ESR_EC_DATA_ABT_EL0:
-		data_abort_handler(tf, eclass, NULL);
+		data_abort_handler(tf, eclass, trapname);
 		userret(l);
 		break;
 
@@ -276,18 +275,37 @@ trap_el0_32sync(struct trapframe *tf)
 	struct lwp * const l = curlwp;
 	const uint32_t esr = tf->tf_esr;
 	const uint32_t eclass = __SHIFTOUT(esr, ESR_EC); /* exception class */
+	const char *trapname;
 
 	/* enable traps and interrupts */
 	daif_enable(DAIF_D|DAIF_A|DAIF_I|DAIF_F);
 
-	/* XXXAARCH64 */
-	const char *trapname;
 	if (eclass >= __arraycount(trap_names) || trap_names[eclass] == NULL)
 		trapname = trap_names[0];
 	else
 		trapname = trap_names[eclass];
 
 	switch (eclass) {
+	case ESR_EC_FP_ACCESS:
+		fpu_load(l);
+		userret(l);
+		break;
+
+	case ESR_EC_INSN_ABT_EL0:
+	case ESR_EC_DATA_ABT_EL0:
+		data_abort_handler(tf, eclass, trapname);
+		userret(l);
+		break;
+
+	case ESR_EC_PC_ALIGNMENT:
+		do_trapsignal(l, SIGBUS, BUS_ADRALN, tf->tf_pc, esr);
+		userret(l);
+		break;
+	case ESR_EC_SP_ALIGNMENT:
+		do_trapsignal(l, SIGBUS, BUS_ADRALN, tf->tf_sp, esr);
+		userret(l);
+		break;
+
 #ifdef COMPAT_NETBSD32
 	case ESR_EC_SVC_A32:
 		(*l->l_proc->p_md.md_syscall)(tf);
