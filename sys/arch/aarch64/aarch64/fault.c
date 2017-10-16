@@ -127,7 +127,8 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 	uint32_t esr, fsc, rw;
 	vm_prot_t ftype;
 	int error;
-	const bool user = (tf->tf_spsr == SPSR_M_EL0T) ? true : false;
+	const bool user = (__SHIFTOUT(tf->tf_spsr, SPSR_M) == SPSR_M_EL0T) ?
+	    true : false;
 	const char *faultstr;
 
 	UVMHIST_FUNC(__func__);
