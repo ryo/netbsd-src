@@ -68,20 +68,17 @@ start:
 
 /*
  * void uartputc(x0:char)
- *   uartputc is a SoC dependent character output routine
+ * char uartgetc(void)
+ *   uartputc/uartgetc is a SoC dependent character input/output routine
  *   referenced from locore.S and early console. (before consinit)
  *
- *   Caller expects all registers would be saved.
- *   Don't break any registers
- *
- * char uartgetc(void)
- *   uartgetc() is character input routine referenced from rpi_machdep.c
- *   for early console. (before consinit)
+ *   Caller (locore.S) expects all registers would be saved.
+ *   Don't break any registers.
  *
  * If no uart, please define dummy routine like "uartputc: ret"
  */
-#if defined(COM_DATA) && defined(COM_LSR) && defined(COM_LSR_TXFE_BIT)
 ENTRY_NP(uartputc)
+#if defined(COM_DATA) && defined(COM_LSR) && defined(COM_LSR_TXFE_BIT)
 	stp	x9, x10, [sp, #-16]!
 	stp	x0, x1, [sp, #-16]!
 
@@ -95,21 +92,13 @@ ENTRY_NP(uartputc)
 
 	ldp	x0, x1, [sp], #16
 	ldp	x9, x10, [sp], #16
-	ret
-END(uartputc)
-
-#else /* COM_DATA/COM_LSR/COM_LSR_TXFE_BIT */
-
-ENTRY_NP(uartputc)
-	ret
-END(uartputc)
-
 #endif /* COM_DATA/COM_LSR/COM_LSR_TXFE_BIT */
+	ret
+END(uartputc)
 
-
-#if defined(COM_DATA) && defined(COM_LSR) && defined(COM_LSR_RXRDY_BIT)
 
 ENTRY_NP(uartgetc)
+#if defined(COM_DATA) && defined(COM_LSR) && defined(COM_LSR_RXRDY_BIT)
 	stp	x9, x10, [sp, #-16]!
 
 	ldr	x9, =COM_LSR
@@ -121,15 +110,8 @@ ENTRY_NP(uartgetc)
 	and	w0, w0, #0xff
 
 	ldp	x9, x10, [sp], #16
-	ret
-END(uartgetc)
-
 #else /* COM_DATA/COM_LSR/COM_LSR_RXRDY_BIT */
-
-ENTRY_NP(uartgetc)
 	mov x0, xzr
+#endif /* COM_DATA/COM_LSR/COM_LSR_RXRDY_BIT */
 	ret
 END(uartgetc)
-
-#endif /* COM_DATA/COM_LSR/COM_LSR_RXRDY_BIT */
-
