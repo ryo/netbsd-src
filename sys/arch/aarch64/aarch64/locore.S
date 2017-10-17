@@ -27,7 +27,6 @@
  */
 
 #include "opt_cpuoptions.h"
-#include "opt_cputypes.h"
 #include "opt_multiprocessor.h"
 #include "opt_ddb.h"
 

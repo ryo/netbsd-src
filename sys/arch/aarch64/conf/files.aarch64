@@ -1,20 +1,11 @@
 #	$NetBSD: files.aarch64,v 1.2 2017/08/16 22:52:40 nisimura Exp $
 
-# CPU types.
-defflag opt_cputypes.h		CPU_ARMV8
-defflag opt_cputypes.h		CPU_CORTEXA53: CPU_ARMV8
-defflag opt_cputypes.h		CPU_CORTEXA57: CPU_ARMV8
-defflag opt_cputypes.h		CPU_CORTEXA72: CPU_ARMV8
-defflag opt_cputypes.h		CPU_CORTEXA73: CPU_ARMV8
-defflag opt_cputypes.h		CPU_CORTEXA55: CPU_ARMV8
-defflag opt_cputypes.h		CPU_CORTEXA75: CPU_ARMV8
-
 defflag opt_cpuoptions.h	AARCH64_ALIGNMENT_CHECK
 defflag opt_cpuoptions.h	AARCH64_EL0_STACK_ALIGNMENT_CHECK
 defflag opt_cpuoptions.h	AARCH64_EL1_STACK_ALIGNMENT_CHECK
 defflag opt_cpuoptions.h	AARCH64_HAVE_L2CTLR
 
-# Interrupt implementation header definition.
+# Interrupt implementation header definition
 defparam opt_arm_intr_impl.h	ARM_INTR_IMPL
 
 # ARM-specific debug options (for compat arch/arm/*)
