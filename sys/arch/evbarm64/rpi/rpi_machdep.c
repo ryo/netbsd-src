@@ -56,6 +56,8 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <sys/device.h>
 #include <sys/termios.h>
 #include <sys/bus.h>
+#include <sys/systm.h>
+#include <sys/reboot.h>
 
 #include <net/if_ether.h>
 #include <prop/proplib.h>
@@ -63,6 +65,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <dev/cons.h>
 #include <uvm/uvm_extern.h>
 
+#include <aarch64/bootconfig.h>
 #include <aarch64/cpu.h>
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
@@ -116,6 +119,7 @@ static void konsinit(void);
 #endif
 
 uint64_t uboot_args[4] = { 0 };	/* filled in by rpi_start.S (not in bss) */
+BootConfig bootconfig;
 
 int uart_clk = BCM2835_UART0_CLK;
 
@@ -342,15 +346,15 @@ initarm(void)
 {
 	cpu_reset_address0 = raspi_early_reset;	/* reset before attach devs */
 
+	/* XXXAARCH64: DEBUG */
+	boothowto = RB_SINGLE;
+
+
 #ifdef EARLY_CONSOLE
 	konsinit();	/* early console before consinit() */
 #endif
 
 	evbarm64_device_register = rpi_device_register;
-
-	// XXX: rpi config (bootconfig?)
-	physical_start = 0;
-	physical_end = physical_start + MEMSIZE * 1024 * 1024;
 
 	curcpu()->ci_data.cpu_cc_freq = 600 * 1000 * 1000;	/* default */
 
@@ -364,11 +368,20 @@ initarm(void)
 
 	consinit();
 
+#if 1
+	/* XXXAARCH64: DEBUG */
+	{
+		static struct cnm_state cnm_state;
+		cn_init_magic(&cnm_state);
+		cn_set_magic("+++");
+	}
+#endif
+
 	rpi_bootparams();	/* update curcpu()->ci_data.cpu_cc_freq */
 
 	cpu_reset_address = bcm2835_system_reset;
 
-	initarm64();
+	initarm64(&bootconfig);
 }
 
 /*
@@ -455,30 +468,31 @@ rpi_bootparams(void)
 
 	if (!vcprop_buffer_success_p(&vb.vb_hdr)) {
 		printf("%s: Mailbox Property read ***FAILED***\n", __func__);
-#ifdef USE_BOOTCONFIG
 		bootconfig.dramblocks = 1;
 		bootconfig.dram[0].address = 0x0;
 		bootconfig.dram[0].pages = atop(RPI_MINIMUM_SPLIT);
-#endif
 		return;
 	}
 
-#ifdef USE_BOOTCONFIG
 	struct vcprop_tag_memory *vptp_mem = &vb.vbt_memory;
 
 	if (vcprop_tag_success_p(&vptp_mem->tag)) {
 		size_t n = vcprop_tag_resplen(&vptp_mem->tag) /
 		    sizeof(struct vcprop_memory);
 
-		bootconfig.dramblocks = 0;
-
-		for (int i = 0; i < n && i < DRAM_BLOCKS; i++) {
+		for (int i = 0; i < n; i++) {
 			bootconfig.dram[i].address = vptp_mem->mem[i].base;
 			bootconfig.dram[i].pages = atop(vptp_mem->mem[i].size);
+			bootconfig.dram[i].vmfreelist = VM_FREELIST_DEFAULT;
+			bootconfig.dram[i].flags = 0;
 			bootconfig.dramblocks++;
+
+			printf("%s: memory.base  %08x\n", __func__,
+			    vptp_mem->mem[i].base);
+			printf("%s: memory.size  %08x\n", __func__,
+			    vptp_mem->mem[i].size);
 		}
 	}
-#endif /* USE_BOOTCONFIG */
 
 	if (vcprop_tag_success_p(&vb.vbt_armclockrate.tag))
 		curcpu()->ci_data.cpu_cc_freq = vb.vbt_armclockrate.rate;
@@ -570,8 +584,16 @@ consinit(void)
 }
 
 #ifdef EARLY_CONSOLE
+/*
+ * EARLY_CONSOLE - console input/output functions with PA=VA mappings.
+ * usable before consinit(), and no need to initialize pmap.
+ * ddb(4) patly works too.
+ */
+
+/* in rpi_start.S */
 void uartputc(char);
 char uartgetc(void);
+
 static dev_type_cngetc(konsgetc);
 static dev_type_cnputc(konsputc);
 static dev_type_cnpollc(konspollc);

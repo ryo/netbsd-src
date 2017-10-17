@@ -40,16 +40,18 @@ __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp
 #include <sys/kauth.h>
 #include <sys/msgbuf.h>
 
-#include <uvm/uvm.h>
 #include <dev/mm.h>
 
+#include <uvm/uvm.h>
+
+#include <aarch64/armreg.h>
+#include <aarch64/bootconfig.h>
+#include <aarch64/cpufunc.h>
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
-#include <aarch64/vmparam.h>
-#include <aarch64/cpufunc.h>
-#include <aarch64/armreg.h>
 #include <aarch64/pmap.h>
 #include <aarch64/pte.h>
+#include <aarch64/vmparam.h>
 
 char cpu_model[32];
 char machine[] = MACHINE;
@@ -63,8 +65,11 @@ uint32_t cputype;
 
 struct vm_map *phys_map;
 
+/* XXX */
 vaddr_t physical_start;
 vaddr_t physical_end;
+
+struct BootConfig *aarch64_bootconfig;
 
 /*
  * Upper region: 0xffffffffffffffff  Top of virtual memory
@@ -98,17 +103,19 @@ vaddr_t physical_end;
  *               0x0000000000000000  Start of user address space
  */
 void
-initarm64(void)
+initarm64(struct BootConfig *bootconf)
 {
 	extern char __kernel_text[];
 	extern char _end[];
 	extern char lwp0uspace[];
 
 	struct trapframe *tf;
-	psize_t memsize;
+	psize_t memsize_total;
 	vaddr_t kernstart, kernend;
 	vaddr_t kernstart_l2, kernend_l2;	/* L2 table 2MB aligned */
 	paddr_t kernstart_phys, kernend_phys;
+	paddr_t kstartp, kendp;			/* physical page of kernel */
+	int i;
 
 	cputype = cpu_idnum();	/* for compatible arm */
 
@@ -120,8 +127,11 @@ initarm64(void)
 	kernstart_phys = kernstart - VM_MIN_KERNEL_ADDRESS;
 	kernend_phys = kernend - VM_MIN_KERNEL_ADDRESS;
 
-	memsize = physical_end - physical_start;
-	physmem = memsize / PAGE_SIZE;
+	aarch64_bootconfig = bootconf;
+
+	/* XXX */
+	physical_start = bootconf->dram[0].address;
+	physical_end = physical_start + ptoa(bootconf->dram[0].pages);
 
 #ifdef VERBOSE_INIT_ARM
 	printf(
@@ -153,31 +163,104 @@ initarm64(void)
 
 	/*
 	 * msgbuf is always allocated from bottom of memory
-	 * against corruption by bootloader or changing kernel size.
+	 * against corruption by bootloader, or changing kernel layout.
 	 */
 	physical_end -= round_page(MSGBUFSIZE);
+	bootconf->dram[0].pages = atop(physical_end);
 	initmsgbuf(AARCH64_PA_TO_KVA(physical_end), MSGBUFSIZE);
 
 
 	uvm_md_init();
-	uvm_page_physload(
-	    atop(kernend_phys), atop(physical_end),
-	    atop(kernend_phys), atop(physical_end),
-	    VM_FREELIST_DEFAULT);
-#if 0
-	//XXXAARCH64: temporary comment out
-	uvm_page_physload(
-	    atop(physical_start), atop(kernend_phys),
-	    atop(physical_start), atop(kernend_phys),
-	    VM_FREELIST_DEFAULT);
-#endif
+
+	/* register free physical memory blocks */
+	memsize_total = 0;
+	kstartp = atop(kernstart_phys);
+	kendp = atop(kernend_phys);
+
+	KDASSERT(bootconf->dramblocks <= DRAM_BLOCKS);
+	for (i = 0; i < bootconf->dramblocks; i++) {
+		paddr_t startp, endp;
+
+		/* empty is end */
+		if (bootconf->dram[i].address == 0 &&
+		    bootconf->dram[i].pages == 0)
+			break;
+
+		memsize_total += ptoa(bootconf->dram[i].pages);
+
+		startp = atop(bootconf->dram[i].address);
+		endp = startp + bootconf->dram[i].pages;
+
+		/* exclude kernel text/data/bss to uvm_page_physload() */
+		if (kstartp < startp && endp < kendp) {
+			/*
+			 *  +-------+ kstartp
+			 *  |kernel |
+			 *  +- - - -+ startp
+			 *  |kernel |
+			 *  +- - - -+ endp
+			 *  |kernel |
+			 *  +-------+ kendp
+			 */
+			continue;
+		} else if (startp <= kstartp && kendp <= endp) {
+			/*
+			 *  +-------+ startp
+			 *  |///////|
+			 *  +-------+ kstartp
+			 *  |       |
+			 *  |kernel |
+			 *  |       |
+			 *  +-------+ kendp
+			 *  |///////|
+			 *  +-------+ endp
+			 */
+			uvm_page_physload(
+			    startp, kstartp,
+			    startp, kstartp,
+			    bootconf->dram[i].vmfreelist);
+			uvm_page_physload(
+			    kendp, endp,
+			    kendp, endp,
+			    bootconf->dram[i].vmfreelist);
+		} else if (startp <= kstartp) {
+			/*
+			 *  +-------+ startp
+			 *  |///////|
+			 *  +-------+ kstartp
+			 *  |kernel |
+			 *  |- - - -+ endp
+			 *  |kernel |
+			 *  +-------+ kendp
+			 */
+			uvm_page_physload(
+			    startp, kstartp,
+			    startp, kstartp,
+			    bootconf->dram[i].vmfreelist);
+		} else {
+			/*
+			 *  +-------+ kstartp
+			 *  |kernel |
+			 *  |- - - -+ startp
+			 *  |kernel |
+			 *  +-------+ kendp
+			 *  |///////|
+			 *  +-------+ endp
+			 */
+			uvm_page_physload(
+			    kendp, endp,
+			    kendp, endp,
+			    bootconf->dram[i].vmfreelist);
+		}
+	}
+	physmem = atop(memsize_total);
+
 
 	/*
 	 * kernel image is mapped L2 table (2M*n) by locore.S
 	 * virtual space start from 2MB aligned kernend
 	 */
 	pmap_bootstrap(kernend_l2, VM_MAX_KERNEL_ADDRESS);
-
 
 	tf = (struct trapframe *)(lwp0uspace + USPACE) - 1;
 	memset(tf, 0, sizeof(struct trapframe));
@@ -199,6 +282,7 @@ machdep_init(void)
 bool
 mm_md_direct_mapped_phys(paddr_t pa, vaddr_t *vap)
 {
+	/* XXX */
 	if (physical_start <= pa && pa < physical_end) {
 		*vap = AARCH64_PA_TO_KVA(pa);
 		return true;
@@ -210,6 +294,7 @@ mm_md_direct_mapped_phys(paddr_t pa, vaddr_t *vap)
 int
 mm_md_physacc(paddr_t pa, vm_prot_t prot)
 {
+	/* XXX */
 	if (physical_start <= pa && pa < physical_end)
 		return 0;
 

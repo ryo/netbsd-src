@@ -46,7 +46,8 @@ extern void (*cpu_powerdown_address)(void);
 extern char *booted_kernel;
 
 /* aarch64_machdep.c */
-void initarm64(void);
+struct BootConfig;
+void initarm64(struct BootConfig *);
 void aarch64_cpu_configured(void);
 void dumpsys(void);
 
