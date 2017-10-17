@@ -10,8 +10,6 @@ include 	"arch/evbarm64/conf/GENERIC.common"
 options 	CPU_CORTEXA53
 options 	BCM2836
 
-# XXX
-options 	MEMSIZE=1008		# SDRAM: 0x00000000-0x3f000000
 options 	VERBOSE_LOCORE
 options 	VERBOSE_INIT_ARM
 options 	MSGBUFSIZE=32768
@@ -68,14 +66,14 @@ no options 	PAX_ASLR
 
 # Development and Debugging options
 options 	DB_MAX_WIDTH=0
-options 	DB_MAX_LINE=256
+options 	DB_MAX_LINE=64
 #options 	KGDB,KGDB_PLCOMUNIT=0,KGDB_DEVRATE=115200,KGDB_CONMODE=0xB00
 makeoptions	DEBUG="-g"	# compile full symbol table
 makeoptions	COPY_SYMTAB=1
 options 	PLCONSOLE
 #options 	PLCONSOLE,PLCOMCNUNIT=0,PLCONSPEED=115200,PLCONMODE=0xB00
 
-options 	STACKCHECKS
+#options 	STACKCHECKS
 options 	DEBUG_AUTOCONF
 #options 	DWC2_DEBUG
 

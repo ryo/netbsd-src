@@ -37,11 +37,6 @@ device	plcom { }: tty
 file	arch/evbarm/dev/plcom.c			plcom needs-flag
 
 #
-# Maximum number of memory ranges
-#
-defparam	opt_machdep.h			DRAM_BLOCKS
-
-#
 # Flattened Device Tree (FDT) support
 #
 include "dev/ofw/files.ofw"
