@@ -54,7 +54,7 @@ UVMHIST_DEFINE(pmaphist);
 #ifdef UVMHIST
 
 #ifndef UVMHIST_PMAPHIST_SIZE
-#define UVMHIST_PMAPHIST_SIZE	8192
+#define UVMHIST_PMAPHIST_SIZE	(1024 * 4)
 #endif
 
 struct kern_history_ent pmaphistbuf[UVMHIST_PMAPHIST_SIZE];
@@ -381,6 +381,9 @@ pmap_bootstrap(vaddr_t vstart, vaddr_t vend)
 
 	UVMHIST_FUNC(__func__);
 	UVMHIST_CALLED(pmaphist);
+
+	/* uvmexp.ncolors = icachesize / icacheways / PAGE_SIZE; */
+	uvmexp.ncolors = aarch64_cache_vindexsize / PAGE_SIZE;
 
 	/* devmap already uses last of va? */
 	if ((virtual_devmap_addr != 0) && (virtual_devmap_addr < vend))
@@ -1511,20 +1514,20 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
 
 	ptep = _pmap_pte_lookup(pm, va);
 	if (ptep == NULL) {
-		UVMHIST_LOG(pmaphist, "pte_lookup failure", 0, 0, 0, 0);
+		UVMHIST_LOG(pmaphist, "pte_lookup failure: va=%016lx", va, 0, 0, 0);
 		return false;
 	}
 
 	pte = *ptep;
 	if (!l3pte_valid(pte)) {
-		UVMHIST_LOG(pmaphist, "invalid pte: %016llx", pte, 0, 0, 0);
+		UVMHIST_LOG(pmaphist, "invalid pte: %016llx: va=%016lx", pte, va, 0, 0);
 		return false;
 	}
 
 	pa = l3pte_pa(*ptep);
 	pg = PHYS_TO_VM_PAGE(pa);
 	if (pg == NULL) {
-		UVMHIST_LOG(pmaphist, "pg not found", 0, 0, 0, 0);
+		UVMHIST_LOG(pmaphist, "pg not found: va=%016lx", va, 0, 0, 0);
 		return false;
 	}
 	md = VM_PAGE_TO_MD(pg);
