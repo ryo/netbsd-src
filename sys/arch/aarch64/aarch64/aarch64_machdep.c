@@ -191,7 +191,7 @@ initarm64(struct BootConfig *bootconf)
 		startp = atop(bootconf->dram[i].address);
 		endp = startp + bootconf->dram[i].pages;
 
-		/* exclude kernel text/data/bss to uvm_page_physload() */
+		/* exclude kernel text/data/bss from given block */
 		if (kstartp < startp && endp < kendp) {
 			/*
 			 *  +-------+ kstartp
@@ -202,7 +202,7 @@ initarm64(struct BootConfig *bootconf)
 			 *  |kernel |
 			 *  +-------+ kendp
 			 */
-			continue;
+			__nothing;
 		} else if (startp <= kstartp && kendp <= endp) {
 			/*
 			 *  +-------+ startp
@@ -257,17 +257,20 @@ initarm64(struct BootConfig *bootconf)
 
 
 	/*
-	 * kernel image is mapped L2 table (2M*n) by locore.S
+	 * kernel image is mapped on L2 table (2MB*n) by locore.S
 	 * virtual space start from 2MB aligned kernend
 	 */
 	pmap_bootstrap(kernend_l2, VM_MAX_KERNEL_ADDRESS);
 
-	tf = (struct trapframe *)(lwp0uspace + USPACE) - 1;
-	memset(tf, 0, sizeof(struct trapframe));
-
+	/*
+	 * setup lwp0
+	 */
 	uvm_lwp_setuarea(&lwp0, lwp0uspace);
 	memset(&lwp0.l_md, 0, sizeof(lwp0.l_md));
 	memset(lwp_getpcb(&lwp0), 0, sizeof(struct pcb));
+
+	tf = (struct trapframe *)(lwp0uspace + USPACE) - 1;
+	memset(tf, 0, sizeof(struct trapframe));
 	tf->tf_spsr = SPSR_M_EL0T;
 	lwp0.l_md.md_utf = lwp0.l_md.md_ktf = tf;
 }
