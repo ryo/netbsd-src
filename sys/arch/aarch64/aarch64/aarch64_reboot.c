@@ -161,15 +161,15 @@ docpureset(int howto)
 		/* If there is no keyboard, cngetc() returns 0, so loop */
 		while (cngetc() == 0)
 			delay(100000);
-		cnpollc(false);		
+		cnpollc(false);
 	}
 
 	printf("rebooting...\r\n");
 
-	// XXXAARCH64
-	void cpucache_clean(void);
-	cpucache_clean();
+	/* make sure to write to memory (msgbuf) */
+	aarch64_dcache_wb_all();
 
+	/* console output delay */
 	delay(1000);
 
 	if (cpu_reset_address != NULL)

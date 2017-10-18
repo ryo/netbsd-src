@@ -149,6 +149,23 @@ ENTRY(aarch64_icache_sync_range)
 	cache_handle_range	dcop = cvau, ic = 1, icop = ivau
 END(aarch64_icache_sync_range)
 
+/*
+ * void aarch64_icache_inv_all(void)
+ */
+ENTRY(aarch64_icache_inv_all)
+	dsb	ish
+#ifdef MULTIPROCESSOR
+	ic	iallu
+#else
+	ic	ialluis
+#endif
+	dsb	ish
+	isb
+	ret
+END(aarch64_icache_sync_range)
+
+
+
 ENTRY(aarch64_drain_writebuf)
 	dsb	sy
 	ret

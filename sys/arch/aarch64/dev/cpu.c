@@ -125,11 +125,6 @@ cpu_attach(device_t parent, device_t self, void *aux)
 
 	cpu_identify(self, ci);
 	cpu_identify2(self, ci);
-
-//xxxxxxxxxxxxxxxxx
-void cpucache_wbinv(void);
-	cpucache_wbinv();
-
 }
 
 struct cpuidtab {
@@ -147,7 +142,7 @@ const struct cpuidtab cpuids[] = {
 	{ CPU_ID_CORTEXA72R0 & CPU_PARTMASK, "Cortex-A72", "Cortex", "V8-A" },
 	{ CPU_ID_CORTEXA73R0 & CPU_PARTMASK, "Cortex-A73", "Cortex", "V8-A" },
 	{ CPU_ID_CORTEXA55R1 & CPU_PARTMASK, "Cortex-A55", "Cortex", "V8.2-A" },
-	{ CPU_ID_CORTEXA75R2 & CPU_PARTMASK, "Cortex-A75", "Cortex", "V8.2-A" },
+	{ CPU_ID_CORTEXA75R2 & CPU_PARTMASK, "Cortex-A75", "Cortex", "V8.2-A" }
 };
 
 static void
@@ -173,170 +168,75 @@ identify_aarch64_model(uint32_t cpuid, char *buf, size_t len)
 	snprintf(buf, len, "unknown CPU (ID = 0x%08x)", cpuid);
 }
 
-struct aarch64_cache_info {
-	u_int cache_line_size;
-	u_int cache_ways;
-	u_int cache_sets;
-	u_int cache_way_size;
-	u_int cache_size;
-	bool cache_wb;
-	bool cache_wt;
-	bool cache_ra;
-	bool cache_wa;
-};
-
-// XXXAARCH64
-#if 0
-#define MAX_CACHE_LEVEL	8
-
-struct aarch64_cache_type {
-	int level;				/* 0:L1, 1:L2, ... 7:L8 cache */
-	enum cachetype cachetype;		/* VIVT/VIPT/PIPT */
-	struct aarch64_cache_info *icacheinfo;
-	struct aarch64_cache_info *dcacheinfo;
-}
-struct aarch64_cache_type aarch64_cache_type[MAX_CACHE_LEVEL];
-#endif
-
-// XXXAARCH64
-struct aarch64_cache_info aarch64_l1_icache;
-struct aarch64_cache_info aarch64_l1_dcache;
-struct aarch64_cache_info aarch64_l2_cache;
-
-// XXXAARCH64
-static inline void
-cache_clean(int level, struct aarch64_cache_info *cinfo)
+static int
+prt_cache(device_t self, int level)
 {
-	uint64_t x;
-	unsigned int set, way, setshift, wayshift;
+	struct aarch64_cache_info *cinfo;
+	struct aarch64_cache_unit *cunit;
+	u_int purging;
+	int i;
+	const char *cacheable, *cachetype;
 
-	setshift = ffs(cinfo->cache_line_size) - 1;
-	wayshift = 32 - (ffs(cinfo->cache_ways) - 1);
+	cinfo = &aarch64_cache_info[level];
 
-	cpu_drain_writebuf();
+	if (cinfo->cacheable == CACHE_CACHEABLE_NONE)
+		return -1;
 
-	for (way = 0; way < cinfo->cache_ways; way++) {
-		for (set = 0; set < cinfo->cache_sets; set++) {
-			x = (way << wayshift) | (set << setshift) | (level << 1);
-			__asm __volatile ("dc csw, %0; dsb sy" :: "r"(x));
+	for (i = 0; i < 2; i++) {
+		switch (cinfo->cacheable) {
+		case CACHE_CACHEABLE_ICACHE:
+			cunit = &cinfo->icache;
+			cacheable = "Instruction";
+			break;
+		case CACHE_CACHEABLE_DCACHE:
+			cunit = &cinfo->dcache;
+			cacheable = "Data";
+			break;
+		case CACHE_CACHEABLE_IDCACHE:
+			if (i == 0) {
+				cunit = &cinfo->icache;
+				cacheable = "Instruction";
+			} else {
+				cunit = &cinfo->dcache;
+				cacheable = "Data";
+			}
+			break;
+		case CACHE_CACHEABLE_UNIFIED:
+			cunit = &cinfo->dcache;
+			cacheable = "Unified";
+			break;
 		}
-	}
-}
 
-static inline void
-cache_wbinv(int level, struct aarch64_cache_info *cinfo)
-{
-	uint64_t x;
-	unsigned int set, way, setshift, wayshift;
-
-	setshift = ffs(cinfo->cache_line_size) - 1;
-	wayshift = 32 - (ffs(cinfo->cache_ways) - 1);
-
-	cpu_drain_writebuf();
-
-	for (way = 0; way < cinfo->cache_ways; way++) {
-		for (set = 0; set < cinfo->cache_sets; set++) {
-			x = (way << wayshift) | (set << setshift) | (level << 1);
-			__asm __volatile ("dc cisw, %0; dsb sy" :: "r"(x));
+		switch (cunit->cache_type) {
+		case CACHE_TYPE_VIVT:
+			cachetype = "VIVT";
+			break;
+		case CACHE_TYPE_VIPT:
+			cachetype = "VIPT";
+			break;
+		case CACHE_TYPE_PIPT:
+			cachetype = "PIPT";
+			break;
 		}
+
+		purging = cunit->cache_purging;
+		aprint_normal_dev(self,
+		    "L%d %dKB/%dB %d-way%s%s%s%s %s %s cache\n",
+		    level + 1,
+		    cunit->cache_size / 1024,
+		    cunit->cache_line_size,
+		    cunit->cache_ways,
+		    (purging & CACHE_PURGING_WT) ? " write-through" : "",
+		    (purging & CACHE_PURGING_WB) ? " write-back" : "",
+		    (purging & CACHE_PURGING_RA) ? " read-allocate" : "",
+		    (purging & CACHE_PURGING_WA) ? " write-allocate" : "",
+		    cachetype, cacheable);
+
+		if (cinfo->cacheable != CACHE_CACHEABLE_IDCACHE)
+			break;
 	}
-}
 
-static inline void
-cache_inv(int level, struct aarch64_cache_info *cinfo)
-{
-	uint64_t x;
-	unsigned int set, way, setshift, wayshift;
-
-	setshift = ffs(cinfo->cache_line_size) - 1;
-	wayshift = 32 - (ffs(cinfo->cache_ways) - 1);
-
-	cpu_drain_writebuf();
-
-	for (way = 0; way < cinfo->cache_ways; way++) {
-		for (set = 0; set < cinfo->cache_sets; set++) {
-			x = (way << wayshift) | (set << setshift) | (level << 1);
-			__asm __volatile ("dc isw, %0; dsb sy" :: "r"(x));
-		}
-	}
-}
-
-void cpucache_clean(void);
-void cpucache_wbinv(void);
-void cpucache_inv(void);
-
-void
-cpucache_clean(void)
-{
-	cache_clean(0, &aarch64_l1_dcache);
-	cache_clean(1, &aarch64_l2_cache);
-}
-
-void
-cpucache_wbinv(void)
-{
-	cache_wbinv(0, &aarch64_l1_dcache);
-	cache_wbinv(1, &aarch64_l2_cache);
-}
-
-void
-cpucache_inv(void)
-{
-	cache_inv(0, &aarch64_l1_dcache);
-	cache_inv(1, &aarch64_l2_cache);
-}
-
-static void
-extract_ccsidr(struct aarch64_cache_info *cinfo, uint32_t ccsidr)
-{
-	cinfo->cache_line_size = 1 << (__SHIFTOUT(ccsidr, CCSIDR_LINESIZE) + 4);
-	cinfo->cache_ways = __SHIFTOUT(ccsidr, CCSIDR_ASSOC) + 1;
-	cinfo->cache_sets = __SHIFTOUT(ccsidr, CCSIDR_NUMSET) + 1;
-
-	/* calc waysize and whole size */
-	cinfo->cache_way_size = cinfo->cache_line_size * cinfo->cache_sets;
-	cinfo->cache_size = cinfo->cache_way_size * cinfo->cache_ways;
-
-	/* cache types */
-	cinfo->cache_wt = ccsidr & CCSIDR_WT;
-	cinfo->cache_wb = ccsidr & CCSIDR_WB;
-	cinfo->cache_ra = ccsidr & CCSIDR_RA;
-	cinfo->cache_wa = ccsidr & CCSIDR_WA;
-}
-
-static void
-prt_cache(device_t self, int level, int inst, const char *cachetype, const char *cachetype2)
-{
-	struct aarch64_cache_info cinfo;
-	uint32_t ccsidr;
-
-	/* select level N Instruction cache */
-	reg_csselr_el1_write(__SHIFTIN(level, CSSELR_LEVEL) |
-	    __SHIFTIN(inst == 0 ? 0 : 1, CSSELR_IND));
-	asm("isb");
-
-	ccsidr = reg_ccsidr_el1_read();
-	extract_ccsidr(&cinfo, ccsidr);
-
-	// XXXAARCH64
-	if ((level == 0) && inst)
-		memcpy(&aarch64_l1_icache, &cinfo, sizeof(cinfo));
-	if ((level == 0) && !inst)
-		memcpy(&aarch64_l1_dcache, &cinfo, sizeof(cinfo));
-	if (level == 1)
-		memcpy(&aarch64_l2_cache, &cinfo, sizeof(cinfo));
-
-
-	aprint_normal_dev(self, "L%d %dKB/%dB %d-way%s%s%s%s %s%s cache\n",
-	    level + 1,
-	    cinfo.cache_size / 1024,
-	    cinfo.cache_line_size,
-	    cinfo.cache_ways,
-	    cinfo.cache_wt ? " write-through" : "",
-	    cinfo.cache_wb ? " write-back" : "",
-	    cinfo.cache_ra ? " read-allocate" : "",
-	    cinfo.cache_wa ? " write-allocate" : "",
-	    cachetype2, cachetype);
+	return 0;
 }
 
 static void
@@ -345,8 +245,7 @@ cpu_identify(device_t self, struct cpu_info *ci)
 	uint64_t mpidr;
 	int level;
 	uint32_t cpuid;
-	uint32_t clidr, ctr, sctlr;	/* for cache */
-	const char *cachetype;
+	uint32_t ctr, sctlr;	/* for cache */
 	char model[128];
 
 	cpuid = reg_midr_el1_read();
@@ -383,7 +282,8 @@ cpu_identify(device_t self, struct cpu_info *ci)
 	else {
 		switch (sctlr & (SCTLR_SA | SCTLR_SA0)) {
 		case SCTLR_SA | SCTLR_SA0:
-			aprint_normal(", EL0/EL1 stack Alignment check enabled\n");
+			aprint_normal(
+			    ", EL0/EL1 stack Alignment check enabled\n");
 			break;
 		case SCTLR_SA:
 			aprint_normal(", EL1 stack Alignment check enabled\n");
@@ -397,61 +297,18 @@ cpu_identify(device_t self, struct cpu_info *ci)
 		}
 	}
 
-
 	/*
 	 * CTR - Cache Type Register
 	 */
 	ctr = reg_ctr_el0_read();
-	switch (__SHIFTOUT(ctr, CTR_EL0_L1IP_MASK)) {
-	case CTR_EL0_L1IP_AIVIVT:
-		cachetype = "ASID-tagged VIVT ";
-		break;
-	case CTR_EL0_L1IP_VIPT:
-		cachetype = "VIPT ";
-		break;
-	case CTR_EL0_L1IP_PIPT:
-		cachetype = "PIPT ";
-		break;
-	default:
-		cachetype = "unknown type ";
-		break;
-	}
-
-	aprint_normal_dev(self, "Cache Writeback Granule %lluB, Exclusives Reservation Granule %lluB\n",
+	aprint_normal_dev(self, "Cache Writeback Granule %lluB,"
+	    " Exclusives Reservation Granule %lluB\n",
 	    __SHIFTOUT(ctr, CTR_EL0_CWG_LINE) * 4,
 	    __SHIFTOUT(ctr, CTR_EL0_ERG_LINE) * 4);
 
-
-	/*
-	 * CLIDR -  Cache Level ID Register
-	 * CSSELR - Cache Size Selection Register
-	 * CCSIDR - CurrentCache Size ID Register (selected by CSSELR)
-	 */
-
-	/* L1, L2, L3, ..., L7 cache */
-	for (level = 0, clidr = reg_clidr_el1_read();
-	    level < 7; level++, clidr >>= 3) {
-		if ((clidr & 7) == 0)	/* no more level cache */
+	for (level = 0; level < MAX_CACHE_LEVEL; level++) {
+		if (prt_cache(self, level) < 0)
 			break;
-
-		switch (clidr & 7) {
-		case CLIDR_TYPE_ICACHE:
-			prt_cache(self, level, 1, "Instruction", cachetype);
-			break;
-		case CLIDR_TYPE_DCACHE:
-			prt_cache(self, level, 0, "Data", cachetype);
-			break;
-		case CLIDR_TYPE_UNIFIEDCACHE:
-			prt_cache(self, level, 0, "Unified", cachetype);
-			break;
-		case CLIDR_TYPE_IDCACHE:
-			prt_cache(self, level, 1, "Instruction", cachetype);
-			prt_cache(self, level, 0, "Data", cachetype);
-			break;
-		}
-
-		/* L2 or higher is PIPT */
-		cachetype = "PIPT ";
 	}
 }
 

@@ -33,27 +33,48 @@
 
 #ifdef _KERNEL
 
+struct aarch64_cache_unit {
+	u_int cache_type;
+#define CACHE_TYPE_UNKNOWN	0
+#define CACHE_TYPE_VIVT		1	/* ASID-tagged VIVT */
+#define CACHE_TYPE_VIPT		2
+#define CACHE_TYPE_PIPT		3
+	u_int cache_line_size;
+	u_int cache_ways;
+	u_int cache_sets;
+	u_int cache_way_size;
+	u_int cache_size;
+	u_int cache_purging;
+#define CACHE_PURGING_WB	0x01
+#define CACHE_PURGING_WT	0x02
+#define CACHE_PURGING_RA	0x04
+#define CACHE_PURGING_WA	0x08
+};
+
+struct aarch64_cache_info {
+	u_int cacheable;
+#define CACHE_CACHEABLE_NONE	0
+#define CACHE_CACHEABLE_ICACHE	1	/* instruction cache only */
+#define CACHE_CACHEABLE_DCACHE	2	/* data cache only */
+#define CACHE_CACHEABLE_IDCACHE	3	/* instruction and data caches */
+#define CACHE_CACHEABLE_UNIFIED	4	/* unified cache */
+	struct aarch64_cache_unit icache;
+	struct aarch64_cache_unit dcache;
+};
+
+#define MAX_CACHE_LEVEL	8	/* ARMv8 has maximum 8 level cache */
+extern struct aarch64_cache_info aarch64_cache_info[MAX_CACHE_LEVEL];
+
 extern u_int cputype;
 
-/* misc */
-#define cpu_idnum(arg...)		aarch64_cpuid(arg)
+int aarch64_getcacheinfo(void);
 
-/* cache op */
-#define cpu_icache_line_size(arg...)	aarch64_dcache_line_size(arg)
-#define cpu_dcache_line_size(arg...)	aarch64_icache_line_size(arg)
-#define cpu_dcache_wbinv_range(arg...)	aarch64_dcache_wbinv_range(arg)
-#define cpu_dcache_inv_range(arg...)	aarch64_dcache_inv_range(arg)
-#define cpu_dcache_wb_range(arg...)	aarch64_dcache_wb_range(arg)
-#define cpu_idcache_wbinv_range(arg...)	aarch64_idcache_wbinv_range(arg)
-#define cpu_icache_sync_range(arg...)	aarch64_icache_sync_range(arg)
-#define cpu_sdcache_wbinv_range(arg...)	((void)0)
-#define cpu_sdcache_inv_range(arg...)	((void)0)
-#define cpu_sdcache_wb_range(arg...)	((void)0)
-/* others */
-#define cpu_drain_writebuf(arg...)	aarch64_drain_writebuf(arg)
+void aarch64_dcache_wbinv_all(void);
+void aarch64_dcache_inv_all(void);
+void aarch64_dcache_wb_all(void);
+void aarch64_icache_inv_all(void);
 
-
-/* cpufunc_asm.S */
+/* cache op in cpufunc_asm_armv8.S */
 void aarch64_nullop(void);
 uint32_t aarch64_cpuid(void);
 int aarch64_dcache_line_size(void);
@@ -65,6 +86,7 @@ void aarch64_dcache_inv_range(vaddr_t, vsize_t);
 void aarch64_dcache_wb_range(vaddr_t, vsize_t);
 void aarch64_drain_writebuf(void);
 
+/* tlb op in cpufunc_asm_armv8.S */
 void aarch64_set_ttbr0(uint64_t);
 void aarch64_tlbi_all(void);			/* all ASID, all VA */
 void aarch64_tlbi_by_asid(int);			/*  an ASID, all VA */
@@ -72,6 +94,35 @@ void aarch64_tlbi_by_va(vaddr_t);		/* all ASID, a VA */
 void aarch64_tlbi_by_va_ll(vaddr_t);		/* all ASID, a VA, lastlevel */
 void aarch64_tlbi_by_asid_va(int, vaddr_t);	/*  an ASID, a VA */
 void aarch64_tlbi_by_asid_va_ll(int, vaddr_t);	/*  an ASID, a VA, lastlevel */
+
+
+/* misc */
+#define cpu_idnum()			aarch64_cpuid()
+
+/* cache op */
+#define cpu_icache_line_size()		aarch64_dcache_line_size()
+#define cpu_dcache_line_size()		aarch64_icache_line_size()
+
+#define cpu_dcache_wbinv_all()		aarch64_dcache_wbinv_all()
+#define cpu_dcache_inv_all()		aarch64_dcache_inv_all()
+#define cpu_dcache_wb_all()		aarch64_dcache_wb_all()
+#define cpu_idcache_wbinv_all()		\
+	(aarch64_dcache_wbinv_all(), aarch64_icache_inv_all())
+#define cpu_icache_sync_all()		\
+	(aarch64_dcache_wb_all(), aarch64_icache_inv_all())
+
+#define cpu_dcache_wbinv_range(v,s)	aarch64_dcache_wbinv_range((v),(s))
+#define cpu_dcache_inv_range(v,s)	aarch64_dcache_inv_range((v),(s))
+#define cpu_dcache_wb_range(v,s)	aarch64_dcache_wb_range((v),(s))
+#define cpu_idcache_wbinv_range(v,s)	aarch64_idcache_wbinv_range((v),(s))
+#define cpu_icache_sync_range(v,s)	aarch64_icache_sync_range((v),(s))
+
+#define cpu_sdcache_wbinv_range(v,p,s)	((void)0)
+#define cpu_sdcache_inv_range(v,p,s)	((void)0)
+#define cpu_sdcache_wb_range(v,p,s)	((void)0)
+
+/* others */
+#define cpu_drain_writebuf()		aarch64_drain_writebuf()
 
 #endif /* _KERNEL */
 

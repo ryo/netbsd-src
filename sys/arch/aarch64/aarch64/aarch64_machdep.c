@@ -58,7 +58,7 @@ char machine[] = MACHINE;
 char machine_arch[] = MACHINE_ARCH;
 
 const pcu_ops_t * const pcu_ops_md_defs[PCU_UNIT_COUNT] = {
-	[PCU_FPU] = &pcu_fpu_ops,
+	[PCU_FPU] = &pcu_fpu_ops
 };
 
 uint32_t cputype;
@@ -116,6 +116,8 @@ initarm64(struct BootConfig *bootconf)
 	paddr_t kernstart_phys, kernend_phys;
 	paddr_t kstartp, kendp;			/* physical page of kernel */
 	int i;
+
+	aarch64_getcacheinfo();
 
 	cputype = cpu_idnum();	/* for compatible arm */
 
