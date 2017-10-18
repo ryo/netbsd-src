@@ -254,17 +254,59 @@ ENTRY(copyout)
 END(copyout)
 
 
-#if 0
 /* LINTSTUB: int copyinstr(const void *uaddr, void *kaddr, size_t len, size_t *done); */
 
 ENTRY(copyinstr)
+	enter_cpu_onfault
+
+	mov	x4, xzr			/* i = 0 */
+	cbz	x2, copyinstr_done	/* if (len == 0) goto done */
+copyinstr_loop:
+	ldtrb	w5, [x0]		/* ch = *uaddr++ */
+	add	x0, x0, #1
+	strb	w5, [x1], #1		/* *kaddr++ = ch */
+	add	x4, x4, #1		/* i++ */
+	cbz	w5, copyinstr_done	/* if (ch == '\0') goto done */
+
+	cmp	x4, x2			/* if (i < len) goto loop */
+	bcc	copyinstr_loop
+
+copyinstr_done:
+	cbz	x3, 1f			/* if (done != NULL) *done = i */
+	str	x4, [x3]
+1:
+
+	mov	x8, #0			/* return 0 */
+
+	exit_cpu_onfault
 	ret
 END(copyinstr)
+
 
 /* LINTSTUB: int copyoutstr(const void *kaddr, void *uaddr, size_t len, size_t *done); */
 
 ENTRY(copyoutstr)
+	enter_cpu_onfault
+
+	mov	x4, xzr			/* i = 0 */
+	cbz	x2, copyoutstr_done	/* if (len == 0) goto done */
+copyoutstr_loop:
+	ldrb	w5, [x0], #1		/* ch = *kaddr++ */
+	sttrb	w5, [x1]		/* *uaddr++ = ch */
+	add	x1, x1, #1
+	add	x4, x4, #1		/* i++ */
+	cbz	w5, copyoutstr_done	/* if (ch == '\0') goto done */
+
+	cmp	x4, x2			/* if (i < len) goto loop */
+	bcc	copyoutstr_loop
+
+copyoutstr_done:
+	cbz	x3, 1f			/* if (done != NULL) *done = i */
+	str	x4, [x3]
+1:
+
+	mov	x8, #0			/* return 0 */
+
+	exit_cpu_onfault
 	ret
 END(copyoutstr)
-
-#endif
