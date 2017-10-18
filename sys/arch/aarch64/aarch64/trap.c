@@ -349,32 +349,6 @@ bad_trap_panic(trap_el0_error)
 bad_trap_panic(trap_el0_32fiq)
 bad_trap_panic(trap_el0_32error)
 
-
-struct faultbuf *
-cpu_disable_onfault(void)
-{
-	struct faultbuf * const fb = curlwp->l_md.md_onfault;
-	curlwp->l_md.md_onfault = NULL;
-	return fb;
-}
-
-void
-cpu_enable_onfault(struct faultbuf *fb)
-{
-	curlwp->l_md.md_onfault = fb;
-}
-
-struct faultbuf *
-cpu_unset_onfault(void)
-{
-	struct faultbuf *fb;
-
-	fb = curlwp->l_md.md_onfault;
-	if (fb != NULL)
-		curlwp->l_md.md_onfault = NULL;
-	return fb;
-}
-
 void
 cpu_jump_onfault(struct trapframe *tf, const struct faultbuf *fb, int val)
 {
@@ -392,6 +366,25 @@ cpu_jump_onfault(struct trapframe *tf, const struct faultbuf *fb, int val)
 	tf->tf_sp = fb->fb_reg[FB_SP];
 	tf->tf_lr = fb->fb_reg[FB_LR];
 	tf->tf_reg[0] = val;
+}
+
+void
+ucas_ras_check(struct trapframe *tf)
+{
+#if 0 /* XXXAARCH64 */
+	extern char ucas_32_ras_start[];
+	extern char ucas_32_ras_end[];
+	extern char ucas_64_ras_start[];
+	extern char ucas_64_ras_end[];
+
+	if (tf->tf_pc > (vaddr_t)ucas_32_ras_start &&
+	    tf->tf_pc < (vaddr_t)ucas_32_ras_end) {
+		tf->tf_pc = (vaddr_t)ucas_32_ras_start;
+	} else if (tf->tf_pc > (vaddr_t)ucas_64_ras_start &&
+	    tf->tf_pc < (vaddr_t)ucas_64_ras_end) {
+		tf->tf_pc = (vaddr_t)ucas_64_ras_start;
+	}
+#endif
 }
 
 int

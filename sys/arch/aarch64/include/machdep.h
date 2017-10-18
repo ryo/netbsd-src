@@ -48,7 +48,6 @@ extern char *booted_kernel;
 /* aarch64_machdep.c */
 struct BootConfig;
 void initarm64(struct BootConfig *);
-void aarch64_cpu_configured(void);
 void dumpsys(void);
 
 struct trapframe;
@@ -78,12 +77,32 @@ void trap_el0_32fiq(struct trapframe *);
 void trap_el0_32error(struct trapframe *);
 void interrupt(struct trapframe *);
 
+void ucas_ras_check(struct trapframe *);
+
 /* cpu_onfault */
 int cpu_set_onfault(struct faultbuf *) __returns_twice;
 void cpu_jump_onfault(struct trapframe *, const struct faultbuf *, int);
-void cpu_enable_onfault(struct faultbuf *);
-struct faultbuf *cpu_disable_onfault(void);
-struct faultbuf *cpu_unset_onfault(void);
+
+static inline void
+cpu_unset_onfault(void)
+{
+	curlwp->l_md.md_onfault = NULL;
+}
+
+static inline void
+cpu_enable_onfault(struct faultbuf *fb)
+{
+	curlwp->l_md.md_onfault = fb;
+}
+
+static inline struct faultbuf *
+cpu_disable_onfault(void)
+{
+	struct faultbuf * const fb = curlwp->l_md.md_onfault;
+	if (fb != NULL)
+		curlwp->l_md.md_onfault = NULL;
+	return fb;
+}
 
 /* fpu.c */
 void fpu_attach(struct cpu_info *);

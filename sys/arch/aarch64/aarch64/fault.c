@@ -32,7 +32,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include "opt_uvmhist.h"
 
 #include <sys/param.h>
-#include <sys/types.h>
+#include <sys/kauth.h>
 #include <sys/proc.h>
 #include <sys/siginfo.h>
 
@@ -89,7 +89,7 @@ const char * const fault_status_code[] = {
 	[ESR_ISS_FSC_FIRST_LEVEL_DOMAIN_FAULT] =
 	    "First Level Domain Fault",
 	[ESR_ISS_FSC_SECOND_LEVEL_DOMAIN_FAULT] =
-	    "Second Level Domain Fault",
+	    "Second Level Domain Fault"
 };
 
 static bool
@@ -121,6 +121,7 @@ bool
 data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 {
 	struct proc *p;
+	struct lwp *l;
 	struct vm_map *map;
 	struct faultbuf *fb;
 	vaddr_t va;
@@ -129,18 +130,22 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 	int error;
 	const bool user = (__SHIFTOUT(tf->tf_spsr, SPSR_M) == SPSR_M_EL0T) ?
 	    true : false;
+	bool fatalabort;
 	const char *faultstr;
 
 	UVMHIST_FUNC(__func__);
 	UVMHIST_CALLED(pmaphist);
 
+	l = curlwp;
+
 	esr = tf->tf_esr;
 	rw = __SHIFTOUT(esr, ESR_ISS_DATAABORT_WnR); /* 0 if IFSC */
 
-	if (is_fatal_abort(esr))
+	fatalabort = is_fatal_abort(esr);
+	if (fatalabort)
 		goto do_fault;
 
-	p = curlwp->l_proc;
+	p = l->l_proc;
 	va = trunc_page((vaddr_t)tf->tf_far);
 
 	if ((VM_MIN_KERNEL_ADDRESS <= va) && (va < VM_MAX_KERNEL_ADDRESS)) {
@@ -148,7 +153,8 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 		UVMHIST_LOG(pmaphist, "use kernel_map %p", map, 0, 0, 0);
 	} else if (VM_MIN_ADDRESS <= va && va <= VM_MAX_ADDRESS) {
 		map = &p->p_vmspace->vm_map;
-		UVMHIST_LOG(pmaphist, "use user vm_map %p (kernel_map=%p)", map, kernel_map, 0, 0);
+		UVMHIST_LOG(pmaphist, "use user vm_map %p (kernel_map=%p)",
+		   map, kernel_map, 0, 0);
 	} else {
 		goto do_fault;
 	}
@@ -160,9 +166,12 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 
 #ifdef UVMHIST
 	if (ftype & VM_PROT_EXECUTE) {
-		UVMHIST_LOG(pmaphist, "pagefault %016lx %016lx in %s EXEC", tf->tf_far, va, user ? "user" : "kernel", 0);
+		UVMHIST_LOG(pmaphist, "pagefault %016lx %016lx in %s EXEC",
+		    tf->tf_far, va, user ? "user" : "kernel", 0);
 	} else {
-		UVMHIST_LOG(pmaphist, "pagefault %016lx %016lx in %s %s", tf->tf_far, va, user ? "user" : "kernel", (rw == 0) ? "read" : "write");
+		UVMHIST_LOG(pmaphist, "pagefault %016lx %016lx in %s %s",
+		    tf->tf_far, va, user ? "user" : "kernel",
+		    (rw == 0) ? "read" : "write");
 	}
 #endif
 
@@ -178,15 +187,18 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 	if (__predict_true(error == 0)) {
 		if (user)
 			uvm_grow(p, va);
+		else
+			ucas_ras_check(tf);
 
-		UVMHIST_LOG(pmaphist, "uvm_fault success: va=%016llx", tf->tf_far, 0, 0, 0);
+		UVMHIST_LOG(pmaphist, "uvm_fault success: va=%016llx",
+		    tf->tf_far, 0, 0, 0);
 		return true;
 	}
 
 
  do_fault:
 	/* faultbail path? */
-	fb = cpu_unset_onfault();
+	fb = cpu_disable_onfault();
 	if (fb != NULL) {
 		cpu_jump_onfault(tf, fb, EFAULT);
 		return true;
@@ -194,6 +206,23 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 
 	fsc = __SHIFTOUT(esr, ESR_ISS_DATAABORT_DFSC); /* also IFSC */
 	if (user) {
+		if (!fatalabort) {
+			if (error == ENOMEM) {
+				printf("UVM: pid %d (%s), uid %d killed: "
+				    "out of swap\n",
+				    l->l_proc->p_pid, l->l_proc->p_comm,
+				    l->l_cred ?
+				    kauth_cred_geteuid(l->l_cred) : -1);
+				do_trapsignal(l, SIGKILL, 0, tf->tf_far, esr);
+				goto done_userfault;
+			} else if (error == EACCES) {
+				do_trapsignal(l, SIGSEGV, SEGV_ACCERR,
+				    tf->tf_far, esr);
+				goto done_userfault;
+			}
+			/* if other error, select signal by ESR */
+		}
+
 		/*
 		 * fatal abort in usermode
 		 */
@@ -206,8 +235,7 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 		case ESR_ISS_FSC_PERM_FAULT_1:
 		case ESR_ISS_FSC_PERM_FAULT_2:
 		case ESR_ISS_FSC_PERM_FAULT_3:
-			do_trapsignal(curlwp, SIGSEGV, SEGV_ACCERR,
-			    tf->tf_far, esr);
+			do_trapsignal(l, SIGSEGV, SEGV_ACCERR, tf->tf_far, esr);
 			break;
 		case ESR_ISS_FSC_TRANSLATION_FAULT_0:
 		case ESR_ISS_FSC_TRANSLATION_FAULT_1:
@@ -219,15 +247,13 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 		case ESR_ISS_FSC_FIRST_LEVEL_DOMAIN_FAULT:
 		case ESR_ISS_FSC_SECOND_LEVEL_DOMAIN_FAULT:
 		default:
-			do_trapsignal(curlwp, SIGSEGV, SEGV_MAPERR,
-			    tf->tf_far, esr);
+			do_trapsignal(l, SIGSEGV, SEGV_MAPERR, tf->tf_far, esr);
 			break;
 		case ESR_ISS_FSC_ADDRESS_SIZE_FAULT_0:
 		case ESR_ISS_FSC_ADDRESS_SIZE_FAULT_1:
 		case ESR_ISS_FSC_ADDRESS_SIZE_FAULT_2:
 		case ESR_ISS_FSC_ADDRESS_SIZE_FAULT_3:
-			do_trapsignal(curlwp, SIGBUS, BUS_ADRERR,
-			    tf->tf_far, esr);
+			do_trapsignal(l, SIGBUS, BUS_ADRERR, tf->tf_far, esr);
 			break;
 		case ESR_ISS_FSC_SYNC_EXTERNAL_ABORT:
 		case ESR_ISS_FSC_SYNC_EXTERNAL_ABORT_TTWALK_0:
@@ -239,19 +265,25 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 		case ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_1:
 		case ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_2:
 		case ESR_ISS_FSC_SYNC_PARITY_ERROR_ON_TTWALK_3:
-			do_trapsignal(curlwp, SIGBUS, BUS_OBJERR,
-			    tf->tf_far, esr);
+			do_trapsignal(l, SIGBUS, BUS_OBJERR, tf->tf_far, esr);
 			break;
 		case ESR_ISS_FSC_ALIGNMENT_FAULT:
-			do_trapsignal(curlwp, SIGBUS, BUS_ADRALN,
-			    tf->tf_far, esr);
+			do_trapsignal(l, SIGBUS, BUS_ADRALN, tf->tf_far, esr);
 			break;
 		}
+ done_userfault:
+
+#define DUMP_USER_TRAPFRAME_ON_SIGNAL	/* XXX: DEBUG */
+
+#ifdef DUMP_USER_TRAPFRAME_ON_SIGNAL
+		__nothing;
+#else
 		return false;
+#endif
 	}
 
 	/*
-	 * fatal abort in kernel
+	 * fatal abort. dump trapframe
 	 */
 	printf("Trap: %s:", trapname);
 
