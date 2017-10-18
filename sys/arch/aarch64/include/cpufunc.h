@@ -62,10 +62,10 @@ struct aarch64_cache_info {
 	struct aarch64_cache_unit dcache;
 };
 
-#define MAX_CACHE_LEVEL	8	/* ARMv8 has maximum 8 level cache */
+#define MAX_CACHE_LEVEL	8		/* ARMv8 has maximum 8 level cache */
 extern struct aarch64_cache_info aarch64_cache_info[MAX_CACHE_LEVEL];
-
-extern u_int cputype;
+extern u_int aarch64_cache_vindexsize;	/* cachesize/way (VIVT/VIPT) */
+extern u_int cputype;			/* compat arm */
 
 int aarch64_getcacheinfo(void);
 

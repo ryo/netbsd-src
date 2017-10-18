@@ -35,11 +35,12 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <aarch64/armreg.h>
 #include <aarch64/cpufunc.h>
 
-/*
- * L1-L8 cache info
- */
+u_int cputype;	/* compat arm */
+
+/* L1-L8 cache info */
 struct aarch64_cache_info aarch64_cache_info[MAX_CACHE_LEVEL];
-uint32_t cputype;
+u_int aarch64_cache_vindexsize;
+
 
 static void
 extract_cacheunit(int level, bool insn, int cachetype)
@@ -81,6 +82,8 @@ aarch64_getcacheinfo(void)
 {
 	uint32_t clidr, ctr;
 	int level, cachetype;
+
+	cputype = aarch64_cpuid();
 
 	/*
 	 * CTR - Cache Type Register
@@ -147,6 +150,19 @@ aarch64_getcacheinfo(void)
 		 * all other cachetype is PIPT.
 		 */
 		cachetype = CACHE_TYPE_PIPT;
+	}
+
+	/* calculate L1 icache virtual index size */
+	if (((aarch64_cache_info[0].cacheable == CACHE_CACHEABLE_ICACHE) ||
+	     (aarch64_cache_info[0].cacheable == CACHE_CACHEABLE_IDCACHE)) &&
+	    ((aarch64_cache_info[0].icache.cache_type == CACHE_TYPE_VIVT) ||
+	     (aarch64_cache_info[0].icache.cache_type == CACHE_TYPE_VIPT))) {
+
+		aarch64_cache_vindexsize =
+		    aarch64_cache_info[0].icache.cache_size /
+		    aarch64_cache_info[0].icache.cache_ways;
+	} else {
+		aarch64_cache_vindexsize = 0;
 	}
 
 	return 0;
