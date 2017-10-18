@@ -69,7 +69,7 @@ RCSID("$NetBSD: copyinout.S,v 1.1 2014/08/10 05:47:37 matt Exp $");
 	mov	x0, x8				/* x0 = return value */
 	.endm
 
-#if 0
+
 /* LINTSTUB: int copyin(const void *uaddr, void *kaddr, size_t len); */
 
 ENTRY(copyin)
@@ -90,6 +90,7 @@ ENTRY(copyin)
 
 	add	x2, x2, x5
 	sub	x2, x2, #32
+	lsr	x4, x2, #5			/* update x4 = len / 32 */
 
 	tbz	x0, #0, .Lcopyin_hword_aligned
 	ldtrb	w5, [x0]
@@ -111,11 +112,13 @@ ENTRY(copyin)
 	add	x0, x0, #8
 	str	x5, [x1], #8
 .Lcopyin_qword_aligned:
-	tbz	x0, #4, .Lcopyin_loop
+	tbz	x0, #4, .Lcopyin_loop0
 	ldtr	x5, [x0, #0]
 	ldtr	x6, [x0, #8]
 	add	x0, x0, #16
 	stp	x5, x6, [x1], #16
+.Lcopyin_loop0:
+	cbz	x4, .Lcopyin_last_suboword
 .Lcopyin_loop:
 	ldtr	x5, [x0, #0]
 	ldtr	x6, [x0, #8]
@@ -157,10 +160,8 @@ ENTRY(copyin)
 	exit_cpu_onfault
 	ret
 END(copyin)
-#endif
 
 
-#if 0
 /* LINTSTUB: int copyout(const void *kaddr, void *uaddr, size_t len); */
 
 ENTRY(copyout)
@@ -181,6 +182,7 @@ ENTRY(copyout)
 
 	add	x2, x2, x5
 	sub	x2, x2, #32
+	lsr	x4, x2, #5			/* update x4 = len / 32 */
 
 	tbz	x0, #0, .Lcopyout_hword_aligned
 	ldrb	w5, [x0], #1
@@ -202,11 +204,13 @@ ENTRY(copyout)
 	sttr	x5, [x1]
 	add	x1, x1, #8
 .Lcopyout_qword_aligned:
-	tbz	x0, #4, .Lcopyout_loop
+	tbz	x0, #4, .Lcopyout_loop0
 	ldp	x5, x6, [x0], #16
 	sttr	x5, [x1, #0]
 	sttr	x6, [x1, #8]
 	add	x1, x1, #16
+.Lcopyout_loop0:
+	cbz	x4, .Lcopyout_last_suboword
 .Lcopyout_loop:
 	ldp	x5, x6, [x0], #16
 	ldp	x7, x8, [x0], #16
@@ -248,7 +252,6 @@ ENTRY(copyout)
 	exit_cpu_onfault
 	ret
 END(copyout)
-#endif
 
 
 #if 0

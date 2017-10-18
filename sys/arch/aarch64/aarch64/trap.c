@@ -433,39 +433,6 @@ copystr(const void *kfaddr, void *kdaddr, size_t len, size_t *done)
 	return error;
 }
 
-#if 1
-/*
- * int copyin(const void *uaddr, void *kaddr, size_t len);
- * int copyout(const void *kaddr, void *uaddr, size_t len);
- */
-int
-copyin(const void *uaddr, void *kaddr, size_t len)
-{
-	struct faultbuf fb;
-	int error;
-
-	if ((error = cpu_set_onfault(&fb)) == 0) {
-		memcpy(kaddr, uaddr, len);
-		cpu_unset_onfault();
-	}
-	return error;
-}
-#endif
-
-#if 1
-int
-copyout(const void *kaddr, void *uaddr, size_t len)
-{
-	struct faultbuf fb;
-	int error;
-
-	if ((error = cpu_set_onfault(&fb)) == 0) {
-		memcpy(uaddr, kaddr, len);
-		cpu_unset_onfault();
-	}
-	return error;
-}
-#endif
 
 #if 1
 static inline int
