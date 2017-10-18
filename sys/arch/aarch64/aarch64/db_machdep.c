@@ -309,10 +309,85 @@ db_md_lwp_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif
 }
 
 #ifdef UVMHIST
+
+/* XXX: should be implement to kern_history.c */
+static void
+kernhist_entry_snprintf(char *buf, size_t buflen, const struct kern_history_ent *e)
+{
+	struct timeval tv;
+	int len, maxlen;
+	char *p;
+
+	bintime2timeval(&e->bt, &tv);
+
+	maxlen = buflen;
+	p = buf;
+
+	len = snprintf(p, maxlen, "%06" PRIu64 ".%06d ", tv.tv_sec, tv.tv_usec);
+	p += len;
+	maxlen -= len;
+	if (maxlen <= 0)
+		return;
+
+	len = snprintf(p, maxlen, "%s#%ld@%d: ", e->fn, e->call, e->cpunum);
+	p += len;
+	maxlen -= len;
+	if (maxlen <= 0)
+		return;
+
+	len = snprintf(p, maxlen, e->fmt, e->v[0], e->v[1], e->v[2], e->v[3]);
+	p += len;
+	maxlen -= len;
+	if (maxlen <= 0)
+		return;
+
+	snprintf(p, maxlen, "\n");
+}
+
+static void
+kernhist_dump_iterate(struct kern_history *l, void (*func)(const char *))
+{
+	int lcv;
+	static char buf[512];	/* XXX */
+
+	lcv = l->f;
+	do {
+		if (l->e[lcv].fmt) {
+			kernhist_entry_snprintf(buf, sizeof(buf), &l->e[lcv]);
+			func(buf);
+		}
+		lcv = (lcv + 1) % l->n;
+	} while (lcv != l->f);
+}
+
+
+static const char *kernhist_match;
+
+static void
+print_pmaphist_func(const char *msg)
+{
+	if (strstr(msg, kernhist_match) != NULL)
+		db_printf("%s", msg);
+}
+
 void
 db_md_pmaphist_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
 {
 	UVMHIST_DECL(pmaphist);
+
+	if ((modif != NULL) && (*modif != '\0')) {
+		if (strcmp(modif, "h") == 0) {
+			db_printf("machine pmaphist[/<match>]\n");
+			return;
+		}
+
+		kernhist_match = modif;
+		db_printf("show pmaphist matched <%s>\n", kernhist_match);
+
+		kernhist_dump_iterate(&pmaphist, print_pmaphist_func);
+		return;
+	}
+
 
 	if (have_addr && (addr == 0)) {
 		/* XXX */
