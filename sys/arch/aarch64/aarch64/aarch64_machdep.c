@@ -61,8 +61,6 @@ const pcu_ops_t * const pcu_ops_md_defs[PCU_UNIT_COUNT] = {
 	[PCU_FPU] = &pcu_fpu_ops
 };
 
-uint32_t cputype;
-
 struct vm_map *phys_map;
 
 /* XXX */

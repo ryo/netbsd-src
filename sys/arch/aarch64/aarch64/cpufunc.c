@@ -39,7 +39,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
  * L1-L8 cache info
  */
 struct aarch64_cache_info aarch64_cache_info[MAX_CACHE_LEVEL];
-
+uint32_t cputype;
 
 static void
 extract_cacheunit(int level, bool insn, int cachetype)
