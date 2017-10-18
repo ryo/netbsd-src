@@ -270,9 +270,7 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 	if (__SHIFTOUT(esr, ESR_ISS_DATAABORT_S1PTW) != 0)
 		printf(", State 2 Fault");
 
-	printf("\n      pc=%016llx sp=%016llx far=%016llx\n",
-	    tf->tf_pc, tf->tf_sp, tf->tf_far);
-
+	printf("\n");
 	dump_trapframe(tf, printf);
 
 	return false;
