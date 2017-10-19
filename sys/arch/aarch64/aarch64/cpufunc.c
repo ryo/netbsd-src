@@ -40,6 +40,7 @@ u_int cputype;	/* compat arm */
 /* L1-L8 cache info */
 struct aarch64_cache_info aarch64_cache_info[MAX_CACHE_LEVEL];
 u_int aarch64_cache_vindexsize;
+u_int aarch64_cache_prefer_mask;
 
 
 static void
@@ -153,14 +154,17 @@ aarch64_getcacheinfo(void)
 	}
 
 	/* calculate L1 icache virtual index size */
-	if (((aarch64_cache_info[0].cacheable == CACHE_CACHEABLE_ICACHE) ||
-	     (aarch64_cache_info[0].cacheable == CACHE_CACHEABLE_IDCACHE)) &&
-	    ((aarch64_cache_info[0].icache.cache_type == CACHE_TYPE_VIVT) ||
-	     (aarch64_cache_info[0].icache.cache_type == CACHE_TYPE_VIPT))) {
+	if (((aarch64_cache_info[0].icache.cache_type == CACHE_TYPE_VIVT) ||
+	     (aarch64_cache_info[0].icache.cache_type == CACHE_TYPE_VIPT)) &&
+	    ((aarch64_cache_info[0].cacheable == CACHE_CACHEABLE_ICACHE) ||
+	     (aarch64_cache_info[0].cacheable == CACHE_CACHEABLE_IDCACHE))) {
 
 		aarch64_cache_vindexsize =
 		    aarch64_cache_info[0].icache.cache_size /
 		    aarch64_cache_info[0].icache.cache_ways;
+
+		KASSERT(aarch64_cache_vindexsize != 0);
+		aarch64_cache_prefer_mask = aarch64_cache_vindexsize - 1;
 	} else {
 		aarch64_cache_vindexsize = 0;
 	}
