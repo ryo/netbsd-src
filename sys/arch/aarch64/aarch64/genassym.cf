@@ -48,7 +48,7 @@ include <uvm/uvm_extern.h>
 include <aarch64/vmparam.h>
 include <aarch64/frame.h>
 include <aarch64/armreg.h>
-include <aarch64/bus_space_defs.h>
+include <aarch64/bus_defs.h>
 
 if defined(_KERNEL_OPT)
 include "opt_multiprocessor.h"

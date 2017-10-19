@@ -291,14 +291,14 @@ struct mbuf;
 struct uio;
 
 int _bus_dmamap_create(bus_dma_tag_t, bus_size_t, int, bus_size_t, bus_size_t,
-    int, bus_dmamap_t *);
+                       int, bus_dmamap_t *);
 void _bus_dmamap_destroy(bus_dma_tag_t, bus_dmamap_t);
 int _bus_dmamap_load(bus_dma_tag_t, bus_dmamap_t, void *, bus_size_t,
-    struct proc *, int);
+                     struct proc *, int);
 int _bus_dmamap_load_mbuf(bus_dma_tag_t, bus_dmamap_t, struct mbuf *, int);
 int _bus_dmamap_load_uio(bus_dma_tag_t, bus_dmamap_t, struct uio *, int);
 int _bus_dmamap_load_raw(bus_dma_tag_t, bus_dmamap_t, bus_dma_segment_t *, int,
-    bus_size_t, int);
+                         bus_size_t, int);
 void _bus_dmamap_unload(bus_dma_tag_t, bus_dmamap_t);
 void _bus_dmamap_sync(bus_dma_tag_t, bus_dmamap_t, bus_addr_t, bus_size_t, int);
 
@@ -313,13 +313,13 @@ void _bus_dmamap_sync(bus_dma_tag_t, bus_dmamap_t, bus_addr_t, bus_size_t, int);
 	._dmamap_sync		= _bus_dmamap_sync
 
 int _bus_dmamem_alloc(bus_dma_tag_t, bus_size_t, bus_size_t, bus_size_t,
-    bus_dma_segment_t *, int, int *, int);
+                      bus_dma_segment_t *, int, int *, int);
 void _bus_dmamem_free(bus_dma_tag_t, bus_dma_segment_t *, int);
 int _bus_dmamem_map(bus_dma_tag_t, bus_dma_segment_t *, int, size_t, void **,
-    int);
+                    int);
 void _bus_dmamem_unmap(bus_dma_tag_t, void *, size_t);
 paddr_t _bus_dmamem_mmap(bus_dma_tag_t, bus_dma_segment_t *, int, off_t, int,
-    int);
+                         int);
 
 #define _BUS_DMAMEM_FUNCS					\
 	._dmamem_alloc =	_bus_dmamem_alloc,		\
@@ -329,8 +329,10 @@ paddr_t _bus_dmamem_mmap(bus_dma_tag_t, bus_dma_segment_t *, int, off_t, int,
 	._dmamem_mmap =		_bus_dmamem_mmap
 
 int _bus_dmamem_alloc_range(bus_dma_tag_t, bus_size_t, bus_size_t, bus_size_t,
-    bus_dma_segment_t *, int, int *, int, vaddr_t, vaddr_t);
-int _bus_dmatag_subregion(bus_dma_tag_t, bus_addr_t, bus_addr_t, bus_dma_tag_t *, int);
+                            bus_dma_segment_t *, int, int *, int,
+                            vaddr_t, vaddr_t);
+int _bus_dmatag_subregion(bus_dma_tag_t, bus_addr_t, bus_addr_t,
+                          bus_dma_tag_t *, int);
 void _bus_dmatag_destroy(bus_dma_tag_t);
 
 #define _BUS_DMATAG_FUNCS					\
