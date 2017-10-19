@@ -92,6 +92,7 @@ ENTRY(copyin)
 	sub	x2, x2, #32
 	lsr	x4, x2, #5			/* update x4 = len / 32 */
 
+	/* XXX: not considered alignment of destination */
 	tbz	x0, #0, .Lcopyin_hword_aligned
 	ldtrb	w5, [x0]
 	add	x0, x0, #1
@@ -184,6 +185,7 @@ ENTRY(copyout)
 	sub	x2, x2, #32
 	lsr	x4, x2, #5			/* update x4 = len / 32 */
 
+	/* XXX: not considered alignment of destination */
 	tbz	x0, #0, .Lcopyout_hword_aligned
 	ldrb	w5, [x0], #1
 	sttrb	w5, [x1]
