@@ -48,7 +48,6 @@
 
 struct pmap {
 	kmutex_t pm_lock;
-	int pm_s;
 	struct pool *pm_pvpool;
 	pd_entry_t *pm_l0table;			/* L0 table: 512G*512 */
 	paddr_t pm_l0table_pa;
@@ -66,19 +65,22 @@ struct vm_page_md {
 	kmutex_t mdpg_pvlock;
 	SLIST_ENTRY(vm_page) mdpg_vmlist;	/* L[0-3] table vm_page list */
 	TAILQ_HEAD(, pv_entry) mdpg_pvhead;
-	struct pv_entry *mdpg_pa_owner;
-	uint32_t mdpg_pvnum;		/* num of entries of mdpg_pvhead */
-	uint32_t mdpg_flags;		/* VM_PROT_(READ,WRITE), PMAP_WIRED */
+
+	/* VM_PROT_READ means referenced, VM_PROT_WRITE means modified */
+	uint32_t mdpg_flags;
+
+	u_int mdpg_kenter;		/* num of pmap_kenter_pa()'ed */
+	u_int mdpg_wiredcount;		/* num of pmap_enter with PMAP_WIRED */
 };
 
 #define	VM_MDPAGE_INIT(pg)				\
 	do {						\
-		(pg)->mdpage.mdpg_flags = 0;		\
-		TAILQ_INIT(&(pg)->mdpage.mdpg_pvhead);	\
-		(pg)->mdpage.mdpg_pvnum = 0;		\
-		(pg)->mdpage.mdpg_pa_owner = NULL;	\
 		mutex_init(&(pg)->mdpage.mdpg_pvlock,	\
 		    MUTEX_DEFAULT, IPL_NONE);		\
+		TAILQ_INIT(&(pg)->mdpage.mdpg_pvhead);	\
+		(pg)->mdpage.mdpg_flags = 0;		\
+		(pg)->mdpage.mdpg_kenter = 0;		\
+		(pg)->mdpage.mdpg_wiredcount = 0;	\
 	} while (/*CONSTCOND*/ 0)
 
 #define l0pde_pa(pde)		((paddr_t)((pde) & LX_TBL_PA))
