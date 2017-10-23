@@ -73,10 +73,9 @@ struct vm_page_md {
 	u_int mdpg_wiredcount;		/* num of pmap_enter with PMAP_WIRED */
 };
 
-#define	VM_MDPAGE_INIT(pg)				\
+/* each mdpg_pvlock will be initialized in pmap_init() */
+#define VM_MDPAGE_INIT(pg)				\
 	do {						\
-		mutex_init(&(pg)->mdpage.mdpg_pvlock,	\
-		    MUTEX_DEFAULT, IPL_NONE);		\
 		TAILQ_INIT(&(pg)->mdpage.mdpg_pvhead);	\
 		(pg)->mdpage.mdpg_flags = 0;		\
 		(pg)->mdpage.mdpg_kenter = 0;		\

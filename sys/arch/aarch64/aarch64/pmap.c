@@ -126,6 +126,8 @@ PMAP_COUNTER(managed_mappings, "managed pages mapped");
 PMAP_COUNTER(mappings, "pages mapped (including remapped)");
 PMAP_COUNTER(remappings, "pages remapped");
 
+PMAP_COUNTER(pv_entry_cannotalloc, "pv_entry allocation failure");
+
 PMAP_COUNTER(unwire, "pmap_unwire call");
 PMAP_COUNTER(unwire_unmanaged, "pmap_unwire unmanaged pages");
 PMAP_COUNTER(unwire_wired, "pmap_unwire but already unwire");
@@ -473,10 +475,32 @@ _pmap_pv_ctor(void *arg, void *v, int flags)
 void
 pmap_init(void)
 {
+	struct vm_page *pg;
+	struct vm_page_md *md;
+	uvm_physseg_t i;
+	paddr_t pfn;
+
 	pool_cache_bootstrap(&_pmap_cache, sizeof(struct pmap),
 	    0, 0, 0, "pmappl", NULL, IPL_NONE, _pmap_pmap_ctor, NULL, NULL);
 	pool_cache_bootstrap(&_pmap_pv_pool, sizeof(struct pv_entry),
-	    0, 0, 0, "pvpl", NULL, IPL_NONE, _pmap_pv_ctor, NULL, NULL);
+	    0, 0, 0, "pvpl", NULL, IPL_VM, _pmap_pv_ctor, NULL, NULL);
+
+	/*
+	 * initialize vm_page_md:mdpg_pvlock at this time.
+	 * When LOCKDEBUG, mutex_init() calls km_alloc,
+	 * but VM_MDPAGE_INIT() is called before initialized kmem_vm_arena.
+	 */
+	for (i = uvm_physseg_get_first();
+	     uvm_physseg_valid_p(i);
+	     i = uvm_physseg_get_next(i)) {
+		for (pfn = uvm_physseg_get_start(i);
+		     pfn < uvm_physseg_get_end(i);
+		     pfn++) {
+			pg = PHYS_TO_VM_PAGE(ptoa(pfn));
+			md = VM_PAGE_TO_MD(pg);
+			mutex_init(&md->mdpg_pvlock, MUTEX_SPIN, IPL_VM);
+		}
+	}
 }
 
 void
@@ -597,7 +621,7 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 {
 	static pt_entry_t *ptep;
 	paddr_t pa;
-	int pm_locked;
+	bool found;
 
 #if 0
 	PM_ADDR_CHECK(pm, va);
@@ -610,13 +634,9 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 		return false;
 #endif
 
-	/* in case of pmap_enter() -> pool_cache_get() -> pmap_extract() */
-	pm_locked = PM_LOCKED(pm);
-	if (!pm_locked)
-		PM_LOCK(pm);
-
 	if (AARCH64_KSEG_START <= va && va < AARCH64_KSEG_END) {
 		pa = AARCH64_KVA_TO_PA(va);
+		found = true;
 	} else {
 		pt_entry_t pte;
 
@@ -630,28 +650,34 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 			 */
 			pde = pm->pm_l0table[l0pde_index(va)];
 			if (!l0pde_valid(pde)) {
-				goto notfound;
+				found = false;
+				goto done;
 			}
 
 			l1 = AARCH64_PA_TO_KVA(l0pde_pa(pde));
 			pde = l1[l1pde_index(va)];
 			if (!l1pde_valid(pde)) {
-				goto notfound;
+				found = false;
+				goto done;
 			}
 			if (l1pde_is_block(pde)) {
 				pa = l1pde_pa(pde) + (va & L1_OFFSET);
-				goto found;
+				found = true;
+				goto done;
 			}
 
 			KASSERT(l1pde_is_table(pde));
 
 			l2 = AARCH64_PA_TO_KVA(l1pde_pa(pde));
 			pde = l2[l2pde_index(va)];
-			if (!l2pde_valid(pde))
-				goto notfound;
+			if (!l2pde_valid(pde)) {
+				found = false;
+				goto done;
+			}
 			if (l2pde_is_block(pde)) {
 				pa = l2pde_pa(pde) + (va & L2_OFFSET);
-				goto found;
+				found = true;
+				goto done;
 			}
 
 			KASSERT(l2pde_is_table(pde));
@@ -662,24 +688,19 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 		} else {
 			pte = *ptep;
 		}
-		if (!l3pte_valid(pte))
-			goto notfound;
+		if (!l3pte_valid(pte)) {
+			found = false;
+			goto done;
+		}
 
 		KASSERT(l3pte_is_page(pte));
 		pa = l3pte_pa(pte) + (va & L3_OFFSET);
+		found = true;
 	}
- found:
-	if (!pm_locked)
-		PM_UNLOCK(pm);
-
-	if (pap != NULL)
+ done:
+	if (found && (pap != NULL))
 		*pap = pa;
-	return true;
-
- notfound:
-	if (!pm_locked)
-		PM_UNLOCK(pm);
-	return false;
+	return found;
 }
 
 paddr_t
@@ -899,6 +920,20 @@ str_vmflags(uint32_t flags)
 }
 
 static void
+pg_dump(struct vm_page *pg, void (*pr)(const char *, ...))
+{
+	pr("pg=%p\n", pg);
+	pr(" pg->uanon   = %p\n", pg->uanon);
+	pr(" pg->uobject = %p\n", pg->uobject);
+	pr(" pg->offset  = %zu\n", pg->offset);
+	pr(" pg->flags      = %u\n", pg->flags);
+	pr(" pg->loan_count = %u\n", pg->loan_count);
+	pr(" pg->wire_count = %u\n", pg->wire_count);
+	pr(" pg->pqflags    = %u\n", pg->pqflags);
+	pr(" pg->phys_addr  = %016lx\n", pg->phys_addr);
+}
+
+static void
 pv_dump(struct vm_page_md *md, void (*pr)(const char *, ...))
 {
 	struct pv_entry *pv;
@@ -927,7 +962,7 @@ pv_dump(struct vm_page_md *md, void (*pr)(const char *, ...))
 }
 #endif /* PMAP_PV_DEBUG & DDB */
 
-static void
+static int
 _pmap_enter_pv(struct vm_page *pg, struct pmap *pm, vaddr_t va,
     pt_entry_t *ptep, paddr_t pa, u_int flags)
 {
@@ -973,7 +1008,10 @@ _pmap_enter_pv(struct vm_page *pg, struct pmap *pm, vaddr_t va,
 		pmap_pv_unlock(md);
 
 		/* create and link new pv */
-		pv = pool_cache_get(&_pmap_pv_pool, PR_WAITOK);
+		pv = pool_cache_get(&_pmap_pv_pool, PR_NOWAIT);
+		if (pv == NULL)
+			return ENOMEM;
+
 		pv->pv_pmap = pm;
 		pv->pv_va = va;
 		pv->pv_pa = pa;
@@ -999,6 +1037,7 @@ _pmap_enter_pv(struct vm_page *pg, struct pmap *pm, vaddr_t va,
 #endif
 	}
 	pmap_pv_unlock(md);
+	return 0;
 }
 
 void
@@ -1224,9 +1263,8 @@ pmap_create(void)
 	pm->pm_asid = -1;
 	pm->pm_l0table = _pmap_alloc_pdp(pm, &pm->pm_l0table_pa);
 	KASSERT(((vaddr_t)pm->pm_l0table & (PAGE_SIZE - 1)) == 0);
-	KASSERT(pm->pm_l0table_pa != POOL_PADDR_INVALID);
 	SLIST_INIT(&pm->pm_vmlist);
-	mutex_init(&pm->pm_lock, MUTEX_DEFAULT, IPL_NONE);
+	mutex_init(&pm->pm_lock, MUTEX_DEFAULT, IPL_VM);
 
 	UVMHIST_LOG(pmaphist, "pm=%p, pm_l0table=%016lx, pm_l0table_pa=%016lx",
 	    pm, pm->pm_l0table, pm->pm_l0table_pa, 0);
@@ -1277,6 +1315,7 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	paddr_t pdppa;
 	uint32_t mdattr;
 	unsigned int idx;
+	int error = 0;
 	int pm_locked;
 	const bool user = (pm != pmap_kernel());
 	bool badcolor;
@@ -1335,7 +1374,6 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	pm_locked = PM_LOCKED(pm);
 	if (!pm_locked)
 		PM_LOCK(pm);
-
 
 	/*
 	 * traverse L0 -> L1 -> L2 -> L3 table with growing pdp if needed.
@@ -1440,7 +1478,13 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 		pm->pm_stats.wired_count++;
 		VM_PAGE_TO_MD(pg)->mdpg_wiredcount++;
 	} else {
-		_pmap_enter_pv(pg, pm, va, ptep, pa, flags);
+		error = _pmap_enter_pv(pg, pm, va, ptep, pa, flags);
+		if (error != 0) {
+			PMAP_COUNT(pv_entry_cannotalloc);
+			if (flags & PMAP_CANFAIL)
+				goto done;
+			panic("pmap_enter: failed to allocate pv_entry");
+		}
 
 		if (flags & PMAP_WIRED) {
 			mdattr = (VM_PROT_READ | VM_PROT_WRITE);
@@ -1484,9 +1528,11 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	}
 
 	pm->pm_stats.resident_count++;
+
+ done:
 	if (!pm_locked)
 		PM_UNLOCK(pm);
-	return 0;
+	return error;
 }
 
 int
@@ -2093,6 +2139,7 @@ pmap_db_pteinfo(vaddr_t va, void (*pr)(const char *, ...))
 		pa = l3pte_pa(pte);
 		pg = PHYS_TO_VM_PAGE(pa);
 		if (pg != NULL) {
+			pg_dump(pg, pr);
 			md = VM_PAGE_TO_MD(pg);
 			pv_dump(md, pr);
 		}
