@@ -83,11 +83,12 @@ extern db_regs_t ddb_regs;
 #define DDB_REGS		(&ddb_regs)
 #define PC_REGS(tf)		((tf)->tf_pc)
 
-int kdb_trap(int type, struct trapframe *);
+int kdb_trap(int, struct trapframe *);
 #define DB_TRAP_UNKNOWN		0
 #define DB_TRAP_BREAKPOINT	1
 #define DB_TRAP_BKPT_INSN	2
 #define DB_TRAP_WATCHPOINT	3
+#define DB_TRAP_SW_STEP		4
 
 #define IS_BREAKPOINT_TRAP(type, code) \
 	((type) == DB_TRAP_BREAKPOINT || (type) == DB_TRAP_BKPT_INSN)
@@ -118,7 +119,7 @@ inst_load(db_expr_t insn)
 {
 	return
 	    ((((insn) & 0x3b000000) == 0x18000000) || /* literal */
-	     (((insn) & 0x3f400000) == 0x08400000) ||  /* exclusive */
+	     (((insn) & 0x3f400000) == 0x08400000) || /* exclusive */
 	     (((insn) & 0x3bc00000) == 0x28400000) || /* no-allocate pair */
 	     ((((insn) & 0x3b200c00) == 0x38000400) &&
 	      (((insn) & 0x3be00c00) != 0x38000400) &&
@@ -133,10 +134,10 @@ inst_load(db_expr_t insn)
 	      (((insn) & 0x3be00c00) != 0x38000800)) || /* unprivileged */
 	     ((((insn) & 0x3b200c00) == 0x38000000) &&
 	      (((insn) & 0x3be00c00) != 0x38000000) &&
-	      (((insn) & 0xffe00c00) != 0x3c800000)) ||  /* unscaled imm */
+	      (((insn) & 0xffe00c00) != 0x3c800000)) || /* unscaled imm */
 	     ((((insn) & 0x3b000000) == 0x39000000) &&
 	      (((insn) & 0x3bc00000) != 0x39000000) &&
-	      (((insn) & 0xffc00000) != 0x3d800000)) ||  /* unsigned imm */
+	      (((insn) & 0xffc00000) != 0x3d800000)) || /* unsigned imm */
 	     (((insn) & 0x3bc00000) == 0x28400000) || /* pair (offset) */
 	     (((insn) & 0x3bc00000) == 0x28c00000) || /* pair (post-indexed) */
 	     (((insn) & 0x3bc00000) == 0x29800000)); /* pair (pre-indexed) */
@@ -156,9 +157,9 @@ inst_store(db_expr_t insn)
 	      (((insn) & 0xffe00c00) == 0x3ca00800)) || /* register offset */
 	     (((insn) & 0x3be00c00) == 0x38000800) ||  /* unprivileged */
 	     ((((insn) & 0x3be00c00) == 0x38000000) ||
-	      (((insn) & 0xffe00c00) == 0x3c800000)) ||  /* unscaled imm */
+	      (((insn) & 0xffe00c00) == 0x3c800000)) || /* unscaled imm */
 	     ((((insn) & 0x3bc00000) == 0x39000000) ||
-	      (((insn) & 0xffc00000) == 0x3d800000)) ||  /* unsigned imm */
+	      (((insn) & 0xffc00000) == 0x3d800000)) || /* unsigned imm */
 	     (((insn) & 0x3bc00000) == 0x28000000) || /* pair (offset) */
 	     (((insn) & 0x3bc00000) == 0x28800000) || /* pair (post-indexed) */
 	     (((insn) & 0x3bc00000) == 0x29800000)); /* pair (pre-indexed) */

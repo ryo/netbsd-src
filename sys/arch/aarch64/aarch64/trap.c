@@ -170,7 +170,16 @@ trap_el1h_sync(struct trapframe *tf)
 	case ESR_EC_WTCHPNT_EL1:
 	case ESR_EC_BKPT_INSN_A64:
 #ifdef DDB
-		kdb_trap(0, tf);
+		if (eclass == ESR_EC_BRKPNT_EL1)
+			kdb_trap(DB_TRAP_BREAKPOINT, tf);
+		else if (eclass == ESR_EC_BKPT_INSN_A64)
+			kdb_trap(DB_TRAP_BKPT_INSN, tf);
+		else if (eclass == ESR_EC_WTCHPNT_EL1)
+			kdb_trap(DB_TRAP_WATCHPOINT, tf);
+		else if (eclass == ESR_EC_SW_STEP_EL1)
+			kdb_trap(DB_TRAP_SW_STEP, tf);
+		else
+			kdb_trap(DB_TRAP_UNKNOWN, tf);
 #else
 		panic("No debugger in kernel");
 #endif
