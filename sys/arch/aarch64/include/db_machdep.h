@@ -197,6 +197,21 @@ db_addr_t db_branch_taken(db_expr_t, db_addr_t, db_regs_t *);
 #define DB_MACHINE_COMMANDS
 void dump_trapframe(struct trapframe *, void (*)(const char *, ...));
 
+
+
+void db_machdep_init(void);
+
+/* hardware breakpoint/watchpoint functions */
+void aarch64_breakpoint_clear(int);
+void aarch64_breakpoint_set(int, vaddr_t);
+void aarch64_watchpoint_clear(int);
+void aarch64_watchpoint_set(int, vaddr_t, int, int);
+#define WATCHPOINT_ACCESS_LOAD		0x01
+#define WATCHPOINT_ACCESS_STORE		0x02
+#define WATCHPOINT_ACCESS_LOADSTORE	0x03
+#define WATCHPOINT_ACCESS_MASK		0x03
+
+
 #elif defined(__arm__)
 
 #include <arm/db_machdep.h>

@@ -33,6 +33,8 @@
 __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp $");
 
 #include "opt_arm_debug.h"
+#include "opt_ddb.h"
+#include "opt_kernhist.h"
 
 #include <sys/param.h>
 #include <sys/types.h>
@@ -47,6 +49,9 @@ __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp
 #include <aarch64/armreg.h>
 #include <aarch64/bootconfig.h>
 #include <aarch64/cpufunc.h>
+#ifdef DDB
+#include <aarch64/db_machdep.h>
+#endif
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
 #include <aarch64/pmap.h>
@@ -169,6 +174,9 @@ initarm64(struct BootConfig *bootconf)
 	bootconf->dram[0].pages = atop(physical_end);
 	initmsgbuf(AARCH64_PA_TO_KVA(physical_end), MSGBUFSIZE);
 
+#ifdef DDB
+	db_machdep_init();
+#endif
 
 	uvm_md_init();
 

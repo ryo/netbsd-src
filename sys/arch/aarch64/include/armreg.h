@@ -523,12 +523,6 @@ static const uintmax_t
     MAIR_NORMAL_WT	= 0xbb,
     MAIR_NORMAL_WB	= 0xff;
 
-AARCH64REG_READ_INLINE(mdscr_el1) /* Monitor Debug System Control Register */
-AARCH64REG_WRITE_INLINE(mdscr_el1)
-
-AARCH64REG_READ_INLINE(oslar_el1)	/* OS Lock Access Register */
-AARCH64REG_WRITE_INLINE(oslar_el1)
-
 AARCH64REG_READ_INLINE(par_el1)		/* Physical Address Register */
 AARCH64REG_WRITE_INLINE(par_el1)
 
@@ -663,7 +657,173 @@ AARCH64REG_READ_INLINE(vbar_el1)	/* Vector Base Address Register */
 AARCH64REG_WRITE_INLINE(vbar_el1)
 
 /*
- * From here on, PMC registers
+ * From here on, these are DEBUG registers
+ */
+AARCH64REG_READ_INLINE(dbgbcr0_el1) /* Debug Breakpoint Control Register 0 */
+AARCH64REG_WRITE_INLINE(dbgbcr0_el1)
+AARCH64REG_READ_INLINE(dbgbcr1_el1) /* Debug Breakpoint Control Register 1 */
+AARCH64REG_WRITE_INLINE(dbgbcr1_el1)
+AARCH64REG_READ_INLINE(dbgbcr2_el1) /* Debug Breakpoint Control Register 2 */
+AARCH64REG_WRITE_INLINE(dbgbcr2_el1)
+AARCH64REG_READ_INLINE(dbgbcr3_el1) /* Debug Breakpoint Control Register 3 */
+AARCH64REG_WRITE_INLINE(dbgbcr3_el1)
+AARCH64REG_READ_INLINE(dbgbcr4_el1) /* Debug Breakpoint Control Register 4 */
+AARCH64REG_WRITE_INLINE(dbgbcr4_el1)
+AARCH64REG_READ_INLINE(dbgbcr5_el1) /* Debug Breakpoint Control Register 5 */
+AARCH64REG_WRITE_INLINE(dbgbcr5_el1)
+AARCH64REG_READ_INLINE(dbgbcr6_el1) /* Debug Breakpoint Control Register 6 */
+AARCH64REG_WRITE_INLINE(dbgbcr6_el1)
+AARCH64REG_READ_INLINE(dbgbcr7_el1) /* Debug Breakpoint Control Register 7 */
+AARCH64REG_WRITE_INLINE(dbgbcr7_el1)
+AARCH64REG_READ_INLINE(dbgbcr8_el1) /* Debug Breakpoint Control Register 8 */
+AARCH64REG_WRITE_INLINE(dbgbcr8_el1)
+AARCH64REG_READ_INLINE(dbgbcr9_el1) /* Debug Breakpoint Control Register 9 */
+AARCH64REG_WRITE_INLINE(dbgbcr9_el1)
+AARCH64REG_READ_INLINE(dbgbcr10_el1) /* Debug Breakpoint Control Register 10 */
+AARCH64REG_WRITE_INLINE(dbgbcr10_el1)
+AARCH64REG_READ_INLINE(dbgbcr11_el1) /* Debug Breakpoint Control Register 11 */
+AARCH64REG_WRITE_INLINE(dbgbcr11_el1)
+AARCH64REG_READ_INLINE(dbgbcr12_el1) /* Debug Breakpoint Control Register 12 */
+AARCH64REG_WRITE_INLINE(dbgbcr12_el1)
+AARCH64REG_READ_INLINE(dbgbcr13_el1) /* Debug Breakpoint Control Register 13 */
+AARCH64REG_WRITE_INLINE(dbgbcr13_el1)
+AARCH64REG_READ_INLINE(dbgbcr14_el1) /* Debug Breakpoint Control Register 14 */
+AARCH64REG_WRITE_INLINE(dbgbcr14_el1)
+AARCH64REG_READ_INLINE(dbgbcr15_el1) /* Debug Breakpoint Control Register 15 */
+AARCH64REG_WRITE_INLINE(dbgbcr15_el1)
+
+static const uintmax_t
+    DBGBCR_BT		= __BITS(23,20),
+    DBGBCR_LBN		= __BITS(19,16),
+    DBGBCR_SSC		= __BITS(15,14),
+    DBGBCR_HMC		= __BIT(13),
+    DBGBCR_BAS		= __BITS(8,5),
+    DBGBCR_PMC		= __BITS(2,1),
+    DBGBCR_E		= __BIT(0);
+
+AARCH64REG_READ_INLINE(dbgbvr0_el1) /* Debug Breakpoint Value Register 0 */
+AARCH64REG_WRITE_INLINE(dbgbvr0_el1)
+AARCH64REG_READ_INLINE(dbgbvr1_el1) /* Debug Breakpoint Value Register 1 */
+AARCH64REG_WRITE_INLINE(dbgbvr1_el1)
+AARCH64REG_READ_INLINE(dbgbvr2_el1) /* Debug Breakpoint Value Register 2 */
+AARCH64REG_WRITE_INLINE(dbgbvr2_el1)
+AARCH64REG_READ_INLINE(dbgbvr3_el1) /* Debug Breakpoint Value Register 3 */
+AARCH64REG_WRITE_INLINE(dbgbvr3_el1)
+AARCH64REG_READ_INLINE(dbgbvr4_el1) /* Debug Breakpoint Value Register 4 */
+AARCH64REG_WRITE_INLINE(dbgbvr4_el1)
+AARCH64REG_READ_INLINE(dbgbvr5_el1) /* Debug Breakpoint Value Register 5 */
+AARCH64REG_WRITE_INLINE(dbgbvr5_el1)
+AARCH64REG_READ_INLINE(dbgbvr6_el1) /* Debug Breakpoint Value Register 6 */
+AARCH64REG_WRITE_INLINE(dbgbvr6_el1)
+AARCH64REG_READ_INLINE(dbgbvr7_el1) /* Debug Breakpoint Value Register 7 */
+AARCH64REG_WRITE_INLINE(dbgbvr7_el1)
+AARCH64REG_READ_INLINE(dbgbvr8_el1) /* Debug Breakpoint Value Register 8 */
+AARCH64REG_WRITE_INLINE(dbgbvr8_el1)
+AARCH64REG_READ_INLINE(dbgbvr9_el1) /* Debug Breakpoint Value Register 9 */
+AARCH64REG_WRITE_INLINE(dbgbvr9_el1)
+AARCH64REG_READ_INLINE(dbgbvr10_el1) /* Debug Breakpoint Value Register 10 */
+AARCH64REG_WRITE_INLINE(dbgbvr10_el1)
+AARCH64REG_READ_INLINE(dbgbvr11_el1) /* Debug Breakpoint Value Register 11 */
+AARCH64REG_WRITE_INLINE(dbgbvr11_el1)
+AARCH64REG_READ_INLINE(dbgbvr12_el1) /* Debug Breakpoint Value Register 12 */
+AARCH64REG_WRITE_INLINE(dbgbvr12_el1)
+AARCH64REG_READ_INLINE(dbgbvr13_el1) /* Debug Breakpoint Value Register 13 */
+AARCH64REG_WRITE_INLINE(dbgbvr13_el1)
+AARCH64REG_READ_INLINE(dbgbvr14_el1) /* Debug Breakpoint Value Register 14 */
+AARCH64REG_WRITE_INLINE(dbgbvr14_el1)
+AARCH64REG_READ_INLINE(dbgbvr15_el1) /* Debug Breakpoint Value Register 15 */
+AARCH64REG_WRITE_INLINE(dbgbvr15_el1)
+
+AARCH64REG_READ_INLINE(dbgwcr0_el1) /* Debug Watchpoint Control Register 0 */
+AARCH64REG_WRITE_INLINE(dbgwcr0_el1)
+AARCH64REG_READ_INLINE(dbgwcr1_el1) /* Debug Watchpoint Control Register 1 */
+AARCH64REG_WRITE_INLINE(dbgwcr1_el1)
+AARCH64REG_READ_INLINE(dbgwcr2_el1) /* Debug Watchpoint Control Register 2 */
+AARCH64REG_WRITE_INLINE(dbgwcr2_el1)
+AARCH64REG_READ_INLINE(dbgwcr3_el1) /* Debug Watchpoint Control Register 3 */
+AARCH64REG_WRITE_INLINE(dbgwcr3_el1)
+AARCH64REG_READ_INLINE(dbgwcr4_el1) /* Debug Watchpoint Control Register 4 */
+AARCH64REG_WRITE_INLINE(dbgwcr4_el1)
+AARCH64REG_READ_INLINE(dbgwcr5_el1) /* Debug Watchpoint Control Register 5 */
+AARCH64REG_WRITE_INLINE(dbgwcr5_el1)
+AARCH64REG_READ_INLINE(dbgwcr6_el1) /* Debug Watchpoint Control Register 6 */
+AARCH64REG_WRITE_INLINE(dbgwcr6_el1)
+AARCH64REG_READ_INLINE(dbgwcr7_el1) /* Debug Watchpoint Control Register 7 */
+AARCH64REG_WRITE_INLINE(dbgwcr7_el1)
+AARCH64REG_READ_INLINE(dbgwcr8_el1) /* Debug Watchpoint Control Register 8 */
+AARCH64REG_WRITE_INLINE(dbgwcr8_el1)
+AARCH64REG_READ_INLINE(dbgwcr9_el1) /* Debug Watchpoint Control Register 9 */
+AARCH64REG_WRITE_INLINE(dbgwcr9_el1)
+AARCH64REG_READ_INLINE(dbgwcr10_el1) /* Debug Watchpoint Control Register 10 */
+AARCH64REG_WRITE_INLINE(dbgwcr10_el1)
+AARCH64REG_READ_INLINE(dbgwcr11_el1) /* Debug Watchpoint Control Register 11 */
+AARCH64REG_WRITE_INLINE(dbgwcr11_el1)
+AARCH64REG_READ_INLINE(dbgwcr12_el1) /* Debug Watchpoint Control Register 12 */
+AARCH64REG_WRITE_INLINE(dbgwcr12_el1)
+AARCH64REG_READ_INLINE(dbgwcr13_el1) /* Debug Watchpoint Control Register 13 */
+AARCH64REG_WRITE_INLINE(dbgwcr13_el1)
+AARCH64REG_READ_INLINE(dbgwcr14_el1) /* Debug Watchpoint Control Register 14 */
+AARCH64REG_WRITE_INLINE(dbgwcr14_el1)
+AARCH64REG_READ_INLINE(dbgwcr15_el1) /* Debug Watchpoint Control Register 15 */
+AARCH64REG_WRITE_INLINE(dbgwcr15_el1)
+
+static const uintmax_t
+    DBGWCR_MASK		= __BITS(28,24),
+    DBGWCR_WT		= __BIT(20),
+    DBGWCR_LBN		= __BITS(19,16),
+    DBGWCR_SSC		= __BITS(15,14),
+    DBGWCR_HMC		= __BIT(13),
+    DBGWCR_BAS		= __BITS(12,5),
+    DBGWCR_LSC		= __BITS(4,3),
+    DBGWCR_PAC		= __BITS(2,1),
+    DBGWCR_E		= __BIT(0);
+
+AARCH64REG_READ_INLINE(dbgwvr0_el1) /* Debug Watchpoint Value Register 0 */
+AARCH64REG_WRITE_INLINE(dbgwvr0_el1)
+AARCH64REG_READ_INLINE(dbgwvr1_el1) /* Debug Watchpoint Value Register 1 */
+AARCH64REG_WRITE_INLINE(dbgwvr1_el1)
+AARCH64REG_READ_INLINE(dbgwvr2_el1) /* Debug Watchpoint Value Register 2 */
+AARCH64REG_WRITE_INLINE(dbgwvr2_el1)
+AARCH64REG_READ_INLINE(dbgwvr3_el1) /* Debug Watchpoint Value Register 3 */
+AARCH64REG_WRITE_INLINE(dbgwvr3_el1)
+AARCH64REG_READ_INLINE(dbgwvr4_el1) /* Debug Watchpoint Value Register 4 */
+AARCH64REG_WRITE_INLINE(dbgwvr4_el1)
+AARCH64REG_READ_INLINE(dbgwvr5_el1) /* Debug Watchpoint Value Register 5 */
+AARCH64REG_WRITE_INLINE(dbgwvr5_el1)
+AARCH64REG_READ_INLINE(dbgwvr6_el1) /* Debug Watchpoint Value Register 6 */
+AARCH64REG_WRITE_INLINE(dbgwvr6_el1)
+AARCH64REG_READ_INLINE(dbgwvr7_el1) /* Debug Watchpoint Value Register 7 */
+AARCH64REG_WRITE_INLINE(dbgwvr7_el1)
+AARCH64REG_READ_INLINE(dbgwvr8_el1) /* Debug Watchpoint Value Register 8 */
+AARCH64REG_WRITE_INLINE(dbgwvr8_el1)
+AARCH64REG_READ_INLINE(dbgwvr9_el1) /* Debug Watchpoint Value Register 9 */
+AARCH64REG_WRITE_INLINE(dbgwvr9_el1)
+AARCH64REG_READ_INLINE(dbgwvr10_el1) /* Debug Watchpoint Value Register 10 */
+AARCH64REG_WRITE_INLINE(dbgwvr10_el1)
+AARCH64REG_READ_INLINE(dbgwvr11_el1) /* Debug Watchpoint Value Register 11 */
+AARCH64REG_WRITE_INLINE(dbgwvr11_el1)
+AARCH64REG_READ_INLINE(dbgwvr12_el1) /* Debug Watchpoint Value Register 12 */
+AARCH64REG_WRITE_INLINE(dbgwvr12_el1)
+AARCH64REG_READ_INLINE(dbgwvr13_el1) /* Debug Watchpoint Value Register 13 */
+AARCH64REG_WRITE_INLINE(dbgwvr13_el1)
+AARCH64REG_READ_INLINE(dbgwvr14_el1) /* Debug Watchpoint Value Register 14 */
+AARCH64REG_WRITE_INLINE(dbgwvr14_el1)
+AARCH64REG_READ_INLINE(dbgwvr15_el1) /* Debug Watchpoint Value Register 15 */
+AARCH64REG_WRITE_INLINE(dbgwvr15_el1)
+
+static const uintmax_t
+    DBGWVR_MASK		= __BITS(64,3);
+
+
+AARCH64REG_READ_INLINE(mdscr_el1) /* Monitor Debug System Control Register */
+AARCH64REG_WRITE_INLINE(mdscr_el1)
+
+AARCH64REG_WRITE_INLINE(oslar_el1)	/* OS Lock Access Register */
+
+AARCH64REG_READ_INLINE(oslsr_el1)	/* OS Lock Status Register */
+
+/*
+ * From here on, these are PMC registers
  */
 
 AARCH64REG_READ_INLINE(pmccfiltr_el0)

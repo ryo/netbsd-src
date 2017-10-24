@@ -43,6 +43,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 #include <aarch64/db_machdep.h>
 #include <aarch64/armreg.h>
+#include <aarch64/locore.h>
 #include <aarch64/pmap.h>
 
 #include <ddb/db_access.h>
@@ -127,6 +128,13 @@ const struct db_command db_machine_command_table[] = {
 //		    NULL, NULL)
 //	},
 #endif
+	{
+		DDB_ADD_CMD(
+		    "watch", db_md_watch_cmd, 0,
+		    "set or clear watchpoint",
+		    "<param>",
+		    "\tparam: <address> | <#>")
+	},
 	{
 		DDB_ADD_CMD(NULL, NULL, 0,
 		    NULL,
@@ -459,6 +467,7 @@ db_md_sysreg_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *mo
 	SHOW_ARMREG(isr_el1);
 	SHOW_ARMREG(l2ctlr_el1);
 	SHOW_ARMREG(mair_el1);
+	SHOW_ARMREG(mdscr_el1);
 	SHOW_ARMREG(midr_el1);
 	SHOW_ARMREG(mpidr_el1);
 	SHOW_ARMREG(mvfr0_el1);
@@ -482,28 +491,332 @@ db_md_sysreg_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *mo
 	SHOW_ARMREG(vbar_el1);
 }
 
-void
-db_md_tlb_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+/*
+ * hardware breakpoint/watchpoint command
+ */
+static void
+aarch64_set_bcr_bvr(int n, uint64_t bcr, uint64_t bvr)
 {
-#if 0
-	int way, idx;
+#define DBG_BVR_BCR_SET_IF(regno)					\
+	do {								\
+		if (n == regno) {					\
+			reg_dbgbcr ## regno ## _el1_write(bcr);		\
+			reg_dbgbvr ## regno ## _el1_write(bvr);		\
+			return;						\
+		}							\
+	} while (0 /* CONSTCOND */)
 
-	//XXXAARCH64
-	/* s3_3_c15_c4_2 is available only in EL3... */
-	for (idx = 0; idx < (1<<7) - 1; idx++) {
-		for (way = 0; way < 3; way++) {
-			uint64_t x, tlbdata0, tlbdata1, tlbdata2, tlbdata3;
-			x = (way << 30) | idx;
-			__asm __volatile ("msr s3_3_c15_c4_2, %0" :: "r"(x));
-			__asm __volatile ("mrs %0, s3_3_c15_c0_0" : "=r"(tlbdata0));
-			__asm __volatile ("mrs %0, s3_3_c15_c0_1" : "=r"(tlbdata1));
-			__asm __volatile ("mrs %0, s3_3_c15_c0_2" : "=r"(tlbdata2));
-			__asm __volatile ("mrs %0, s3_3_c15_c0_3" : "=r"(tlbdata3));
-			db_printf("%d:%d = %016x%016x%016x%016x\n", way, idx,
-			    tlbdata0, tlbdata1, tlbdata2, tlbdata3);
+	DBG_BVR_BCR_SET_IF(0);
+	DBG_BVR_BCR_SET_IF(1);
+	DBG_BVR_BCR_SET_IF(2);
+	DBG_BVR_BCR_SET_IF(3);
+	DBG_BVR_BCR_SET_IF(4);
+	DBG_BVR_BCR_SET_IF(5);
+	DBG_BVR_BCR_SET_IF(6);
+	DBG_BVR_BCR_SET_IF(7);
+	DBG_BVR_BCR_SET_IF(8);
+	DBG_BVR_BCR_SET_IF(9);
+	DBG_BVR_BCR_SET_IF(10);
+	DBG_BVR_BCR_SET_IF(11);
+	DBG_BVR_BCR_SET_IF(12);
+	DBG_BVR_BCR_SET_IF(13);
+	DBG_BVR_BCR_SET_IF(14);
+	DBG_BVR_BCR_SET_IF(15);
+}
+
+static void
+aarch64_set_wcr_wvr(int n, uint64_t wcr, uint64_t wvr)
+{
+#define DBG_WVR_WCR_SET_IF(regno)					\
+	do {								\
+		if (n == regno) {					\
+			reg_dbgwcr ## regno ## _el1_write(wcr);		\
+			reg_dbgwvr ## regno ## _el1_write(wvr);		\
+			return;						\
+		}							\
+	} while (0 /* CONSTCOND */)
+
+	DBG_WVR_WCR_SET_IF(0);
+	DBG_WVR_WCR_SET_IF(1);
+	DBG_WVR_WCR_SET_IF(2);
+	DBG_WVR_WCR_SET_IF(3);
+	DBG_WVR_WCR_SET_IF(4);
+	DBG_WVR_WCR_SET_IF(5);
+	DBG_WVR_WCR_SET_IF(6);
+	DBG_WVR_WCR_SET_IF(7);
+	DBG_WVR_WCR_SET_IF(8);
+	DBG_WVR_WCR_SET_IF(9);
+	DBG_WVR_WCR_SET_IF(10);
+	DBG_WVR_WCR_SET_IF(11);
+	DBG_WVR_WCR_SET_IF(12);
+	DBG_WVR_WCR_SET_IF(13);
+	DBG_WVR_WCR_SET_IF(14);
+	DBG_WVR_WCR_SET_IF(15);
+}
+
+static uint64_t
+aarch64_get_dbgwcr(int n)
+{
+#define DBGWCR_READ_RET_IF(regno)					\
+	do {								\
+		if (n == regno) {					\
+			return reg_dbgwcr ## regno ## _el1_read();	\
+		}							\
+	} while (0 /* CONSTCOND */)
+
+	DBGWCR_READ_RET_IF(0);
+	DBGWCR_READ_RET_IF(1);
+	DBGWCR_READ_RET_IF(2);
+	DBGWCR_READ_RET_IF(3);
+	DBGWCR_READ_RET_IF(4);
+	DBGWCR_READ_RET_IF(5);
+	DBGWCR_READ_RET_IF(6);
+	DBGWCR_READ_RET_IF(7);
+	DBGWCR_READ_RET_IF(8);
+	DBGWCR_READ_RET_IF(9);
+	DBGWCR_READ_RET_IF(10);
+	DBGWCR_READ_RET_IF(11);
+	DBGWCR_READ_RET_IF(12);
+	DBGWCR_READ_RET_IF(13);
+	DBGWCR_READ_RET_IF(14);
+	DBGWCR_READ_RET_IF(15);
+
+	return 0;
+}
+
+static uint64_t
+aarch64_get_dbgwvr(int n)
+{
+#define DBGWVR_READ_RET_IF(regno)					\
+	do {								\
+		if (n == regno) {					\
+			return reg_dbgwvr ## regno ## _el1_read();	\
+		}							\
+	} while (0 /* CONSTCOND */)
+
+	DBGWVR_READ_RET_IF(0);
+	DBGWVR_READ_RET_IF(1);
+	DBGWVR_READ_RET_IF(2);
+	DBGWVR_READ_RET_IF(3);
+	DBGWVR_READ_RET_IF(4);
+	DBGWVR_READ_RET_IF(5);
+	DBGWVR_READ_RET_IF(6);
+	DBGWVR_READ_RET_IF(7);
+	DBGWVR_READ_RET_IF(8);
+	DBGWVR_READ_RET_IF(9);
+	DBGWVR_READ_RET_IF(10);
+	DBGWVR_READ_RET_IF(11);
+	DBGWVR_READ_RET_IF(12);
+	DBGWVR_READ_RET_IF(13);
+	DBGWVR_READ_RET_IF(14);
+	DBGWVR_READ_RET_IF(15);
+
+	return 0;
+}
+
+void
+aarch64_breakpoint_clear(int n)
+{
+	aarch64_set_bcr_bvr(n, 0, 0);
+}
+
+void
+aarch64_watchpoint_clear(int n)
+{
+	aarch64_set_wcr_wvr(n, 0, 0);
+}
+
+void
+aarch64_watchpoint_set(int n, vaddr_t addr, int size, int accesstype)
+{
+	uint64_t wvr, wcr;
+	uint32_t matchbytebit;
+
+	/* BAS must be  all of whose set bits are contiguous */
+	matchbytebit = 0xff >> (8 - size);
+	matchbytebit <<= (addr & 7);
+
+	/* load, store, or both */
+	accesstype &= WATCHPOINT_ACCESS_MASK;
+	if (accesstype == 0)
+		accesstype = WATCHPOINT_ACCESS_LOADSTORE;
+
+	if (addr == 0) {
+		wvr = 0;
+		wcr = 0;
+	} else {
+		wvr = addr & DBGWVR_MASK;
+		wcr =
+		    __SHIFTIN(0, DBGWCR_MASK) |		/* MASK: no mask */
+		    __SHIFTIN(0, DBGWCR_WT) |		/* WT: 0 */
+		    __SHIFTIN(0, DBGWCR_LBN) |		/* LBN: 0 */
+		    __SHIFTIN(0, DBGWCR_SSC) |		/* SSC: 00 */
+		    __SHIFTIN(0, DBGWCR_HMC) |		/* HMC: 0 */
+		    __SHIFTIN(matchbytebit, DBGWCR_BAS) | /* BAS: 0-8byte */
+		    __SHIFTIN(accesstype, DBGWCR_LSC) |	/* LSC: Load/Store */
+		    __SHIFTIN(3, DBGWCR_PAC) |		/* PAC: 11 */
+		    __SHIFTIN(1, DBGWCR_E);		/* Enable */
+	}
+
+	aarch64_set_wcr_wvr(n, wcr, wvr);
+}
+
+#define MAX_BREAKPOINT	15
+static int max_breakpoint = MAX_BREAKPOINT;
+
+#define MAX_WATCHPOINT	15
+static int max_watchpoint = MAX_WATCHPOINT;
+
+void
+db_machdep_init(void)
+{
+	uint64_t dfr, mdscr;
+	int i;
+
+	dfr = reg_id_aa64dfr0_el1_read();
+	max_breakpoint = __SHIFTOUT(dfr, ID_AA64DFR0_EL1_BRPS);
+	max_watchpoint = __SHIFTOUT(dfr, ID_AA64DFR0_EL1_WRPS);
+
+	for (i = 0; i <= max_breakpoint; i++) {
+		/* clear all breakpoints */
+		aarch64_breakpoint_clear(i);
+	}
+	for (i = 0; i <= max_watchpoint; i++) {
+		/* clear all watchpoints */
+		aarch64_watchpoint_clear(i);
+	}
+
+	mdscr = reg_mdscr_el1_read();
+	mdscr |= __BIT(15);
+	mdscr |= __BIT(13);
+	reg_mdscr_el1_write(mdscr);
+	reg_oslar_el1_write(0);
+	daif_enable(DAIF_D);
+}
+
+static void
+show_watchpoints(void)
+{
+	uint64_t wcr, addr;
+	unsigned int i, bas, offset, size, nused;
+
+	for (nused = 0, i = 0; i <= max_watchpoint; i++) {
+		addr = aarch64_get_dbgwvr(i) & DBGWVR_MASK;
+		wcr = aarch64_get_dbgwcr(i);
+		if (wcr & DBGWCR_E) {
+			bas = __SHIFTOUT(wcr, DBGWCR_BAS);
+			if (bas == 0) {
+				db_printf("%d: disabled %016llx", i, addr);
+			} else {
+				offset = ffs(bas) - 1;
+				addr += offset;
+				bas >>= offset;
+				size = ffs(~bas) - 1;
+
+				db_printf("%d: watching %016llx, %d bytes", i,
+				    addr, size);
+
+				switch (__SHIFTOUT(wcr, DBGWCR_LSC)) {
+				case WATCHPOINT_ACCESS_LOAD:
+					db_printf(", load");
+					break;
+				case WATCHPOINT_ACCESS_STORE:
+					db_printf(", store");
+					break;
+				case WATCHPOINT_ACCESS_LOADSTORE:
+					db_printf(", load/store");
+					break;
+				}
+			}
+			db_printf("\n");
+			nused++;
 		}
 	}
-#endif
+	db_printf("watchpoint used %d/%d\n", nused, max_watchpoint + 1);
+}
+
+void
+db_md_watch_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+{
+	int i;
+	int added, cleared;
+	int accesstype, watchsize;
+
+	if (!have_addr) {
+		show_watchpoints();
+		return;
+	}
+
+	accesstype = watchsize = 0;
+	if ((modif != NULL) && (*modif != '\0')) {
+		int ch;
+		for (; *modif != '\0'; modif++) {
+			ch = *modif;
+
+			switch (ch) {
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+				watchsize = ch - '0';
+				break;
+			case 'l':
+				accesstype |= WATCHPOINT_ACCESS_LOAD;
+				break;
+			case 's':
+				accesstype |= WATCHPOINT_ACCESS_STORE;
+				break;
+			}
+		}
+	}
+	if (watchsize == 0)
+		watchsize = 4;	/* default: 4byte */
+	if (accesstype == 0)
+		accesstype = WATCHPOINT_ACCESS_LOADSTORE; /* default */
+
+	added = -1;
+	cleared = -1;
+	if (0 <= addr && addr <= max_watchpoint) {
+		i = addr;
+		if (aarch64_get_dbgwcr(i) & DBGWCR_E) {
+			/* clear watch */
+			aarch64_watchpoint_set(i, 0, 0, 0);
+			cleared = i;
+		}
+	} else {
+		for (i = 0; i <= max_watchpoint; i++) {
+			if ((aarch64_get_dbgwvr(i) & DBGWVR_MASK) ==
+			    (addr & DBGWVR_MASK)) {
+				/* clear watch */
+				aarch64_watchpoint_set(i, 0, 0, 0);
+				cleared = i;
+			}
+		}
+		if (cleared == -1) {
+			for (i = 0; i <= max_watchpoint; i++) {
+				if (!(aarch64_get_dbgwcr(i) & DBGWCR_E)) {
+					/* add watch */
+					aarch64_watchpoint_set(i, addr, watchsize, accesstype);
+					added = i;
+					break;
+				}
+			}
+			if (i > max_watchpoint) {
+				db_printf("no more available watchpoint\n");
+			}
+		}
+	}
+
+	if (added >= 0)
+		db_printf("add watchpoint %d as %016llx\n", added, addr);
+	if (cleared >= 0)
+		db_printf("clear watchpoint %d\n", cleared);
+
+	show_watchpoints();
 }
 
 int
@@ -516,6 +829,7 @@ kdb_trap(int type, struct trapframe *tf)
 	case DB_TRAP_BREAKPOINT:
 	case DB_TRAP_BKPT_INSN:
 	case DB_TRAP_WATCHPOINT:
+	case DB_TRAP_SW_STEP:
 		break;
 	default:
 		if (db_recover != 0) {
