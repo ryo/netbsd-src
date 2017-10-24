@@ -33,6 +33,7 @@
 
 __KERNEL_RCSID(1, "$NetBSD: cpu_machdep.c,v 1.2 2015/04/14 22:36:54 jmcneill Exp $");
 
+#include "opt_kernhist.h"
 #include "opt_multiprocessor.h"
 
 #define _INTR_PRIVATE
@@ -42,6 +43,7 @@ __KERNEL_RCSID(1, "$NetBSD: cpu_machdep.c,v 1.2 2015/04/14 22:36:54 jmcneill Exp
 #include <sys/atomic.h>
 #include <sys/cpu.h>
 #include <sys/intr.h>
+#include <sys/kernhist.h>
 #include <sys/kmem.h>
 #include <sys/xcall.h>
 
@@ -50,6 +52,10 @@ __KERNEL_RCSID(1, "$NetBSD: cpu_machdep.c,v 1.2 2015/04/14 22:36:54 jmcneill Exp
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
 #include <aarch64/armreg.h>
+
+#ifdef TRAPHIST
+KERNHIST_DECL(traphist);
+#endif
 
 #ifdef MULTIPROCESSOR
 /* for arm compatibility (referred from pic.c) */
@@ -134,11 +140,21 @@ dosoftints(void)
 	const int opl = ci->ci_cpl;
 	const uint32_t softiplmask = SOFTIPLMASK(opl);
 
+#ifdef TRAPHIST
+	KERNHIST_FUNC(__func__);
+	KERNHIST_CALLED(traphist);
+#endif
+
 	splhigh();
 	for (;;) {
 		u_int softints = ci->ci_softints & softiplmask;
 		KASSERT((softints != 0) == ((ci->ci_softints >> opl) != 0));
 		KASSERT(opl == IPL_NONE || (softints & (1 << (opl - IPL_SOFTCLOCK))) == 0);
+
+#ifdef TRAPHIST
+		KERNHIST_LOG(traphist, "softints=%08x, sp=%016lx", softints, reg_sp_read(), 0, 0);
+#endif
+
 		if (softints == 0) {
 #ifdef __HAVE_PREEMPTION
 			if (ci->ci_want_resched & RESCHED_KPREEMPT) {
@@ -150,14 +166,24 @@ dosoftints(void)
 			splx(opl);
 			return;
 		}
-#define DOSOFTINT(n) \
-		if (ci->ci_softints & (1 << (IPL_SOFT ## n - IPL_SOFTCLOCK))) { \
-			ci->ci_softints &= \
-			    ~(1 << (IPL_SOFT ## n - IPL_SOFTCLOCK)); \
-			cpu_switchto_softint(ci->ci_softlwps[SOFTINT_ ## n], \
-			    IPL_SOFT ## n); \
-			continue; \
-		}
+
+#ifdef TRAPHIST
+#define TRAPHIST_LOG(NAME,FMT,A,B,C,D)	KERNHIST_LOG(NAME,FMT,A,B,C,D)
+#else
+#define TRAPHIST_LOG(NAME,FMT,A,B,C,D)	__nothing
+#endif
+
+#define DOSOFTINT(n)							\
+	if (ci->ci_softints & (1 << (IPL_SOFT##n - IPL_SOFTCLOCK))) {	\
+		ci->ci_softints &=					\
+		    ~(1 << (IPL_SOFT ## n - IPL_SOFTCLOCK));		\
+		TRAPHIST_LOG(traphist, "switchto softint %s sp=%016lx", #n, reg_sp_read(), 0, 0);	\
+		cpu_switchto_softint(ci->ci_softlwps[SOFTINT_ ## n],	\
+		    IPL_SOFT ## n);					\
+		TRAPHIST_LOG(traphist, "switchfrom softint %s sp=%016lx", #n, reg_sp_read(), 0, 0);	\
+		continue;						\
+	}
+
 		DOSOFTINT(SERIAL);
 		DOSOFTINT(NET);
 		DOSOFTINT(BIO);

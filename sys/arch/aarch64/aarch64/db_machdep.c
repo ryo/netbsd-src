@@ -32,6 +32,7 @@
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD$");
 
+#include "opt_kernhist.h"
 #include "opt_uvmhist.h"
 
 #include <sys/param.h>
@@ -62,9 +63,12 @@ void db_md_lwp_cmd(db_expr_t, bool, db_expr_t, const char *);
 #ifdef UVMHIST
 void db_md_pmaphist_cmd(db_expr_t, bool, db_expr_t, const char *);
 #endif
+#if defined(KERNHIST) && defined(TRAPHIST)
+void db_md_traphist_cmd(db_expr_t, bool, db_expr_t, const char *);
+#endif
 void db_md_pte_cmd(db_expr_t, bool, db_expr_t, const char *);
 void db_md_sysreg_cmd(db_expr_t, bool, db_expr_t, const char *);
-void db_md_tlb_cmd(db_expr_t, bool, db_expr_t, const char *);
+void db_md_watch_cmd(db_expr_t, bool, db_expr_t, const char *);
 
 const struct db_command db_machine_command_table[] = {
 	{
@@ -103,22 +107,21 @@ const struct db_command db_machine_command_table[] = {
 		    "<address>",
 		    "\taddress:\tvirtual address of page")
 	},
-#ifdef _KERNEL
 	{
 		DDB_ADD_CMD(
 		    "sysreg", db_md_sysreg_cmd, 0,
 		    "Displays system registers",
 		    NULL, NULL)
 	},
-#if 0
+#if defined(KERNHIST) && defined(TRAPHIST)
 	{
 		DDB_ADD_CMD(
-		    "tlb", db_md_tlb_cmd, 0,
-		    "Displays the TLB",
-		    NULL, NULL)
+		    "traphist", db_md_traphist_cmd, 0,
+		    "Dump the entire contents of the trap history",
+		    "<param>",
+		    "\tparam: 0=clear")
 	},
-#endif
-#endif /* _KERNEL */
+#endif /* KERNHIST && TRAPHIST */
 #if defined(_KERNEL) && defined(MULTIPROCESSOR)
 //XXXAARCH64
 //	{
@@ -408,6 +411,16 @@ db_md_pmaphist_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *
 	kernhist_dump(&pmaphist, db_printf);
 }
 #endif
+
+#if defined(KERNHIST) && defined(TRAPHIST)
+void
+db_md_traphist_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+{
+	UVMHIST_DECL(traphist);
+
+	kernhist_dump(&traphist, db_printf);
+}
+#endif /* KERNHIST && TRAPHIST */
 
 void
 db_md_pte_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)

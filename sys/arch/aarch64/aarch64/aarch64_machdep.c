@@ -288,6 +288,12 @@ machdep_init(void)
 {
 	/* clear cpu reset hook for early boot */
 	cpu_reset_address0 = NULL;
+
+#if defined(KERNHIST) && defined(TRAPHIST)
+	/* XXXAARCH64 */
+	void traphist_init(void);
+	traphist_init();
+#endif
 }
 
 bool
