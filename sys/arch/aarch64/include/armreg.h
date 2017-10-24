@@ -43,7 +43,7 @@ static uint64_t inline						\
 reg_##regname##_read(void)					\
 {								\
 	uint64_t __rv;						\
-	__asm __volatile("mrs %0, " #regdesc : "=r"(__rv));	\
+	__asm __volatile ("mrs %0, " #regdesc : "=r"(__rv));	\
 	return __rv;						\
 }
 
@@ -51,14 +51,14 @@ reg_##regname##_read(void)					\
 static void inline						\
 reg_##regname##_write(uint64_t __val)				\
 {								\
-	__asm __volatile("msr " #regdesc ", %0" :: "r"(__val));	\
+	__asm __volatile ("msr " #regdesc ", %0" :: "r"(__val));\
 }
 
 #define AARCH64REG_WRITEIMM_INLINE2(regname, regdesc)		\
 static void inline						\
 reg_##regname##_write(uint64_t __val)				\
 {								\
-	__asm __volatile("msr " #regdesc ", %0" :: "n"(__val));	\
+	__asm __volatile ("msr " #regdesc ", %0" :: "n"(__val));\
 }
 
 #define AARCH64REG_READ_INLINE(regname)				\
@@ -89,8 +89,6 @@ AARCH64REG_READ_INLINE(dczid_el0)	/* Data Cache Zero ID Register */
 static const uintmax_t
     DCZID_DZP = __BIT(4),		/* Data Zero Prohibited */
     DCZID_BS  = __BITS(3,0);		/* Block Size (log2 - 2) */
-
-AARCH64REG_READ_INLINE(tpidrro_el0)	/* Thread Pointer ID Register (RO) */
 
 AARCH64REG_READ_INLINE(fpcr)		/* Floating Point Control Register */
 AARCH64REG_WRITE_INLINE(fpcr)
@@ -143,6 +141,8 @@ static const uintmax_t
 AARCH64REG_READ_INLINE(tpidr_el0)	/* Thread Pointer ID Register (RW) */
 AARCH64REG_WRITE_INLINE(tpidr_el0)
 
+AARCH64REG_READ_INLINE(tpidrro_el0)	/* Thread Pointer ID Register (RO) */
+
 /*
  * From here on, these can only be accessed at EL1 (kernel)
  */
@@ -150,9 +150,22 @@ AARCH64REG_WRITE_INLINE(tpidr_el0)
 /*
  * These are readonly registers
  */
+AARCH64REG_READ_INLINE(aidr_el1)
+
 AARCH64REG_READ_INLINE2(cbar_el1, s3_1_c15_c3_0)	/* Cortex-A57 */
 
 static const uintmax_t CBAR_PA = __BITS(47,18);
+
+AARCH64REG_READ_INLINE(ccsidr_el1)
+
+static const uintmax_t
+    CCSIDR_WT		= __BIT(31),	/* Write-through supported */
+    CCSIDR_WB		= __BIT(30),	/* Write-back supported */
+    CCSIDR_RA		= __BIT(29),	/* Read-allocation supported */
+    CCSIDR_WA		= __BIT(28),	/* Write-allocation supported */
+    CCSIDR_NUMSET	= __BITS(27,13),/* (Number of sets in cache) - 1 */
+    CCSIDR_ASSOC	= __BITS(12,3),	/* (Associativity of cache) - 1 */
+    CCSIDR_LINESIZE	= __BITS(2,0);	/* Number of bytes in cache line */
 
 AARCH64REG_READ_INLINE(clidr_el1)
 
@@ -172,17 +185,6 @@ static const uintmax_t
      CLIDR_TYPE_DCACHE		= 2,	/* Data cache only */
      CLIDR_TYPE_IDCACHE		= 3,	/* Separate inst and data caches */
      CLIDR_TYPE_UNIFIEDCACHE	= 4;	/* Unified cache */
-
-AARCH64REG_READ_INLINE(ccsidr_el1)
-
-static const uintmax_t
-    CCSIDR_WT		= __BIT(31),	/* Write-through supported */
-    CCSIDR_WB		= __BIT(30),	/* Write-back supported */
-    CCSIDR_RA		= __BIT(29),	/* Read-allocation supported */
-    CCSIDR_WA		= __BIT(28),	/* Write-allocation supported */
-    CCSIDR_NUMSET	= __BITS(27,13),/* (Number of sets in cache) - 1 */
-    CCSIDR_ASSOC	= __BITS(12,3),	/* (Associativity of cache) - 1 */
-    CCSIDR_LINESIZE	= __BITS(2,0);	/* Number of bytes in cache line */
 
 AARCH64REG_READ_INLINE(currentel)
 AARCH64REG_READ_INLINE(id_aa64afr0_el1)
@@ -345,29 +347,11 @@ static const uintmax_t
      MVFR2_SIMDMISC_ROUNDINT	= 2,
      MVFR2_SIMDMISC_MAXMIN	= 3;
 
-AARCH64REG_READ_INLINE(aidr_el1)
 AARCH64REG_READ_INLINE(revidr_el1)
 
 /*
  * These are read/write registers
  */
-AARCH64REG_READ_INLINE2(l2ctlr_el1, s3_1_c11_c0_2)  /* Cortex-A53,57,72,73 */
-AARCH64REG_WRITE_INLINE2(l2ctlr_el1, s3_1_c11_c0_2) /* Cortex-A53,57,72,73 */
-
-static const uintmax_t
-    L2CTLR_NUMOFCORE		= __BITS(25,24),/* Number of cores */
-    L2CTLR_CPUCACHEPROT		= __BIT(22),	/* CPU Cache Protection */
-    L2CTLR_SCUL2CACHEPROT	= __BIT(21),	/* SCU-L2 Cache Protection */
-    L2CTLR_L2_INPUT_LATENCY	= __BIT(5),	/* L2 Data RAM input latency */
-    L2CTLR_L2_OUTPUT_LATENCY	= __BIT(0);	/* L2 Data RAM output latency */
-
-AARCH64REG_READ_INLINE(csselr_el1)	/* Cache Size Selection Register */
-AARCH64REG_WRITE_INLINE(csselr_el1)
-
-static const uintmax_t
-    CSSELR_LEVEL	= __BITS(3,1),	/* Cache level of required cache */
-    CSSELR_IND		= __BIT(0);	/* Instruction not Data bit */
-
 AARCH64REG_READ_INLINE(cpacr_el1)	/* Coprocessor Access Control Regiser */
 AARCH64REG_WRITE_INLINE(cpacr_el1)
 
@@ -378,6 +362,25 @@ static const uintmax_t
     CPACR_FPEN_EL1	= __SHIFTIN(1, CPACR_FPEN),
     CPACR_FPEN_NONE_2	= __SHIFTIN(2, CPACR_FPEN),
     CPACR_FPEN_ALL	= __SHIFTIN(3, CPACR_FPEN);
+
+AARCH64REG_READ_INLINE(csselr_el1)	/* Cache Size Selection Register */
+AARCH64REG_WRITE_INLINE(csselr_el1)
+
+static const uintmax_t
+    CSSELR_LEVEL	= __BITS(3,1),	/* Cache level of required cache */
+    CSSELR_IND		= __BIT(0);	/* Instruction not Data bit */
+
+AARCH64REG_READ_INLINE(daif)		/* Debug Async Irq Fiq mask register */
+AARCH64REG_WRITE_INLINE(daif)
+AARCH64REG_WRITEIMM_INLINE(daifclr)
+AARCH64REG_WRITEIMM_INLINE(daifset)
+
+static const uintmax_t
+    DAIF_D		= __BIT(9),	/* Debug Exception Mask */
+    DAIF_A		= __BIT(8),	/* SError Abort Mask */
+    DAIF_I		= __BIT(7),	/* IRQ Mask */
+    DAIF_F		= __BIT(6),	/* FIQ Mask */
+    DAIF_SETCLR_SHIFT	= 6;		/* for daifset/daifclr #imm shift */
 
 AARCH64REG_READ_INLINE(elr_el1)		/* Exception Link Register */
 AARCH64REG_WRITE_INLINE(elr_el1)
@@ -439,7 +442,7 @@ static const uintmax_t
     ESR_ISS_MCRR_CRM =		__BITS(4,1),	/* for ESR_EC_CP15_RRT */
     ESR_ISS_MCRR_DIRECTION =	__BIT(0),	/* for ESR_EC_CP15_RRT */
     ESR_ISS_HVC_IMM16 =		__BITS(15,0),	/* for ESR_EC_{SVC,HVC} */
-//	...
+    /* ... */
     ESR_ISS_INSNABORT_EA =	__BIT(9),	/* for ESC_RC_INSN_ABT_EL[01] */
     ESR_ISS_INSNABORT_S1PTW =	__BIT(7),	/* for ESC_RC_INSN_ABT_EL[01] */
     ESR_ISS_INSNABORT_IFSC =	__BITS(0,5),	/* for ESC_RC_INSN_ABT_EL[01] */
@@ -493,6 +496,16 @@ static const uintmax_t	/* ESR_ISS_{INSN,DATA}ABORT_FSC */
 AARCH64REG_READ_INLINE(far_el1)		/* Fault Address Register */
 AARCH64REG_WRITE_INLINE(far_el1)
 
+AARCH64REG_READ_INLINE2(l2ctlr_el1, s3_1_c11_c0_2)  /* Cortex-A53,57,72,73 */
+AARCH64REG_WRITE_INLINE2(l2ctlr_el1, s3_1_c11_c0_2) /* Cortex-A53,57,72,73 */
+
+static const uintmax_t
+    L2CTLR_NUMOFCORE		= __BITS(25,24),/* Number of cores */
+    L2CTLR_CPUCACHEPROT		= __BIT(22),	/* CPU Cache Protection */
+    L2CTLR_SCUL2CACHEPROT	= __BIT(21),	/* SCU-L2 Cache Protection */
+    L2CTLR_L2_INPUT_LATENCY	= __BIT(5),	/* L2 Data RAM input latency */
+    L2CTLR_L2_OUTPUT_LATENCY	= __BIT(0);	/* L2 Data RAM output latency */
+
 AARCH64REG_READ_INLINE(mair_el1) /* Memory Attribute Indirection Register */
 AARCH64REG_WRITE_INLINE(mair_el1)
 
@@ -510,6 +523,11 @@ static const uintmax_t
     MAIR_NORMAL_WT	= 0xbb,
     MAIR_NORMAL_WB	= 0xff;
 
+AARCH64REG_READ_INLINE(mdscr_el1) /* Monitor Debug System Control Register */
+AARCH64REG_WRITE_INLINE(mdscr_el1)
+
+AARCH64REG_READ_INLINE(oslar_el1)	/* OS Lock Access Register */
+AARCH64REG_WRITE_INLINE(oslar_el1)
 
 AARCH64REG_READ_INLINE(par_el1)		/* Physical Address Register */
 AARCH64REG_WRITE_INLINE(par_el1)
@@ -563,16 +581,7 @@ static const uintmax_t
     SCTLR_nTLSMD	= __BIT(28),
     SCTLR_LSMAOE	= __BIT(29);
 
-
-AARCH64REG_READ_INLINE(spsel)		/* Stack Pointer Select */
-AARCH64REG_WRITE_INLINE(spsel)
-
-static const uintmax_t
-    SPSEL_SP		= __BIT(0);	/* use SP_EL0 at all exception levels */
-
-AARCH64REG_READ_INLINE(sp_el0)		/* Stack Pointer */
-AARCH64REG_WRITE_INLINE(sp_el0)
-
+/* current EL stack pointer */
 static uint64_t inline
 reg_sp_read(void)
 {
@@ -581,17 +590,14 @@ reg_sp_read(void)
 	return __rv;
 }
 
-AARCH64REG_READ_INLINE(daif)		/* Debug Async Irq Fiq mask register */
-AARCH64REG_WRITE_INLINE(daif)
-AARCH64REG_WRITEIMM_INLINE(daifclr)
-AARCH64REG_WRITEIMM_INLINE(daifset)
+AARCH64REG_READ_INLINE(sp_el0)		/* EL0 Stack Pointer */
+AARCH64REG_WRITE_INLINE(sp_el0)
+
+AARCH64REG_READ_INLINE(spsel)		/* Stack Pointer Select */
+AARCH64REG_WRITE_INLINE(spsel)
 
 static const uintmax_t
-    DAIF_D		= __BIT(9),	/* Debug Exception Mask */
-    DAIF_A		= __BIT(8),	/* SError Abort Mask */
-    DAIF_I		= __BIT(7),	/* IRQ Mask */
-    DAIF_F		= __BIT(6),	/* FIQ Mask */
-    DAIF_SETCLR_SHIFT	= 6;		/* for daifset/daifclr #imm shift */
+    SPSEL_SP		= __BIT(0);	/* use SP_EL0 at all exception levels */
 
 AARCH64REG_READ_INLINE(spsr_el1)	/* Saved Program Status Register */
 AARCH64REG_WRITE_INLINE(spsr_el1)
@@ -655,6 +661,10 @@ AARCH64REG_WRITE_INLINE(ttbr1_el1)
 
 AARCH64REG_READ_INLINE(vbar_el1)	/* Vector Base Address Register */
 AARCH64REG_WRITE_INLINE(vbar_el1)
+
+/*
+ * From here on, PMC registers
+ */
 
 AARCH64REG_READ_INLINE(pmccfiltr_el0)
 AARCH64REG_WRITE_INLINE(pmccfiltr_el0)
