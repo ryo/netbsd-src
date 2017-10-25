@@ -185,7 +185,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		db_read_bytes(&tf->tf_pc, sizeof(lr), (char *)&lr);
 		db_read_bytes(&tf->tf_reg[29], sizeof(fp), (char *)&fp);
 
-		pr_traceaddr("fp", fp, lr, pr);
+		pr_traceaddr("fp", fp, lr - 4, pr);
 	}
 
 	for (; (count > 0) && (fp != 0); count--) {
