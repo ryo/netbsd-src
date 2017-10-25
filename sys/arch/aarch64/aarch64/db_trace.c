@@ -91,7 +91,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
     const char *modif, void (*pr)(const char *, ...))
 {
 	uint64_t lr, fp, lastlr, lastfp;
-	struct trapframe *tf;
+	struct trapframe *tf = NULL;
 	bool trace_user = false;
 	bool trace_thread = false;
 	bool trace_lwp = false;
@@ -125,7 +125,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		} else if (trace_thread) {
 			addr = curlwp->l_proc->p_pid;
 		} else {
-			addr = &DDB_REGS->tf_reg[29];	/* &reg[29]={fp,lr} */
+			tf = DDB_REGS;
 		}
 	}
 
@@ -157,39 +157,51 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 
 		if (addr == (db_addr_t)curlwp) {
 			fp = &DDB_REGS->tf_reg[29];	/* &reg[29]={fp,lr} */
-			(*pr)("trace: pid %d lid %d (curlwp) at fp %016lx\n",
-			    p.p_pid, l.l_lid, fp);
+			tf = DDB_REGS;
+			(*pr)("trace: pid %d lid %d (curlwp) at tf %016lx\n",
+			    p.p_pid, l.l_lid, tf);
 		} else {
 			tf = l.l_md.md_ktf;
 			db_read_bytes(&tf->tf_reg[29], sizeof(fp), (char *)&fp);
 			(*pr)("trace: pid %d lid %d at tf %016lx\n",
 			    p.p_pid, l.l_lid, tf);
 		}
-	} else {
+	} else if (tf == NULL) {
 		fp = addr;
 		pr("trace fp %016llx\n", fp);
+	} else {
+		pr("trace tf %016llx\n", tf);
 	}
 
 	if (count > MAXBACKTRACE)
 		count = MAXBACKTRACE;
 
+	if (tf != NULL) {
+		(*pr)("--- trapframe %016llx (%d bytes) ---\n", tf, sizeof(*tf));
+		dump_trapframe(tf, pr);
+		(*pr)("----------------------------------------------\n");
+
+		lastfp = lastlr = lr = fp = 0;
+		db_read_bytes(&tf->tf_pc, sizeof(lr), (char *)&lr);
+		db_read_bytes(&tf->tf_reg[29], sizeof(fp), (char *)&fp);
+
+		pr_traceaddr("fp", fp, lr, pr);
+	}
+
 	for (; (count > 0) && (fp != 0); count--) {
 
 		lastfp = fp;
+		fp = lr = 0;
 		/*
 		 * normal stack frame
-		 *
 		 *  fp[0]  saved fp(x29) value
 		 *  fp[1]  saved lr(x30) value
-		 *
 		 */
-		fp = lr = 0;
 		db_read_bytes(lastfp + 0, sizeof(fp), (char *)&fp);
 		db_read_bytes(lastfp + 8, sizeof(lr), (char *)&lr);
 
 		if (!trace_user && IN_USER_VM_ADDRESS(lr))
 			break;
-
 
 		extern char el1_trap[];	/* XXX */
 		extern char el0_trap[];	/* XXX */
@@ -202,7 +214,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 			lastlr = lr;
 			lr = fp = 0;
 			db_read_bytes(&tf->tf_pc, sizeof(lr), (char *)&lr);
-			db_read_bytes(&tf->tf_reg[29] + 0, sizeof(fp), (char *)&fp);
+			db_read_bytes(&tf->tf_reg[29], sizeof(fp), (char *)&fp);
 
 			/* no need to display the frame of el0_trap of kernel thread */
 			if (((char *)(lastlr - 4) == (char *)el0_trap) && (lr == 0))
@@ -217,6 +229,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 			(*pr)("--- trapframe %016llx (%d bytes) ---\n", tf, sizeof(*tf));
 			dump_trapframe(tf, pr);
 			(*pr)("----------------------------------------------\n");
+			tf = NULL;
 
 			if (!trace_user && IN_USER_VM_ADDRESS(lr))
 				break;
