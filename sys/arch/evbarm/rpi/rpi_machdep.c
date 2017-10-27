@@ -628,7 +628,7 @@ static void
 rpi_bootstrap(void)
 {
 #ifdef MULTIPROCESSOR
-#if defined(BCM2836)
+#ifdef BCM2836
 	arm_cpu_max = 4;
 	extern int cortex_mmuinfo;
 
@@ -640,7 +640,7 @@ rpi_bootstrap(void)
 #ifdef VERBOSE_INIT_ARM
 	printf("%s: cortex_mmuinfo %x\n", __func__, cortex_mmuinfo);
 #endif
-#endif /* MULTIPROCESSOR */
+#endif /* BCM2836 */
 
 	extern void cortex_mpstart(void);
 
@@ -675,7 +675,7 @@ rpi_bootstrap(void)
 			    __func__, i);
 		}
 	}
-#endif
+#endif /* MULTIPROCESSOR */
 }
 
 /*
