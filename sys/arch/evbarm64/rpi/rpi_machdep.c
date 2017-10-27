@@ -110,6 +110,8 @@ void initarm(void);
 static bool rpi_rev_has_btwifi(uint32_t);
 static void rpi_uartinit(void);
 static void rpi_bootparams(void);
+static void rpi_bootstrap(void);
+static void rpi_pinctrl(void);
 static void rpi_device_register(device_t, void *);
 
 #define EARLY_CONSOLE
@@ -197,7 +199,7 @@ static struct __aligned(64) {	/* should be cacheLineSize*N aligned */
 	}
 };
 
-static struct __aligned(16) {	/* should be cacheLineSize*N aligned */
+static struct __aligned(64) {	/* should be cacheLineSize*N aligned */
 	struct vcprop_buffer_hdr	vb_hdr;
 	struct vcprop_tag_fwrev		vbt_fwrev;
 	struct vcprop_tag_boardmodel	vbt_boardmodel;
@@ -379,7 +381,12 @@ initarm(void)
 
 	rpi_bootparams();	/* update curcpu()->ci_data.cpu_cc_freq */
 
+	rpi_bootstrap();	/* boot secondary processors */
+
 	cpu_reset_address = bcm2835_system_reset;
+
+	/* Change pinctrl settings */
+	rpi_pinctrl();
 
 	initarm64(&bootconfig);
 }
@@ -432,6 +439,46 @@ rpi_uartinit(void)
 
 	if (vcprop_tag_success_p(&vb_uart.vbt_uartclockrate.tag))
 		uart_clk = vb_uart.vbt_uartclockrate.rate;
+}
+
+static void
+rpi_pinctrl(void)
+{
+#if NBCMSDHOST > 0
+	if (rpi_rev_has_btwifi(vb.vbt_boardrev.rev)) {
+		/*
+		 * If the sdhost driver is present, map the SD card slot to the
+		 * SD host controller and the sdhci driver to the SDIO pins.
+		 */
+		for (int pin = 48; pin <= 53; pin++) {
+			/* Enable SDHOST on SD card slot */
+			bcm2835gpio_function_select(pin, BCM2835_GPIO_ALT0);
+		}
+		for (int pin = 34; pin <= 39; pin++) {
+			/* Enable SDHCI on SDIO */
+			bcm2835gpio_function_select(pin, BCM2835_GPIO_ALT3);
+			bcm2835gpio_function_setpull(pin,
+			    pin == 34 ? BCM2835_GPIO_GPPUD_PULLOFF :
+			    BCM2835_GPIO_GPPUD_PULLUP);
+		}
+	}
+#endif
+
+	if (rpi_rev_has_btwifi(vb.vbt_boardrev.rev)) {
+#if NCOM > 0
+		/* Enable UART0 (PL011) on BT */
+		bcm2835gpio_function_select(32, BCM2835_GPIO_ALT3);
+		bcm2835gpio_function_select(33, BCM2835_GPIO_ALT3);
+#else
+		/* Enable AUX UART on BT */
+		bcm2835gpio_function_select(32, BCM2835_GPIO_ALT5);
+		bcm2835gpio_function_select(33, BCM2835_GPIO_ALT5);
+#endif
+		bcm2835gpio_function_setpull(32, BCM2835_GPIO_GPPUD_PULLOFF);
+		bcm2835gpio_function_setpull(33, BCM2835_GPIO_GPPUD_PULLUP);
+		bcm2835gpio_function_select(43, BCM2835_GPIO_ALT0);
+		bcm2835gpio_function_setpull(43, BCM2835_GPIO_GPPUD_PULLOFF);
+	}
 }
 
 static void
@@ -528,6 +575,15 @@ rpi_bootparams(void)
 }
 
 static void
+rpi_bootstrap(void)
+{
+#ifdef MULTIPROCESSOR
+#error notyet
+#endif /* MULTIPROCESSOR */
+}
+
+
+static void
 consinit_plcom(void)
 {
 #if (NPLCOM > 0 && defined(PLCONSOLE))
@@ -582,6 +638,31 @@ consinit(void)
 	else
 		consinit_plcom();
 }
+
+#ifdef KGDB
+#if !defined(KGDB_PLCOMUNIT) || !defined(KGDB_DEVRATE) || !defined(KGDB_CONMODE)
+#error Specify KGDB_PLCOMUNIT, KGDB_DEVRATE and KGDB_CONMODE for KGDB.
+#endif
+
+void
+static kgdb_port_init(void)
+{
+	static int kgdbsinit_called = 0;
+	int res;
+
+	if (kgdbsinit_called != 0)
+		return;
+
+	kgdbsinit_called = 1;
+
+	rpi_pi.pi_iobase = consaddr;
+
+	res = plcom_kgdb_attach(&rpi_pi, KGDB_DEVRATE, uart_clk,
+	    KGDB_CONMODE, KGDB_PLCOMUNIT);
+	if (res)
+		panic("KGDB uart can not be initialized, err=%d.", res);
+}
+#endif
 
 #ifdef EARLY_CONSOLE
 /*
