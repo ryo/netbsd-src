@@ -37,8 +37,6 @@ options 	UVMHIST
 options 	UVMHIST_MAPHIST_SIZE=5000
 options 	UVMHIST_PDHIST_SIZE=5000
 
-options 	TRAPHIST
-
 no options	INET6
 no options	IPSEC
 no options	BPFJIT

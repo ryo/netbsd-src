@@ -63,9 +63,6 @@ void db_md_lwp_cmd(db_expr_t, bool, db_expr_t, const char *);
 #ifdef UVMHIST
 void db_md_pmaphist_cmd(db_expr_t, bool, db_expr_t, const char *);
 #endif
-#if defined(KERNHIST) && defined(TRAPHIST)
-void db_md_traphist_cmd(db_expr_t, bool, db_expr_t, const char *);
-#endif
 void db_md_pte_cmd(db_expr_t, bool, db_expr_t, const char *);
 void db_md_sysreg_cmd(db_expr_t, bool, db_expr_t, const char *);
 void db_md_watch_cmd(db_expr_t, bool, db_expr_t, const char *);
@@ -113,15 +110,6 @@ const struct db_command db_machine_command_table[] = {
 		    "Displays system registers",
 		    NULL, NULL)
 	},
-#if defined(KERNHIST) && defined(TRAPHIST)
-	{
-		DDB_ADD_CMD(
-		    "traphist", db_md_traphist_cmd, 0,
-		    "Dump the entire contents of the trap history",
-		    "<param>",
-		    "\tparam: 0=clear")
-	},
-#endif /* KERNHIST && TRAPHIST */
 #if defined(_KERNEL) && defined(MULTIPROCESSOR)
 //XXXAARCH64
 //	{
@@ -411,16 +399,6 @@ db_md_pmaphist_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *
 	kernhist_dump(&pmaphist, db_printf);
 }
 #endif
-
-#if defined(KERNHIST) && defined(TRAPHIST)
-void
-db_md_traphist_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
-{
-	UVMHIST_DECL(traphist);
-
-	kernhist_dump(&traphist, db_printf);
-}
-#endif /* KERNHIST && TRAPHIST */
 
 void
 db_md_pte_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)

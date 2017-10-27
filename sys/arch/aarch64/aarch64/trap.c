@@ -35,7 +35,6 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 
 #include "opt_arm_intr_impl.h"
 #include "opt_compat_netbsd32.h"
-#include "opt_kernhist.h"
 
 #include <sys/param.h>
 #include <sys/types.h>
@@ -44,7 +43,6 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 #ifdef KDB
 #include <sys/kdb.h>
 #endif
-#include <sys/kernhist.h>
 #include <sys/proc.h>
 #include <sys/systm.h>
 #include <sys/signal.h>
@@ -75,37 +73,6 @@ __KERNEL_RCSID(1, "$NetBSD: trap.c,v 1.2 2017/08/16 22:48:11 nisimura Exp $");
 #include <machine/db_machdep.h>
 #endif
 
-
-#ifdef TRAPHIST
-KERNHIST_DEFINE(traphist);
-#endif
-
-#if defined(KERNHIST) && defined(TRAPHIST)
-#define KERNHIST_TRAPHIST_SIZE	(512)
-struct kern_history_ent traphistbuf[KERNHIST_TRAPHIST_SIZE];
-void traphist_init(void);
-
-void
-traphist_init(void)
-{
-	static bool inited = false;
-	if (inited == false) {
-		KERNHIST_INIT_STATIC(traphist, traphistbuf);
-		inited = true;
-	}
-}
-
-void traphist_log(const char *, int, void *);
-
-void
-traphist_log(const char *func, int lineno, void *x)
-{
-	KERNHIST_FUNC(__func__);
-	KERNHIST_CALLED(traphist);
-	KERNHIST_LOG(traphist, "%s:%d: sp=%016lx: %p", func, lineno, reg_sp_read(), x);
-}
-
-#endif /* KERNHIST && TRAPHIST */
 
 const char * const trap_names[] = {
 	[ESR_EC_UNKNOWN]	= "Unknown Reason (Illegal Instruction)",
@@ -183,14 +150,11 @@ trap_el1h_sync(struct trapframe *tf)
 	const uint32_t eclass = __SHIFTOUT(esr, ESR_EC); /* exception class */
 	const char *trapname;
 
-#ifdef TRAPHIST
-	KERNHIST_FUNC(__func__);
-	KERNHIST_CALLED(traphist);
-	KERNHIST_LOG(traphist, "curlwp=%p, tf_pc=%016lx, tf_sp=%016lx, sp=%016lx", curlwp, tf->tf_pc, tf->tf_sp, reg_sp_read());
-#endif
-
-	/* enable traps and interrupts */
-	daif_enable(DAIF_D|DAIF_A|DAIF_I|DAIF_F);
+	/* re-enable traps and interrupts */
+	if (!(tf->tf_spsr & SPSR_I))
+		daif_enable(DAIF_D|DAIF_A|DAIF_I|DAIF_F);
+	else
+		daif_enable(DAIF_D|DAIF_A);
 
 	if (eclass >= __arraycount(trap_names) || trap_names[eclass] == NULL)
 		trapname = trap_names[0];
@@ -234,10 +198,6 @@ trap_el1h_sync(struct trapframe *tf)
 		    tf->tf_pc, tf->tf_sp, esr);
 		break;
 	}
-
-#ifdef TRAPHIST
-	KERNHIST_LOG(traphist, "done", 0, 0, 0, 0);
-#endif
 }
 
 void
@@ -247,12 +207,6 @@ trap_el0_sync(struct trapframe *tf)
 	const uint32_t esr = tf->tf_esr;
 	const uint32_t eclass = __SHIFTOUT(esr, ESR_EC); /* exception class */
 	const char *trapname;
-
-#ifdef TRAPHIST
-	KERNHIST_FUNC(__func__);
-	KERNHIST_CALLED(traphist);
-	KERNHIST_LOG(traphist, "curlwp=%p, tf_pc=%016lx, tf_sp=%016lx, sp=%016lx", l, tf->tf_pc, tf->tf_sp, reg_sp_read());
-#endif
 
 	/* enable traps and interrupts */
 	daif_enable(DAIF_D|DAIF_A|DAIF_I|DAIF_F);
@@ -273,9 +227,6 @@ trap_el0_sync(struct trapframe *tf)
 		userret(l);
 		break;
 	case ESR_EC_SVC_A64:
-#ifdef TRAPHIST
-		KERNHIST_LOG(traphist, "[%d] SYSCALL %llu %08llx %08llx", l->l_proc->p_pid, tf->tf_esr & 0xffff, tf->tf_reg[17], tf->tf_reg[0]);
-#endif
 		(*l->l_proc->p_md.md_syscall)(tf);
 		break;
 
@@ -311,10 +262,6 @@ trap_el0_sync(struct trapframe *tf)
 		userret(l);
 		break;
 	}
-
-#ifdef TRAPHIST
-	KERNHIST_LOG(traphist, "done", 0, 0, 0, 0);
-#endif
 }
 
 void
@@ -324,12 +271,6 @@ interrupt(struct trapframe *tf)
 
 	__asm __volatile ("clrex; dmb sy");	/* XXXAARCH64: really need dmb ? */
 
-#ifdef TRAPHIST
-	KERNHIST_FUNC(__func__);
-	KERNHIST_CALLED(traphist);
-	KERNHIST_LOG(traphist, "curlwp=%p, tf_pc=%016lx, tf_sp=%016lx, sp=%016lx", curlwp, tf->tf_pc, tf->tf_sp, reg_sp_read());
-#endif
-
 	/* enable traps */
 	daif_enable(DAIF_D|DAIF_A);
 
@@ -337,14 +278,7 @@ interrupt(struct trapframe *tf)
 	ARM_IRQ_HANDLER(tf);
 	ci->ci_intr_depth--;
 
-
-#ifdef TRAPHIST
-	KERNHIST_LOG(traphist, "interrupt done. cpu_dosoftint. sp=%016lx", reg_sp_read(), 0, 0, 0);
-#endif
 	cpu_dosoftints();
-#ifdef TRAPHIST
-	KERNHIST_LOG(traphist, "cpu_dosoftint done. sp=%016lx", reg_sp_read(), 0, 0, 0);
-#endif
 }
 
 void
