@@ -224,7 +224,7 @@ initarm64(struct BootConfig *bootconf)
 			 *  +-------+ endp
 			 */
 			uvm_page_physload(
-			    startp, kstartp,
+			    startp, kendp,
 			    startp, kstartp,
 			    bootconf->dram[i].vmfreelist);
 			uvm_page_physload(
@@ -242,7 +242,7 @@ initarm64(struct BootConfig *bootconf)
 			 *  +-------+ kendp
 			 */
 			uvm_page_physload(
-			    startp, kstartp,
+			    startp, kendp,
 			    startp, kstartp,
 			    bootconf->dram[i].vmfreelist);
 		} else {
