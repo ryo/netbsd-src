@@ -36,6 +36,7 @@ __KERNEL_RCSID(1, "$NetBSD$");
 #include <uvm/uvm_extern.h>
 
 #include <aarch64/bus_funcs.h>
+#include <aarch64/machdep.h>
 
 
 /* Prototypes for all the bus_space structure functions */
@@ -625,136 +626,112 @@ int
 generic_bs_pe_1(void *t, bus_space_handle_t bsh, bus_size_t offset,
     uint8_t *datap)
 {
-#if 0 //XXXAARCH64
-	struct abortbuf ab;
+	struct faultbuf fb;
 	int error;
 
-	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
+	if ((error = cpu_set_onfault(&fb)) == 0) {
 		*datap = generic_dsb_bs_r_1(t, bsh, offset);
+		cpu_unset_onfault();
+	}
 	return error;
-#else
-	*datap = generic_dsb_bs_r_1(t, bsh, offset);
-	return 0;
-#endif
 }
 
 int
 generic_bs_pe_2(void *t, bus_space_handle_t bsh, bus_size_t offset,
     uint16_t *datap)
 {
-#if 0 // XXXAARCH64
-	struct abortbuf ab;
+	struct faultbuf fb;
 	int error;
 
-	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
+	if ((error = cpu_set_onfault(&fb)) == 0) {
 		*datap = generic_dsb_bs_r_2(t, bsh, offset);
+		cpu_unset_onfault();
+	}
 	return error;
-#else
-	*datap = generic_dsb_bs_r_2(t, bsh, offset);
-	return 0;
-#endif
 }
 
 int
 generic_bs_pe_4(void *t, bus_space_handle_t bsh, bus_size_t offset,
     uint32_t *datap)
 {
-#if 0 // XXXAARCH64
-	struct abortbuf ab;
+	struct faultbuf fb;
 	int error;
 
-	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
+	if ((error = cpu_set_onfault(&fb)) == 0) {
 		*datap = generic_dsb_bs_r_4(t, bsh, offset);
+		cpu_unset_onfault();
+	}
 	return error;
-#else
-	*datap = generic_dsb_bs_r_4(t, bsh, offset);
-	return 0;
-#endif
 }
 
 int
 generic_bs_pe_8(void *t, bus_space_handle_t bsh, bus_size_t offset,
     uint64_t *datap)
 {
-#if 0 // XXXAARCH64
-	struct abortbuf ab;
+	struct faultbuf fb;
 	int error;
 
-	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
+	if ((error = cpu_set_onfault(&fb)) == 0) {
 		*datap = generic_dsb_bs_r_8(t, bsh, offset);
+		cpu_unset_onfault();
+	}
 	return error;
-#else
-	*datap = generic_dsb_bs_r_8(t, bsh, offset);
-	return 0;
-#endif
 }
 
 int
 generic_bs_po_1(void *t, bus_space_handle_t bsh, bus_size_t offset,
     uint8_t data)
 {
-#if 0 // XXXAARCH64
-	struct abortbuf ab;
+	struct faultbuf fb;
 	int error;
 
-	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
+	if ((error = cpu_set_onfault(&fb)) == 0) {
 		generic_dsb_bs_w_1(t, bsh, offset, data);
+		cpu_unset_onfault();
+	}
 	return error;
-#else
-	generic_dsb_bs_w_1(t, bsh, offset, data);
-	return 0;
-#endif
 }
 
 int
 generic_bs_po_2(void *t, bus_space_handle_t bsh, bus_size_t offset,
     uint16_t data)
 {
-#if 0 // XXXAARCH64
-	struct abortbuf ab;
+	struct faultbuf fb;
 	int error;
 
-	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
+	if ((error = cpu_set_onfault(&fb)) == 0) {
 		generic_dsb_bs_w_2(t, bsh, offset, data);
+		cpu_unset_onfault();
+	}
 	return error;
-#else
-	generic_dsb_bs_w_2(t, bsh, offset, data);
-	return 0;
-#endif
 }
 
 int
 generic_bs_po_4(void *t, bus_space_handle_t bsh, bus_size_t offset,
     uint32_t data)
 {
-#if 0 // XXXAARCH64
-	struct abortbuf ab;
+	struct faultbuf fb;
 	int error;
 
-	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
+	if ((error = cpu_set_onfault(&fb)) == 0) {
 		generic_dsb_bs_w_4(t, bsh, offset, data);
+		cpu_unset_onfault();
+	}
 	return error;
-#else
-	generic_dsb_bs_w_4(t, bsh, offset, data);
-	return 0;
-#endif
 }
 
 int
 generic_bs_po_8(void *t, bus_space_handle_t bsh, bus_size_t offset,
     uint64_t data)
 {
-#if 0 // XXXAARCH64
-	struct abortbuf ab;
+	struct faultbuf fb;
 	int error;
 
-	if ((error = cpu_set_onabort(&ab, EFAULT)) == 0)
+	if ((error = cpu_set_onfault(&fb)) == 0) {
 		generic_dsb_bs_w_8(t, bsh, offset, data);
+		cpu_unset_onfault();
+	}
 	return error;
-#else
-	generic_dsb_bs_w_8(t, bsh, offset, data);
-	return 0;
-#endif
 }
 
 void
