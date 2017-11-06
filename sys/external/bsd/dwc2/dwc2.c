@@ -1324,6 +1324,18 @@ dwc2_init(struct dwc2_softc *sc)
 #if IS_ENABLED(CONFIG_USB_DWC2_HOST) || \
     IS_ENABLED(CONFIG_USB_DWC2_DUAL_ROLE)
 	if (hsotg->dr_mode != USB_DR_MODE_PERIPHERAL) {
+
+#if 1
+		/*
+		 * XXXAARCH64
+		 *   From uboot, uhub1 was not be detected for some unknown reason.
+		 *   this is quick hack to power off vbus once
+		 */
+		uint32_t r = DWC2_READ_4(hsotg, HPRT0);
+		r &= ~HPRT0_PWR;
+		DWC2_WRITE_4(hsotg, HPRT0, r);
+#endif
+
 		retval = dwc2_hcd_init(hsotg);
 		if (retval) {
 			if (hsotg->gadget_enabled)
