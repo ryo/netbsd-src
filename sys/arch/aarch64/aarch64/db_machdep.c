@@ -44,6 +44,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 #include <aarch64/db_machdep.h>
 #include <aarch64/armreg.h>
+#include <aarch64/cpufunc.h>
 #include <aarch64/locore.h>
 #include <aarch64/pmap.h>
 
@@ -64,10 +65,20 @@ void db_md_lwp_cmd(db_expr_t, bool, db_expr_t, const char *);
 void db_md_pmaphist_cmd(db_expr_t, bool, db_expr_t, const char *);
 #endif
 void db_md_pte_cmd(db_expr_t, bool, db_expr_t, const char *);
+void db_md_tlbi_cmd(db_expr_t, bool, db_expr_t, const char *);
 void db_md_sysreg_cmd(db_expr_t, bool, db_expr_t, const char *);
 void db_md_watch_cmd(db_expr_t, bool, db_expr_t, const char *);
 
 const struct db_command db_machine_command_table[] = {
+#if defined(_KERNEL) && defined(MULTIPROCESSOR)
+//XXXAARCH64
+//	{
+//		DDB_ADD_CMD(
+//		    "cpu", db_md_switch_cpu_cmd, 0,
+//		    "switch to a different cpu",
+//		    NULL, NULL)
+//	},
+#endif
 	{
 		DDB_ADD_CMD(
 		    "cpuinfo", db_md_cpuinfo_cmd, 0,
@@ -110,15 +121,12 @@ const struct db_command db_machine_command_table[] = {
 		    "Displays system registers",
 		    NULL, NULL)
 	},
-#if defined(_KERNEL) && defined(MULTIPROCESSOR)
-//XXXAARCH64
-//	{
-//		DDB_ADD_CMD(
-//		    "cpu", db_switch_cpu_cmd, 0,
-//		    "switch to a different cpu",
-//		    NULL, NULL)
-//	},
-#endif
+	{
+		DDB_ADD_CMD(
+		    "tlbi", db_md_tlbi_cmd, 0,
+		    "flush tlb",
+		    NULL, NULL)
+	},
 	{
 		DDB_ADD_CMD(
 		    "watch", db_md_watch_cmd, 0,
@@ -408,6 +416,12 @@ db_md_pte_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif
 		return;
 	}
 	pmap_db_pteinfo(addr, db_printf);
+}
+
+void
+db_md_tlbi_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+{
+	aarch64_tlbi_all();
 }
 
 void
