@@ -1476,10 +1476,6 @@ _bus_dmamap_load_buffer(bus_dma_tag_t t, bus_dmamap_t map, void *buf,
 	    buf, buflen, flags);
 #endif /* DEBUG_DMA */
 
-if (buf==(void*)0xffffffc02ba4f800)
- printf("XXXXX: %s: buf=%016lx\n", __func__, (vaddr_t)buf);
-
-
 	pmap = vm_map_pmap(&vm->vm_map);
 
 	while (buflen > 0) {
