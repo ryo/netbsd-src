@@ -444,6 +444,7 @@ pmap_bootstrap(vaddr_t vstart, vaddr_t vend)
 
 	memset(&kernel_pmap, 0, sizeof(kernel_pmap));
 	kpm = pmap_kernel();
+	kpm->pm_asid = 0;
 	kpm->pm_refcnt = 1;
 	kpm->pm_l0table = l0;
 	kpm->pm_l0table_pa = l0pa;
@@ -1211,6 +1212,8 @@ pmap_activate(struct lwp *l)
 	UVMHIST_CALLED(pmaphist);
 
 	if (pm == pmap_kernel())
+		return;
+	if (l != curlwp)
 		return;
 
 	KASSERT(pm->pm_l0table != NULL);
