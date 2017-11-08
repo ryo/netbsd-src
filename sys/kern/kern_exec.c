@@ -1,4 +1,4 @@
-/*	$NetBSD: kern_exec.c,v 1.446 2017/09/29 17:47:29 maxv Exp $	*/
+/*	$NetBSD: kern_exec.c,v 1.451 2017/11/07 20:58:23 christos Exp $	*/
 
 /*-
  * Copyright (c) 2008 The NetBSD Foundation, Inc.
@@ -59,7 +59,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: kern_exec.c,v 1.446 2017/09/29 17:47:29 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: kern_exec.c,v 1.451 2017/11/07 20:58:23 christos Exp $");
 
 #include "opt_exec.h"
 #include "opt_execfmt.h"
@@ -280,11 +280,14 @@ struct spawn_exec_data {
 	volatile uint32_t	sed_refcnt;
 };
 
+static struct vm_map *exec_map;
+static struct pool exec_pool;
+
 static void *
 exec_pool_alloc(struct pool *pp, int flags)
 {
 
-	return (void *)uvm_km_alloc(kernel_map, NCARGS, 0,
+	return (void *)uvm_km_alloc(exec_map, NCARGS, 0,
 	    UVM_KMF_PAGEABLE | UVM_KMF_WAITVA);
 }
 
@@ -292,10 +295,8 @@ static void
 exec_pool_free(struct pool *pp, void *addr)
 {
 
-	uvm_km_free(kernel_map, (vaddr_t)addr, NCARGS, UVM_KMF_PAGEABLE);
+	uvm_km_free(exec_map, (vaddr_t)addr, NCARGS, UVM_KMF_PAGEABLE);
 }
-
-static struct pool exec_pool;
 
 static struct pool_allocator exec_palloc = {
 	.pa_alloc = exec_pool_alloc,
@@ -750,8 +751,8 @@ execve_loadvm(struct lwp *l, const char *path, char * const *args,
 	/* see if we can run it. */
 	if ((error = check_exec(l, epp, data->ed_pathbuf)) != 0) {
 		if (error != ENOENT && error != EACCES) {
-			DPRINTF(("%s: check exec failed %d\n",
-			    __func__, error));
+			DPRINTF(("%s: check exec failed for %s, error %d\n",
+			    __func__, epp->ep_kname, error));
 		}
 		goto freehdr;
 	}
@@ -924,55 +925,15 @@ execve_free_data(struct execve_data *data)
 }
 
 static void
-pathexec(struct exec_package *epp, struct lwp *l, const char *pathstring)
+pathexec(struct proc *p, const char *resolvedname)
 {
-	const char		*commandname;
-	size_t			commandlen;
-	char			*path;
-	struct proc 		*p = l->l_proc;
+	KASSERT(resolvedname[0] == '/');
 
 	/* set command name & other accounting info */
-	commandname = strrchr(epp->ep_resolvedname, '/');
-	if (commandname != NULL) {
-		commandname++;
-	} else {
-		commandname = epp->ep_resolvedname;
-	}
-	commandlen = min(strlen(commandname), MAXCOMLEN);
-	(void)memcpy(p->p_comm, commandname, commandlen);
-	p->p_comm[commandlen] = '\0';
+	strlcpy(p->p_comm, strrchr(resolvedname, '/') + 1, sizeof(p->p_comm));
 
-
-	/*
-	 * If the path starts with /, we don't need to do any work.
-	 * This handles the majority of the cases.
-	 * In the future perhaps we could canonicalize it?
-	 */
-	path = PNBUF_GET();
-	if (pathstring[0] == '/') {
-		(void)strlcpy(path, pathstring, MAXPATHLEN);
-		epp->ep_path = path;
-	}
-#ifdef notyet
-	/*
-	 * Although this works most of the time [since the entry was just
-	 * entered in the cache] we don't use it because it will fail for
-	 * entries that are not placed in the cache because their name is
-	 * longer than NCHNAMLEN and it is not the cleanest interface,
-	 * because there could be races. When the namei cache is re-written,
-	 * this can be changed to use the appropriate function.
-	 */
-	else if (!(error = vnode_to_path(path, MAXPATHLEN, p->p_textvp, l, p)))
-		epp->ep_path = path;
-#endif
-	else {
-#ifdef notyet
-		printf("Cannot get path for pid %d [%s] (error %d)\n",
-		    (int)p->p_pid, p->p_comm, error);
-#endif
-		PNBUF_PUT(path);
- 		epp->ep_path = NULL;
-	}
+	kmem_strfree(p->p_path);
+	p->p_path = kmem_strdupsize(resolvedname, NULL, KM_SLEEP);
 }
 
 /* XXX elsewhere */
@@ -1193,7 +1154,9 @@ execve_runproc(struct lwp *l, struct execve_data * restrict data,
 	if (error != 0)
 		goto exec_abort;
 
-	pathexec(epp, l, data->ed_pathstring);
+	// XXX: Can't use epp->ep_resolvedname since namei can return
+	// a relative path in pnbuf when being passed an absolute path!
+	pathexec(p, data->ed_pathstring);
 
 	char * const newstack = STACK_GROW(vm->vm_minsaddr, epp->ep_ssize);
 
@@ -1462,10 +1425,6 @@ copyoutargs(struct execve_data * restrict data, struct lwp *l,
 	error = (*epp->ep_esch->es_copyargs)(l, epp,
 	    &data->ed_arginfo, &newargs, data->ed_argp);
 
-	if (epp->ep_path) {
-		PNBUF_PUT(epp->ep_path);
-		epp->ep_path = NULL;
-	}
 	if (error) {
 		DPRINTF(("%s: copyargs failed %d\n", __func__, error));
 		return error;
@@ -1820,8 +1779,12 @@ exec_init(int init_boot)
 
 	if (init_boot) {
 		/* do one-time initializations */
+		vaddr_t vmin = 0, vmax;
+
 		rw_init(&exec_lock);
 		mutex_init(&sigobject_lock, MUTEX_DEFAULT, IPL_NONE);
+		exec_map = uvm_km_suballoc(kernel_map, &vmin, &vmax,
+		    maxexec*NCARGS, VM_MAP_PAGEABLE, false, NULL);
 		pool_init(&exec_pool, NCARGS, 0, 0, PR_NOALIGN|PR_NOTOUCH,
 		    "execargs", &exec_palloc, IPL_NONE);
 		pool_sethardlimit(&exec_pool, maxexec, "should not happen", 0);
@@ -2253,7 +2216,7 @@ posix_spawn_fa_free(struct posix_spawn_file_actions *fa, size_t len)
 		struct posix_spawn_file_actions_entry *fae = &fa->fae[i];
 		if (fae->fae_action != FAE_OPEN)
 			continue;
-		kmem_free(fae->fae_path, strlen(fae->fae_path) + 1);
+		kmem_strfree(fae->fae_path);
 	}
 	if (fa->len > 0)
 		kmem_free(fa->fae, sizeof(*fa->fae) * fa->len);

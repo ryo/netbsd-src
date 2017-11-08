@@ -1,4 +1,4 @@
-/*	$NetBSD: rpi_machdep.c,v 1.80 2017/08/16 20:54:19 jmcneill Exp $	*/
+/*	$NetBSD: rpi_machdep.c,v 1.82 2017/11/07 09:05:05 ryo Exp $	*/
 
 /*-
  * Copyright (c) 2012 The NetBSD Foundation, Inc.
@@ -30,7 +30,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: rpi_machdep.c,v 1.80 2017/08/16 20:54:19 jmcneill Exp $");
+__KERNEL_RCSID(0, "$NetBSD: rpi_machdep.c,v 1.82 2017/11/07 09:05:05 ryo Exp $");
 
 #include "opt_arm_debug.h"
 #include "opt_bcm283x.h"
@@ -449,7 +449,7 @@ static uint8_t cursor_mask[8 * 64], cursor_bitmap[8 * 64];
 
 /*
  * Return true if this model Raspberry Pi has Bluetooth/Wi-Fi support
- */ 
+ */
 static bool
 rpi_rev_has_btwifi(uint32_t rev)
 {
@@ -585,7 +585,7 @@ rpi_bootparams(void)
 		size_t n = vcprop_tag_resplen(&vptp_mem->tag) /
 		    sizeof(struct vcprop_memory);
 
-    		bootconfig.dramblocks = 0;
+		bootconfig.dramblocks = 0;
 
 		for (int i = 0; i < n && i < DRAM_BLOCKS; i++) {
 			bootconfig.dram[i].address = vptp_mem->mem[i].base;
@@ -627,24 +627,30 @@ rpi_bootparams(void)
 static void
 rpi_bootstrap(void)
 {
-#ifdef MULTIPROCESSOR
 #ifdef BCM2836
-	arm_cpu_max = 4;
+#define RPI_CPU_MAX	4
+
+#ifdef MULTIPROCESSOR
 	extern int cortex_mmuinfo;
+
+	arm_cpu_max = RPI_CPU_MAX;
+	cortex_mmuinfo = armreg_ttbr_read();
 
 #ifdef VERBOSE_INIT_ARM
 	printf("%s: %d cpus present\n", __func__, arm_cpu_max);
-#endif
-
-	cortex_mmuinfo = armreg_ttbr_read();
-#ifdef VERBOSE_INIT_ARM
 	printf("%s: cortex_mmuinfo %x\n", __func__, cortex_mmuinfo);
 #endif
-#endif /* BCM2836 */
+#endif /* MULTIPROCESSOR */
 
+	/*
+	 * Even if no options MULTIPROCESSOR,
+	 * It is need to initialize the secondary CPU,
+	 * and go into wfi loop (cortex_mpstart),
+	 * otherwise system would be freeze...
+	 */
 	extern void cortex_mpstart(void);
 
-	for (size_t i = 1; i < arm_cpu_max; i++) {
+	for (size_t i = 1; i < RPI_CPU_MAX; i++) {
 		bus_space_tag_t iot = &bcm2835_bs_tag;
 		bus_space_handle_t ioh = BCM2836_ARM_LOCAL_VBASE;
 
@@ -662,6 +668,11 @@ rpi_bootstrap(void)
 				break;
 		}
 	}
+#endif /* BCM2836 */
+
+#ifdef MULTIPROCESSOR
+	/* Wake up APs in case firmware has placed them in WFE state */
+	__asm __volatile("sev");
 
 	for (int loop = 0; loop < 16; loop++) {
 		if (arm_cpu_hatched == __BITS(arm_cpu_max - 1, 1))

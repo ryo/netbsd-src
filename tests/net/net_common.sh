@@ -1,4 +1,4 @@
-#	$NetBSD: net_common.sh,v 1.20 2017/07/24 02:07:43 ozaki-r Exp $
+#	$NetBSD: net_common.sh,v 1.24 2017/11/07 09:17:06 ozaki-r Exp $
 #
 # Copyright (c) 2016 Internet Initiative Japan Inc.
 # All rights reserved.
@@ -183,6 +183,7 @@ BASIC_LIBS="-lrumpnet -lrumpnet_net -lrumpnet_netinet \
 FS_LIBS="$BASIC_LIBS -lrumpvfs -lrumpfs_ffs"
 CRYPTO_LIBS="$BASIC_LIBS -lrumpvfs -lrumpdev_opencrypto \
     -lrumpkern_z -lrumpkern_crypto"
+NPF_LIBS="$BASIC_LIBS -lrumpvfs -lrumpdev_bpf -lrumpnet_npf"
 
 # We cannot keep variables between test phases, so need to store in files
 _rump_server_socks=./.__socks
@@ -283,6 +284,24 @@ rump_server_crypto_start()
 	return 0
 }
 
+rump_server_npf_start()
+{
+	local sock=$1
+	local _libs=
+	local libs="$NPF_LIBS"
+
+	shift 1
+	_libs="$*"
+
+	for lib in $_libs; do
+		libs="$libs -lrumpnet_$lib"
+	done
+
+	_rump_server_start_common $sock $libs
+
+	return 0
+}
+
 rump_server_add_iface()
 {
 	local sock=$1
@@ -318,7 +337,7 @@ rump_server_destroy_ifaces()
 		atf_check -s exit:0 -o ignore rump.ifconfig
 		atf_check -s exit:0 -o ignore rump.netstat -nr
 		# XXX still need hijacking
-		atf_check -s exit:0 -o ignore $HIJACKING rump.netstat -i -a
+		atf_check -s exit:0 -o ignore $HIJACKING rump.netstat -nai
 		atf_check -s exit:0 -o ignore rump.arp -na
 		atf_check -s exit:0 -o ignore rump.ndp -na
 		atf_check -s exit:0 -o ignore $HIJACKING ifmcstat
@@ -359,10 +378,10 @@ rump_server_dump_servers()
 	for sock in $(cat $_rump_server_socks); do
 		echo "### Dumping $sock"
 		export RUMP_SERVER=$sock
-		rump.ifconfig
+		rump.ifconfig -av
 		rump.netstat -nr
 		# XXX still need hijacking
-		$HIJACKING rump.netstat -i -a
+		$HIJACKING rump.netstat -nai
 		rump.arp -na
 		rump.ndp -na
 		$HIJACKING ifmcstat

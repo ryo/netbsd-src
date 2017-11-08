@@ -1,4 +1,4 @@
-/* $NetBSD: sunxi_ccu.h,v 1.11 2017/09/30 12:48:58 jmcneill Exp $ */
+/* $NetBSD: sunxi_ccu.h,v 1.15 2017/10/28 13:13:45 jmcneill Exp $ */
 
 /*-
  * Copyright (c) 2017 Jared McNeill <jmcneill@invisible.ca>
@@ -107,10 +107,11 @@ struct sunxi_ccu_nkmp {
 	uint32_t	enable;
 	uint32_t	flags;
 	const struct sunxi_ccu_nkmp_tbl *table;
-#define	SUNXI_CCU_NKMP_DIVIDE_BY_TWO	__BIT(0)
-#define	SUNXI_CCU_NKMP_FACTOR_N_EXACT	__BIT(1)
-#define	SUNXI_CCU_NKMP_SCALE_CLOCK	__BIT(2)
-#define	SUNXI_CCU_NKMP_FACTOR_P_POW2	__BIT(3)
+#define	SUNXI_CCU_NKMP_DIVIDE_BY_TWO		__BIT(0)
+#define	SUNXI_CCU_NKMP_FACTOR_N_EXACT		__BIT(1)
+#define	SUNXI_CCU_NKMP_SCALE_CLOCK		__BIT(2)
+#define	SUNXI_CCU_NKMP_FACTOR_P_POW2		__BIT(3)
+#define	SUNXI_CCU_NKMP_FACTOR_N_ZERO_IS_ONE	__BIT(4)
 };
 
 int	sunxi_ccu_nkmp_enable(struct sunxi_ccu_softc *,
@@ -160,6 +161,7 @@ struct sunxi_ccu_nm {
 	uint32_t	flags;
 #define	SUNXI_CCU_NM_POWER_OF_TWO	__BIT(0)
 #define	SUNXI_CCU_NM_ROUND_DOWN		__BIT(1)
+#define	SUNXI_CCU_NM_DIVIDE_BY_TWO	__BIT(2)
 };
 
 int	sunxi_ccu_nm_enable(struct sunxi_ccu_softc *,
@@ -200,11 +202,16 @@ struct sunxi_ccu_div {
 	u_int		nparents;
 	uint32_t	div;
 	uint32_t	sel;
+	uint32_t	enable;
 	uint32_t	flags;
 #define	SUNXI_CCU_DIV_POWER_OF_TWO	__BIT(0)
 #define	SUNXI_CCU_DIV_ZERO_IS_ONE	__BIT(1)
+#define	SUNXI_CCU_DIV_TIMES_TWO		__BIT(2)
+#define	SUNXI_CCU_DIV_SET_RATE_PARENT	__BIT(3)
 };
 
+int	sunxi_ccu_div_enable(struct sunxi_ccu_softc *,
+			     struct sunxi_ccu_clk *, int);
 u_int	sunxi_ccu_div_get_rate(struct sunxi_ccu_softc *,
 			       struct sunxi_ccu_clk *);
 int	sunxi_ccu_div_set_rate(struct sunxi_ccu_softc *,
@@ -217,6 +224,11 @@ const char *sunxi_ccu_div_get_parent(struct sunxi_ccu_softc *,
 
 #define	SUNXI_CCU_DIV(_id, _name, _parents, _reg, _div,		\
 		      _sel, _flags)				\
+	SUNXI_CCU_DIV_GATE(_id, _name, _parents, _reg, _div,	\
+			   _sel, 0, _flags)
+
+#define	SUNXI_CCU_DIV_GATE(_id, _name, _parents, _reg, _div,	\
+		      _sel, _enable, _flags)			\
 	[_id] = {						\
 		.type = SUNXI_CCU_DIV,				\
 		.base.name = (_name),				\
@@ -225,7 +237,9 @@ const char *sunxi_ccu_div_get_parent(struct sunxi_ccu_softc *,
 		.u.div.nparents = __arraycount(_parents),	\
 		.u.div.div = (_div),				\
 		.u.div.sel = (_sel),				\
+		.u.div.enable = (_enable),			\
 		.u.div.flags = (_flags),			\
+		.enable = sunxi_ccu_div_enable,			\
 		.get_rate = sunxi_ccu_div_get_rate,		\
 		.set_rate = sunxi_ccu_div_set_rate,		\
 		.set_parent = sunxi_ccu_div_set_parent,		\

@@ -1,4 +1,4 @@
-#	$NetBSD: files,v 1.1181 2017/09/13 22:24:46 sevan Exp $
+#	$NetBSD: files,v 1.1183 2017/10/19 23:58:41 jmcneill Exp $
 #	@(#)files.newconf	7.5 (Berkeley) 5/10/93
 
 version 	20170615
@@ -1037,7 +1037,7 @@ device	siisata: ata, ata_dma, ata_udma, sata, sata_fis, sata_pmp, siisata
 # Marvell Serial-ATA Host Controller
 define mvsata
 file dev/ic/mvsata.c			mvsata
-device mvsata: ata, ata_dma, ata_udma, wdc_common, sata, sata_pmp, mvsata
+device mvsata: ata, ata_dma, ata_udma, wdc_common, sata, sata_fis, sata_pmp, mvsata
 defflag opt_mvsata.h		MVSATA_WITHOUTDMA
 
 # DECchip 21x4x Ethernet controller family, and assorted clones.
@@ -1414,6 +1414,10 @@ file	dev/ic/nvme.c			nvme
 
 attach	ld at nvme with ld_nvme
 file	dev/ic/ld_nvme.c		ld_nvme
+
+# Broadcom FullMAC 802.11 driver
+device	bwfm: arp, ifnet, wlan
+file	dev/ic/bwfm.c			bwfm
 
 # legitimate pseudo-devices
 #

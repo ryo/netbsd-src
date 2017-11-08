@@ -1,4 +1,4 @@
-/*	$NetBSD: if_wm.c,v 1.539 2017/09/26 08:25:56 msaitoh Exp $	*/
+/*	$NetBSD: if_wm.c,v 1.542 2017/10/23 23:29:38 knakahara Exp $	*/
 
 /*
  * Copyright (c) 2001, 2002, 2003, 2004 Wasabi Systems, Inc.
@@ -83,7 +83,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: if_wm.c,v 1.539 2017/09/26 08:25:56 msaitoh Exp $");
+__KERNEL_RCSID(0, "$NetBSD: if_wm.c,v 1.542 2017/10/23 23:29:38 knakahara Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_net_mpsafe.h"
@@ -2753,7 +2753,12 @@ alloc_retry:
 #endif
 
 	/* Attach the interface. */
-	if_initialize(ifp);
+	error = if_initialize(ifp);
+	if (error != 0) {
+		aprint_error_dev(sc->sc_dev, "if_initialize failed(%d)\n",
+		    error);
+		return; /* Error */
+	}
 	sc->sc_ipq = if_percpuq_create(&sc->sc_ethercom.ec_if);
 	ether_ifattach(ifp, enaddr);
 	if_register(ifp);
@@ -4022,10 +4027,18 @@ wm_initialize_hardware_bits(struct wm_softc *sc)
 		case WM_T_PCH_LPT:
 		case WM_T_PCH_SPT:
 			/* TARC0 */
-			if ((sc->sc_type == WM_T_ICH8)
-			    || (sc->sc_type == WM_T_PCH_SPT)) {
+			if (sc->sc_type == WM_T_ICH8) {
 				/* Set TARC0 bits 29 and 28 */
 				tarc0 |= __BITS(29, 28);
+			} else if (sc->sc_type == WM_T_PCH_SPT) {
+				tarc0 |= __BIT(29);
+				/*
+				 *  Drop bit 28. From Linux.
+				 * See I218/I219 spec update
+				 * "5. Buffer Overrun While the I219 is
+				 * Processing DMA Transactions"
+				 */
+				tarc0 &= ~__BIT(28);
 			}
 			/* Set TARC0 bits 23,24,26,27 */
 			tarc0 |= __BITS(27, 26) | __BITS(24, 23);
@@ -8095,11 +8108,11 @@ wm_rxdesc_get_vlantag(struct wm_rxqueue *rxq, int idx)
 	struct wm_softc *sc = rxq->rxq_sc;
 
 	if (sc->sc_type == WM_T_82574)
-		return rxq->rxq_ext_descs[idx].erx_ctx.erxc_vlan;
+		return EXTRXC_VLAN_ID(rxq->rxq_ext_descs[idx].erx_ctx.erxc_vlan);
 	else if ((sc->sc_flags & WM_F_NEWQUEUE) != 0)
-		return rxq->rxq_nq_descs[idx].nqrx_ctx.nrxc_vlan;
+		return NQRXC_VLAN_ID(rxq->rxq_nq_descs[idx].nqrx_ctx.nrxc_vlan);
 	else
-		return rxq->rxq_descs[idx].wrx_special;
+		return WRX_VLAN_ID(rxq->rxq_descs[idx].wrx_special);
 }
 
 static inline int

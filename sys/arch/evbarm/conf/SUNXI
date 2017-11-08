@@ -1,5 +1,5 @@
 #
-#	$NetBSD: SUNXI,v 1.33 2017/10/02 22:50:29 jmcneill Exp $
+#	$NetBSD: SUNXI,v 1.50 2017/10/29 16:02:46 jmcneill Exp $
 #
 #	Allwinner sunxi family
 #
@@ -34,6 +34,10 @@ makeoptions	DTS="
 	sun6i-a31-m9.dts
 	sun6i-a31-mele-a1000g-quad.dts
 
+	sun8i-a83t-allwinner-h8homlet-v2.dts
+	sun8i-a83t-bananapi-m3.dts
+	sun8i-a83t-cubietruck-plus.dts
+
 	sun8i-h2-plus-orangepi-zero.dts
 
 	sun8i-h3-bananapi-m2-plus.dts
@@ -49,10 +53,17 @@ makeoptions	DTS="
 	sun8i-h3-orangepi-plus.dts
 	sun8i-h3-orangepi-plus2e.dts
 
+	sun9i-a80-cubieboard4.dts
+	sun9i-a80-optimus.dts
+
 	sun50i-a64-bananapi-m64.dts
+	sun50i-a64-nanopi-a64.dts
+	sun50i-a64-olinuxino.dts
+	sun50i-a64-orangepi-win.dts
 	sun50i-a64-pine64-plus.dts
 	sun50i-a64-pine64.dts
 	sun50i-a64-pinebook.dts
+	sun50i-a64-sopine-baseboard.dts
 "
 
 options 	MULTIPROCESSOR
@@ -61,11 +72,15 @@ options 	CPU_CORTEXA7
 options 	CPU_CORTEXA8
 options 	CPU_CORTEXA53
 
+options 	SOC_SUN4I_A10
 options 	SOC_SUN5I_A13
 options 	SOC_SUN6I_A31
+options 	SOC_SUN7I_A20
 options 	SOC_SUN8I_A83T
 options 	SOC_SUN8I_H3
+options 	SOC_SUN9I_A80
 options 	SOC_SUN50I_A64
+options 	SOC_SUN50I_H5
 
 pseudo-device 	openfirm	# /dev/openfirm
 
@@ -96,14 +111,18 @@ cpufreqdt*	at cpu?
 psci*		at fdt?
 
 # Clock and reset controllers
+sun4ia10ccu*	at fdt? pass 2		# A10/A20 CCU
 sun5ia13ccu*	at fdt? pass 2		# A13 CCU
 sun6ia31ccu*	at fdt? pass 2		# A31 CCU
 sun8ia83tccu*	at fdt? pass 2		# A83T CCU
 sun8ih3ccu*	at fdt? pass 2		# H3 CCU
 sun8ih3rccu*	at fdt? pass 2		# H3 CCU (PRCM)
+sun9ia80ccu*	at fdt? pass 2		# A80 CCU
 sun50ia64ccu*	at fdt? pass 2		# A64 CCU
 sunxiresets*	at fdt? pass 1		# Misc. clock resets
 sunxigates*	at fdt? pass 1		# Misc. clock gates
+sunxigmacclk*	at fdt? pass 2		# GMAC MII/RGMII clock mux
+sun9immcclk*	at fdt? pass 2		# A80 SD/MMC-COMM
 
 fclock*		at fdt? pass 1
 ffclock*	at fdt? pass 1
@@ -111,6 +130,9 @@ fregulator*	at fdt? pass 4
 gregulator*	at fdt? pass 4
 gpiokeys*	at fdt?
 gpioleds*	at fdt?
+
+# SRAM controller
+sunxisramc*	at fdt? pass 4		# SRAM controller
 
 # Timer
 gtmr*		at fdt? pass 1		# ARM Generic Timer
@@ -131,33 +153,42 @@ sunxiintc*	at fdt? pass 1		# Allwinner INTC
 sun4idma*	at fdt?			# DMA controller (sun4i)
 sun6idma*	at fdt?			# DMA controller (sun6i)
 
-# Clock and Reset controller
-
 # GPIO controller
 sunxigpio*	at fdt? pass 3		# GPIO
 gpio*		at gpiobus?
 
 # Ethernet
-sunxiemac*	at fdt?			# Allwinner Gigabit Ethernet
+sun4iemac*	at fdt?			# Allwinner Fast Ethernet (EMAC)
+sunxiemac*	at fdt?			# Allwinner Gigabit Ethernet (EMAC)
+awge*		at fdt?			# Allwinner Gigabit Ethernet (GMAC)
 rgephy*		at mii? phy ?
+rlphy*		at mii? phy ?
 ukphy*		at mii? phy ?
 
 # UART
 com*		at fdt?			# UART
-options 	COM_AWIN		# XXX this should be a driver flag
 
 # I2C
 sunxitwi*	at fdt?			# TWI
-options 	GTTWSI_ALLWINNER	# XXX this should be a driver flag
 sunxirsb*	at fdt?			# P2WI/RSB
 iic*		at i2cbus?
 tcakp*		at iic?			# TI TCA8418 Keypad Scan IC
 wskbd*		at tcakp? console ?
 axp20x*		at iic?			# AXP209 Power Management IC
+axp20xreg*	at axp20x?
+axp22x*		at iic?			# AXP221 Power Management IC
 sy8106a*	at iic?			# Silergy SY81061 regulator
+pcf8563rtc*	at iic?			# PCF8563 RTC
+#seeprom*	at iic?			# AT24Cxx Serial EEPROM
 
 # RTC
 sunxirtc*	at fdt?			# RTC
+
+# Security ID EFUSE
+sunxisid*	at fdt?	pass 4		# SID
+
+# Thermal sensor
+sunxithermal*	at fdt?			# Thermal sensor controller
 
 # Audio
 sunxicodec*	at fdt?			# Audio codec
@@ -166,6 +197,7 @@ audio*		at audiobus?
 spkr*		at audio?
 
 # SDMMC
+mmcpwrseq*	at fdt?			# Simple MMC power sequence provider
 sunximmc*	at fdt?			# SDMMC
 sdmmc*		at sunximmc?
 ld0		at sdmmc0
@@ -173,6 +205,11 @@ ld1		at sdmmc1
 ld2		at sdmmc2
 ld3		at sdmmc3
 ld*		at sdmmc?
+
+# SATA
+ahcisata*	at fdt?			# SATA
+atabus*		at ata?
+wd*		at atabus? drive ?
 
 # Display
 genfb*		at fdt?
@@ -202,7 +239,6 @@ sunxiusbphy*	at fdt?	pass 9		# USB PHY
 ehci*		at fdt?			# EHCI
 ohci*		at fdt?			# OHCI
 motg*		at fdt?			# USB OTG
-options 	MOTG_ALLWINNER		# XXX this should be a driver flag
 usb*		at ehci?
 usb*		at ohci?
 usb*		at motg?

@@ -1,4 +1,4 @@
-/*	$NetBSD: if_vlan.c,v 1.100 2017/09/26 07:42:06 knakahara Exp $	*/
+/*	$NetBSD: if_vlan.c,v 1.106 2017/10/30 16:01:19 ozaki-r Exp $	*/
 
 /*-
  * Copyright (c) 2000, 2001 The NetBSD Foundation, Inc.
@@ -78,11 +78,10 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: if_vlan.c,v 1.100 2017/09/26 07:42:06 knakahara Exp $");
+__KERNEL_RCSID(0, "$NetBSD: if_vlan.c,v 1.106 2017/10/30 16:01:19 ozaki-r Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_inet.h"
-#include "opt_net_mpsafe.h"
 #endif
 
 #include <sys/param.h>
@@ -122,10 +121,6 @@ __KERNEL_RCSID(0, "$NetBSD: if_vlan.c,v 1.100 2017/09/26 07:42:06 knakahara Exp 
 #endif
 
 #include "ioconf.h"
-
-#ifdef NET_MPSAFE
-#define VLAN_MPSAFE		1
-#endif
 
 struct vlan_mc_entry {
 	LIST_ENTRY(vlan_mc_entry)	mc_entries;
@@ -322,6 +317,7 @@ vlan_clone_create(struct if_clone *ifc, int unit)
 	struct ifvlan *ifv;
 	struct ifnet *ifp;
 	struct ifvlan_linkmib *mib;
+	int rv;
 
 	ifv = malloc(sizeof(struct ifvlan), M_DEVBUF, M_WAITOK|M_ZERO);
 	mib = kmem_zalloc(sizeof(struct ifvlan_linkmib), KM_SLEEP);
@@ -342,19 +338,34 @@ vlan_clone_create(struct if_clone *ifc, int unit)
 	if_initname(ifp, ifc->ifc_name, unit);
 	ifp->if_softc = ifv;
 	ifp->if_flags = IFF_BROADCAST | IFF_SIMPLEX | IFF_MULTICAST;
-#ifdef VLAN_MPSAFE
-	ifp->if_extflags = IFEF_START_MPSAFE;
-#endif
+	ifp->if_extflags = IFEF_START_MPSAFE | IFEF_NO_LINK_STATE_CHANGE;
 	ifp->if_start = vlan_start;
 	ifp->if_transmit = vlan_transmit;
 	ifp->if_ioctl = vlan_ioctl;
 	IFQ_SET_READY(&ifp->if_snd);
 
-	if_initialize(ifp);
+	rv = if_initialize(ifp);
+	if (rv != 0) {
+		aprint_error("%s: if_initialize failed(%d)\n", ifp->if_xname,
+		    rv);
+		goto fail;
+	}
+
 	vlan_reset_linkname(ifp);
 	if_register(ifp);
+	return 0;
 
-	return (0);
+fail:
+	mutex_enter(&ifv_list.lock);
+	LIST_REMOVE(ifv, ifv_list);
+	mutex_exit(&ifv_list.lock);
+
+	mutex_destroy(&ifv->ifv_lock);
+	psref_target_destroy(&ifv->ifv_mib->ifvm_psref, ifvm_psref_class);
+	kmem_free(ifv->ifv_mib, sizeof(struct ifvlan_linkmib));
+	free(ifv, M_DEVBUF);
+
+	return rv;
 }
 
 static int
@@ -386,10 +397,12 @@ vlan_config(struct ifvlan *ifv, struct ifnet *p, uint16_t tag)
 	struct ifnet *ifp = &ifv->ifv_if;
 	struct ifvlan_linkmib *nmib = NULL;
 	struct ifvlan_linkmib *omib = NULL;
+	struct ifvlan_linkmib *checkmib = NULL;
 	struct psref_target *nmib_psref = NULL;
 	int error = 0;
 	int idx;
 	bool omib_cleanup = false;
+	struct psref psref;
 
 	nmib = kmem_alloc(sizeof(*nmib), KM_SLEEP);
 
@@ -398,6 +411,14 @@ vlan_config(struct ifvlan *ifv, struct ifnet *p, uint16_t tag)
 
 	if (omib->ifvm_p != NULL) {
 		error = EBUSY;
+		goto done;
+	}
+
+	/* Duplicate check */
+	checkmib = vlan_lookup_tag_psref(p, tag, &psref);
+	if (checkmib != NULL) {
+		vlan_putref_linkmib(checkmib, &psref);
+		error = EEXIST;
 		goto done;
 	}
 
@@ -475,6 +496,7 @@ vlan_config(struct ifvlan *ifv, struct ifnet *p, uint16_t tag)
 	 */
 	ifv->ifv_if.if_type = p->if_type;
 
+	PSLIST_ENTRY_INIT(ifv, ifv_hash);
 	idx = tag_hash_func(tag, ifv_hash.mask);
 
 	mutex_enter(&ifv_hash.lock);
@@ -579,6 +601,7 @@ vlan_unconfig_locked(struct ifvlan *ifv, struct ifvlan_linkmib *nmib)
 	PSLIST_WRITER_REMOVE(ifv, ifv_hash);
 	pserialize_perform(vlan_psz);
 	mutex_exit(&ifv_hash.lock);
+	PSLIST_ENTRY_DESTROY(ifv, ifv_hash);
 
 	vlan_linkmib_update(ifv, nmib);
 
@@ -1182,10 +1205,6 @@ vlan_start(struct ifnet *ifp)
 	struct ifvlan_linkmib *mib;
 	struct psref psref;
 	int error;
-
-#ifndef NET_MPSAFE
-	KASSERT(KERNEL_LOCKED_P());
-#endif
 
 	mib = vlan_getref_linkmib(ifv, &psref);
 	if (mib == NULL)

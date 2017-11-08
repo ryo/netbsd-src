@@ -1,4 +1,4 @@
-/*	$NetBSD: machdep.c,v 1.262 2017/09/30 11:43:57 maxv Exp $	*/
+/*	$NetBSD: machdep.c,v 1.275 2017/11/04 08:50:47 cherry Exp $	*/
 
 /*
  * Copyright (c) 1996, 1997, 1998, 2000, 2006, 2007, 2008, 2011
@@ -110,7 +110,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: machdep.c,v 1.262 2017/09/30 11:43:57 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: machdep.c,v 1.275 2017/11/04 08:50:47 cherry Exp $");
 
 /* #define XENDEBUG_LOW  */
 
@@ -122,6 +122,7 @@ __KERNEL_RCSID(0, "$NetBSD: machdep.c,v 1.262 2017/09/30 11:43:57 maxv Exp $");
 #include "opt_mtrr.h"
 #include "opt_realmem.h"
 #include "opt_xen.h"
+#include "opt_kaslr.h"
 #ifndef XEN
 #include "opt_physmem.h"
 #endif
@@ -430,6 +431,7 @@ x86_64_tls_switch(struct lwp *l)
 	struct cpu_info *ci = curcpu();
 	struct pcb *pcb = lwp_getpcb(l);
 	struct trapframe *tf = l->l_md.md_regs;
+	uint64_t zero = 0;
 
 	/*
 	 * Raise the IPL to IPL_HIGH.
@@ -445,13 +447,19 @@ x86_64_tls_switch(struct lwp *l)
 		HYPERVISOR_fpu_taskswitch(1);
 	}
 
-	/* Update TLS segment pointers */
+	/* Update segment registers */
 	if (pcb->pcb_flags & PCB_COMPAT32) {
 		update_descriptor(&curcpu()->ci_gdt[GUFS_SEL], &pcb->pcb_fs);
 		update_descriptor(&curcpu()->ci_gdt[GUGS_SEL], &pcb->pcb_gs);
-		setfs(tf->tf_fs);
+		setds(GSEL(GUDATA32_SEL, SEL_UPL));
+		setes(GSEL(GUDATA32_SEL, SEL_UPL));
+		setfs(GSEL(GUDATA32_SEL, SEL_UPL));
 		HYPERVISOR_set_segment_base(SEGBASE_GS_USER_SEL, tf->tf_gs);
 	} else {
+		update_descriptor(&curcpu()->ci_gdt[GUFS_SEL], &zero);
+		update_descriptor(&curcpu()->ci_gdt[GUGS_SEL], &zero);
+		setds(GSEL(GUDATA_SEL, SEL_UPL));
+		setes(GSEL(GUDATA_SEL, SEL_UPL));
 		setfs(0);
 		HYPERVISOR_set_segment_base(SEGBASE_GS_USER_SEL, 0);
 		HYPERVISOR_set_segment_base(SEGBASE_FS, pcb->pcb_fs);
@@ -1327,9 +1335,9 @@ setregs(struct lwp *l, struct exec_package *pack, vaddr_t stack)
 	l->l_md.md_flags = MDL_IRET;
 
 	tf = l->l_md.md_regs;
-	tf->tf_ds = LSEL(LUDATA_SEL, SEL_UPL);
-	tf->tf_es = LSEL(LUDATA_SEL, SEL_UPL);
-	cpu_fsgs_zero(l);
+	tf->tf_ds = GSEL(GUDATA_SEL, SEL_UPL);
+	tf->tf_es = GSEL(GUDATA_SEL, SEL_UPL);
+	cpu_segregs64_zero(l);
 	tf->tf_rdi = 0;
 	tf->tf_rsi = 0;
 	tf->tf_rbp = 0;
@@ -1472,8 +1480,13 @@ init_x86_64_ksyms(void)
 #ifndef XEN
 	symtab = lookup_bootinfo(BTINFO_SYMTAB);
 	if (symtab) {
+#ifdef KASLR
+		tssym = bootspace.head.va;
+		tesym = bootspace.head.va; /* (unused...) */
+#else
 		tssym = (vaddr_t)symtab->ssym + KERNBASE;
 		tesym = (vaddr_t)symtab->esym + KERNBASE;
+#endif
 		ksyms_addsyms_elf(symtab->nsym, (void *)tssym, (void *)tesym);
 	} else
 		ksyms_addsyms_elf(*(long *)(void *)&end,
@@ -1496,6 +1509,10 @@ init_bootspace(void)
 	extern char __kernel_end;
 
 	memset(&bootspace, 0, sizeof(bootspace));
+
+	bootspace.head.va = KERNTEXTOFF;
+	bootspace.head.pa = KERNTEXTOFF - KERNBASE;
+	bootspace.head.sz = 0;
 
 	bootspace.text.va = KERNTEXTOFF;
 	bootspace.text.pa = KERNTEXTOFF - KERNBASE;
@@ -1730,6 +1747,7 @@ init_x86_64(paddr_t first_avail)
 		    GSEL(GCODE_SEL, SEL_KPL));
 #else /* XEN */
 		pmap_changeprot_local(idt_vaddr, VM_PROT_READ|VM_PROT_WRITE);
+		idt_vec_reserve(x);
 		xen_idt[xen_idt_idx].vector = x;
 
 		switch (x) {
@@ -1759,6 +1777,7 @@ init_x86_64(paddr_t first_avail)
 	setgate(&idt[128], &IDTVEC(osyscall), 0, SDT_SYS386IGT, SEL_UPL,
 	    GSEL(GCODE_SEL, SEL_KPL));
 #else
+	idt_vec_reserve(128);
 	xen_idt[xen_idt_idx].vector = 128;
 	xen_idt[xen_idt_idx].flags = SEL_KPL;
 	xen_idt[xen_idt_idx].cs = GSEL(GCODE_SEL, SEL_KPL);
@@ -1988,16 +2007,51 @@ cpu_initclocks(void)
 int
 mm_md_kernacc(void *ptr, vm_prot_t prot, bool *handled)
 {
-	extern char start, __data_start;
 	const vaddr_t v = (vaddr_t)ptr;
+	vaddr_t kva, kva_end;
 
-	if (v >= (vaddr_t)&start && v < (vaddr_t)kern_end) {
+	kva = bootspace.head.va;
+	kva_end = kva + bootspace.head.sz;
+	if (v >= kva && v < kva_end) {
 		*handled = true;
-		/* Either the text or rodata segment */
-		if (v < (vaddr_t)&__data_start && (prot & VM_PROT_WRITE))
-			return EFAULT;
+		return 0;
+	}
 
-	} else if (v >= module_start && v < module_end) {
+	kva = bootspace.text.va;
+	kva_end = kva + bootspace.text.sz;
+	if (v >= kva && v < kva_end) {
+		*handled = true;
+		if (prot & VM_PROT_WRITE) {
+			return EFAULT;
+		}
+		return 0;
+	}
+
+	kva = bootspace.rodata.va;
+	kva_end = kva + bootspace.rodata.sz;
+	if (v >= kva && v < kva_end) {
+		*handled = true;
+		if (prot & VM_PROT_WRITE) {
+			return EFAULT;
+		}
+		return 0;
+	}
+
+	kva = bootspace.data.va;
+	kva_end = kva + bootspace.data.sz;
+	if (v >= kva && v < kva_end) {
+		*handled = true;
+		return 0;
+	}
+
+	kva = bootspace.boot.va;
+	kva_end = kva + bootspace.boot.sz;
+	if (v >= kva && v < kva_end) {
+		*handled = true;
+		return 0;
+	}
+
+	if (v >= module_start && v < module_end) {
 		*handled = true;
 		if (!uvm_map_checkprot(module_map, v, v + 1, prot))
 			return EFAULT;
@@ -2008,17 +2062,17 @@ mm_md_kernacc(void *ptr, vm_prot_t prot, bool *handled)
 }
 
 /*
- * Zero out an LWP's TLS context (%fs and %gs and associated stuff).
- * Used when exec'ing a new program.
+ * Zero out a 64bit LWP's segments registers. Used when exec'ing a new
+ * 64bit program.
  */
-
 void
-cpu_fsgs_zero(struct lwp *l)
+cpu_segregs64_zero(struct lwp *l)
 {
 	struct trapframe * const tf = l->l_md.md_regs;
 	struct pcb *pcb;
 	uint64_t zero = 0;
 
+	KASSERT((l->l_proc->p_flag & PK_32) == 0);
 	KASSERT(l == curlwp);
 
 	pcb = lwp_getpcb(l);
@@ -2026,21 +2080,49 @@ cpu_fsgs_zero(struct lwp *l)
 	kpreempt_disable();
 	tf->tf_fs = 0;
 	tf->tf_gs = 0;
+	setds(GSEL(GUDATA_SEL, SEL_UPL));
+	setes(GSEL(GUDATA_SEL, SEL_UPL));
 	setfs(0);
-#ifndef XEN
 	setusergs(0);
-#else
-	HYPERVISOR_set_segment_base(SEGBASE_GS_USER_SEL, 0);
-#endif
-	if ((l->l_proc->p_flag & PK_32) == 0) {
+
 #ifndef XEN
-		wrmsr(MSR_FSBASE, 0);
-		wrmsr(MSR_KERNELGSBASE, 0);
+	wrmsr(MSR_FSBASE, 0);
+	wrmsr(MSR_KERNELGSBASE, 0);
 #else
-		HYPERVISOR_set_segment_base(SEGBASE_FS, 0);
-		HYPERVISOR_set_segment_base(SEGBASE_GS_USER, 0);
+	HYPERVISOR_set_segment_base(SEGBASE_FS, 0);
+	HYPERVISOR_set_segment_base(SEGBASE_GS_USER, 0);
 #endif
-	}
+
+	pcb->pcb_fs = 0;
+	pcb->pcb_gs = 0;
+	update_descriptor(&curcpu()->ci_gdt[GUFS_SEL], &zero);
+	update_descriptor(&curcpu()->ci_gdt[GUGS_SEL], &zero);
+	kpreempt_enable();
+}
+
+/*
+ * Zero out a 32bit LWP's segments registers. Used when exec'ing a new
+ * 32bit program.
+ */
+void
+cpu_segregs32_zero(struct lwp *l)
+{
+	struct trapframe * const tf = l->l_md.md_regs;
+	struct pcb *pcb;
+	uint64_t zero = 0;
+
+	KASSERT(l->l_proc->p_flag & PK_32);
+	KASSERT(l == curlwp);
+
+	pcb = lwp_getpcb(l);
+
+	kpreempt_disable();
+	tf->tf_fs = 0;
+	tf->tf_gs = 0;
+	setds(GSEL(GUDATA32_SEL, SEL_UPL));
+	setes(GSEL(GUDATA32_SEL, SEL_UPL));
+	setfs(0);
+	setusergs(0);
 	pcb->pcb_fs = 0;
 	pcb->pcb_gs = 0;
 	update_descriptor(&curcpu()->ci_gdt[GUFS_SEL], &zero);
@@ -2052,7 +2134,6 @@ cpu_fsgs_zero(struct lwp *l)
  * Load an LWP's TLS context, possibly changing the %fs and %gs selectors.
  * Used only for 32-bit processes.
  */
-
 void
 cpu_fsgs_reload(struct lwp *l, int fssel, int gssel)
 {
@@ -2063,17 +2144,18 @@ cpu_fsgs_reload(struct lwp *l, int fssel, int gssel)
 	KASSERT(l == curlwp);
 
 	tf = l->l_md.md_regs;
+	fssel &= 0xFFFF;
+	gssel &= 0xFFFF;
 
 	pcb = lwp_getpcb(l);
 	kpreempt_disable();
 	update_descriptor(&curcpu()->ci_gdt[GUFS_SEL], &pcb->pcb_fs);
 	update_descriptor(&curcpu()->ci_gdt[GUGS_SEL], &pcb->pcb_gs);
-	setfs(fssel);
-#ifndef XEN
+
+#ifdef XEN
 	setusergs(gssel);
-#else
-	HYPERVISOR_set_segment_base(SEGBASE_GS_USER_SEL, gssel);
 #endif
+
 	tf->tf_fs = fssel;
 	tf->tf_gs = gssel;
 	kpreempt_enable();

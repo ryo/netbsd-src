@@ -1,4 +1,4 @@
-/*$NetBSD: ixv.c,v 1.69 2017/10/04 11:03:20 msaitoh Exp $*/
+/*$NetBSD: ixv.c,v 1.73 2017/10/23 09:31:18 msaitoh Exp $*/
 
 /******************************************************************************
 
@@ -102,7 +102,7 @@ static int      ixv_configure_interrupts(struct adapter *);
 static void	ixv_free_pci_resources(struct adapter *);
 static void     ixv_local_timer(void *);
 static void     ixv_local_timer_locked(void *);
-static void     ixv_setup_interface(device_t, struct adapter *);
+static int      ixv_setup_interface(device_t, struct adapter *);
 static int      ixv_negotiate_api(struct adapter *);
 
 static void     ixv_initialize_transmit_units(struct adapter *);
@@ -497,7 +497,11 @@ ixv_attach(device_t parent, device_t dev, void *aux)
 	adapter->enable_aim = ixv_enable_aim;
 
 	/* Setup OS specific network interface */
-	ixv_setup_interface(dev, adapter);
+	error = ixv_setup_interface(dev, adapter);
+	if (error != 0) {
+		aprint_error_dev(dev, "ixv_setup_interface() failed!\n");
+		goto err_late;
+	}
 
 	error = ixv_allocate_msix(adapter, pa);
 	if (error) {
@@ -955,6 +959,12 @@ ixv_media_status(struct ifnet *ifp, struct ifmediareq *ifmr)
 		case IXGBE_LINK_SPEED_10GB_FULL:
 			ifmr->ifm_active |= IFM_10G_T | IFM_FDX;
 			break;
+		case IXGBE_LINK_SPEED_5GB_FULL:
+			ifmr->ifm_active |= IFM_5000_T | IFM_FDX;
+			break;
+		case IXGBE_LINK_SPEED_2_5GB_FULL:
+			ifmr->ifm_active |= IFM_2500_T | IFM_FDX;
+			break;
 		case IXGBE_LINK_SPEED_1GB_FULL:
 			ifmr->ifm_active |= IFM_1000_T | IFM_FDX;
 			break;
@@ -965,6 +975,8 @@ ixv_media_status(struct ifnet *ifp, struct ifmediareq *ifmr)
 			ifmr->ifm_active |= IFM_10_T | IFM_FDX;
 			break;
 	}
+
+	ifp->if_baudrate = ifmedia_baudrate(ifmr->ifm_active);
 
 	IXGBE_CORE_UNLOCK(adapter);
 
@@ -1040,8 +1052,10 @@ ixv_set_multi(struct adapter *adapter)
 	u8                 *update_ptr;
 	int                mcnt = 0;
 
+	KASSERT(mutex_owned(&adapter->core_mtx));
 	IOCTL_DEBUGOUT("ixv_set_multi: begin");
 
+	ETHER_LOCK(ec);
 	ETHER_FIRST_MULTI(step, ec, enm);
 	while (enm != NULL) {
 		bcopy(enm->enm_addrlo,
@@ -1053,6 +1067,7 @@ ixv_set_multi(struct adapter *adapter)
 			break;
 		ETHER_NEXT_MULTI(step, enm);
 	}
+	ETHER_UNLOCK(ec);
 
 	update_ptr = mta;
 
@@ -1359,11 +1374,12 @@ ixv_free_pci_resources(struct adapter * adapter)
  *
  *   Setup networking device structure and register an interface.
  ************************************************************************/
-static void
+static int
 ixv_setup_interface(device_t dev, struct adapter *adapter)
 {
 	struct ethercom *ec = &adapter->osdep.ec;
 	struct ifnet   *ifp;
+	int rv;
 
 	INIT_DEBUGOUT("ixv_setup_interface: begin");
 
@@ -1392,7 +1408,11 @@ ixv_setup_interface(device_t dev, struct adapter *adapter)
 	IFQ_SET_MAXLEN(&ifp->if_snd, adapter->num_tx_desc - 2);
 	IFQ_SET_READY(&ifp->if_snd);
 
-	if_initialize(ifp);
+	rv = if_initialize(ifp);
+	if (rv != 0) {
+		aprint_error_dev(dev, "if_initialize failed(%d)\n", rv);
+		return rv;
+	}
 	adapter->ipq = if_percpuq_create(&adapter->osdep.ec.ec_if);
 	ether_ifattach(ifp, adapter->hw.mac.addr);
 	/*
@@ -1438,7 +1458,7 @@ ixv_setup_interface(device_t dev, struct adapter *adapter)
 	ifmedia_add(&adapter->media, IFM_ETHER | IFM_AUTO, 0, NULL);
 	ifmedia_set(&adapter->media, IFM_ETHER | IFM_AUTO);
 
-	return;
+	return 0;
 } /* ixv_setup_interface */
 
 

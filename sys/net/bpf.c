@@ -1,4 +1,4 @@
-/*	$NetBSD: bpf.c,v 1.216 2017/02/20 03:08:38 ozaki-r Exp $	*/
+/*	$NetBSD: bpf.c,v 1.218 2017/10/25 08:12:40 maya Exp $	*/
 
 /*
  * Copyright (c) 1990, 1991, 1993
@@ -39,7 +39,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: bpf.c,v 1.216 2017/02/20 03:08:38 ozaki-r Exp $");
+__KERNEL_RCSID(0, "$NetBSD: bpf.c,v 1.218 2017/10/25 08:12:40 maya Exp $");
 
 #if defined(_KERNEL_OPT)
 #include "opt_bpf.h"
@@ -296,7 +296,7 @@ const struct cdevsw bpf_cdevsw = {
 	.d_mmap = nommap,
 	.d_kqfilter = nokqfilter,
 	.d_discard = nodiscard,
-	.d_flag = D_OTHER
+	.d_flag = D_OTHER | D_MPSAFE
 };
 
 bpfjit_func_t
@@ -1496,8 +1496,12 @@ filt_bpfread(struct knote *kn, long hint)
 	return rv;
 }
 
-static const struct filterops bpfread_filtops =
-	{ 1, NULL, filt_bpfrdetach, filt_bpfread };
+static const struct filterops bpfread_filtops = {
+	.f_isfd = 1,
+	.f_attach = NULL,
+	.f_detach = filt_bpfrdetach,
+	.f_event = filt_bpfread,
+};
 
 static int
 bpf_kqfilter(struct file *fp, struct knote *kn)

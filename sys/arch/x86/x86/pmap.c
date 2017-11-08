@@ -1,4 +1,4 @@
-/*	$NetBSD: pmap.c,v 1.260 2017/09/30 12:35:48 maxv Exp $	*/
+/*	$NetBSD: pmap.c,v 1.263 2017/10/29 10:01:21 maxv Exp $	*/
 
 /*
  * Copyright (c) 2008, 2010, 2016, 2017 The NetBSD Foundation, Inc.
@@ -51,7 +51,6 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
  */
 
 /*
@@ -171,12 +170,13 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: pmap.c,v 1.260 2017/09/30 12:35:48 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: pmap.c,v 1.263 2017/10/29 10:01:21 maxv Exp $");
 
 #include "opt_user_ldt.h"
 #include "opt_lockdebug.h"
 #include "opt_multiprocessor.h"
 #include "opt_xen.h"
+#include "opt_kaslr.h"
 
 #include <sys/param.h>
 #include <sys/systm.h>
@@ -1557,6 +1557,15 @@ pmap_remap_global(void)
 	vaddr_t kva, kva_end;
 	unsigned long p1i;
 
+	/* head */
+	kva = bootspace.head.va;
+	kva_end = kva + bootspace.head.sz;
+	for ( ; kva < kva_end; kva += PAGE_SIZE) {
+		p1i = pl1_i(kva);
+		if (pmap_valid_entry(PTE_BASE[p1i]))
+			PTE_BASE[p1i] |= PG_G;
+	}
+
 	/* kernel text */
 	kva = bootspace.text.va;
 	kva_end = kva + bootspace.text.sz;
@@ -1605,11 +1614,16 @@ pmap_remap_largepages(void)
 	vaddr_t kva, kva_end;
 	paddr_t pa;
 
+#ifdef KASLR
+	/* XXX no large pages yet, soon */
+	return;
+#endif
+
 	/* Remap the kernel text using large pages. */
-	kva = rounddown(bootspace.text.va, NBPD_L2);
+	kva = roundup(bootspace.text.va, NBPD_L2);
 	kva_end = rounddown(bootspace.text.va +
 	    bootspace.text.sz, NBPD_L1);
-	pa = rounddown(bootspace.text.pa, NBPD_L2);
+	pa = roundup(bootspace.text.pa, NBPD_L2);
 	for (/* */; kva + NBPD_L2 <= kva_end; kva += NBPD_L2, pa += NBPD_L2) {
 		pde = &L2_BASE[pl2_i(kva)];
 		*pde = pa | pmap_pg_g | PG_PS | PG_KR | PG_V;

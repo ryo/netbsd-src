@@ -1,4 +1,4 @@
-#	$NetBSD: bsd.own.mk,v 1.1016 2017/08/22 11:14:28 joerg Exp $
+#	$NetBSD: bsd.own.mk,v 1.1019 2017/10/08 15:20:32 christos Exp $
 
 # This needs to be before bsd.init.mk
 .if defined(BSD_MK_COMPAT_FILE)
@@ -1017,6 +1017,12 @@ MKRELRO?=	partial
 MKRELRO?=	no
 .endif
 
+.if ${MACHINE_ARCH} == "x86_64"
+MKSTATICPIE?=	no
+.else
+MKSTATICPIE?=	no
+.endif
+
 #
 # MK* options which default to "yes".
 #
@@ -1357,7 +1363,6 @@ X11SRCDIR.${_proto}proto?=		${X11SRCDIRMIT}/${_proto}proto/dist
     ${MACHINE} == "alpha"	|| \
     ${MACHINE} == "amiga"	|| \
     ${MACHINE} == "ews4800mips"	|| \
-    ${MACHINE} == "hp300"	|| \
     ${MACHINE} == "hpcarm"	|| \
     ${MACHINE} == "hpcmips"	|| \
     ${MACHINE} == "hpcsh"	|| \

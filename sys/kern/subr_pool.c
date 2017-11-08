@@ -1,4 +1,4 @@
-/*	$NetBSD: subr_pool.c,v 1.208 2017/06/08 04:00:01 chs Exp $	*/
+/*	$NetBSD: subr_pool.c,v 1.211 2017/11/06 18:41:22 riastradh Exp $	*/
 
 /*-
  * Copyright (c) 1997, 1999, 2000, 2002, 2007, 2008, 2010, 2014, 2015
@@ -33,7 +33,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: subr_pool.c,v 1.208 2017/06/08 04:00:01 chs Exp $");
+__KERNEL_RCSID(0, "$NetBSD: subr_pool.c,v 1.211 2017/11/06 18:41:22 riastradh Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_ddb.h"
@@ -805,6 +805,7 @@ pool_get(struct pool *pp, int flags)
 		pp->pr_nfail++;
 
 		mutex_exit(&pp->pr_lock);
+		KASSERT((flags & (PR_WAITOK|PR_NOWAIT)) == PR_NOWAIT);
 		return (NULL);
 	}
 
@@ -830,6 +831,14 @@ pool_get(struct pool *pp, int flags)
 		error = pool_grow(pp, flags);
 		if (error != 0) {
 			/*
+			 * pool_grow aborts when another thread
+			 * is allocating a new page. Retry if it
+			 * waited for it.
+			 */
+			if (error == ERESTART)
+				goto startover;
+
+			/*
 			 * We were unable to allocate a page or item
 			 * header, but we released the lock during
 			 * allocation, so perhaps items were freed
@@ -840,6 +849,7 @@ pool_get(struct pool *pp, int flags)
 
 			pp->pr_nfail++;
 			mutex_exit(&pp->pr_lock);
+			KASSERT((flags & (PR_WAITOK|PR_NOWAIT)) == PR_NOWAIT);
 			return (NULL);
 		}
 
@@ -1051,6 +1061,23 @@ pool_grow(struct pool *pp, int flags)
 {
 	struct pool_item_header *ph = NULL;
 	char *cp;
+	int error;
+
+	/*
+	 * If there's a pool_grow in progress, wait for it to complete
+	 * and try again from the top.
+	 */
+	if (pp->pr_flags & PR_GROWING) {
+		if (flags & PR_WAITOK) {
+			do {
+				cv_wait(&pp->pr_cv, &pp->pr_lock);
+			} while (pp->pr_flags & PR_GROWING);
+			return ERESTART;
+		} else {
+			return EWOULDBLOCK;
+		}
+	}
+	pp->pr_flags |= PR_GROWING;
 
 	mutex_exit(&pp->pr_lock);
 	cp = pool_allocator_alloc(pp, flags);
@@ -1062,13 +1089,25 @@ pool_grow(struct pool *pp, int flags)
 			pool_allocator_free(pp, cp);
 		}
 		mutex_enter(&pp->pr_lock);
-		return ENOMEM;
+		error = ENOMEM;
+		goto out;
 	}
 
 	mutex_enter(&pp->pr_lock);
 	pool_prime_page(pp, cp, ph);
 	pp->pr_npagealloc++;
-	return 0;
+	error = 0;
+
+out:
+	/*
+	 * If anyone was waiting for pool_grow, notify them that we
+	 * may have just done it.
+	 */
+	KASSERT(pp->pr_flags & PR_GROWING);
+	pp->pr_flags &= ~PR_GROWING;
+	cv_broadcast(&pp->pr_cv);
+
+	return error;
 }
 
 /*
@@ -2144,8 +2183,10 @@ pool_cache_get_slow(pool_cache_cpu_t *cc, int s, void **objectp,
 
 	object = pool_get(&pc->pc_pool, flags);
 	*objectp = object;
-	if (__predict_false(object == NULL))
+	if (__predict_false(object == NULL)) {
+		KASSERT((flags & (PR_WAITOK|PR_NOWAIT)) == PR_NOWAIT);
 		return false;
+	}
 
 	if (__predict_false((*pc->pc_ctor)(pc->pc_arg, object, flags) != 0)) {
 		pool_put(&pc->pc_pool, object);
@@ -2236,6 +2277,11 @@ pool_cache_get_paddr(pool_cache_t pc, int flags, paddr_t *pap)
 			break;
 	}
 
+	/*
+	 * We would like to KASSERT(object || (flags & PR_NOWAIT)), but
+	 * pool_cache_get can fail even in the PR_WAITOK case, if the
+	 * constructor fails.
+	 */
 	return object;
 }
 

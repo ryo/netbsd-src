@@ -1,4 +1,4 @@
-/*	$NetBSD: if_l2tp.c,v 1.11 2017/06/01 02:45:14 chs Exp $	*/
+/*	$NetBSD: if_l2tp.c,v 1.14 2017/10/30 16:01:19 ozaki-r Exp $	*/
 
 /*
  * Copyright (c) 2017 Internet Initiative Japan Inc.
@@ -31,7 +31,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: if_l2tp.c,v 1.11 2017/06/01 02:45:14 chs Exp $");
+__KERNEL_RCSID(0, "$NetBSD: if_l2tp.c,v 1.14 2017/10/30 16:01:19 ozaki-r Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_inet.h"
@@ -227,10 +227,17 @@ l2tp_clone_create(struct if_clone *ifc, int unit)
 {
 	struct l2tp_softc *sc;
 	struct l2tp_variant *var;
+	int rv;
 
 	sc = kmem_zalloc(sizeof(struct l2tp_softc), KM_SLEEP);
-	var = kmem_zalloc(sizeof(struct l2tp_variant), KM_SLEEP);
+	if_initname(&sc->l2tp_ec.ec_if, ifc->ifc_name, unit);
+	rv = l2tpattach0(sc);
+	if (rv != 0) {
+		kmem_free(sc, sizeof(struct l2tp_softc));
+		return rv;
+	}
 
+	var = kmem_zalloc(sizeof(struct l2tp_variant), KM_SLEEP);
 	var->lv_softc = sc;
 	var->lv_state = L2TP_STATE_DOWN;
 	var->lv_use_cookie = L2TP_COOKIE_OFF;
@@ -239,10 +246,6 @@ l2tp_clone_create(struct if_clone *ifc, int unit)
 	sc->l2tp_var = var;
 	mutex_init(&sc->l2tp_lock, MUTEX_DEFAULT, IPL_NONE);
 	PSLIST_ENTRY_INIT(sc, l2tp_hash);
-
-	if_initname(&sc->l2tp_ec.ec_if, ifc->ifc_name, unit);
-
-	l2tpattach0(sc);
 
 	sc->l2tp_ro_percpu = percpu_alloc(sizeof(struct l2tp_ro));
 	percpu_foreach(sc->l2tp_ro_percpu, l2tp_ro_init_pc, NULL);
@@ -254,14 +257,16 @@ l2tp_clone_create(struct if_clone *ifc, int unit)
 	return (0);
 }
 
-void
+int
 l2tpattach0(struct l2tp_softc *sc)
 {
+	int rv;
 
 	sc->l2tp_ec.ec_if.if_addrlen = 0;
 	sc->l2tp_ec.ec_if.if_mtu    = L2TP_MTU;
 	sc->l2tp_ec.ec_if.if_flags  = IFF_POINTOPOINT|IFF_MULTICAST|IFF_SIMPLEX;
-	sc->l2tp_ec.ec_if.if_extflags  = IFEF_OUTPUT_MPSAFE|IFEF_START_MPSAFE;
+	sc->l2tp_ec.ec_if.if_extflags  = IFEF_OUTPUT_MPSAFE |
+	    IFEF_START_MPSAFE | IFEF_NO_LINK_STATE_CHANGE;
 	sc->l2tp_ec.ec_if.if_ioctl  = l2tp_ioctl;
 	sc->l2tp_ec.ec_if.if_output = l2tp_output;
 	sc->l2tp_ec.ec_if.if_type   = IFT_L2TP;
@@ -270,9 +275,19 @@ l2tpattach0(struct l2tp_softc *sc)
 	sc->l2tp_ec.ec_if.if_transmit = l2tp_transmit;
 	sc->l2tp_ec.ec_if._if_input = ether_input;
 	IFQ_SET_READY(&sc->l2tp_ec.ec_if.if_snd);
-	if_attach(&sc->l2tp_ec.ec_if);
+	/* XXX
+	 * It may improve performance to use if_initialize()/if_register()
+	 * so that l2tp_input() calls if_input() instead of
+	 * if_percpuq_enqueue(). However, that causes recursive softnet_lock
+	 * when NET_MPSAFE is not set.
+	 */
+	rv = if_attach(&sc->l2tp_ec.ec_if);
+	if (rv != 0)
+		return rv;
 	if_alloc_sadl(&sc->l2tp_ec.ec_if);
 	bpf_attach(&sc->l2tp_ec.ec_if, DLT_EN10MB, sizeof(struct ether_header));
+
+	return 0;
 }
 
 void
@@ -1069,6 +1084,7 @@ l2tp_set_session(struct l2tp_softc *sc, uint32_t my_sess_id,
 		pserialize_perform(l2tp_psz);
 	}
 	mutex_exit(&l2tp_hash.lock);
+	PSLIST_ENTRY_DESTROY(sc, l2tp_hash);
 
 	l2tp_variant_update(sc, nvar);
 	mutex_exit(&sc->l2tp_lock);
@@ -1078,6 +1094,7 @@ l2tp_set_session(struct l2tp_softc *sc, uint32_t my_sess_id,
 		log(LOG_DEBUG, "%s: add hash entry: sess_id=%" PRIu32 ", idx=%" PRIu32 "\n",
 		    sc->l2tp_ec.ec_if.if_xname, nvar->lv_my_sess_id, idx);
 
+	PSLIST_ENTRY_INIT(sc, l2tp_hash);
 	mutex_enter(&l2tp_hash.lock);
 	PSLIST_WRITER_INSERT_HEAD(&l2tp_hash.lists[idx], sc, l2tp_hash);
 	mutex_exit(&l2tp_hash.lock);

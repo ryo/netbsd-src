@@ -1,4 +1,4 @@
-/*	$NetBSD: cl_main.c,v 1.6 2017/09/01 07:21:01 mlelstv Exp $ */
+/*	$NetBSD: cl_main.c,v 1.8 2017/11/06 03:27:34 rin Exp $ */
 /*-
  * Copyright (c) 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
@@ -16,7 +16,7 @@
 static const char sccsid[] = "Id: cl_main.c,v 10.54 2001/07/29 19:07:27 skimo Exp  (Berkeley) Date: 2001/07/29 19:07:27 ";
 #endif /* not lint */
 #else
-__RCSID("$NetBSD: cl_main.c,v 1.6 2017/09/01 07:21:01 mlelstv Exp $");
+__RCSID("$NetBSD: cl_main.c,v 1.8 2017/11/06 03:27:34 rin Exp $");
 #endif
 
 #include <sys/types.h>
@@ -33,7 +33,6 @@ __RCSID("$NetBSD: cl_main.c,v 1.6 2017/09/01 07:21:01 mlelstv Exp $");
 #include <unistd.h>
 
 #include "../common/common.h"
-#include "ip_extern.h"
 #include "cl.h"
 #include "pathnames.h"
 
@@ -293,6 +292,7 @@ static void
 h_winch(int signo)
 {
 	GLOBAL_CLP;
+#ifdef HAVE_SIGTIMEDWAIT
 	sigset_t sigset;
 	struct timespec timeout;
 
@@ -309,6 +309,7 @@ h_winch(int signo)
 	timeout.tv_nsec = 100 * 1000 * 1000;
 	while (sigtimedwait(&sigset, NULL, &timeout) != -1)
 		continue;
+#endif
 
 	F_SET(clp, CL_SIGWINCH);
 
