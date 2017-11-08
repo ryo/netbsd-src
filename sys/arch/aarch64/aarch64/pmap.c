@@ -688,7 +688,7 @@ pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 		} else {
 			pte = *ptep;
 		}
-		if (!l3pte_valid(pte)) {
+		if (!l3pte_valid(pte) || !l3pte_is_page(pte)) {
 			found = false;
 			goto done;
 		}
@@ -1110,7 +1110,7 @@ _pmap_protect_pv(struct vm_page *pg, struct pv_entry *pv, vm_prot_t prot)
 	pte = _pmap_pte_adjust_prot(pte, prot & pteprot, mdattr);
 	atomic_swap_64(ptep, pte);
 
-#if 1
+#if 0
 	aarch64_tlbi_by_asid_va(pv->pv_pmap->pm_asid, pv->pv_va);
 #else
 	aarch64_tlbi_by_va(pv->pv_va);
@@ -1186,7 +1186,7 @@ pmap_protect(struct pmap *pm, vaddr_t sva, vaddr_t eva, vm_prot_t prot)
 		pte = _pmap_pte_adjust_prot(pte, prot, mdattr);
 		atomic_swap_64(ptep, pte);
 
-#if 1
+#if 0
 		aarch64_tlbi_by_asid_va(pm->pm_asid, va);
 #else
 		aarch64_tlbi_by_va(va);
@@ -1563,7 +1563,6 @@ _pmap_remove(struct pmap *pm, vaddr_t va, bool kremove)
 	UVMHIST_LOG(pmaphist, "pm=%p, va=%016lx, kremovemode=%d",
 	    pm, va, kremove, 0);
 
-
 	ptep = _pmap_pte_lookup(pm, va);
 	if (ptep != NULL) {
 		pte = *ptep;
@@ -1622,7 +1621,7 @@ void
 pmap_page_protect(struct vm_page *pg, vm_prot_t prot)
 {
 	struct vm_page_md *md = VM_PAGE_TO_MD(pg);
-	struct pv_entry *pv;
+	struct pv_entry *pv, *pvtmp;
 
 	KASSERT((prot & VM_PROT_READ) || !(prot & VM_PROT_WRITE));
 
@@ -1632,13 +1631,48 @@ pmap_page_protect(struct vm_page *pg, vm_prot_t prot)
 	UVMHIST_LOG(pmaphist, "pg=%p, md=%p, pa=%016lx, prot=%08x",
 	    pg, md, VM_PAGE_TO_PHYS(pg), prot);
 
-	pmap_pv_lock(md);
-	TAILQ_FOREACH(pv, &md->mdpg_pvhead, pv_link) {
-		if (!(pv->pv_flags & PMAP_WIRED)) {
-			_pmap_protect_pv(pg, pv, prot);
+
+	if ((prot & (VM_PROT_READ|VM_PROT_WRITE|VM_PROT_EXECUTE)) ==
+	    VM_PROT_NONE) {
+
+		/* remove all pages reference to this physical page */
+
+		/* XXXAARCH64: todo cleanup */
+		pmap_pv_lock(md);
+		TAILQ_FOREACH_SAFE(pv, &md->mdpg_pvhead, pv_link, pvtmp) {
+
+			if (pv->pv_flags & PMAP_WIRED) {
+				pv->pv_pmap->pm_stats.wired_count--;
+				KDASSERT(md->mdpg_wiredcount > 0);
+				if (--md->mdpg_wiredcount == 0) {
+					md->mdpg_flags &= ~PMAP_WIRED;
+				}
+			}
+			atomic_swap_64(pv->pv_ptep, 0);
+#if 0
+			aarch64_tlbi_by_asid_va(pv->pv_pmap->pm_asid, pv->pv_va);
+#else
+			aarch64_tlbi_by_va(pv->pv_va);
+#endif
+			pv->pv_pmap->pm_stats.resident_count--;
+
+			TAILQ_REMOVE(&md->mdpg_pvhead, pv, pv_link);
+			PMAP_COUNT(pv_remove);
+			pool_cache_put(&_pmap_pv_pool, pv);
+
 		}
+		pmap_pv_unlock(md);
+
+
+	} else {
+		pmap_pv_lock(md);
+		TAILQ_FOREACH(pv, &md->mdpg_pvhead, pv_link) {
+			if (!(pv->pv_flags & PMAP_WIRED)) {
+				_pmap_protect_pv(pg, pv, prot);
+			}
+		}
+		pmap_pv_unlock(md);
 	}
-	pmap_pv_unlock(md);
 }
 
 void
@@ -1822,7 +1856,8 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
 	pmap_pv_unlock(md);
 
 	atomic_swap_64(ptep, pte);
-#if 1
+#if 0
+	/* didn't work??? */
 	aarch64_tlbi_by_asid_va(pm->pm_asid, va);
 #else
 	aarch64_tlbi_by_va(va);
@@ -1878,7 +1913,7 @@ pmap_clear_modify(struct vm_page *pg)
 			goto tryagain;
 		}
 
-#if 1
+#if 0
 		aarch64_tlbi_by_asid_va(pv->pv_pmap->pm_asid, va);
 #else
 		aarch64_tlbi_by_va(va);
@@ -1939,7 +1974,7 @@ pmap_clear_reference(struct vm_page *pg)
 			goto tryagain;
 		}
 
-#if 1
+#if 0
 		aarch64_tlbi_by_asid_va(pv->pv_pmap->pm_asid, va);
 #else
 		aarch64_tlbi_by_va(va);
