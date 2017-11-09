@@ -336,7 +336,7 @@ kernhist_entry_snprintf(char *buf, size_t buflen, const struct kern_history_ent 
 	if (maxlen <= 0)
 		return;
 
-	len = snprintf(p, maxlen, "%s#%ld@%d: ", e->fn, e->call, e->cpunum);
+	len = snprintf(p, maxlen, "%s#%" PRIu32 "@%" PRIu32 ": ", e->fn, e->call, e->cpunum);
 	p += len;
 	maxlen -= len;
 	if (maxlen <= 0)
