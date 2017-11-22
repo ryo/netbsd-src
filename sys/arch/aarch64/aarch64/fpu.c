@@ -57,18 +57,14 @@ const pcu_ops_t pcu_fpu_ops = {
 void
 fpu_attach(struct cpu_info *ci)
 {
-	evcnt_attach_dynamic(&ci->ci_vfp_trap, EVCNT_TYPE_TRAP, NULL,
-	    ci->ci_cpuname, "vfp trap");
 	evcnt_attach_dynamic(&ci->ci_vfp_use, EVCNT_TYPE_MISC, NULL,
 	    ci->ci_cpuname, "vfp use");
 	evcnt_attach_dynamic(&ci->ci_vfp_reuse, EVCNT_TYPE_MISC, NULL,
 	    ci->ci_cpuname, "vfp reuse");
-}
-
-void
-fpu_trap(struct trapframe *tf)
-{
-	curcpu()->ci_vfp_trap.ev_count++;
+	evcnt_attach_dynamic(&ci->ci_vfp_save, EVCNT_TYPE_MISC, NULL,
+	    ci->ci_cpuname, "vfp save");
+	evcnt_attach_dynamic(&ci->ci_vfp_release, EVCNT_TYPE_MISC, NULL,
+	    ci->ci_cpuname, "vfp release");
 }
 
 static void
@@ -78,19 +74,24 @@ fpu_state_load(lwp_t *l, unsigned int flags)
 
 	KASSERT(l == curlwp);
 
-	/* event counter */
-	if ((flags & PCU_VALID) == 0)
+	if (__predict_false((flags & PCU_VALID) == 0)) {
+		/* initialize fpregs */
+		memset(&pcb->pcb_fpregs, 0, sizeof(pcb->pcb_fpregs));
+		pcb->pcb_fpregs.fpcr =
+		    FPCR_DN | FPCR_FZ | __SHIFTIN(FPCR_RN, FPCR_RMODE);
+
 		curcpu()->ci_vfp_use.ev_count++;
-	else
+	} else {
 		curcpu()->ci_vfp_reuse.ev_count++;
-
-
-	reg_cpacr_el1_write(CPACR_FPEN_EL1);	/* fpreg access enable */
-	load_fpregs(&pcb->pcb_fpregs);
-	reg_cpacr_el1_write(CPACR_FPEN_NONE);	/* fpreg access disable */
+	}
 
 	/* allow user process to use FP */
 	l->l_md.md_cpacr = CPACR_FPEN_ALL;
+	reg_cpacr_el1_write(CPACR_FPEN_ALL);
+	__asm __volatile ("isb");
+
+	if ((flags & PCU_REENABLE) == 0)
+		load_fpregs(&pcb->pcb_fpregs);
 }
 
 static void
@@ -98,14 +99,24 @@ fpu_state_save(lwp_t *l)
 {
 	struct pcb * const pcb = lwp_getpcb(l);
 
+	curcpu()->ci_vfp_save.ev_count++;
+
 	reg_cpacr_el1_write(CPACR_FPEN_EL1);	/* fpreg access enable */
+	__asm __volatile ("isb");
+
 	save_fpregs(&pcb->pcb_fpregs);
+
 	reg_cpacr_el1_write(CPACR_FPEN_NONE);	/* fpreg access disable */
+	__asm __volatile ("isb");
 }
 
 static void
 fpu_state_release(lwp_t *l)
 {
+	curcpu()->ci_vfp_release.ev_count++;
+
 	/* disallow user process to use FP */
 	l->l_md.md_cpacr = CPACR_FPEN_NONE;
+	reg_cpacr_el1_write(CPACR_FPEN_NONE);
+	__asm __volatile ("isb");
 }

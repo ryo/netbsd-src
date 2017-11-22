@@ -106,8 +106,6 @@ cpu_disable_onfault(void)
 
 /* fpu.c */
 void fpu_attach(struct cpu_info *);
-void fpu_trap(struct trapframe *);
-
 struct fpreg;
 void load_fpregs(struct fpreg *);
 void save_fpregs(struct fpreg *);

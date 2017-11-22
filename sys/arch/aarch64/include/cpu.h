@@ -81,9 +81,10 @@ struct cpu_info {
 	volatile u_int ci_intr_depth;
 
 	/* event counters */
-	struct evcnt ci_vfp_trap;
 	struct evcnt ci_vfp_use;
 	struct evcnt ci_vfp_reuse;
+	struct evcnt ci_vfp_save;
+	struct evcnt ci_vfp_release;
 };
 
 static inline struct cpu_info *
