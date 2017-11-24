@@ -1,4 +1,4 @@
-/* $NetBSD: ixgbe.c,v 1.109 2017/11/02 08:41:15 msaitoh Exp $ */
+/* $NetBSD: ixgbe.c,v 1.113 2017/11/22 15:15:09 msaitoh Exp $ */
 
 /******************************************************************************
 
@@ -257,7 +257,6 @@ static void	ixgbe_handle_msf(void *);
 static void	ixgbe_handle_mod(void *);
 static void	ixgbe_handle_phy(void *);
 
-const struct sysctlnode *ixgbe_sysctl_instance(struct adapter *);
 static ixgbe_vendor_info_t *ixgbe_lookup(const struct pci_attach_args *);
 
 /************************************************************************
@@ -853,6 +852,7 @@ ixgbe_attach(device_t parent, device_t dev, void *aux)
 	} else
 		adapter->num_segs = IXGBE_82598_SCATTER;
 
+	hw->mac.ops.set_lan_id(hw);
 	ixgbe_init_device_features(adapter);
 
 	if (ixgbe_configure_interrupts(adapter)) {
@@ -1069,7 +1069,11 @@ ixgbe_attach(device_t parent, device_t dev, void *aux)
 		break;
 	}
 
-	if (hw->phy.id != 0) {
+	/*
+	 *  Print PHY ID only for copper PHY. On device which has SFP(+) cage
+	 * and a module is inserted, phy.id is not MII PHY id but SFF 8024 ID.
+	 */
+	if (hw->phy.media_type == ixgbe_media_type_copper) {
 		uint16_t id1, id2;
 		int oui, model, rev;
 		const char *descr;
@@ -1210,7 +1214,7 @@ ixgbe_setup_interface(device_t dev, struct adapter *adapter)
 	ifp->if_softc = adapter;
 	ifp->if_flags = IFF_BROADCAST | IFF_SIMPLEX | IFF_MULTICAST;
 #ifdef IXGBE_MPSAFE
-	ifp->if_extflags = IFEF_START_MPSAFE;
+	ifp->if_extflags = IFEF_MPSAFE;
 #endif
 	ifp->if_ioctl = ixgbe_ioctl;
 #if __FreeBSD_version >= 1100045
@@ -5972,7 +5976,6 @@ ixgbe_configure_interrupts(struct adapter *adapter)
 
 	if (ixgbe_num_queues != 0)
 		queues = ixgbe_num_queues;
-	/* Set max queues to 8 when autoconfiguring */
 	else
 		queues = min(queues,
 		    min(mac->max_tx_queues, mac->max_rx_queues));

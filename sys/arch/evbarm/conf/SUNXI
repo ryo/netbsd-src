@@ -1,5 +1,5 @@
 #
-#	$NetBSD: SUNXI,v 1.50 2017/10/29 16:02:46 jmcneill Exp $
+#	$NetBSD: SUNXI,v 1.52 2017/11/13 17:37:47 jmcneill Exp $
 #
 #	Allwinner sunxi family
 #
@@ -129,6 +129,7 @@ ffclock*	at fdt? pass 1
 fregulator*	at fdt? pass 4
 gregulator*	at fdt? pass 4
 gpiokeys*	at fdt?
+wskbd*		at gpiokeys? console ? mux 1
 gpioleds*	at fdt?
 
 # SRAM controller
@@ -205,6 +206,11 @@ ld1		at sdmmc1
 ld2		at sdmmc2
 ld3		at sdmmc3
 ld*		at sdmmc?
+
+# NAND Flash
+sunxinand*	at fdt?			# NAND flash controller
+nand*		at nandbus?
+flash*		at nand? dynamic 1
 
 # SATA
 ahcisata*	at fdt?			# SATA

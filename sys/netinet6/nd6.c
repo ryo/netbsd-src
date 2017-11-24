@@ -1,4 +1,4 @@
-/*	$NetBSD: nd6.c,v 1.236 2017/10/05 03:42:14 ozaki-r Exp $	*/
+/*	$NetBSD: nd6.c,v 1.239 2017/11/17 07:37:12 ozaki-r Exp $	*/
 /*	$KAME: nd6.c,v 1.279 2002/06/08 11:16:51 itojun Exp $	*/
 
 /*
@@ -31,7 +31,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: nd6.c,v 1.236 2017/10/05 03:42:14 ozaki-r Exp $");
+__KERNEL_RCSID(0, "$NetBSD: nd6.c,v 1.239 2017/11/17 07:37:12 ozaki-r Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_net_mpsafe.h"
@@ -450,10 +450,7 @@ nd6_llinfo_timer(void *arg)
 	bool send_ns = false;
 	const struct in6_addr *daddr6 = NULL;
 
-#ifndef NET_MPSAFE
-	mutex_enter(softnet_lock);
-	KERNEL_LOCK(1, NULL);
-#endif
+	SOFTNET_KERNEL_LOCK_UNLESS_NET_MPSAFE();
 	LLE_WLOCK(ln);
 	if ((ln->la_flags & LLE_LINKED) == 0)
 		goto out;
@@ -569,10 +566,7 @@ nd6_llinfo_timer(void *arg)
 out:
 	if (ln != NULL)
 		LLE_FREE_LOCKED(ln);
-#ifndef NET_MPSAFE
-	KERNEL_UNLOCK_ONE(NULL);
-	mutex_exit(softnet_lock);
-#endif
+	SOFTNET_KERNEL_UNLOCK_UNLESS_NET_MPSAFE();
 }
 
 /*
@@ -590,10 +584,7 @@ nd6_timer_work(struct work *wk, void *arg)
 	callout_reset(&nd6_timer_ch, nd6_prune * hz,
 	    nd6_timer, NULL);
 
-#ifndef NET_MPSAFE
-	mutex_enter(softnet_lock);
-	KERNEL_LOCK(1, NULL);
-#endif
+	SOFTNET_KERNEL_LOCK_UNLESS_NET_MPSAFE();
 
 	/* expire default router list */
 
@@ -717,10 +708,7 @@ nd6_timer_work(struct work *wk, void *arg)
 	}
 	ND6_UNLOCK();
 
-#ifndef NET_MPSAFE
-	KERNEL_UNLOCK_ONE(NULL);
-	mutex_exit(softnet_lock);
-#endif
+	SOFTNET_KERNEL_UNLOCK_UNLESS_NET_MPSAFE();
 }
 
 static void
@@ -950,14 +938,17 @@ nd6_create(const struct in6_addr *addr6, const struct ifnet *ifp)
 {
 	struct sockaddr_in6 sin6;
 	struct llentry *ln;
+	struct rtentry *rt;
 
 	sockaddr_in6_init(&sin6, addr6, 0, 0, 0);
+	rt = rtalloc1(sin6tosa(&sin6), 0);
 
 	IF_AFDATA_WLOCK(ifp);
-	ln = lla_create(LLTABLE6(ifp), LLE_EXCLUSIVE,
-	    sin6tosa(&sin6));
+	ln = lla_create(LLTABLE6(ifp), LLE_EXCLUSIVE, sin6tosa(&sin6), rt);
 	IF_AFDATA_WUNLOCK(ifp);
 
+	if (rt != NULL)
+		rt_unref(rt);
 	if (ln != NULL)
 		ln->ln_state = ND6_LLINFO_NOSTATE;
 
@@ -1443,7 +1434,7 @@ nd6_rtrequest(int req, struct rtentry *rt, const struct rt_addrinfo *info)
 
 	switch (req) {
 	case RTM_ADD: {
-		int s;
+		struct psref psref;
 
 		RT_DPRINTF("rt_getkey(rt) = %p\n", rt_getkey(rt));
 		/*
@@ -1551,9 +1542,8 @@ nd6_rtrequest(int req, struct rtentry *rt, const struct rt_addrinfo *info)
 		 * check if rt_getkey(rt) is an address assigned
 		 * to the interface.
 		 */
-		s = pserialize_read_enter();
-		ifa = (struct ifaddr *)in6ifa_ifpwithaddr(ifp,
-		    &satocsin6(rt_getkey(rt))->sin6_addr);
+		ifa = (struct ifaddr *)in6ifa_ifpwithaddr_psref(ifp,
+		    &satocsin6(rt_getkey(rt))->sin6_addr, &psref);
 		if (ifa != NULL) {
 			if (nd6_useloopback) {
 				rt->rt_ifp = lo0ifp;	/* XXX */
@@ -1590,7 +1580,7 @@ nd6_rtrequest(int req, struct rtentry *rt, const struct rt_addrinfo *info)
 			}
 		}
 	out:
-		pserialize_read_exit(s);
+		ifa_release(ifa, &psref);
 		/*
 		 * If we have too many cache entries, initiate immediate
 		 * purging for some entries.
@@ -2226,10 +2216,7 @@ nd6_slowtimo(void *ignored_arg)
 	struct ifnet *ifp;
 	int s;
 
-#ifndef NET_MPSAFE
-	mutex_enter(softnet_lock);
-	KERNEL_LOCK(1, NULL);
-#endif
+	SOFTNET_KERNEL_LOCK_UNLESS_NET_MPSAFE();
 	callout_reset(&nd6_slowtimo_ch, ND6_SLOWTIMER_INTERVAL * hz,
 	    nd6_slowtimo, NULL);
 
@@ -2250,10 +2237,7 @@ nd6_slowtimo(void *ignored_arg)
 	}
 	pserialize_read_exit(s);
 
-#ifndef NET_MPSAFE
-	KERNEL_UNLOCK_ONE(NULL);
-	mutex_exit(softnet_lock);
-#endif
+	SOFTNET_KERNEL_UNLOCK_UNLESS_NET_MPSAFE();
 }
 
 /*

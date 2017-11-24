@@ -1,4 +1,4 @@
-/*	$NetBSD: param.h,v 1.550 2017/11/07 19:44:05 christos Exp $	*/
+/*	$NetBSD: param.h,v 1.552 2017/11/16 10:40:29 ozaki-r Exp $	*/
 
 /*-
  * Copyright (c) 1982, 1986, 1989, 1993
@@ -67,7 +67,7 @@
  *	2.99.9		(299000900)
  */
 
-#define	__NetBSD_Version__	899000600	/* NetBSD 8.99.6 */
+#define	__NetBSD_Version__	899000700	/* NetBSD 8.99.7 */
 
 #define __NetBSD_Prereq__(M,m,p) (((((M) * 100000000) + \
     (m) * 1000000) + (p) * 100) <= __NetBSD_Version__)
@@ -477,6 +477,8 @@
 	    ((t +0u) / hz) * 1000u : \
 	    ((t +0u) * 1000u) / hz)
 #endif
+
+#define	hz2bintime(t)	(ms2bintime(hztoms(t)))
 
 extern const int schedppq;
 extern size_t coherency_unit;

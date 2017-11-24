@@ -1,4 +1,4 @@
-/*	$NetBSD: sem.c,v 1.77 2016/09/13 16:06:59 christos Exp $	*/
+/*	$NetBSD: sem.c,v 1.80 2017/11/19 00:41:10 kre Exp $	*/
 
 /*
  * Copyright (c) 1992, 1993
@@ -45,7 +45,7 @@
 #endif
 
 #include <sys/cdefs.h>
-__RCSID("$NetBSD: sem.c,v 1.77 2016/09/13 16:06:59 christos Exp $");
+__RCSID("$NetBSD: sem.c,v 1.80 2017/11/19 00:41:10 kre Exp $");
 
 #include <sys/param.h>
 #include <ctype.h>
@@ -79,7 +79,8 @@ static int has_errobj(struct attrlist *, struct attr *);
 static struct nvlist *addtoattr(struct nvlist *, struct devbase *);
 static int resolve(struct nvlist **, const char *, const char *,
 		   struct nvlist *, int);
-static struct pspec *getpspec(struct attr *, struct devbase *, int);
+static struct pspec *getpspec(struct attr *, struct devbase *, int,
+    struct deva *);
 static struct devi *newdevi(const char *, int, struct devbase *d);
 static struct devi *getdevi(const char *);
 static void remove_devi(struct devi *);
@@ -641,7 +642,6 @@ defdevattach(struct deva *deva, struct devbase *dev, struct nvlist *atlist,
 	struct nvlist *nv;
 	struct attrlist *al;
 	struct attr *a;
-	struct deva *da;
 
 	if (dev == &errdev)
 		goto bad;
@@ -699,14 +699,16 @@ defdevattach(struct deva *deva, struct devbase *dev, struct nvlist *atlist,
 		if (a == &errattr)
 			continue;		/* already complained */
 
+#if 0
 		/*
 		 * Make sure that an attachment spec doesn't
 		 * already say how to attach to this attribute.
 		 */
-		for (da = dev->d_ahead; da != NULL; da = da->d_bsame)
+		for (struct deva *da = dev->d_ahead; da; da = da->d_bsame)
 			if (onlist(da->d_atlist, a))
 				cfgerror("attach at `%s' already done by `%s'",
 				     a ? a->a_name : "root", da->d_name);
+#endif
 
 		if (a == NULL) {
 			ht_insert(devroottab, dev->d_name, dev);
@@ -1158,6 +1160,83 @@ newdevi(const char *name, int unit, struct devbase *d)
 	return (i);
 }
 
+static struct attr *
+finddevattr(const char *name, const char *at, struct devbase *ib,
+    struct devbase **ab, int *atunit)
+{
+	const char *cp;
+	char atbuf[NAMESIZE];
+	struct attrlist *al;
+	struct attr *attr;
+
+	if (at == NULL) {
+		*ab = NULL;
+		*atunit = -1;
+		return &errattr;	/* a convenient "empty" attr */
+	}
+	if (split(at, strlen(at), atbuf, sizeof atbuf, atunit)) {
+		cfgerror("invalid attachment name `%s'", at);
+		/* (void)getdevi(name); -- ??? */
+		return NULL;
+	}
+
+	/*
+	 * Devices can attach to two types of things: Attributes,
+	 * and other devices (which have the appropriate attributes
+	 * to allow attachment).
+	 *
+	 * (1) If we're attached to an attribute, then we don't need
+	 *     look at the parent base device to see what attributes
+	 *     it has, and make sure that we can attach to them.    
+	 *
+	 * (2) If we're attached to a real device (i.e. named in
+	 *     the config file), we want to remember that so that
+	 *     at cross-check time, if the device we're attached to
+	 *     is missing but other devices which also provide the
+	 *     attribute are present, we don't get a false "OK."
+	 *
+	 * (3) If the thing we're attached to is an attribute
+	 *     but is actually named in the config file, we still
+	 *     have to remember its devbase.
+	 */
+	cp = intern(atbuf);
+
+	/* Figure out parent's devbase, to satisfy case (3). */
+	*ab = ht_lookup(devbasetab, cp);
+
+	/* Find out if it's an attribute. */
+	attr = ht_lookup(attrtab, cp);
+
+	/* Make sure we're _really_ attached to the attr.  Case (1). */
+	if (attr != NULL && onlist(attr->a_devs, ib))
+		return attr;
+
+	/*
+	 * Else a real device, and not just an attribute.  Case (2).
+	 *
+	 * Have to work a bit harder to see whether we have
+	 * something like "tg0 at esp0" (where esp is merely
+	 * not an attribute) or "tg0 at nonesuch0" (where
+	 * nonesuch is not even a device).
+	 */
+	if (*ab == NULL) {
+		cfgerror("%s at %s: `%s' unknown", name, at, atbuf);
+		return NULL;
+	}
+
+	/*
+	 * See if the named parent carries an attribute
+	 * that allows it to supervise device ib.
+	 */
+	for (al = (*ab)->d_attrs; al != NULL; al = al->al_next) {
+		attr = al->al_this;
+		if (onlist(attr->a_devs, ib))
+			return attr;
+	}
+	cfgerror("`%s' cannot attach to `%s'", ib->d_name, atbuf);
+	return NULL;
+}
+
 /*
  * Add the named device as attaching to the named attribute (or perhaps
  * another device instead) plus unit number.
@@ -1170,137 +1249,68 @@ adddev(const char *name, const char *at, struct loclist *loclist, int flags)
 	struct attr *attr;	/* attribute that allows attach */
 	struct devbase *ib;	/* i->i_base */
 	struct devbase *ab;	/* not NULL => at another dev */
-	struct attrlist *al;
 	struct deva *iba;	/* devbase attachment used */
-	const char *cp;
+	struct deva *lastiba;
 	int atunit;
-	char atbuf[NAMESIZE];
-	int hit;
 
-	ab = NULL;
+	lastiba = NULL;
+	if ((i = getdevi(name)) == NULL)
+		goto bad;
+	ib = i->i_base;
 	iba = NULL;
-	if (at == NULL) {
-		/* "at root" */
-		p = NULL;
-		if ((i = getdevi(name)) == NULL)
-			goto bad;
-		/*
-		 * Must warn about i_unit > 0 later, after taking care of
-		 * the STAR cases (we could do non-star's here but why
-		 * bother?).  Make sure this device can be at root.
-		 */
-		ib = i->i_base;
-		hit = 0;
-		for (iba = ib->d_ahead; iba != NULL; iba = iba->d_bsame)
-			if (onlist(iba->d_atlist, NULL)) {
-				hit = 1;
-				break;
-			}
-		if (!hit) {
-			cfgerror("`%s' cannot attach to the root", ib->d_name);
-			i->i_active = DEVI_BROKEN;
-			goto bad;
-		}
-		attr = &errattr;	/* a convenient "empty" attr */
-	} else {
-		if (split(at, strlen(at), atbuf, sizeof atbuf, &atunit)) {
-			cfgerror("invalid attachment name `%s'", at);
-			/* (void)getdevi(name); -- ??? */
-			goto bad;
-		}
-		if ((i = getdevi(name)) == NULL)
-			goto bad;
-		ib = i->i_base;
-
-		/*
-		 * Devices can attach to two types of things: Attributes,
-		 * and other devices (which have the appropriate attributes
-		 * to allow attachment).
-		 *
-		 * (1) If we're attached to an attribute, then we don't need
-		 *     look at the parent base device to see what attributes
-		 *     it has, and make sure that we can attach to them.    
-		 *
-		 * (2) If we're attached to a real device (i.e. named in
-		 *     the config file), we want to remember that so that
-		 *     at cross-check time, if the device we're attached to
-		 *     is missing but other devices which also provide the
-		 *     attribute are present, we don't get a false "OK."
-		 *
-		 * (3) If the thing we're attached to is an attribute
-		 *     but is actually named in the config file, we still
-		 *     have to remember its devbase.
-		 */
-		cp = intern(atbuf);
-
-		/* Figure out parent's devbase, to satisfy case (3). */
-		ab = ht_lookup(devbasetab, cp);
-
-		/* Find out if it's an attribute. */
-		attr = ht_lookup(attrtab, cp);
-
-		/* Make sure we're _really_ attached to the attr.  Case (1). */
-		if (attr != NULL && onlist(attr->a_devs, ib))
-			goto findattachment;
-
-		/*
-		 * Else a real device, and not just an attribute.  Case (2).
-		 *
-		 * Have to work a bit harder to see whether we have
-		 * something like "tg0 at esp0" (where esp is merely
-		 * not an attribute) or "tg0 at nonesuch0" (where
-		 * nonesuch is not even a device).
-		 */
-		if (ab == NULL) {
-			cfgerror("%s at %s: `%s' unknown",
-			    name, at, atbuf);
-			i->i_active = DEVI_BROKEN;
-			goto bad;
-		}
-
-		/*
-		 * See if the named parent carries an attribute
-		 * that allows it to supervise device ib.
-		 */
-		for (al = ab->d_attrs; al != NULL; al = al->al_next) {
-			attr = al->al_this;
-			if (onlist(attr->a_devs, ib))
-				goto findattachment;
-		}
-		cfgerror("`%s' cannot attach to `%s'", ib->d_name, atbuf);
-		i->i_active = DEVI_BROKEN;
-		goto bad;
-
- findattachment:
-		/*
-		 * Find the parent spec.  If a matching one has not yet been
-		 * created, create one.
-		 */
-		p = getpspec(attr, ab, atunit);
-		p->p_devs = newnv(NULL, NULL, i, 0, p->p_devs);
-
-		/* find out which attachment it uses */
-		hit = 0;
-		for (iba = ib->d_ahead; iba != NULL; iba = iba->d_bsame)
-			if (onlist(iba->d_atlist, attr)) {
-				hit = 1;
-				break;
-			}
-		if (!hit)
-			panic("adddev: can't figure out attachment");
-	}
-	if ((i->i_locs = fixloc(name, attr, loclist)) == NULL) {
+	p = NULL;
+	attr = finddevattr(name, at, ib, &ab, &atunit);
+	if (attr == NULL) {
 		i->i_active = DEVI_BROKEN;
 		goto bad;
 	}
-	i->i_at = at;
-	i->i_pspec = p;
-	i->i_atdeva = iba;
-	i->i_cfflags = flags;
-	CFGDBG(3, "devi `%s' added", i->i_name);
 
-	*iba->d_ipp = i;
-	iba->d_ipp = &i->i_asame;
+	for (lastiba = ib->d_ahead; lastiba; lastiba = iba->d_bsame) {
+		for (iba = lastiba; iba != NULL; iba = iba->d_bsame)
+			if (onlist(iba->d_atlist,
+			    attr == &errattr ? NULL : attr))
+				break;
+
+		if (iba == NULL) {
+			if (lastiba != ib->d_ahead)
+				goto bad;
+			if (attr != &errattr) {
+				panic("adddev: can't figure out attachment");
+			} else {
+				cfgerror("`%s' cannot attach to the root",
+				    ib->d_name);
+				i->i_active = DEVI_BROKEN;
+			}
+		}
+		// get a new one if it is not the first time
+		if (lastiba != ib->d_ahead && (i = getdevi(name)) == NULL)
+			goto bad;
+
+		if (attr != &errattr) {
+			/*
+			 * Find the parent spec.  If a matching one has not
+			 * yet been created, create one.
+			 *
+			 * XXX: This creates multiple pspecs that look the
+			 * same in the config file and could be merged.
+			 */
+			p = getpspec(attr, ab, atunit, iba);
+			p->p_devs = newnv(NULL, NULL, i, 0, p->p_devs);
+		}
+
+		if ((i->i_locs = fixloc(name, attr, loclist)) == NULL) {
+			i->i_active = DEVI_BROKEN;
+			goto bad;
+		}
+		i->i_at = at;
+		i->i_pspec = p;
+		i->i_atdeva = iba;
+		i->i_cfflags = flags;
+		CFGDBG(3, "devi `%s' at '%s' added", i->i_name, iba->d_name);
+
+		*iba->d_ipp = i;
+		iba->d_ipp = &i->i_asame;
+	}
 
 	/* all done, fall into ... */
  bad:
@@ -1349,6 +1359,34 @@ deldevi(const char *name, const char *at, int nowarn)
 				return;
 			}
 	cfgerror("`%s' at `%s' not found", name, at ? at : "root");
+}
+
+static void
+remove_pspec(struct devi *i)
+{
+	struct pspec *p = i->i_pspec;
+	struct nvlist *nv, *onv;
+
+	if (p == NULL)
+		return;
+
+	/* Double-linked nvlist anyone? */
+	for (nv = p->p_devs; nv->nv_next != NULL; nv = nv->nv_next) {
+		if (nv->nv_next && nv->nv_next->nv_ptr == i) {
+			onv = nv->nv_next;
+			nv->nv_next = onv->nv_next;
+			nvfree(onv);
+			break;
+		}
+		if (nv->nv_ptr == i) {
+			/* nv is p->p_devs in that case */
+			p->p_devs = nv->nv_next;
+			nvfree(nv);
+			break;
+		}
+	}
+	if (p->p_devs == NULL)
+		TAILQ_REMOVE(&allpspecs, p, p_list);
 }
 
 static void
@@ -1453,28 +1491,8 @@ remove_devi(struct devi *i)
 	/*
 	 *   - delete the pspec
 	 */
-	if (i->i_pspec) {
-		struct pspec *p = i->i_pspec;
-		struct nvlist *nv, *onv;
+	remove_pspec(i);
 
-		/* Double-linked nvlist anyone? */
-		for (nv = p->p_devs; nv->nv_next != NULL; nv = nv->nv_next) {
-			if (nv->nv_next && nv->nv_next->nv_ptr == i) {
-				onv = nv->nv_next;
-				nv->nv_next = onv->nv_next;
-				nvfree(onv);
-				break;
-			}
-			if (nv->nv_ptr == i) {
-				/* nv is p->p_devs in that case */
-				p->p_devs = nv->nv_next;
-				nvfree(nv);
-				break;
-			}
-		}
-		if (p->p_devs == NULL)
-			TAILQ_REMOVE(&allpspecs, p, p_list);
-	}
 	/*
 	 *   - delete the alldevi entry
 	 */
@@ -1846,6 +1864,7 @@ int
 fixdevis(void)
 {
 	struct devi *i;
+	struct pspec *p;
 	int error = 0;
 
 	TAILQ_FOREACH(i, &alldevi, i_next) {
@@ -1858,9 +1877,11 @@ fixdevis(void)
 			 * i_at or i_pspec are NULL.
 			 */
 			++error;
+			p = i->i_pspec;
 			cfgxerror(i->i_srcfile, i->i_lineno,
 			    "`%s at %s' is orphaned (%s `%s' found)", 
-			    i->i_name, i->i_at, i->i_pspec->p_atunit == WILD ?
+			    i->i_name, i->i_at,
+			    p == NULL || p->p_atunit == WILD ?
 			    "nothing matching" : "no", i->i_at);
 		} else if (vflag && i->i_active == DEVI_IGNORED)
 			cfgxwarn(i->i_srcfile, i->i_lineno, "ignoring "
@@ -1881,15 +1902,18 @@ fixdevis(void)
  * Look up a parent spec, creating a new one if it does not exist.
  */
 static struct pspec *
-getpspec(struct attr *attr, struct devbase *ab, int atunit)
+getpspec(struct attr *attr, struct devbase *ab, int atunit, struct deva *da)
 {
 	struct pspec *p;
+	int inst = npspecs;
 
 	TAILQ_FOREACH(p, &allpspecs, p_list) {
-		if (p->p_iattr == attr &&
-		    p->p_atdev == ab &&
-		    p->p_atunit == atunit)
-			return (p);
+		if (p->p_iattr == attr && p->p_atdev == ab &&
+		    p->p_atunit == atunit) {
+			if (p->p_deva == da)
+				return (p);
+		   	inst = p->p_inst; 
+		}
 	}
 
 	p = ecalloc(1, sizeof(*p));
@@ -1897,7 +1921,10 @@ getpspec(struct attr *attr, struct devbase *ab, int atunit)
 	p->p_iattr = attr;
 	p->p_atdev = ab;
 	p->p_atunit = atunit;
-	p->p_inst = npspecs++;
+	p->p_inst = inst;
+	if (inst == npspecs)
+		npspecs++;
+	p->p_deva = da;
 	p->p_active = 0;
 
 	TAILQ_INSERT_TAIL(&allpspecs, p, p_list);

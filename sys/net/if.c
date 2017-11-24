@@ -1,4 +1,4 @@
-/*	$NetBSD: if.c,v 1.396 2017/10/23 09:21:20 msaitoh Exp $	*/
+/*	$NetBSD: if.c,v 1.400 2017/11/22 10:19:14 ozaki-r Exp $	*/
 
 /*-
  * Copyright (c) 1999, 2000, 2001, 2008 The NetBSD Foundation, Inc.
@@ -90,7 +90,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: if.c,v 1.396 2017/10/23 09:21:20 msaitoh Exp $");
+__KERNEL_RCSID(0, "$NetBSD: if.c,v 1.400 2017/11/22 10:19:14 ozaki-r Exp $");
 
 #if defined(_KERNEL_OPT)
 #include "opt_inet.h"
@@ -447,13 +447,14 @@ if_dl_create(const struct ifnet *ifp, const struct sockaddr_dl **sdlp)
 	addrlen = ifp->if_addrlen;
 	socksize = roundup(sockaddr_dl_measure(namelen, addrlen), sizeof(long));
 	ifasize = sizeof(*ifa) + 2 * socksize;
-	ifa = (struct ifaddr *)malloc(ifasize, M_IFADDR, M_WAITOK|M_ZERO);
+	ifa = malloc(ifasize, M_IFADDR, M_WAITOK|M_ZERO);
 
 	sdl = (struct sockaddr_dl *)(ifa + 1);
 	mask = (struct sockaddr_dl *)(socksize + (char *)sdl);
 
 	sockaddr_dl_init(sdl, socksize, ifp->if_index, ifp->if_type,
 	    ifp->if_xname, namelen, NULL, addrlen);
+	mask->sdl_family = AF_LINK;
 	mask->sdl_len = sockaddr_dl_measure(namelen, 0);
 	memset(&mask->sdl_data[0], 0xff, namelen);
 	ifa->ifa_rtrequest = link_rtrequest;
@@ -2331,10 +2332,7 @@ if_link_state_change_si(void *arg)
 	int s;
 	uint8_t state;
 
-#ifndef NET_MPSAFE
-	mutex_enter(softnet_lock);
-	KERNEL_LOCK(1, NULL);
-#endif
+	SOFTNET_KERNEL_LOCK_UNLESS_NET_MPSAFE();
 	s = splnet();
 
 	/* Pop a link state change from the queue and process it. */
@@ -2346,10 +2344,7 @@ if_link_state_change_si(void *arg)
 		softint_schedule(ifp->if_link_si);
 
 	splx(s);
-#ifndef NET_MPSAFE
-	KERNEL_UNLOCK_ONE(NULL);
-	mutex_exit(softnet_lock);
-#endif
+	SOFTNET_KERNEL_UNLOCK_UNLESS_NET_MPSAFE();
 }
 
 /*
@@ -2771,6 +2766,11 @@ ifioctl_common(struct ifnet *ifp, u_long cmd, void *data)
 		return 0;
 	case SIOCSIFFLAGS:
 		ifr = data;
+		/*
+		 * If if_is_mpsafe(ifp), KERNEL_LOCK isn't held here, but if_up
+		 * and if_down aren't MP-safe yet, so we must hold the lock.
+		 */
+		KERNEL_LOCK_IF_IFP_MPSAFE(ifp);
 		if (ifp->if_flags & IFF_UP && (ifr->ifr_flags & IFF_UP) == 0) {
 			s = splsoftnet();
 			if_down(ifp);
@@ -2781,6 +2781,7 @@ ifioctl_common(struct ifnet *ifp, u_long cmd, void *data)
 			if_up(ifp);
 			splx(s);
 		}
+		KERNEL_UNLOCK_IF_IFP_MPSAFE(ifp);
 		ifp->if_flags = (ifp->if_flags & IFF_CANTCHANGE) |
 			(ifr->ifr_flags &~ IFF_CANTCHANGE);
 		break;
@@ -2852,8 +2853,10 @@ ifioctl_common(struct ifnet *ifp, u_long cmd, void *data)
 		 * If the link MTU changed, do network layer specific procedure.
 		 */
 #ifdef INET6
+		KERNEL_LOCK_UNLESS_NET_MPSAFE();
 		if (in6_present)
 			nd6_setmtu(ifp);
+		KERNEL_UNLOCK_UNLESS_NET_MPSAFE();
 #endif
 		return ENETRESET;
 	default:
@@ -2997,11 +3000,13 @@ doifioctl(struct socket *so, u_long cmd, void *data, struct lwp *l)
 				return error;
 			}
 		}
+		KERNEL_LOCK_UNLESS_NET_MPSAFE();
 		mutex_enter(&if_clone_mtx);
 		r = (cmd == SIOCIFCREATE) ?
 			if_clone_create(ifr->ifr_name) :
 			if_clone_destroy(ifr->ifr_name);
 		mutex_exit(&if_clone_mtx);
+		KERNEL_UNLOCK_UNLESS_NET_MPSAFE();
 		curlwp_bindx(bound);
 		return r;
 
@@ -3059,6 +3064,7 @@ doifioctl(struct socket *so, u_long cmd, void *data, struct lwp *l)
 
 	oif_flags = ifp->if_flags;
 
+	KERNEL_LOCK_UNLESS_IFP_MPSAFE(ifp);
 	mutex_enter(ifp->if_ioctl_lock);
 
 	error = (*ifp->if_ioctl)(ifp, cmd, data);
@@ -3067,6 +3073,7 @@ doifioctl(struct socket *so, u_long cmd, void *data, struct lwp *l)
 	else if (so->so_proto == NULL)
 		error = EOPNOTSUPP;
 	else {
+		KERNEL_LOCK_IF_IFP_MPSAFE(ifp);
 #ifdef COMPAT_OSOCK
 		if (vec_compat_ifioctl != NULL)
 			error = (*vec_compat_ifioctl)(so, ocmd, cmd, data, l);
@@ -3074,6 +3081,7 @@ doifioctl(struct socket *so, u_long cmd, void *data, struct lwp *l)
 #endif
 			error = (*so->so_proto->pr_usrreqs->pr_ioctl)(so,
 			    cmd, data, ifp);
+		KERNEL_UNLOCK_IF_IFP_MPSAFE(ifp);
 	}
 
 	if (((oif_flags ^ ifp->if_flags) & IFF_UP) != 0) {
@@ -3089,6 +3097,7 @@ doifioctl(struct socket *so, u_long cmd, void *data, struct lwp *l)
 #endif
 
 	mutex_exit(ifp->if_ioctl_lock);
+	KERNEL_UNLOCK_UNLESS_IFP_MPSAFE(ifp);
 out:
 	if_put(ifp, &psref);
 	curlwp_bindx(bound);
@@ -3160,7 +3169,7 @@ ifconf(u_long cmd, void *data)
 			memset(&ifr.ifr_addr, 0, sizeof(ifr.ifr_addr));
 			if (!docopy) {
 				space += sz;
-				continue;
+				goto next;
 			}
 			if (space >= sz) {
 				error = copyout(&ifr, ifrp, sz);
@@ -3171,6 +3180,7 @@ ifconf(u_long cmd, void *data)
 			}
 		}
 
+		s = pserialize_read_enter();
 		IFADDR_READER_FOREACH(ifa, ifp) {
 			struct sockaddr *sa = ifa->ifa_addr;
 			/* all sockaddrs must fit in sockaddr_storage */
@@ -3181,14 +3191,19 @@ ifconf(u_long cmd, void *data)
 				continue;
 			}
 			memcpy(&ifr.ifr_space, sa, sa->sa_len);
+			pserialize_read_exit(s);
+
 			if (space >= sz) {
 				error = copyout(&ifr, ifrp, sz);
 				if (error != 0)
 					goto release_exit;
 				ifrp++; space -= sz;
 			}
+			s = pserialize_read_enter();
 		}
+		pserialize_read_exit(s);
 
+        next:
 		s = pserialize_read_enter();
 		psref_release(&psref, &ifp->if_psref, ifnet_psref_class);
 	}

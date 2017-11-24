@@ -1,4 +1,4 @@
-/*	$NetBSD: if_wm.c,v 1.542 2017/10/23 23:29:38 knakahara Exp $	*/
+/*	$NetBSD: if_wm.c,v 1.544 2017/11/22 02:36:52 msaitoh Exp $	*/
 
 /*
  * Copyright (c) 2001, 2002, 2003, 2004 Wasabi Systems, Inc.
@@ -83,7 +83,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: if_wm.c,v 1.542 2017/10/23 23:29:38 knakahara Exp $");
+__KERNEL_RCSID(0, "$NetBSD: if_wm.c,v 1.544 2017/11/22 02:36:52 msaitoh Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_net_mpsafe.h"
@@ -2630,7 +2630,7 @@ alloc_retry:
 	ifp->if_softc = sc;
 	ifp->if_flags = IFF_BROADCAST | IFF_SIMPLEX | IFF_MULTICAST;
 #ifdef WM_MPSAFE
-	ifp->if_extflags = IFEF_START_MPSAFE;
+	ifp->if_extflags = IFEF_MPSAFE;
 #endif
 	ifp->if_ioctl = wm_ioctl;
 	if ((sc->sc_flags & WM_F_NEWQUEUE) != 0) {
@@ -6990,7 +6990,7 @@ wm_start(struct ifnet *ifp)
 	struct wm_txqueue *txq = &sc->sc_queue[0].wmq_txq;
 
 #ifdef WM_MPSAFE
-	KASSERT(ifp->if_extflags & IFEF_START_MPSAFE);
+	KASSERT(if_is_mpsafe(ifp));
 #endif
 	/*
 	 * ifp->if_obytes and ifp->if_omcasts are added in if_transmit()@if.c.
@@ -7583,7 +7583,7 @@ wm_nq_start(struct ifnet *ifp)
 	struct wm_txqueue *txq = &sc->sc_queue[0].wmq_txq;
 
 #ifdef WM_MPSAFE
-	KASSERT(ifp->if_extflags & IFEF_START_MPSAFE);
+	KASSERT(if_is_mpsafe(ifp));
 #endif
 	/*
 	 * ifp->if_obytes and ifp->if_omcasts are added in if_transmit()@if.c.
@@ -8108,11 +8108,11 @@ wm_rxdesc_get_vlantag(struct wm_rxqueue *rxq, int idx)
 	struct wm_softc *sc = rxq->rxq_sc;
 
 	if (sc->sc_type == WM_T_82574)
-		return EXTRXC_VLAN_ID(rxq->rxq_ext_descs[idx].erx_ctx.erxc_vlan);
+		return rxq->rxq_ext_descs[idx].erx_ctx.erxc_vlan;
 	else if ((sc->sc_flags & WM_F_NEWQUEUE) != 0)
-		return NQRXC_VLAN_ID(rxq->rxq_nq_descs[idx].nqrx_ctx.nrxc_vlan);
+		return rxq->rxq_nq_descs[idx].nqrx_ctx.nrxc_vlan;
 	else
-		return WRX_VLAN_ID(rxq->rxq_descs[idx].wrx_special);
+		return rxq->rxq_descs[idx].wrx_special;
 }
 
 static inline int

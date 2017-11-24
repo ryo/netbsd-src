@@ -1,4 +1,4 @@
-/*	$NetBSD: if_spppsubr.c,v 1.171 2017/10/13 03:11:50 knakahara Exp $	 */
+/*	$NetBSD: if_spppsubr.c,v 1.175 2017/11/22 17:11:51 christos Exp $	 */
 
 /*
  * Synchronous PPP/Cisco link level subroutines.
@@ -41,7 +41,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: if_spppsubr.c,v 1.171 2017/10/13 03:11:50 knakahara Exp $");
+__KERNEL_RCSID(0, "$NetBSD: if_spppsubr.c,v 1.175 2017/11/22 17:11:51 christos Exp $");
 
 #if defined(_KERNEL_OPT)
 #include "opt_inet.h"
@@ -999,7 +999,7 @@ sppp_attach(struct ifnet *ifp)
 
 	/* Initialize keepalive handler. */
 	if (! spppq) {
-		callout_init(&keepalive_ch, 0);
+		callout_init(&keepalive_ch, CALLOUT_MPSAFE);
 		callout_reset(&keepalive_ch, hz * LCP_KEEPALIVE_INTERVAL, sppp_keepalive, NULL);
 	}
 
@@ -2204,7 +2204,7 @@ sppp_lcp_init(struct sppp *sp)
 	sp->lcp.max_terminate = 2;
 	sp->lcp.max_configure = 10;
 	sp->lcp.max_failure = 10;
-	callout_init(&sp->ch[IDX_LCP], 0);
+	callout_init(&sp->ch[IDX_LCP], CALLOUT_MPSAFE);
 }
 
 static void
@@ -2966,7 +2966,7 @@ sppp_ipcp_init(struct sppp *sp)
 	sp->fail_counter[IDX_IPCP] = 0;
 	sp->pp_seq[IDX_IPCP] = 0;
 	sp->pp_rseq[IDX_IPCP] = 0;
-	callout_init(&sp->ch[IDX_IPCP], 0);
+	callout_init(&sp->ch[IDX_IPCP], CALLOUT_MPSAFE);
 
 	error = workqueue_create(&sp->ipcp.update_addrs_wq, "ipcp_update_addrs",
 	    sppp_update_ip_addrs_work, sp, PRI_SOFTNET, IPL_NET, 0);
@@ -3525,7 +3525,7 @@ sppp_ipv6cp_init(struct sppp *sp)
 	sp->fail_counter[IDX_IPV6CP] = 0;
 	sp->pp_seq[IDX_IPV6CP] = 0;
 	sp->pp_rseq[IDX_IPV6CP] = 0;
-	callout_init(&sp->ch[IDX_IPV6CP], 0);
+	callout_init(&sp->ch[IDX_IPV6CP], CALLOUT_MPSAFE);
 }
 
 static void
@@ -4046,7 +4046,7 @@ sppp_ipv6cp_close(struct sppp *sp)
 static void
 sppp_ipv6cp_TO(void *cookie)
 {
-	struct sppp *sp = cookie;
+	struct sppp *sp __diagused = cookie;
 
 	KASSERT(SPPP_WLOCKED(sp));
 }
@@ -4463,7 +4463,7 @@ sppp_chap_init(struct sppp *sp)
 	sp->fail_counter[IDX_CHAP] = 0;
 	sp->pp_seq[IDX_CHAP] = 0;
 	sp->pp_rseq[IDX_CHAP] = 0;
-	callout_init(&sp->ch[IDX_CHAP], 0);
+	callout_init(&sp->ch[IDX_CHAP], CALLOUT_MPSAFE);
 }
 
 static void
@@ -4831,8 +4831,8 @@ sppp_pap_init(struct sppp *sp)
 	sp->fail_counter[IDX_PAP] = 0;
 	sp->pp_seq[IDX_PAP] = 0;
 	sp->pp_rseq[IDX_PAP] = 0;
-	callout_init(&sp->ch[IDX_PAP], 0);
-	callout_init(&sp->pap_my_to_ch, 0);
+	callout_init(&sp->ch[IDX_PAP], CALLOUT_MPSAFE);
+	callout_init(&sp->pap_my_to_ch, CALLOUT_MPSAFE);
 }
 
 static void
@@ -5219,6 +5219,8 @@ sppp_get_ip_addrs(struct sppp *sp, uint32_t *src, uint32_t *dst, uint32_t *srcma
 	struct ifaddr *ifa;
 	struct sockaddr_in *si, *sm;
 	uint32_t ssrc, ddst;
+	int s;
+	struct psref psref;
 
 	sm = NULL;
 	ssrc = ddst = 0;
@@ -5227,14 +5229,18 @@ sppp_get_ip_addrs(struct sppp *sp, uint32_t *src, uint32_t *dst, uint32_t *srcma
 	 * aliases don't make any sense on a p2p link anyway.
 	 */
 	si = 0;
+	s = pserialize_read_enter();
 	IFADDR_READER_FOREACH(ifa, ifp) {
 		if (ifa->ifa_addr->sa_family == AF_INET) {
 			si = (struct sockaddr_in *)ifa->ifa_addr;
 			sm = (struct sockaddr_in *)ifa->ifa_netmask;
-			if (si)
+			if (si) {
+				ifa_acquire(ifa, &psref);
 				break;
+			}
 		}
 	}
+	pserialize_read_exit(s);
 	if (ifa) {
 		if (si && si->sin_addr.s_addr) {
 			ssrc = si->sin_addr.s_addr;
@@ -5245,6 +5251,7 @@ sppp_get_ip_addrs(struct sppp *sp, uint32_t *src, uint32_t *dst, uint32_t *srcma
 		si = (struct sockaddr_in *)ifa->ifa_dstaddr;
 		if (si && si->sin_addr.s_addr)
 			ddst = si->sin_addr.s_addr;
+		ifa_release(ifa, &psref);
 	}
 
 	if (dst) *dst = ntohl(ddst);
@@ -5457,6 +5464,8 @@ sppp_get_ip6_addrs(struct sppp *sp, struct in6_addr *src, struct in6_addr *dst,
 	struct ifaddr *ifa;
 	struct sockaddr_in6 *si, *sm;
 	struct in6_addr ssrc, ddst;
+	int s;
+	struct psref psref;
 
 	sm = NULL;
 	memset(&ssrc, 0, sizeof(ssrc));
@@ -5466,13 +5475,19 @@ sppp_get_ip6_addrs(struct sppp *sp, struct in6_addr *src, struct in6_addr *dst,
 	 * aliases don't make any sense on a p2p link anyway.
 	 */
 	si = 0;
-	IFADDR_READER_FOREACH(ifa, ifp)
+	s = pserialize_read_enter();
+	IFADDR_READER_FOREACH(ifa, ifp) {
 		if (ifa->ifa_addr->sa_family == AF_INET6) {
 			si = (struct sockaddr_in6 *)ifa->ifa_addr;
 			sm = (struct sockaddr_in6 *)ifa->ifa_netmask;
-			if (si && IN6_IS_ADDR_LINKLOCAL(&si->sin6_addr))
+			if (si && IN6_IS_ADDR_LINKLOCAL(&si->sin6_addr)) {
+				ifa_acquire(ifa, &psref);
 				break;
+			}
 		}
+	}
+	pserialize_read_exit(s);
+
 	if (ifa) {
 		if (si && !IN6_IS_ADDR_UNSPECIFIED(&si->sin6_addr)) {
 			memcpy(&ssrc, &si->sin6_addr, sizeof(ssrc));
@@ -5485,6 +5500,7 @@ sppp_get_ip6_addrs(struct sppp *sp, struct in6_addr *src, struct in6_addr *dst,
 		si = (struct sockaddr_in6 *)ifa->ifa_dstaddr;
 		if (si && !IN6_IS_ADDR_UNSPECIFIED(&si->sin6_addr))
 			memcpy(&ddst, &si->sin6_addr, sizeof(ddst));
+		ifa_release(ifa, &psref);
 	}
 
 	if (dst)
@@ -5512,6 +5528,8 @@ sppp_set_ip6_addr(struct sppp *sp, const struct in6_addr *src)
 	STDDCL;
 	struct ifaddr *ifa;
 	struct sockaddr_in6 *sin6;
+	int s;
+	struct psref psref;
 
 	/*
 	 * Pick the first link-local AF_INET6 address from the list,
@@ -5519,15 +5537,19 @@ sppp_set_ip6_addr(struct sppp *sp, const struct in6_addr *src)
 	 */
 
 	sin6 = NULL;
+	s = pserialize_read_enter();
 	IFADDR_READER_FOREACH(ifa, ifp)
 	{
 		if (ifa->ifa_addr->sa_family == AF_INET6)
 		{
 			sin6 = (struct sockaddr_in6 *)ifa->ifa_addr;
-			if (sin6 && IN6_IS_ADDR_LINKLOCAL(&sin6->sin6_addr))
+			if (sin6 && IN6_IS_ADDR_LINKLOCAL(&sin6->sin6_addr)) {
+				ifa_acquire(ifa, &psref);
 				break;
+			}
 		}
 	}
+	pserialize_read_exit(s);
 
 	if (ifa && sin6)
 	{
@@ -5544,6 +5566,7 @@ sppp_set_ip6_addr(struct sppp *sp, const struct in6_addr *src)
 		if (!error) {
 			pfil_run_addrhooks(if_pfil, SIOCAIFADDR_IN6, ifa);
 		}
+		ifa_release(ifa, &psref);
 	}
 }
 #endif

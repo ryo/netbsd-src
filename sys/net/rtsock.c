@@ -1,4 +1,4 @@
-/*	$NetBSD: rtsock.c,v 1.229 2017/09/25 01:57:54 ozaki-r Exp $	*/
+/*	$NetBSD: rtsock.c,v 1.231 2017/11/19 18:49:51 christos Exp $	*/
 
 /*
  * Copyright (C) 1995, 1996, 1997, and 1998 WIDE Project.
@@ -61,7 +61,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: rtsock.c,v 1.229 2017/09/25 01:57:54 ozaki-r Exp $");
+__KERNEL_RCSID(0, "$NetBSD: rtsock.c,v 1.231 2017/11/19 18:49:51 christos Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_inet.h"
@@ -821,8 +821,13 @@ COMPATNAME(route_output)(struct mbuf *m, struct socket *so)
 	 * (padded with 0's). We keep the original length of the sockaddr.
 	 */
 	if (info.rti_info[RTAX_NETMASK]) {
+		/*
+		 * Use the family of RTAX_DST, because RTAX_NETMASK
+		 * can have a zero family if it comes from the radix
+		 * tree via rt_mask().
+		 */
 		socklen_t sa_len = sockaddr_getsize_by_family(
-		    info.rti_info[RTAX_NETMASK]->sa_family);
+		    info.rti_info[RTAX_DST]->sa_family);
 		socklen_t masklen = sockaddr_getlen(
 		    info.rti_info[RTAX_NETMASK]);
 		if (sa_len != 0 && sa_len > masklen) {
@@ -2038,10 +2043,7 @@ COMPATNAME(route_intr)(void *cookie)
 	struct route_info * const ri = &COMPATNAME(route_info);
 	struct mbuf *m;
 
-#ifndef NET_MPSAFE
-	mutex_enter(softnet_lock);
-	KERNEL_LOCK(1, NULL);
-#endif
+	SOFTNET_KERNEL_LOCK_UNLESS_NET_MPSAFE();
 	for (;;) {
 		IFQ_LOCK(&ri->ri_intrq);
 		IF_DEQUEUE(&ri->ri_intrq, m);
@@ -2057,10 +2059,7 @@ COMPATNAME(route_intr)(void *cookie)
 		mutex_exit(rt_so_mtx);
 #endif
 	}
-#ifndef NET_MPSAFE
-	KERNEL_UNLOCK_ONE(NULL);
-	mutex_exit(softnet_lock);
-#endif
+	SOFTNET_KERNEL_UNLOCK_UNLESS_NET_MPSAFE();
 }
 
 /*

@@ -1,4 +1,4 @@
-/*	$NetBSD: mm.c,v 1.8 2017/11/05 16:26:15 maxv Exp $	*/
+/*	$NetBSD: mm.c,v 1.18 2017/11/21 07:56:05 maxv Exp $	*/
 
 /*
  * Copyright (c) 2017 The NetBSD Foundation, Inc. All rights reserved.
@@ -29,6 +29,23 @@
  */
 
 #include "prekern.h"
+
+#define PAD_TEXT	0xCC
+#define PAD_RODATA	0x00
+#define PAD_DATA	0x00
+
+#define ELFROUND	64
+
+static const uint8_t pads[4] = {
+	[BTSEG_NONE] = 0x00,
+	[BTSEG_TEXT] = 0xCC,
+	[BTSEG_RODATA] = 0x00,
+	[BTSEG_DATA] = 0x00
+};
+
+#define MM_PROT_READ	0x00
+#define MM_PROT_WRITE	0x01
+#define MM_PROT_EXECUTE	0x02
 
 static const pt_entry_t protection_codes[3] = {
 	[MM_PROT_READ] = PG_RO | PG_NX,
@@ -90,14 +107,8 @@ mm_pte_is_valid(pt_entry_t pte)
 	return ((pte & PG_V) != 0);
 }
 
-paddr_t
-mm_vatopa(vaddr_t va)
-{
-	return (PTE_BASE[pl1_i(va)] & PG_FRAME);
-}
-
 static void
-mm_mprotect(vaddr_t startva, size_t size, int prot)
+mm_mprotect(vaddr_t startva, size_t size, pte_prot_t prot)
 {
 	size_t i, npages;
 	vaddr_t va;
@@ -115,15 +126,22 @@ mm_mprotect(vaddr_t startva, size_t size, int prot)
 }
 
 void
-mm_bootspace_mprotect()
+mm_bootspace_mprotect(void)
 {
-	/*
-	 * Remap the kernel segments with proper permissions.
-	 */
-	mm_mprotect(bootspace.text.va, bootspace.text.sz,
-	    MM_PROT_READ|MM_PROT_EXECUTE);
-	mm_mprotect(bootspace.rodata.va, bootspace.rodata.sz,
-	    MM_PROT_READ);
+	pte_prot_t prot;
+	size_t i;
+
+	/* Remap the kernel segments with proper permissions. */
+	for (i = 0; i < BTSPACE_NSEGS; i++) {
+		if (bootspace.segs[i].type == BTSEG_TEXT) {
+			prot = MM_PROT_READ|MM_PROT_EXECUTE;
+		} else if (bootspace.segs[i].type == BTSEG_RODATA) {
+			prot = MM_PROT_READ;
+		} else {
+			continue;
+		}
+		mm_mprotect(bootspace.segs[i].va, bootspace.segs[i].sz, prot);
+	}
 
 	print_state(true, "Segments protection updated");
 }
@@ -145,9 +163,7 @@ mm_map_tree(vaddr_t startva, vaddr_t endva)
 	size_t L4e_idx, L3e_idx, L2e_idx;
 	paddr_t pa;
 
-	/*
-	 * Build L4.
-	 */
+	/* Build L4. */
 	L4e_idx = pl4_i(startva);
 	nL4e = mm_nentries_range(startva, endva, NBPD_L4);
 	ASSERT(L4e_idx == 511);
@@ -157,9 +173,7 @@ mm_map_tree(vaddr_t startva, vaddr_t endva)
 		L4_BASE[L4e_idx] = pa | PG_V | PG_RW;
 	}
 
-	/*
-	 * Build L3.
-	 */
+	/* Build L3. */
 	L3e_idx = pl3_i(startva);
 	nL3e = mm_nentries_range(startva, endva, NBPD_L3);
 	for (i = 0; i < nL3e; i++) {
@@ -170,9 +184,7 @@ mm_map_tree(vaddr_t startva, vaddr_t endva)
 		L3_BASE[L3e_idx+i] = pa | PG_V | PG_RW;
 	}
 
-	/*
-	 * Build L2.
-	 */
+	/* Build L2. */
 	L2e_idx = pl2_i(startva);
 	nL2e = mm_nentries_range(startva, endva, NBPD_L2);
 	for (i = 0; i < nL2e; i++) {
@@ -185,14 +197,118 @@ mm_map_tree(vaddr_t startva, vaddr_t endva)
 }
 
 static uint64_t
-mm_rand_num64()
+mm_rand_num64(void)
 {
 	/* XXX: yes, this is ridiculous, will be fixed soon */
 	return rdtsc();
 }
 
+static vaddr_t
+mm_randva_kregion(size_t size, size_t pagesz)
+{
+	vaddr_t sva, eva;
+	vaddr_t randva;
+	uint64_t rnd;
+	size_t i;
+	bool ok;
+
+	while (1) {
+		rnd = mm_rand_num64();
+		randva = rounddown(KASLR_WINDOW_BASE +
+		    rnd % (KASLR_WINDOW_SIZE - size), pagesz);
+
+		/* Detect collisions */
+		ok = true;
+		for (i = 0; i < BTSPACE_NSEGS; i++) {
+			if (bootspace.segs[i].type == BTSEG_NONE) {
+				continue;
+			}
+			sva = bootspace.segs[i].va;
+			eva = sva + bootspace.segs[i].sz;
+
+			if ((sva <= randva) && (randva < eva)) {
+				ok = false;
+				break;
+			}
+			if ((sva < randva + size) && (randva + size <= eva)) {
+				ok = false;
+				break;
+			}
+		}
+		if (ok) {
+			break;
+		}
+	}
+
+	mm_map_tree(randva, randva + size);
+
+	return randva;
+}
+
+static paddr_t
+bootspace_getend(void)
+{
+	paddr_t pa, max = 0;
+	size_t i;
+
+	for (i = 0; i < BTSPACE_NSEGS; i++) {
+		if (bootspace.segs[i].type == BTSEG_NONE) {
+			continue;
+		}
+		pa = bootspace.segs[i].pa + bootspace.segs[i].sz;
+		if (pa > max)
+			max = pa;
+	}
+
+	return max;
+}
+
 static void
-mm_map_head()
+bootspace_addseg(int type, vaddr_t va, paddr_t pa, size_t sz)
+{
+	size_t i;
+
+	for (i = 0; i < BTSPACE_NSEGS; i++) {
+		if (bootspace.segs[i].type == BTSEG_NONE) {
+			bootspace.segs[i].type = type;
+			bootspace.segs[i].va = va;
+			bootspace.segs[i].pa = pa;
+			bootspace.segs[i].sz = sz;
+			return;
+		}
+	}
+
+	fatal("bootspace_addseg: segments full");
+}
+
+static size_t
+mm_shift_segment(vaddr_t va, size_t pagesz, size_t elfsz, size_t elfalign)
+{
+	size_t shiftsize, offset;
+	uint64_t rnd;
+
+	if (elfalign == 0) {
+		elfalign = ELFROUND;
+	}
+
+	ASSERT(pagesz >= elfalign);
+	ASSERT(pagesz % elfalign == 0);
+	shiftsize = roundup(elfsz, pagesz) - roundup(elfsz, elfalign);
+	if (shiftsize == 0) {
+		return 0;
+	}
+
+	rnd = mm_rand_num64();
+	offset = roundup(rnd % shiftsize, elfalign);
+	ASSERT((va + offset) % elfalign == 0);
+
+	memmove((void *)(va + offset), (void *)va, elfsz);
+
+	return offset;
+}
+
+static void
+mm_map_head(void)
 {
 	size_t i, npages, size;
 	uint64_t rnd;
@@ -224,121 +340,42 @@ mm_map_head()
 	bootspace.head.sz = size;
 }
 
-static vaddr_t
-mm_randva_kregion(size_t size)
+vaddr_t
+mm_map_segment(int segtype, paddr_t pa, size_t elfsz, size_t elfalign)
 {
-	static struct {
-		vaddr_t sva;
-		vaddr_t eva;
-	} regions[4];
-	static size_t idx = 0;
+	size_t i, npages, size, pagesz, offset;
 	vaddr_t randva;
-	uint64_t rnd;
-	size_t i;
-	bool ok;
+	char pad;
 
-	ASSERT(idx < 4);
-
-	while (1) {
-		rnd = mm_rand_num64();
-		randva = rounddown(KASLR_WINDOW_BASE +
-		    rnd % (KASLR_WINDOW_SIZE - size), PAGE_SIZE);
-
-		/* Detect collisions */
-		ok = true;
-		for (i = 0; i < idx; i++) {
-			if ((regions[i].sva <= randva) &&
-			    (randva < regions[i].eva)) {
-				ok = false;
-				break;
-			}
-			if ((regions[i].sva < randva + size) &&
-			    (randva + size <= regions[i].eva)) {
-				ok = false;
-				break;
-			}
-		}
-		if (ok) {
-			break;
-		}
+	if (elfsz <= PAGE_SIZE) {
+		pagesz = NBPD_L1;
+	} else {
+		pagesz = NBPD_L2;
 	}
 
-	regions[idx].eva = randva;
-	regions[idx].sva = randva + size;
-	idx++;
+	size = roundup(elfsz, pagesz);
+	randva = mm_randva_kregion(size, pagesz);
 
-	mm_map_tree(randva, randva + size);
+	npages = size / PAGE_SIZE;
+	for (i = 0; i < npages; i++) {
+		mm_enter_pa(pa + i * PAGE_SIZE,
+		    randva + i * PAGE_SIZE, MM_PROT_READ|MM_PROT_WRITE);
+	}
 
-	return randva;
+	offset = mm_shift_segment(randva, pagesz, elfsz, elfalign);
+	ASSERT(offset + elfsz <= size);
+
+	pad = pads[segtype];
+	memset((void *)randva, pad, offset);
+	memset((void *)(randva + offset + elfsz), pad, size - elfsz - offset);
+
+	bootspace_addseg(segtype, randva, pa, size);
+
+	return (randva + offset);
 }
 
 static void
-mm_map_segments()
-{
-	size_t i, npages, size;
-	vaddr_t randva;
-	paddr_t pa;
-
-	/*
-	 * Kernel text segment.
-	 */
-	elf_get_text(&pa, &size);
-	randva = mm_randva_kregion(size);
-	npages = size / PAGE_SIZE;
-
-	/* Enter the area and build the ELF info */
-	for (i = 0; i < npages; i++) {
-		mm_enter_pa(pa + i * PAGE_SIZE,
-		    randva + i * PAGE_SIZE, MM_PROT_READ|MM_PROT_WRITE);
-	}
-	elf_build_text(randva, pa);
-
-	/* Register the values in bootspace */
-	bootspace.text.va = randva;
-	bootspace.text.pa = pa;
-	bootspace.text.sz = size;
-
-	/*
-	 * Kernel rodata segment.
-	 */
-	elf_get_rodata(&pa, &size);
-	randva = mm_randva_kregion(size);
-	npages = size / PAGE_SIZE;
-
-	/* Enter the area and build the ELF info */
-	for (i = 0; i < npages; i++) {
-		mm_enter_pa(pa + i * PAGE_SIZE,
-		    randva + i * PAGE_SIZE, MM_PROT_READ|MM_PROT_WRITE);
-	}
-	elf_build_rodata(randva, pa);
-
-	/* Register the values in bootspace */
-	bootspace.rodata.va = randva;
-	bootspace.rodata.pa = pa;
-	bootspace.rodata.sz = size;
-
-	/*
-	 * Kernel data segment.
-	 */
-	elf_get_data(&pa, &size);
-	randva = mm_randva_kregion(size);
-	npages = size / PAGE_SIZE;
-
-	/* Enter the area and build the ELF info */
-	for (i = 0; i < npages; i++) {
-		mm_enter_pa(pa + i * PAGE_SIZE,
-		    randva + i * PAGE_SIZE, MM_PROT_READ|MM_PROT_WRITE);
-	}
-	elf_build_data(randva, pa);
-
-	/* Register the values in bootspace */
-	bootspace.data.va = randva;
-	bootspace.data.pa = pa;
-	bootspace.data.sz = size;
-}
-
-static void
-mm_map_boot()
+mm_map_boot(void)
 {
 	size_t i, npages, size;
 	vaddr_t randva;
@@ -351,10 +388,10 @@ mm_map_boot()
 
 	/* Create the page tree */
 	size = (NKL2_KIMG_ENTRIES + 1) * NBPD_L2;
-	randva = mm_randva_kregion(size);
+	randva = mm_randva_kregion(size, PAGE_SIZE);
 
 	/* Enter the area and build the ELF info */
-	bootpa = bootspace.data.pa + bootspace.data.sz;
+	bootpa = bootspace_getend();
 	size = (pa_avail - bootpa);
 	npages = size / PAGE_SIZE;
 	for (i = 0; i < npages; i++) {
@@ -385,8 +422,8 @@ mm_map_boot()
 }
 
 /*
- * There are five independent regions: head, text, rodata, data, boot. They are
- * all mapped at random VAs.
+ * There is a variable number of independent regions: one head, several kernel
+ * segments, one boot. They are all mapped at random VAs.
  *
  * Head contains the ELF Header and ELF Section Headers, and we use them to
  * map the rest of the regions. Head must be placed in memory *before* the
@@ -395,14 +432,13 @@ mm_map_boot()
  * At the end of this function, the bootspace structure is fully constructed.
  */
 void
-mm_map_kernel()
+mm_map_kernel(void)
 {
 	memset(&bootspace, 0, sizeof(bootspace));
 	mm_map_head();
 	print_state(true, "Head region mapped");
-	mm_map_segments();
+	elf_map_sections();
 	print_state(true, "Segments mapped");
 	mm_map_boot();
 	print_state(true, "Boot region mapped");
 }
-

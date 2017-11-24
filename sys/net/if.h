@@ -1,4 +1,4 @@
-/*	$NetBSD: if.h,v 1.241 2017/10/23 09:21:20 msaitoh Exp $	*/
+/*	$NetBSD: if.h,v 1.244 2017/11/22 03:03:18 ozaki-r Exp $	*/
 
 /*-
  * Copyright (c) 1999, 2000, 2001 The NetBSD Foundation, Inc.
@@ -387,16 +387,23 @@ typedef struct ifnet {
 #define	IFF_LINK2	0x4000		/* per link layer defined bit */
 #define	IFF_MULTICAST	0x8000		/* supports multicast */
 
-#define	IFEF_OUTPUT_MPSAFE		__BIT(0)	/* if_output() can run parallel */
-#define	IFEF_START_MPSAFE		__BIT(1)	/* if_start() can run parallel */
-#define	IFEF_NO_LINK_STATE_CHANGE	__BIT(2)	/* doesn't use link state interrupts */
+#define	IFEF_MPSAFE			__BIT(0)	/* handlers can run in parallel (see below) */
+#define	IFEF_NO_LINK_STATE_CHANGE	__BIT(1)	/* doesn't use link state interrupts */
+
+/*
+ * The following if_XXX() handlers don't take KERNEL_LOCK if the interface
+ * is set IFEF_MPSAFE:
+ *   - if_start
+ *   - if_output
+ *   - if_ioctl
+ */
 
 #ifdef _KERNEL
 static inline bool
-if_output_is_mpsafe(struct ifnet *ifp)
+if_is_mpsafe(struct ifnet *ifp)
 {
 
-	return ((ifp->if_extflags & IFEF_OUTPUT_MPSAFE) != 0);
+	return ((ifp->if_extflags & IFEF_MPSAFE) != 0);
 }
 
 static inline int
@@ -404,7 +411,7 @@ if_output_lock(struct ifnet *cifp, struct ifnet *ifp, struct mbuf *m,
     const struct sockaddr *dst, const struct rtentry *rt)
 {
 
-	if (if_output_is_mpsafe(cifp)) {
+	if (if_is_mpsafe(cifp)) {
 		return (*cifp->if_output)(ifp, m, dst, rt);
 	} else {
 		int ret;
@@ -416,18 +423,11 @@ if_output_lock(struct ifnet *cifp, struct ifnet *ifp, struct mbuf *m,
 	}
 }
 
-static inline bool
-if_start_is_mpsafe(struct ifnet *ifp)
-{
-
-	return ((ifp->if_extflags & IFEF_START_MPSAFE) != 0);
-}
-
 static inline void
 if_start_lock(struct ifnet *ifp)
 {
 
-	if (if_start_is_mpsafe(ifp)) {
+	if (if_is_mpsafe(ifp)) {
 		(*ifp->if_start)(ifp);
 	} else {
 		KERNEL_LOCK(1, NULL);
@@ -442,6 +442,56 @@ if_is_link_state_changeable(struct ifnet *ifp)
 
 	return ((ifp->if_extflags & IFEF_NO_LINK_STATE_CHANGE) == 0);
 }
+
+#define KERNEL_LOCK_IF_IFP_MPSAFE(ifp)					\
+	do { if (if_is_mpsafe(ifp)) { KERNEL_LOCK(1, NULL); } } while (0)
+#define KERNEL_UNLOCK_IF_IFP_MPSAFE(ifp)				\
+	do { if (if_is_mpsafe(ifp)) { KERNEL_UNLOCK_ONE(NULL); } } while (0)
+
+#define KERNEL_LOCK_UNLESS_IFP_MPSAFE(ifp)				\
+	do { if (!if_is_mpsafe(ifp)) { KERNEL_LOCK(1, NULL); } } while (0)
+#define KERNEL_UNLOCK_UNLESS_IFP_MPSAFE(ifp)				\
+	do { if (!if_is_mpsafe(ifp)) { KERNEL_UNLOCK_ONE(NULL); } } while (0)
+
+#ifdef _KERNEL_OPT
+#include "opt_net_mpsafe.h"
+#endif
+
+/* XXX explore a better place to define */
+#ifdef NET_MPSAFE
+
+#define KERNEL_LOCK_UNLESS_NET_MPSAFE()		do { } while (0)
+#define KERNEL_UNLOCK_UNLESS_NET_MPSAFE()	do { } while (0)
+
+#define SOFTNET_LOCK_UNLESS_NET_MPSAFE()	do { } while (0)
+#define SOFTNET_UNLOCK_UNLESS_NET_MPSAFE()	do { } while (0)
+
+#else /* NET_MPSAFE */
+
+#define KERNEL_LOCK_UNLESS_NET_MPSAFE()					\
+	do { KERNEL_LOCK(1, NULL); } while (0)
+#define KERNEL_UNLOCK_UNLESS_NET_MPSAFE()				\
+	do { KERNEL_UNLOCK_ONE(NULL); } while (0)
+
+#define SOFTNET_LOCK_UNLESS_NET_MPSAFE()				\
+	do { mutex_enter(softnet_lock); } while (0)
+#define SOFTNET_UNLOCK_UNLESS_NET_MPSAFE()				\
+	do { mutex_exit(softnet_lock); } while (0)
+
+#endif /* NET_MPSAFE */
+
+#define SOFTNET_KERNEL_LOCK_UNLESS_NET_MPSAFE()				\
+	do {								\
+		SOFTNET_LOCK_UNLESS_NET_MPSAFE();			\
+		KERNEL_LOCK_UNLESS_NET_MPSAFE();			\
+	} while (0)
+
+#define SOFTNET_KERNEL_UNLOCK_UNLESS_NET_MPSAFE()			\
+	do {								\
+		KERNEL_UNLOCK_UNLESS_NET_MPSAFE();			\
+		SOFTNET_UNLOCK_UNLESS_NET_MPSAFE();			\
+	} while (0)
+
 #endif /* _KERNEL */
 
 #define	IFFBITS \

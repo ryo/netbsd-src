@@ -1,4 +1,4 @@
-/*	$NetBSD: evtchn.c,v 1.74 2017/11/04 10:26:14 cherry Exp $	*/
+/*	$NetBSD: evtchn.c,v 1.78 2017/11/11 17:02:53 riastradh Exp $	*/
 
 /*
  * Copyright (c) 2006 Manuel Bouyer.
@@ -54,7 +54,7 @@
 
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: evtchn.c,v 1.74 2017/11/04 10:26:14 cherry Exp $");
+__KERNEL_RCSID(0, "$NetBSD: evtchn.c,v 1.78 2017/11/11 17:02:53 riastradh Exp $");
 
 #include "opt_xen.h"
 #include "isa.h"
@@ -314,12 +314,9 @@ evtchn_do_event(int evtch, struct intrframe *regs)
 	int i;
 	uint32_t iplbit;
 
-#ifdef DIAGNOSTIC
-	if (evtch >= NR_EVENT_CHANNELS) {
-		printf("event number %d > NR_IRQS\n", evtch);
-		panic("evtchn_do_event");
-	}
-#endif
+	KASSERTMSG(evtch >= 0, "negative evtch: %d", evtch);
+	KASSERTMSG(evtch < NR_EVENT_CHANNELS,
+	    "evtch number %d > NR_EVENT_CHANNELS", evtch);
 
 #ifdef IRQ_DEBUG
 	if (evtch == IRQ_DEBUG)
@@ -337,11 +334,7 @@ evtchn_do_event(int evtch, struct intrframe *regs)
 		return 0;
 	}
 
-#ifdef DIAGNOSTIC
-	if (evtsource[evtch] == NULL) {
-		panic("evtchn_do_event: unknown event");
-	}
-#endif
+	KASSERTMSG(evtsource[evtch] != NULL, "unknown event %d", evtch);
 	ci->ci_data.cpu_nintr++;
 	evtsource[evtch]->ev_evcnt.ev_count++;
 	ilevel = ci->ci_ilevel;
@@ -505,22 +498,39 @@ xen_evtchn_delroute(struct pic *pic, struct cpu_info *ci, int pin, int idt_vec, 
 	xen_atomic_clear_bit(&ci->ci_evtmask[0], evtchn);
 }
 
+/*
+ * xen_evtchn_trymask(pic, pin)
+ *
+ *	If there are interrupts pending on the bus-shared pic, return
+ *	false.  Otherwise, mask interrupts on the bus-shared pic and
+ *	return true.
+ */
 static bool
 xen_evtchn_trymask(struct pic *pic, int pin)
 {
-	volatile shared_info_t *s = HYPERVISOR_shared_info;
+	volatile struct shared_info *s = HYPERVISOR_shared_info;
+	unsigned long masked __diagused;
 
-	/* Already masked! */
-	if (xen_atomic_test_bit(&s->evtchn_mask[0], pin))
-		return true;
-	
-	/* Pending - bail! */
-	if (xen_atomic_test_bit(&s->evtchn_pending[0], pin))
+	/* Mask it.  */
+	masked = xen_atomic_test_and_set_bit(&s->evtchn_mask[0], pin);
+
+	/*
+	 * Caller is responsible for calling trymask only when the
+	 * interrupt pin is not masked, and for serializing calls to
+	 * trymask.
+	 */
+	KASSERT(!masked);
+
+	/*
+	 * Check whether there were any interrupts pending when we
+	 * masked it.  If there were, unmask and abort.
+	 */
+	if (xen_atomic_test_bit(&s->evtchn_pending[0], pin)) {
+		xen_atomic_clear_bit(&s->evtchn_mask[0], pin);
 		return false;
+	}
 
-	/* XXX: There's a race here - anything we can do about this ? */
-	/* Mask it */
-	xen_atomic_set_bit(&s->evtchn_mask[0], pin);
+	/* Success: masked, not pending.  */
 	return true;
 }
 
@@ -834,12 +844,9 @@ event_set_handler(int evtch, int (*func)(void *), void *arg, int level,
 	printf("event_set_handler IRQ %d handler %p\n", evtch, func);
 #endif
 
-#ifdef DIAGNOSTIC
-	if (evtch >= NR_EVENT_CHANNELS) {
-		printf("evtch number %d > NR_EVENT_CHANNELS\n", evtch);
-		panic("event_set_handler");
-	}
-#endif
+	KASSERTMSG(evtch >= 0, "negative evtch: %d", evtch);
+	KASSERTMSG(evtch < NR_EVENT_CHANNELS,
+	    "evtch number %d > NR_EVENT_CHANNELS", evtch);
 
 #if 0
 	printf("event_set_handler evtch %d handler %p level %d\n", evtch,

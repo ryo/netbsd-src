@@ -1,4 +1,4 @@
-/*	$NetBSD: prekern.h,v 1.4 2017/11/05 16:26:15 maxv Exp $	*/
+/*	$NetBSD: prekern.h,v 1.16 2017/11/21 07:56:05 maxv Exp $	*/
 
 /*
  * Copyright (c) 2017 The NetBSD Foundation, Inc. All rights reserved.
@@ -31,22 +31,16 @@
 #include <sys/cdefs.h>
 #include <sys/param.h>
 #include <sys/stdbool.h>
+#include <lib/libkern/libkern.h>
 #include <machine/pte.h>
 
 #include "pdir.h"
 #include "redef.h"
 
-#define MM_PROT_READ	0x00
-#define MM_PROT_WRITE	0x01
-#define MM_PROT_EXECUTE	0x02
-
 #define ASSERT(a) if (!(a)) fatal("ASSERT");
-#define memset(d, v, l) __builtin_memset(d, v, l)
-#define memcpy(d, v, l) __builtin_memcpy(d, v, l)
 typedef uint64_t paddr_t;
 typedef uint64_t vaddr_t;
 typedef uint64_t pt_entry_t;
-typedef uint64_t pd_entry_t;
 typedef uint64_t pte_prot_t;
 #define WHITE_ON_BLACK 0x07
 #define RED_ON_BLACK 0x04
@@ -60,6 +54,11 @@ typedef uint64_t pte_prot_t;
 
 /* -------------------------------------------------------------------------- */
 
+#define BTSEG_NONE	0
+#define BTSEG_TEXT	1
+#define BTSEG_RODATA	2
+#define BTSEG_DATA	3
+#define BTSPACE_NSEGS	64
 struct bootspace {
 	struct {
 		vaddr_t va;
@@ -67,20 +66,11 @@ struct bootspace {
 		size_t sz;
 	} head;
 	struct {
+		int type;
 		vaddr_t va;
 		paddr_t pa;
 		size_t sz;
-	} text;
-	struct {
-		vaddr_t va;
-		paddr_t pa;
-		size_t sz;
-	} rodata;
-	struct {
-		vaddr_t va;
-		paddr_t pa;
-		size_t sz;
-	} data;
+	} segs[BTSPACE_NSEGS];
 	struct {
 		vaddr_t va;
 		paddr_t pa;
@@ -92,35 +82,31 @@ struct bootspace {
 };
 
 /* console.c */
-void init_cons();
+void init_cons(void);
 void print_ext(int, char *);
 void print(char *);
 void print_state(bool, char *);
-void print_banner();
+void print_banner(void);
 
 /* elf.c */
 size_t elf_get_head_size(vaddr_t);
 void elf_build_head(vaddr_t);
-void elf_get_text(paddr_t *, size_t *);
-void elf_build_text(vaddr_t, paddr_t);
-void elf_get_rodata(paddr_t *, size_t *);
-void elf_build_rodata(vaddr_t, paddr_t);
-void elf_get_data(paddr_t *, size_t *);
-void elf_build_data(vaddr_t, paddr_t);
+void elf_map_sections(void);
 void elf_build_boot(vaddr_t, paddr_t);
-vaddr_t elf_kernel_reloc();
+vaddr_t elf_kernel_reloc(void);
 
 /* locore.S */
+void cpuid(uint32_t, uint32_t, uint32_t *);
 void lidt(void *);
-uint64_t rdtsc();
-void jump_kernel();
+uint64_t rdtsc(void);
+int rdseed(uint64_t *);
+void jump_kernel(vaddr_t);
 
 /* mm.c */
 void mm_init(paddr_t);
-paddr_t mm_vatopa(vaddr_t);
-void mm_bootspace_mprotect();
-void mm_map_kernel();
+void mm_bootspace_mprotect(void);
+vaddr_t mm_map_segment(int, paddr_t, size_t, size_t);
+void mm_map_kernel(void);
 
 /* prekern.c */
 void fatal(char *);
-

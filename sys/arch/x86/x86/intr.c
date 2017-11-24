@@ -1,4 +1,4 @@
-/*	$NetBSD: intr.c,v 1.106 2017/11/04 14:56:48 cherry Exp $	*/
+/*	$NetBSD: intr.c,v 1.112 2017/11/11 21:05:58 riastradh Exp $	*/
 
 /*-
  * Copyright (c) 2007, 2008, 2009 The NetBSD Foundation, Inc.
@@ -133,7 +133,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: intr.c,v 1.106 2017/11/04 14:56:48 cherry Exp $");
+__KERNEL_RCSID(0, "$NetBSD: intr.c,v 1.112 2017/11/11 21:05:58 riastradh Exp $");
 
 #include "opt_intrdebug.h"
 #include "opt_multiprocessor.h"
@@ -1209,27 +1209,33 @@ intr_num_handlers(struct intrsource *isp)
 
 #else /* XEN */
 void *
-intr_establish_xname(int legacy_irq, struct pic *pic, int pin,
-    int type, int level, int (*handler)(void *) , void *arg,
-    bool known_mpsafe, const char *xname)
+intr_establish(int legacy_irq, struct pic *pic, int pin,
+    int type, int level, int (*handler)(void *), void *arg,
+    bool known_mpsafe)
 {
-	/* XXX xname registration not supported */
-	return intr_establish(legacy_irq, pic, pin, type, level, handler, arg,
-	    known_mpsafe);
+
+	return intr_establish_xname(legacy_irq, pic, pin, type, level,
+	    handler, arg, known_mpsafe, "XEN");
 }
 
 void *
-intr_establish(int legacy_irq, struct pic *pic, int pin,
-    int type, int level, int (*handler)(void *) , void *arg,
-    bool known_mpsafe)
+intr_establish_xname(int legacy_irq, struct pic *pic, int pin,
+    int type, int level, int (*handler)(void *), void *arg,
+    bool known_mpsafe, const char *xname)
 {
 	if (pic->pic_type == PIC_XEN) {
 		struct intrhand *rih;
-		event_set_handler(pin, handler,
-		    arg, IPL_CLOCK, "clock");
 
-		rih = kmem_zalloc(sizeof(struct intrhand),
-	    cold ? KM_NOSLEEP : KM_SLEEP);
+		/*
+		 * event_set_handler interprets `level != IPL_VM' to
+		 * mean MP-safe, so we require the caller to match that
+		 * for the moment.
+		 */
+		KASSERT(known_mpsafe == (level != IPL_VM));
+
+		event_set_handler(pin, handler, arg, level, xname);
+
+		rih = kmem_zalloc(sizeof(*rih), cold ? KM_NOSLEEP : KM_SLEEP);
 		if (rih == NULL) {
 			printf("%s: can't allocate handler info\n", __func__);
 			return NULL;
@@ -1244,7 +1250,6 @@ intr_establish(int legacy_irq, struct pic *pic, int pin,
 		 * All that goes away when we nuke event_set_handler()
 		 * et. al. and unify with x86/intr.c
 		 */
-		
 		rih->ih_pin = pin; /* port */
 		rih->ih_fun = handler;
 		rih->ih_arg = arg;
@@ -1257,12 +1262,11 @@ intr_establish(int legacy_irq, struct pic *pic, int pin,
 	int evtchn;
 	char evname[16];
 
-#ifdef DIAGNOSTIC
-	if (legacy_irq != -1 && (legacy_irq < 0 || legacy_irq > 15))
-		panic("intr_establish: bad legacy IRQ value");
-	if (legacy_irq == -1 && pic == &i8259_pic)
-		panic("intr_establish: non-legacy IRQ on i8259");
-#endif /* DIAGNOSTIC */
+	KASSERTMSG(legacy_irq == -1 || (0 <= legacy_irq && legacy_irq < 16),
+	    "bad legacy IRQ value: %d", legacy_irq);
+	KASSERTMSG(!(legacy_irq == -1 && pic == &i8259_pic),
+	    "non-legacy IRQon i8259 ");
+
 	if (legacy_irq == -1) {
 #if NIOAPIC > 0
 		/* will do interrupts via I/O APIC */
@@ -1274,8 +1278,9 @@ intr_establish(int legacy_irq, struct pic *pic, int pin,
 #else /* NIOAPIC */
 		return NULL;
 #endif /* NIOAPIC */
-	} else
+	} else {
 		snprintf(evname, sizeof(evname), "irq%d", legacy_irq);
+	}
 
 	evtchn = xen_pirq_alloc((intr_handle_t *)&legacy_irq, type);
 	pih = pirq_establish(legacy_irq & 0xff, evtchn, handler, arg, level,
@@ -1316,7 +1321,7 @@ intr_disestablish(struct intrhand *ih)
 	} else {
 		where = xc_unicast(0, intr_disestablish_xcall, ih, NULL, ci);
 		xc_wait(where);
-	}	
+	}
 	if (!msipic_is_msi_pic(isp->is_pic) && intr_num_handlers(isp) < 1) {
 		intr_free_io_intrsource_direct(isp);
 	}
@@ -1324,7 +1329,9 @@ intr_disestablish(struct intrhand *ih)
 	kmem_free(ih, sizeof(*ih));
 #else /* XEN */
 	if (ih->pic_type == PIC_XEN) {
-		event_remove_handler(ih->ih_pin, ih->ih_realfun, ih->ih_realarg);
+		event_remove_handler(ih->ih_pin, ih->ih_realfun,
+		    ih->ih_realarg);
+		kmem_free(ih, sizeof(*ih));
 		return;
 	}
 #if defined(DOM0OPS)

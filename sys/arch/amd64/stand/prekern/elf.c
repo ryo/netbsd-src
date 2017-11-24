@@ -1,4 +1,4 @@
-/*	$NetBSD: elf.c,v 1.7 2017/11/05 16:26:15 maxv Exp $	*/
+/*	$NetBSD: elf.c,v 1.17 2017/11/21 07:56:05 maxv Exp $	*/
 
 /*
  * Copyright (c) 2017 The NetBSD Foundation, Inc. All rights reserved.
@@ -49,31 +49,8 @@ extern paddr_t kernpa_start, kernpa_end;
 static struct elfinfo eif;
 static const char entrypoint[] = "start_prekern";
 
-/* XXX */
 static int
-memcmp(const char *a, const char *b, size_t c)
-{
-	size_t i;
-	for (i = 0; i < c; i++) {
-		if (a[i] != b[i])
-			return 1;
-	}
-	return 0;
-}
-static int
-strcmp(char *a, char *b)
-{
-	size_t i;
-	for (i = 0; a[i] != '\0'; i++) {
-		if (a[i] != b[i])
-			return 1;
-	}
-	return 0;
-}
-
-
-static int
-elf_check_header()
+elf_check_header(void)
 {
 	if (memcmp((char *)eif.ehdr->e_ident, ELFMAG, SELFMAG) != 0 ||
 	    eif.ehdr->e_ident[EI_CLASS] != ELFCLASS ||
@@ -84,7 +61,7 @@ elf_check_header()
 }
 
 static vaddr_t
-elf_get_entrypoint()
+elf_get_entrypoint(void)
 {
 	Elf_Sym *sym;
 	size_t i;
@@ -281,184 +258,47 @@ elf_build_head(vaddr_t headva)
 	}
 }
 
-static bool
-elf_section_is_text(Elf_Shdr *shdr)
-{
-	if (shdr->sh_type != SHT_NOBITS &&
-	    shdr->sh_type != SHT_PROGBITS) {
-		return false;
-	}
-	if (!(shdr->sh_flags & SHF_EXECINSTR)) {
-		return false;
-	}
-	return true;
-}
-
-static bool
-elf_section_is_rodata(Elf_Shdr *shdr)
-{
-	if (shdr->sh_type != SHT_NOBITS &&
-	    shdr->sh_type != SHT_PROGBITS) {
-		return false;
-	}
-	if (shdr->sh_flags & (SHF_EXECINSTR|SHF_WRITE)) {
-		return false;
-	}
-	return true;
-}
-
-static bool
-elf_section_is_data(Elf_Shdr *shdr)
-{
-	if (shdr->sh_type != SHT_NOBITS &&
-	    shdr->sh_type != SHT_PROGBITS) {
-		return false;
-	}
-	if (!(shdr->sh_flags & SHF_WRITE) ||
-	    (shdr->sh_flags & SHF_EXECINSTR)) {
-		return false;
-	}
-	return true;
-}
-
 void
-elf_get_text(paddr_t *pa, size_t *sz)
-{
-	const paddr_t basepa = kernpa_start;
-	paddr_t minpa, maxpa, secpa;
-	size_t i, secsz;
-
-	minpa = 0xFFFFFFFFFFFFFFFF, maxpa = 0;
-	for (i = 0; i < eif.ehdr->e_shnum; i++) {
-		if (!elf_section_is_text(&eif.shdr[i])) {
-			continue;
-		}
-		secpa = basepa + eif.shdr[i].sh_offset;
-		secsz = eif.shdr[i].sh_size;
-		if (secpa < minpa) {
-			minpa = secpa;
-		}
-		if (secpa + secsz > maxpa) {
-			maxpa = secpa + secsz;
-		}
-	}
-	ASSERT(minpa % PAGE_SIZE == 0);
-
-	*pa = minpa;
-	*sz = roundup(maxpa - minpa, PAGE_SIZE);
-}
-
-void
-elf_build_text(vaddr_t textva, paddr_t textpa)
+elf_map_sections(void)
 {
 	const paddr_t basepa = kernpa_start;
 	const vaddr_t headva = (vaddr_t)eif.ehdr;
-	size_t i, offtext;
+	Elf_Shdr *shdr;
+	int segtype;
+	vaddr_t secva;
+	paddr_t secpa;
+	size_t i, secsz, secalign;
 
 	for (i = 0; i < eif.ehdr->e_shnum; i++) {
-		if (!elf_section_is_text(&eif.shdr[i])) {
+		shdr = &eif.shdr[i];
+
+		if (!(shdr->sh_flags & SHF_ALLOC)) {
+			continue;
+		}
+		if (shdr->sh_type != SHT_NOBITS &&
+		    shdr->sh_type != SHT_PROGBITS) {
 			continue;
 		}
 
-		/* Offset of the section within the text segment. */
-		offtext = basepa + eif.shdr[i].sh_offset - textpa;
+		if (shdr->sh_flags & SHF_EXECINSTR) {
+			segtype = BTSEG_TEXT;
+		} else if (shdr->sh_flags & SHF_WRITE) {
+			segtype = BTSEG_DATA;
+		} else {
+			segtype = BTSEG_RODATA;
+		}
+		secpa = basepa + shdr->sh_offset;
+		secsz = shdr->sh_size;
+		secalign = shdr->sh_addralign;
+		ASSERT(shdr->sh_offset != 0);
+		ASSERT(secpa % PAGE_SIZE == 0);
+		ASSERT(secpa + secsz <= kernpa_end);
+
+		secva = mm_map_segment(segtype, secpa, secsz, secalign);
 
 		/* We want (headva + sh_offset) to be the VA of the section. */
-		eif.shdr[i].sh_offset = (textva + offtext - headva);
-	}
-}
-
-void
-elf_get_rodata(paddr_t *pa, size_t *sz)
-{
-	const paddr_t basepa = kernpa_start;
-	paddr_t minpa, maxpa, secpa;
-	size_t i, secsz;
-
-	minpa = 0xFFFFFFFFFFFFFFFF, maxpa = 0;
-	for (i = 0; i < eif.ehdr->e_shnum; i++) {
-		if (!elf_section_is_rodata(&eif.shdr[i])) {
-			continue;
-		}
-		secpa = basepa + eif.shdr[i].sh_offset;
-		secsz = eif.shdr[i].sh_size;
-		if (secpa < minpa) {
-			minpa = secpa;
-		}
-		if (secpa + secsz > maxpa) {
-			maxpa = secpa + secsz;
-		}
-	}
-	ASSERT(minpa % PAGE_SIZE == 0);
-
-	*pa = minpa;
-	*sz = roundup(maxpa - minpa, PAGE_SIZE);
-}
-
-void
-elf_build_rodata(vaddr_t rodatava, paddr_t rodatapa)
-{
-	const paddr_t basepa = kernpa_start;
-	const vaddr_t headva = (vaddr_t)eif.ehdr;
-	size_t i, offrodata;
-
-	for (i = 0; i < eif.ehdr->e_shnum; i++) {
-		if (!elf_section_is_rodata(&eif.shdr[i])) {
-			continue;
-		}
-
-		/* Offset of the section within the rodata segment. */
-		offrodata = basepa + eif.shdr[i].sh_offset - rodatapa;
-
-		/* We want (headva + sh_offset) to be the VA of the section. */
-		eif.shdr[i].sh_offset = (rodatava + offrodata - headva);
-	}
-}
-
-void
-elf_get_data(paddr_t *pa, size_t *sz)
-{
-	const paddr_t basepa = kernpa_start;
-	paddr_t minpa, maxpa, secpa;
-	size_t i, secsz;
-
-	minpa = 0xFFFFFFFFFFFFFFFF, maxpa = 0;
-	for (i = 0; i < eif.ehdr->e_shnum; i++) {
-		if (!elf_section_is_data(&eif.shdr[i])) {
-			continue;
-		}
-		secpa = basepa + eif.shdr[i].sh_offset;
-		secsz = eif.shdr[i].sh_size;
-		if (secpa < minpa) {
-			minpa = secpa;
-		}
-		if (secpa + secsz > maxpa) {
-			maxpa = secpa + secsz;
-		}
-	}
-	ASSERT(minpa % PAGE_SIZE == 0);
-
-	*pa = minpa;
-	*sz = roundup(maxpa - minpa, PAGE_SIZE);
-}
-
-void
-elf_build_data(vaddr_t datava, paddr_t datapa)
-{
-	const paddr_t basepa = kernpa_start;
-	const vaddr_t headva = (vaddr_t)eif.ehdr;
-	size_t i, offdata;
-
-	for (i = 0; i < eif.ehdr->e_shnum; i++) {
-		if (!elf_section_is_data(&eif.shdr[i])) {
-			continue;
-		}
-
-		/* Offset of the section within the data segment. */
-		offdata = basepa + eif.shdr[i].sh_offset - datapa;
-
-		/* We want (headva + sh_offset) to be the VA of the section. */
-		eif.shdr[i].sh_offset = (datava + offdata - headva);
+		ASSERT(secva > headva);
+		shdr->sh_offset = secva - headva;
 	}
 }
 
@@ -507,6 +347,9 @@ elf_build_boot(vaddr_t bootva, paddr_t bootpa)
 	if (i == eif.ehdr->e_shnum) {
 		fatal("elf_build_boot: symtab not found");
 	}
+	if (eif.shdr[i].sh_offset == 0) {
+		fatal("elf_build_boot: symtab not loaded");
+	}
 	eif.symtab = (Elf_Sym *)((uint8_t *)eif.ehdr + eif.shdr[i].sh_offset);
 	eif.symcnt = eif.shdr[i].sh_size / sizeof(Elf_Sym);
 
@@ -518,12 +361,15 @@ elf_build_boot(vaddr_t bootva, paddr_t bootpa)
 	if (eif.shdr[j].sh_type != SHT_STRTAB) {
 		fatal("elf_build_boot: wrong strtab type");
 	}
+	if (eif.shdr[j].sh_offset == 0) {
+		fatal("elf_build_boot: strtab not loaded");
+	}
 	eif.strtab = (char *)((uint8_t *)eif.ehdr + eif.shdr[j].sh_offset);
 	eif.strsz = eif.shdr[j].sh_size;
 }
 
 vaddr_t
-elf_kernel_reloc()
+elf_kernel_reloc(void)
 {
 	const vaddr_t baseva = (vaddr_t)eif.ehdr;
 	vaddr_t secva, ent;
@@ -533,11 +379,6 @@ elf_kernel_reloc()
 	print_state(true, "ELF info created");
 
 	/*
-	 * The loaded sections are: SHT_PROGBITS, SHT_NOBITS, SHT_STRTAB,
-	 * SHT_SYMTAB.
-	 */
-
-	/*
 	 * Update all symbol values with the appropriate offset.
 	 */
 	for (i = 0; i < eif.ehdr->e_shnum; i++) {
@@ -545,6 +386,7 @@ elf_kernel_reloc()
 		    eif.shdr[i].sh_type != SHT_PROGBITS) {
 			continue;
 		}
+		ASSERT(eif.shdr[i].sh_offset != 0);
 		secva = baseva + eif.shdr[i].sh_offset;
 		for (j = 0; j < eif.symcnt; j++) {
 			sym = &eif.symtab[j];
@@ -565,9 +407,10 @@ elf_kernel_reloc()
 		size_t secidx, nrel;
 		uintptr_t base;
 
-		if (eif.shdr[i].sh_type != SHT_REL)
+		if (eif.shdr[i].sh_type != SHT_REL) {
 			continue;
-
+		}
+		ASSERT(eif.shdr[i].sh_offset != 0);
 		reltab = (Elf_Rel *)((uint8_t *)eif.ehdr + eif.shdr[i].sh_offset);
 		nrel = eif.shdr[i].sh_size / sizeof(Elf_Rel);
 
@@ -593,9 +436,10 @@ elf_kernel_reloc()
 		size_t secidx, nrela;
 		uintptr_t base;
 
-		if (eif.shdr[i].sh_type != SHT_RELA)
+		if (eif.shdr[i].sh_type != SHT_RELA) {
 			continue;
-
+		}
+		ASSERT(eif.shdr[i].sh_offset != 0);
 		relatab = (Elf_Rela *)((uint8_t *)eif.ehdr + eif.shdr[i].sh_offset);
 		nrela = eif.shdr[i].sh_size / sizeof(Elf_Rela);
 
@@ -616,7 +460,7 @@ elf_kernel_reloc()
 	/*
 	 * Get the entry point.
 	 */
-	ent = elf_get_entrypoint(&eif);
+	ent = elf_get_entrypoint();
 	if (ent == 0) {
 		fatal("elf_kernel_reloc: entry point not found");
 	}
@@ -625,4 +469,3 @@ elf_kernel_reloc()
 
 	return ent;
 }
-
