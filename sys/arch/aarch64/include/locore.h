@@ -71,14 +71,22 @@ extern u_int arm_cpu_max;
 static inline void __unused
 daif_enable(register_t psw)
 {
-	reg_daifclr_write((psw & DAIF_MASK) >> DAIF_SETCLR_SHIFT);
+	if (!__builtin_constant_p(psw)) {
+		reg_daif_write(reg_daif_read() & ~psw);
+	} else {
+		reg_daifclr_write((psw & DAIF_MASK) >> DAIF_SETCLR_SHIFT);
+	}
 }
 
 static inline register_t __unused
 daif_disable(register_t psw)
 {
 	register_t oldpsw = reg_daif_read();
-	reg_daifset_write((psw & DAIF_MASK) >> DAIF_SETCLR_SHIFT);
+	if (!__builtin_constant_p(psw)) {
+		reg_daif_write(oldpsw | psw);
+	} else {
+		reg_daifset_write((psw & DAIF_MASK) >> DAIF_SETCLR_SHIFT);
+	}
 	return oldpsw;
 }
 
