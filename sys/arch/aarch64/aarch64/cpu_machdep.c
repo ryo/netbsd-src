@@ -61,7 +61,7 @@ u_int arm_cpu_max = 1;
 /* Our exported CPU info; we can have only one. */
 struct cpu_info cpu_info_store __cacheline_aligned = {
 	.ci_cpl = IPL_HIGH,
-	.ci_curlwp = &lwp0,
+	.ci_curlwp = &lwp0
 };
 
 #ifdef MULTIPROCESSOR
@@ -101,13 +101,13 @@ uint32_t cpu_boot_mbox;
 
 /*
  * This returns a mask of softint IPLs that be dispatch at <ipl>
- * SOFTIPLMASK(IPL_NONE)	= 0x0000000f
- * SOFTIPLMASK(IPL_SOFTCLOCK)	= 0x0000000e
- * SOFTIPLMASK(IPL_SOFTBIO)	= 0x0000000c
- * SOFTIPLMASK(IPL_SOFTNET)	= 0x00000008
- * SOFTIPLMASK(IPL_SOFTSERIAL)	= 0x00000000
  */
 #define SOFTIPLMASK(ipl) ((0x0f << (ipl)) & 0x0f)
+CTASSERT(SOFTIPLMASK(IPL_NONE)		== 0x0000000f);
+CTASSERT(SOFTIPLMASK(IPL_SOFTCLOCK)	== 0x0000000e);
+CTASSERT(SOFTIPLMASK(IPL_SOFTBIO)	== 0x0000000c);
+CTASSERT(SOFTIPLMASK(IPL_SOFTNET)	== 0x00000008);
+CTASSERT(SOFTIPLMASK(IPL_SOFTSERIAL)	== 0x00000000);
 
 void
 softint_trigger(uintptr_t mask)
@@ -122,10 +122,14 @@ softint_init_md(lwp_t *l, u_int level, uintptr_t *machdep)
 	KASSERT(*lp == NULL || *lp == l);
 	*lp = l;
 	*machdep = 1 << SOFTINT2IPL(level);
-	KASSERT(level != SOFTINT_CLOCK || *machdep == (1 << (IPL_SOFTCLOCK - IPL_SOFTCLOCK)));
-	KASSERT(level != SOFTINT_BIO || *machdep == (1 << (IPL_SOFTBIO - IPL_SOFTCLOCK)));
-	KASSERT(level != SOFTINT_NET || *machdep == (1 << (IPL_SOFTNET - IPL_SOFTCLOCK)));
-	KASSERT(level != SOFTINT_SERIAL || *machdep == (1 << (IPL_SOFTSERIAL - IPL_SOFTCLOCK)));
+	KASSERT(level != SOFTINT_CLOCK ||
+	    *machdep == (1 << (IPL_SOFTCLOCK  - IPL_SOFTCLOCK)));
+	KASSERT(level != SOFTINT_BIO ||
+	    *machdep == (1 << (IPL_SOFTBIO    - IPL_SOFTCLOCK)));
+	KASSERT(level != SOFTINT_NET ||
+	    *machdep == (1 << (IPL_SOFTNET    - IPL_SOFTCLOCK)));
+	KASSERT(level != SOFTINT_SERIAL ||
+	    *machdep == (1 << (IPL_SOFTSERIAL - IPL_SOFTCLOCK)));
 }
 
 void
@@ -139,7 +143,8 @@ dosoftints(void)
 	for (;;) {
 		u_int softints = ci->ci_softints & softiplmask;
 		KASSERT((softints != 0) == ((ci->ci_softints >> opl) != 0));
-		KASSERT(opl == IPL_NONE || (softints & (1 << (opl - IPL_SOFTCLOCK))) == 0);
+		KASSERT(opl == IPL_NONE ||
+		    (softints & (1 << (opl - IPL_SOFTCLOCK))) == 0);
 		if (softints == 0) {
 #ifdef __HAVE_PREEMPTION
 			if (ci->ci_want_resched & RESCHED_KPREEMPT) {
@@ -152,7 +157,7 @@ dosoftints(void)
 			return;
 		}
 #define DOSOFTINT(n) \
-		if (ci->ci_softints & (1 << (IPL_SOFT ## n - IPL_SOFTCLOCK))) { \
+		if (ci->ci_softints & (1 << (IPL_SOFT ## n - IPL_SOFTCLOCK))) {\
 			ci->ci_softints &= \
 			    ~(1 << (IPL_SOFT ## n - IPL_SOFTCLOCK)); \
 			cpu_switchto_softint(ci->ci_softlwps[SOFTINT_ ## n], \
@@ -308,7 +313,7 @@ cpu_need_resched(struct cpu_info *ci, int flags)
 #ifdef MULTIPROCESSOR
 	if (ci != cur_ci && (flags & RESCHED_IMMED)) {
 		intr_ipi_send(ci->ci_kcpuset, IPI_AST);
-	} 
+	}
 #endif
 }
 
@@ -335,7 +340,7 @@ cpu_set_curpri(int pri)
 bool
 cpu_kpreempt_enter(uintptr_t where, int s)
 {
-        KASSERT(kpreempt_disabled());
+	KASSERT(kpreempt_disabled());
 
 #if 0
 	if (where == (intptr_t)-2) {
