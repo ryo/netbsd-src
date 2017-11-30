@@ -150,8 +150,7 @@ ENTRY_NP(cpu_switchto_softint)
 
 	/* onto new stack */
 	ldr	x4, [x0, #L_MD_UTF]
-	sub	x4, x4, #TF_SIZE
-	mov	sp, x4			/* new sp := softlwp->l_md_utf - 1 */
+	sub	sp, x4, #TF_SIZE	/* new sp := softlwp->l_md_utf - 1 */
 	mov	x5, #CPACR_FPEN_NONE
 	msr	cpacr_el1, x5		/* cpacr_el1 = CPACR_FPEN_NONE */
 	ENABLE_INTERRUPT
