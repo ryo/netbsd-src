@@ -35,9 +35,9 @@
 #ifdef __aarch64__
 
 struct mdlwp {
+	void *md_onfault;
 	struct trapframe *md_utf;
 	struct trapframe *md_ktf;
-	void *md_onfault;
 	uint64_t md_cpacr;
 	uint32_t md_flags;
 };
