@@ -21,7 +21,6 @@ no file-system	NTFS
 no file-system	CD9660
 no file-system	MSDOSFS
 no file-system	OVERLAY
-no file-system	PROCFS
 no file-system	PUFFS
 no pseudo-device	putter
 no file-system	SMBFS
@@ -37,7 +36,6 @@ options 	UVMHIST
 options 	UVMHIST_MAPHIST_SIZE=5000
 options 	UVMHIST_PDHIST_SIZE=5000
 
-no options	INET6
 no options	IPSEC
 no options	BPFJIT
 no options	KDTRACE_HOOKS
@@ -52,9 +50,9 @@ no pseudo-device	npf
 no pseudo-device	veriexec
 no options	FILEASSOC
 
-no options VERIFIED_EXEC_FP_SHA256
-no options VERIFIED_EXEC_FP_SHA384
-no options VERIFIED_EXEC_FP_SHA512
+no options	VERIFIED_EXEC_FP_SHA256
+no options	VERIFIED_EXEC_FP_SHA384
+no options	VERIFIED_EXEC_FP_SHA512
 
 no options 	PAX_ASLR_DEBUG
 no options 	PAX_SEGVGUARD
@@ -77,10 +75,25 @@ options 	PLCONSOLE
 #options 	STACKCHECKS
 #options 	DEBUG_AUTOCONF
 
+
+#
+options 	USBVERBOSE		# verbose USB device autoconfig messages
+
 # USB Debugging options
-#options USB_DEBUG
-#options DWC2_DEBUG
-#options UHUB_DEBUG
+#options 	USB_DEBUG
+#options 	DWC2_DEBUG
+#options 	UHUB_DEBUG
+
+
+#options 	NFS_BOOT_BOOTP
+#options 	NFS_BOOT_DHCP
+#options 	NFS_BOOT_BOOTPARAM
+options 	NFS_BOOT_BOOTSTATIC
+options 	NFS_BOOTSTATIC_MYIP="\"172.17.4.63\""
+options 	NFS_BOOTSTATIC_GWIP="\"172.17.4.40\""
+options 	NFS_BOOTSTATIC_MASK="\"255.255.0.0\""
+options 	NFS_BOOTSTATIC_SERVADDR="\"172.17.4.40\""
+options 	NFS_BOOTSTATIC_SERVER="\"172.17.4.40:/usr/home/ryo/tmp/netbsd-src-ryo-wip/work.evbarm64/tree\""
 
 
 # Valid options for BOOT_ARGS:
@@ -94,7 +107,9 @@ options 	PLCONSOLE
 #options		BOOT_ARGS="\"\""
 
 
-config		netbsd		root on ld0f type ?
+#config		netbsd		root on ld0f type ?
+#config		netbsd		root on usmsc0 type nfs
+config		netbsd		root on ? type ?
 
 mainbus0 at	root
 cpunode0	at mainbus0
@@ -268,9 +283,6 @@ pseudo-device	wsmux			# mouse & keyboard multiplexor
 pseudo-device	wsfont
 
 # userland interface to drivers, including autoconf and properties retrieval
-
-# local configuration
-cinclude "arch/evbarm/conf/RPI.local"
 
 # Bluetooth serial UART devices
 pseudo-device	btuart
