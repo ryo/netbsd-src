@@ -502,89 +502,84 @@ db_md_sysreg_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *mo
 static void
 aarch64_set_bcr_bvr(int n, uint64_t bcr, uint64_t bvr)
 {
-#define DBG_BVR_BCR_SET_IF(regno)					\
-	do {								\
-		if (n == regno) {					\
-			reg_dbgbcr ## regno ## _el1_write(bcr);		\
-			reg_dbgbvr ## regno ## _el1_write(bvr);		\
-			return;						\
-		}							\
+#define DBG_BVR_BCR_SET(regno, bcr, bvr)			\
+	do {							\
+		reg_dbgbcr ## regno ## _el1_write(bcr);		\
+		reg_dbgbvr ## regno ## _el1_write(bvr);		\
 	} while (0 /* CONSTCOND */)
 
-	DBG_BVR_BCR_SET_IF(0);
-	DBG_BVR_BCR_SET_IF(1);
-	DBG_BVR_BCR_SET_IF(2);
-	DBG_BVR_BCR_SET_IF(3);
-	DBG_BVR_BCR_SET_IF(4);
-	DBG_BVR_BCR_SET_IF(5);
-	DBG_BVR_BCR_SET_IF(6);
-	DBG_BVR_BCR_SET_IF(7);
-	DBG_BVR_BCR_SET_IF(8);
-	DBG_BVR_BCR_SET_IF(9);
-	DBG_BVR_BCR_SET_IF(10);
-	DBG_BVR_BCR_SET_IF(11);
-	DBG_BVR_BCR_SET_IF(12);
-	DBG_BVR_BCR_SET_IF(13);
-	DBG_BVR_BCR_SET_IF(14);
-	DBG_BVR_BCR_SET_IF(15);
+	switch (n) {
+	case 0:		DBG_BVR_BCR_SET(0,  bcr, bvr);	break;
+	case 1:		DBG_BVR_BCR_SET(1,  bcr, bvr);	break;
+	case 2:		DBG_BVR_BCR_SET(2,  bcr, bvr);	break;
+	case 3:		DBG_BVR_BCR_SET(3,  bcr, bvr);	break;
+	case 4:		DBG_BVR_BCR_SET(4,  bcr, bvr);	break;
+	case 5:		DBG_BVR_BCR_SET(5,  bcr, bvr);	break;
+	case 6:		DBG_BVR_BCR_SET(6,  bcr, bvr);	break;
+	case 7:		DBG_BVR_BCR_SET(7,  bcr, bvr);	break;
+	case 8:		DBG_BVR_BCR_SET(8,  bcr, bvr);	break;
+	case 9:		DBG_BVR_BCR_SET(9,  bcr, bvr);	break;
+	case 10:	DBG_BVR_BCR_SET(10, bcr, bvr);	break;
+	case 11:	DBG_BVR_BCR_SET(11, bcr, bvr);	break;
+	case 12:	DBG_BVR_BCR_SET(12, bcr, bvr);	break;
+	case 13:	DBG_BVR_BCR_SET(13, bcr, bvr);	break;
+	case 14:	DBG_BVR_BCR_SET(14, bcr, bvr);	break;
+	case 15:	DBG_BVR_BCR_SET(15, bcr, bvr);	break;
+	}
 }
 
 static void
 aarch64_set_wcr_wvr(int n, uint64_t wcr, uint64_t wvr)
 {
-#define DBG_WVR_WCR_SET_IF(regno)					\
-	do {								\
-		if (n == regno) {					\
-			reg_dbgwcr ## regno ## _el1_write(wcr);		\
-			reg_dbgwvr ## regno ## _el1_write(wvr);		\
-			return;						\
-		}							\
+#define DBG_WVR_WCR_SET(regno, wcr, wvr)			\
+	do {							\
+		reg_dbgwcr ## regno ## _el1_write(wcr);		\
+		reg_dbgwvr ## regno ## _el1_write(wvr);		\
 	} while (0 /* CONSTCOND */)
 
-	DBG_WVR_WCR_SET_IF(0);
-	DBG_WVR_WCR_SET_IF(1);
-	DBG_WVR_WCR_SET_IF(2);
-	DBG_WVR_WCR_SET_IF(3);
-	DBG_WVR_WCR_SET_IF(4);
-	DBG_WVR_WCR_SET_IF(5);
-	DBG_WVR_WCR_SET_IF(6);
-	DBG_WVR_WCR_SET_IF(7);
-	DBG_WVR_WCR_SET_IF(8);
-	DBG_WVR_WCR_SET_IF(9);
-	DBG_WVR_WCR_SET_IF(10);
-	DBG_WVR_WCR_SET_IF(11);
-	DBG_WVR_WCR_SET_IF(12);
-	DBG_WVR_WCR_SET_IF(13);
-	DBG_WVR_WCR_SET_IF(14);
-	DBG_WVR_WCR_SET_IF(15);
+	switch (n) {
+	case 0:		DBG_WVR_WCR_SET(0,  wcr, wvr);	break;
+	case 1:		DBG_WVR_WCR_SET(1,  wcr, wvr);	break;
+	case 2:		DBG_WVR_WCR_SET(2,  wcr, wvr);	break;
+	case 3:		DBG_WVR_WCR_SET(3,  wcr, wvr);	break;
+	case 4:		DBG_WVR_WCR_SET(4,  wcr, wvr);	break;
+	case 5:		DBG_WVR_WCR_SET(5,  wcr, wvr);	break;
+	case 6:		DBG_WVR_WCR_SET(6,  wcr, wvr);	break;
+	case 7:		DBG_WVR_WCR_SET(7,  wcr, wvr);	break;
+	case 8:		DBG_WVR_WCR_SET(8,  wcr, wvr);	break;
+	case 9:		DBG_WVR_WCR_SET(9,  wcr, wvr);	break;
+	case 10:	DBG_WVR_WCR_SET(10, wcr, wvr);	break;
+	case 11:	DBG_WVR_WCR_SET(11, wcr, wvr);	break;
+	case 12:	DBG_WVR_WCR_SET(12, wcr, wvr);	break;
+	case 13:	DBG_WVR_WCR_SET(13, wcr, wvr);	break;
+	case 14:	DBG_WVR_WCR_SET(14, wcr, wvr);	break;
+	case 15:	DBG_WVR_WCR_SET(15, wcr, wvr);	break;
+	}
 }
 
 static uint64_t
 aarch64_get_dbgwcr(int n)
 {
-#define DBGWCR_READ_RET_IF(regno)					\
-	do {								\
-		if (n == regno) {					\
-			return reg_dbgwcr ## regno ## _el1_read();	\
-		}							\
-	} while (0 /* CONSTCOND */)
+#define DBGWCR_READ(regno)	(reg_dbgwcr ## regno ## _el1_read())
 
-	DBGWCR_READ_RET_IF(0);
-	DBGWCR_READ_RET_IF(1);
-	DBGWCR_READ_RET_IF(2);
-	DBGWCR_READ_RET_IF(3);
-	DBGWCR_READ_RET_IF(4);
-	DBGWCR_READ_RET_IF(5);
-	DBGWCR_READ_RET_IF(6);
-	DBGWCR_READ_RET_IF(7);
-	DBGWCR_READ_RET_IF(8);
-	DBGWCR_READ_RET_IF(9);
-	DBGWCR_READ_RET_IF(10);
-	DBGWCR_READ_RET_IF(11);
-	DBGWCR_READ_RET_IF(12);
-	DBGWCR_READ_RET_IF(13);
-	DBGWCR_READ_RET_IF(14);
-	DBGWCR_READ_RET_IF(15);
+	switch (n) {
+	case 0:		return DBGWCR_READ(0);
+	case 1:		return DBGWCR_READ(1);
+	case 2:		return DBGWCR_READ(2);
+	case 3:		return DBGWCR_READ(3);
+	case 4:		return DBGWCR_READ(4);
+	case 5:		return DBGWCR_READ(5);
+	case 6:		return DBGWCR_READ(6);
+	case 7:		return DBGWCR_READ(7);
+	case 8:		return DBGWCR_READ(8);
+	case 9:		return DBGWCR_READ(9);
+	case 10:	return DBGWCR_READ(10);
+	case 11:	return DBGWCR_READ(11);
+	case 12:	return DBGWCR_READ(12);
+	case 13:	return DBGWCR_READ(13);
+	case 14:	return DBGWCR_READ(14);
+	case 15:	return DBGWCR_READ(15);
+	}
 
 	return 0;
 }
@@ -592,29 +587,26 @@ aarch64_get_dbgwcr(int n)
 static uint64_t
 aarch64_get_dbgwvr(int n)
 {
-#define DBGWVR_READ_RET_IF(regno)					\
-	do {								\
-		if (n == regno) {					\
-			return reg_dbgwvr ## regno ## _el1_read();	\
-		}							\
-	} while (0 /* CONSTCOND */)
+#define DBGWVR_READ(regno)	(reg_dbgwvr ## regno ## _el1_read())
 
-	DBGWVR_READ_RET_IF(0);
-	DBGWVR_READ_RET_IF(1);
-	DBGWVR_READ_RET_IF(2);
-	DBGWVR_READ_RET_IF(3);
-	DBGWVR_READ_RET_IF(4);
-	DBGWVR_READ_RET_IF(5);
-	DBGWVR_READ_RET_IF(6);
-	DBGWVR_READ_RET_IF(7);
-	DBGWVR_READ_RET_IF(8);
-	DBGWVR_READ_RET_IF(9);
-	DBGWVR_READ_RET_IF(10);
-	DBGWVR_READ_RET_IF(11);
-	DBGWVR_READ_RET_IF(12);
-	DBGWVR_READ_RET_IF(13);
-	DBGWVR_READ_RET_IF(14);
-	DBGWVR_READ_RET_IF(15);
+	switch (n) {
+	case 0:		return DBGWVR_READ(0);
+	case 1:		return DBGWVR_READ(1);
+	case 2:		return DBGWVR_READ(2);
+	case 3:		return DBGWVR_READ(3);
+	case 4:		return DBGWVR_READ(4);
+	case 5:		return DBGWVR_READ(5);
+	case 6:		return DBGWVR_READ(6);
+	case 7:		return DBGWVR_READ(7);
+	case 8:		return DBGWVR_READ(8);
+	case 9:		return DBGWVR_READ(9);
+	case 10:	return DBGWVR_READ(10);
+	case 11:	return DBGWVR_READ(11);
+	case 12:	return DBGWVR_READ(12);
+	case 13:	return DBGWVR_READ(13);
+	case 14:	return DBGWVR_READ(14);
+	case 15:	return DBGWVR_READ(15);
+	}
 
 	return 0;
 }
@@ -637,7 +629,11 @@ aarch64_watchpoint_set(int n, vaddr_t addr, int size, int accesstype)
 	uint64_t wvr, wcr;
 	uint32_t matchbytebit;
 
-	/* BAS must be  all of whose set bits are contiguous */
+	KASSERT(size <= 8);
+	if (size > 8)
+		size = 8;
+
+	/* BAS must be all of whose set bits are contiguous */
 	matchbytebit = 0xff >> (8 - size);
 	matchbytebit <<= (addr & 7);
 
