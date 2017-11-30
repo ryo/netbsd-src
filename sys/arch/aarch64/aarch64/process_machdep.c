@@ -75,10 +75,10 @@ int
 process_read_fpregs(struct lwp *l, struct fpreg *fpregs, size_t *lenp)
 {
 	struct pcb * const pcb = lwp_getpcb(l);
-	KASSERT(*lenp == sizeof(*fpregs));
+	KASSERT(*lenp <= sizeof(*fpregs));
 	fpu_save(l);
 
-	*fpregs = pcb->pcb_fpregs;
+	memcpy(fpregs, &pcb->pcb_fpregs, *lenp);
 
 	return 0;
 }
@@ -87,9 +87,10 @@ int
 process_write_fpregs(struct lwp *l, const struct fpreg *fpregs, size_t len)
 {
 	struct pcb * const pcb = lwp_getpcb(l);
-	KASSERT(len == sizeof(*fpregs));
+	KASSERT(len <= sizeof(*fpregs));
 	fpu_discard(l, true);		// set used flag
-	pcb->pcb_fpregs = *fpregs;
+
+	memcpy(&pcb->pcb_fpregs, fpregs, len);
 
 	return 0;
 }
