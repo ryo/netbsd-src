@@ -125,12 +125,9 @@ END(cpu_switchto)
  */
 ENTRY_NP(cpu_switchto_softint)
 	stp	x19, x20, [sp, #-16]!	/* save */
-
 	sub	sp, sp, #TF_SIZE	/* make switchframe */
-
 	adr	x2, softint_cleanup	/* return address for cpu_switchto() */
 	mov	x20, lr			/* x20 := original lr */
-
 	stp	x19, x20, [sp, #TF_X19]
 	stp	x21, x22, [sp, #TF_X21]
 	stp	x23, x24, [sp, #TF_X23]
@@ -138,46 +135,45 @@ ENTRY_NP(cpu_switchto_softint)
 	stp	x27, x28, [sp, #TF_X27]
 	stp	x29, x2, [sp, #TF_X29]	/* tf->lr = softint_cleanup; */
 
-	mrs	x3, tpidr_el1
-	ldr	x2, [x3, #CI_CURLWP]	/* x2 := curcpu()->ci_curlwp */
+	mrs	x3, tpidr_el1		/* x3 := curcpu() */
+	DISABLE_INTERRUPT
+	ldr	x19, [x3, #CI_CURLWP]	/* x19 := curcpu()->ci_curlwp */
 	mov	x4, sp
 	mrs	x5, cpacr_el1
-	DISABLE_INTERRUPT
-
 #if L_MD_KTF + 8 == L_MD_CPACR
-	stp	x4, x5, [x2, #L_MD_KTF]
+	stp	x4, x5, [x19, #L_MD_KTF]
 #else
-	str	x4, [x2, #L_MD_KTF]
-	str	x5, [x2, #L_MD_CPACR]
+	str	x4, [x19, #L_MD_KTF]
+	str	x5, [x19, #L_MD_CPACR]
 #endif
 	str	x0, [x3, #CI_CURLWP]	/* curcpu()->ci_curlwp = softlwp; */
 
-#if L_MD_KTF + 8 == L_MD_CPACR
-	ldp	x4, x5, [x0, #L_MD_KTF]	/* switch to softlwp stack */
-#else
-	ldr	x4, [x0, #L_MD_KTF]	/* switch to softlwp stack */
-	ldr	x5, [x0, #L_MD_CPACR]
-#endif
-	mov	sp, x4			/* new sp := softlwp->l_md_ktf */
-	msr	cpacr_el1, x5		/* restore cpacr_el1 */
-
+	/* onto new stack */
+	ldr	x4, [x0, #L_MD_UTF]
+	sub	x4, x4, #TF_SIZE
+	mov	sp, x4			/* new sp := softlwp->l_md_utf - 1 */
+	mov	x5, #CPACR_FPEN_NONE
+	msr	cpacr_el1, x5		/* cpacr_el1 = CPACR_FPEN_NONE */
 	ENABLE_INTERRUPT
-	mov	x19, x2			/* x19 := pinned_lwp */
 
 	/* softint_dispatch(pinned_lwp, ipl) */
-	mov	x0, x19
+	mov	x0, x19			/* x0 := pinned_lwp */
 	bl	_C_LABEL(softint_dispatch)
 
 	mrs	x3, tpidr_el1
 	DISABLE_INTERRUPT
 	str	x19, [x3, #CI_CURLWP]	/* curcpu()->ci_curlwp := x19 */
-	ldr	x4, [x19, #L_MD_KTF]	/* x4 := curlwp->l_md_ktf */
+#if L_MD_KTF + 8 == L_MD_CPACR
+	ldp	x4, x5, [x19, #L_MD_KTF]
+#else
+	ldr	x4, [x19, #L_MD_KTF]	/* x4 := pinned_lwp->l_md_ktf */
+	ldr	x5, [x19, #L_MD_CPACR]	/* x5 := pinned_lwp->l_md_cpacr */
+#endif
 	mov	sp, x4			/* restore pinned_lwp sp */
+	msr	cpacr_el1, x5		/* restore pinned_lwp cpacr */
 	ENABLE_INTERRUPT
 	mov	lr, x20			/* restore pinned_lwp lr */
-
 	add	sp, sp, #TF_SIZE	/* unwind switchframe */
-
 	ldp	x19, x20, [sp], #16	/* restore */
 	ret
 END(cpu_switchto_softint)
