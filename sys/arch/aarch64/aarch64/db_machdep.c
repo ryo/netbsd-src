@@ -300,12 +300,12 @@ db_md_lwp_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif
 
 	db_printf("\tlwp_getpcb(l)     =%p\n", lwp_getpcb(l));
 
+	db_printf("\tl->l_md.md_onfault=%p\n", l->l_md.md_onfault);
 	db_printf("\tl->l_md.md_utf    =%p\n", l->l_md.md_utf);
 	dump_trapframe(l->l_md.md_utf, db_printf);
 	db_printf("\tl->l_md.md_ktf    =%p\n", l->l_md.md_ktf);
 	if (l->l_md.md_ktf != l->l_md.md_utf)
 		dump_trapframe(l->l_md.md_ktf, db_printf);
-	db_printf("\tl->l_md.md_onfault=%p\n", l->l_md.md_onfault);
 	db_printf("\tl->l_md.md_cpacr  =%016llx\n", l->l_md.md_cpacr);
 	db_printf("\tl->l_md.md_flags  =%08x\n", l->l_md.md_flags);
 

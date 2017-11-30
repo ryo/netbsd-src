@@ -36,6 +36,9 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <aarch64/db_machdep.h>
 #include <aarch64/machdep.h>
 #include <aarch64/armreg.h>
+#include <aarch64/vmparam.h>
+
+#include <uvm/uvm_extern.h>
 
 #include <ddb/db_access.h>
 #include <ddb/db_command.h>
@@ -55,24 +58,6 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #define IN_KERNEL_VM_ADDRESS(addr)	\
 	((VM_MIN_KERNEL_ADDRESS <= (addr)) && ((addr) < VM_MAX_KERNEL_ADDRESS))
 
-static void
-pr_traceaddr(const char *prefix, uint64_t frame, uint64_t pc,
-    void (*pr)(const char *, ...))
-{
-	db_expr_t offset;
-	db_sym_t sym;
-	const char *name;
-
-	sym = db_search_symbol(pc, DB_STGY_ANY, &offset);
-	if (sym != DB_SYM_NULL) {
-		db_symbol_values(sym, &name, NULL);
-		(*pr)("%s %016llx %s() at %016llx ", prefix, frame, name, pc);
-		db_printsym(pc, DB_STGY_PROC, pr);
-		(*pr)("\n");
-	} else {
-		(*pr)("%s %016llx ?() at %016llx\n", prefix, frame, pc);
-	}
-}
 
 static bool __unused
 is_lwp(void *p)
@@ -86,12 +71,57 @@ is_lwp(void *p)
 	return false;
 }
 
+static const char *
+getlwpnamebysp(uint64_t sp)
+{
+	lwp_t *lwp;
+
+	for (lwp = db_lwp_first(); lwp != NULL; lwp = db_lwp_next(lwp)) {
+		uint64_t uarea = uvm_lwp_getuarea(lwp);
+		if ((uarea <= sp) && (sp < (uarea + USPACE))) {
+			return lwp->l_name;
+		}
+	}
+	return "unknown";
+}
+
+#define TRACEFLAG_LOOKUPLWP	0x00000001
+
+static void
+pr_traceaddr(const char *prefix, uint64_t frame, uint64_t pc, int flags,
+    void (*pr)(const char *, ...))
+{
+	db_expr_t offset;
+	db_sym_t sym;
+	const char *name;
+
+	sym = db_search_symbol(pc, DB_STGY_ANY, &offset);
+	if (sym != DB_SYM_NULL) {
+		db_symbol_values(sym, &name, NULL);
+
+		if (flags & TRACEFLAG_LOOKUPLWP) {
+			(*pr)("%s %016llx %s %s() at %016llx ", prefix, frame, getlwpnamebysp(frame), name, pc);
+		} else {
+			(*pr)("%s %016llx %s() at %016llx ", prefix, frame, name, pc);
+		}
+		db_printsym(pc, DB_STGY_PROC, pr);
+		(*pr)("\n");
+	} else {
+		if (flags & TRACEFLAG_LOOKUPLWP) {
+			(*pr)("%s %016llx %s ?() at %016llx\n", prefix, frame, getlwpnamebysp(frame), pc);
+		} else {
+			(*pr)("%s %016llx ?() at %016llx\n", prefix, frame, pc);
+		}
+	}
+}
+
 void
 db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
     const char *modif, void (*pr)(const char *, ...))
 {
 	uint64_t lr, fp, lastlr, lastfp;
 	struct trapframe *tf = NULL;
+	int flags = 0;
 	bool trace_user = false;
 	bool trace_thread = false;
 	bool trace_lwp = false;
@@ -111,10 +141,15 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		case 'u':
 			trace_user = true;
 			break;
+		case 'x':
+			flags |= TRACEFLAG_LOOKUPLWP;
+			break;
 		default:
-			pr("usage: bt[/ul] [frame-address][,count]\n");
-			pr("       bt/t[ul] [pid][,count]\n");
-			pr("       bt/a[ul] [lwpaddr][,count]\n");
+			pr("usage: bt[/ulx] [frame-address][,count]\n");
+			pr("       bt/t[ulx] [pid][,count]\n");
+			pr("       bt/a[ulx] [lwpaddr][,count]\n");
+			pr("\n");
+			pr("       /x      reverse lookup lwp name from sp\n");
 			return;
 		}
 	}
@@ -185,7 +220,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		db_read_bytes(&tf->tf_pc, sizeof(lr), (char *)&lr);
 		db_read_bytes(&tf->tf_reg[29], sizeof(fp), (char *)&fp);
 
-		pr_traceaddr("fp", fp, lr - 4, pr);
+		pr_traceaddr("fp", fp, lr - 4, flags, pr);
 	}
 
 	for (; (count > 0) && (fp != 0); count--) {
@@ -221,7 +256,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 				break;
 
 
-			pr_traceaddr("tf", tf, lastlr - 4, pr);
+			pr_traceaddr("tf", tf, lastlr - 4, flags, pr);
 
 			if (lr == 0)
 				break;
@@ -234,10 +269,10 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 			if (!trace_user && IN_USER_VM_ADDRESS(lr))
 				break;
 
-			pr_traceaddr("fp", fp, lr, pr);
+			pr_traceaddr("fp", fp, lr, flags, pr);
 
 		} else {
-			pr_traceaddr("fp", fp, lr - 4, pr);
+			pr_traceaddr("fp", fp, lr - 4, flags, pr);
 		}
 	}
 }
