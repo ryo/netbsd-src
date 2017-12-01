@@ -1,4 +1,4 @@
-/*.$NetBSD: setjmp.S,v 1.1 2014/08/10 05:47:36 matt Exp $.*/
+/*.$NetBSD: setjmp.S,v 1.2 2017/11/28 13:09:05 ryo Exp $.*/
 
 /*-
  * Copyright (c) 2014 The NetBSD Foundation, Inc.
