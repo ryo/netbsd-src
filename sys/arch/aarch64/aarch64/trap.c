@@ -190,9 +190,9 @@ trap_el1h_sync(struct trapframe *tf)
 
 	case ESR_EC_FP_ACCESS:
 	case ESR_EC_FP_TRAP_A64:
-	case ESR_EC_ILL_STATE:
 	case ESR_EC_PC_ALIGNMENT:
 	case ESR_EC_SP_ALIGNMENT:
+	case ESR_EC_ILL_STATE:
 	default:
 		panic("Trap: fatal %s: pc=%016llx sp=%016llx esr=%08x", trapname,
 		    tf->tf_pc, tf->tf_sp, esr);
@@ -216,23 +216,22 @@ trap_el0_sync(struct trapframe *tf)
 	else
 		trapname = trap_names[eclass];
 
-
 	switch (eclass) {
+	case ESR_EC_INSN_ABT_EL0:
+	case ESR_EC_DATA_ABT_EL0:
+		data_abort_handler(tf, eclass, trapname);
+		userret(l);
+		break;
+
+	case ESR_EC_SVC_A64:
+		(*l->l_proc->p_md.md_syscall)(tf);
+		break;
 	case ESR_EC_FP_ACCESS:
 		fpu_load(l);
 		userret(l);
 		break;
 	case ESR_EC_FP_TRAP_A64:
 		do_trapsignal(l, SIGFPE, FPE_FLTUND, NULL, esr);	/* XXXAARCH64 */
-		userret(l);
-		break;
-	case ESR_EC_SVC_A64:
-		(*l->l_proc->p_md.md_syscall)(tf);
-		break;
-
-	case ESR_EC_INSN_ABT_EL0:
-	case ESR_EC_DATA_ABT_EL0:
-		data_abort_handler(tf, eclass, trapname);
 		userret(l);
 		break;
 
