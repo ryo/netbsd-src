@@ -200,6 +200,7 @@ vstart:
 	cmp	x0, x1
 	bcc	1b
 
+	msr	tpidr_el0, xzr		/* tpidr_el0 (for TLS) = NULL */
 	bl	set_cpuinfo
 
 	mov	fp, #0			/* trace back starts here */
