@@ -233,7 +233,7 @@ cpu_setmcontext(struct lwp *l, const mcontext_t *mcp, unsigned int flags)
 		memcpy(&tf->tf_regs, mcp->__gregs, sizeof(tf->tf_regs));
 		l->l_private = mcp->__gregs[_REG_TPIDR];
 		if (l == curlwp) {
-			reg_tpidr_el0_write(tf->tf_tpidr);
+			reg_tpidr_el0_write(l->l_private);
 		}
 	}
 

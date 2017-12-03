@@ -101,6 +101,7 @@ typedef unsigned long long int __register_t;
 #define __HAVE_NEW_STYLE_BUS_H
 #define __HAVE_MINIMAL_EMUL
 #define __HAVE_CPU_DATA_FIRST
+#define __HAVE_CPU_LWP_SETPRIVATE
 #define __HAVE___LWP_GETPRIVATE_FAST
 #define __HAVE_COMMON___TLS_GET_ADDR
 #define __HAVE_TLS_VARIANT_I

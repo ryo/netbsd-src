@@ -35,11 +35,27 @@ __KERNEL_RCSID(1, "$NetBSD: sys_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp $")
 
 #include <sys/param.h>
 #include <sys/types.h>
+#include <sys/cpu.h>
 #include <sys/syscallargs.h>
+
+#include <aarch64/armreg.h>
+#include <aarch64/cpu.h>
 
 int
 sys_sysarch(struct lwp *l, const struct sys_sysarch_args *uap,
     register_t *retval)
 {
 	return EINVAL;
+}
+
+int
+cpu_lwp_setprivate(lwp_t *l, void *addr)
+{
+	l->l_private = (register_t)addr;
+	if (l == curlwp) {
+		kpreempt_disable();
+		reg_tpidr_el0_write(addr);
+		kpreempt_enable();
+	}
+	return 0;
 }
