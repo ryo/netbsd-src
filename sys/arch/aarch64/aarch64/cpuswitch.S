@@ -134,6 +134,8 @@ ENTRY_NP(cpu_switchto_softint)
 	stp	x25, x26, [sp, #TF_X25]
 	stp	x27, x28, [sp, #TF_X27]
 	stp	x29, x2, [sp, #TF_X29]	/* tf->lr = softint_cleanup; */
+	mrs	x2, tpidr_el0
+	str	x2, [sp, #TF_TPIDR]
 
 	mrs	x3, tpidr_el1		/* x3 := curcpu() */
 	DISABLE_INTERRUPT
