@@ -127,20 +127,34 @@ userret(struct lwp *l)
 void
 trap_doast(struct trapframe *tf)
 {
+	struct lwp * const l = curlwp;
+
 	/*
 	 * allow to have a chance of context switch just prior to user
 	 * exception return.
 	 */
+#ifdef __HAVE_PREEMPTION
+	kpreempt_disable();
+#endif
+	struct cpu_info * const ci = curcpu();
 
-	atomic_swap_uint(&curcpu()->ci_astpending, 0);
+	ci->ci_data.cpu_ntrap++;
 
-	if (curlwp->l_pflag & LP_OWEUPC) {
-		curlwp->l_pflag &= ~LP_OWEUPC;
-		ADDUPROF(curlwp);
+	KDASSERT(ci->ci_cpl == IPL_NONE);
+	const int want_resched = ci->ci_want_resched;
+#ifdef __HAVE_PREEMPTION
+	kpreempt_enable();
+#endif
+
+	if (l->l_pflag & LP_OWEUPC) {
+		l->l_pflag &= ~LP_OWEUPC;
+		ADDUPROF(l);
 	}
 
-	if (curcpu()->ci_want_resched)
+	/* Allow a forced task switch. */
+	if (want_resched)
 		preempt();
+	userret(l);
 }
 
 void

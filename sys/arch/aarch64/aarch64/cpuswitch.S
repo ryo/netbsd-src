@@ -290,12 +290,25 @@ ENTRY_NP(el0_trap)
 	nop				/* dummy for DDB backtrace (for lr-4) */
 #endif
 ENTRY_NP(el0_trap_exit)
+1:
+	/* while (curcpu()->ci_astpending & __BIT(0)) { */
 	mrs	x8, tpidr_el1
 	ldr	w9, [x8, #CI_ASTPENDING]
-	cbz	w9, .Lfullexit
+	tbz	w9, #0, 9f
+
+	/*  atomic_and_uint(&curcpu()->ci_astpending, ~__BIT(0)); */
+	mov	w1, #~__BIT(0)
+	add	x0, x8, #CI_ASTPENDING
+	bl	_C_LABEL(atomic_and_uint);
+
+	/*  trap_doast(tf); */
+	ENABLE_INTERRUPT
 	mov	x0, sp
 	bl	_C_LABEL(trap_doast)
-.Lfullexit:
+	DISABLE_INTERRUPT
+	b	1b
+	/* } */
+9:
 	DISABLE_INTERRUPT		/* make sure I|F marked */
 
 	mrs	x8, tpidr_el1
