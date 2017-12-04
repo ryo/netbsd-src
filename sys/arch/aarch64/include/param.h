@@ -52,7 +52,7 @@
 
 #if defined(_KERNEL)
 # ifndef MACHINE_ARCH		/* XXX For now */
-#  ifndef __AARCH64EB__
+#  ifdef __AARCH64EB__
 #   define	_MACHINE_ARCH	aarch64eb
 #   define	MACHINE_ARCH	"aarch64eb"
 #  else
@@ -67,7 +67,7 @@
 # undef MACHINE_ARCH
 # define	_MACHINE	aarch64
 # define	MACHINE		"aarch64"
-# ifndef __AARCH64EB__
+# ifdef __AARCH64EB__
 #  define	_MACHINE_ARCH	aarch64eb
 #  define	MACHINE_ARCH	"aarch64eb"
 # else
