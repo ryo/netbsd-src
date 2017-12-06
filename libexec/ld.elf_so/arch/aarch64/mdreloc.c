@@ -73,7 +73,6 @@ Elf_Addr _rtld_bind(const Obj_Entry *, Elf_Word);
 void
 _rtld_setup_pltgot(const Obj_Entry *obj)
 {
-
 	obj->pltgot[1] = (Elf_Addr) obj;
 	obj->pltgot[2] = (Elf_Addr) &_rtld_bind_start;
 }
@@ -81,23 +80,23 @@ _rtld_setup_pltgot(const Obj_Entry *obj)
 void
 _rtld_relocate_nonplt_self(Elf_Dyn *dynp, Elf_Addr relocbase)
 {
-	const Elf_Rel *rel = 0, *rellim;
-	Elf_Addr relsz = 0;
+	const Elf_Rela *rela = 0, *relalim;
+	Elf_Addr relasz = 0;
 	Elf_Addr *where;
 
 	for (; dynp->d_tag != DT_NULL; dynp++) {
 		switch (dynp->d_tag) {
-		case DT_REL:
-			rel = (const Elf_Rel *)(relocbase + dynp->d_un.d_ptr);
+		case DT_RELA:
+			rela = (const Elf_Rela *)(relocbase + dynp->d_un.d_ptr);
 			break;
-		case DT_RELSZ:
-			relsz = dynp->d_un.d_val;
+		case DT_RELASZ:
+			relasz = dynp->d_un.d_val;
 			break;
 		}
 	}
-	rellim = (const Elf_Rel *)((const uint8_t *)rel + relsz);
-	for (; rel < rellim; rel++) {
-		where = (Elf_Addr *)(relocbase + rel->r_offset);
+	relalim = (const Elf_Rela *)((const uint8_t *)rela + relasz);
+	for (; rela < relalim; rela++) {
+		where = (Elf_Addr *)(relocbase + rela->r_offset);
 		*where += (Elf_Addr)relocbase;
 	}
 }
@@ -221,12 +220,11 @@ _rtld_relocate_nonplt_objects(Obj_Entry *obj)
 int
 _rtld_relocate_plt_lazy(Obj_Entry *obj)
 {
-
 	if (!obj->relocbase)
 		return 0;
 
-	for (const Elf_Rel *rel = obj->pltrel; rel < obj->pltrellim; rel++) {
-		Elf_Addr *where = (Elf_Addr *)(obj->relocbase + rel->r_offset);
+	for (const Elf_Rela *rela = obj->pltrela; rela < obj->pltrelalim; rela++) {
+		Elf_Addr *where = (Elf_Addr *)(obj->relocbase + rela->r_offset);
 
 		assert(ELF_R_TYPE(rel->r_info) == R_TYPE(JUMP_SLOT));
 
@@ -239,14 +237,14 @@ _rtld_relocate_plt_lazy(Obj_Entry *obj)
 }
 
 static int
-_rtld_relocate_plt_object(const Obj_Entry *obj, const Elf_Rel *rel,
+_rtld_relocate_plt_object(const Obj_Entry *obj, const Elf_Rela *rela,
 	Elf_Addr *tp)
 {
-	Elf_Addr *where = (Elf_Addr *)(obj->relocbase + rel->r_offset);
+	Elf_Addr *where = (Elf_Addr *)(obj->relocbase + rela->r_offset);
 	Elf_Addr new_value;
 	const Elf_Sym  *def;
 	const Obj_Entry *defobj;
-	unsigned long info = rel->r_info;
+	unsigned long info = rela->r_info;
 
 	assert(ELF_R_TYPE(info) == R_TYPE(JUMP_SLOT));
 
@@ -276,11 +274,11 @@ _rtld_relocate_plt_object(const Obj_Entry *obj, const Elf_Rel *rel,
 Elf_Addr
 _rtld_bind(const Obj_Entry *obj, Elf_Word reloff)
 {
-	const Elf_Rel *rel = obj->pltrel + reloff;
+	const Elf_Rela *rela = obj->pltrela + reloff;
 	Elf_Addr new_value = 0;	/* XXX gcc */
 
 	_rtld_shared_enter();
-	int err = _rtld_relocate_plt_object(obj, rel, &new_value);
+	int err = _rtld_relocate_plt_object(obj, rela, &new_value);
 	if (err)
 		_rtld_die();
 	_rtld_shared_exit();
@@ -290,11 +288,11 @@ _rtld_bind(const Obj_Entry *obj, Elf_Word reloff)
 int
 _rtld_relocate_plt_objects(const Obj_Entry *obj)
 {
-	const Elf_Rel *rel;
+	const Elf_Rela *rela;
 	int err = 0;
 	
-	for (rel = obj->pltrel; rel < obj->pltrellim; rel++) {
-		err = _rtld_relocate_plt_object(obj, rel, NULL);
+	for (rela = obj->pltrela; rela < obj->pltrelalim; rela++) {
+		err = _rtld_relocate_plt_object(obj, rela, NULL);
 		if (err)
 			break;
 	}
