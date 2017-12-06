@@ -71,34 +71,54 @@ END(_rtld_start)
 
 /*
  * Upon entry from plt0 entry:
- * X17 = &PLTGOT[n]
- * X16 = &PLTGOT[2]
+ *
+ *  SP+0 = &PLTGOT[n + 3]
+ *  SP+8 = return addr
+ *  X16  = &PLTGOT[2]
+ *  X17  = &_rtld_bind_start
+ *
  */
 ENTRY_NP(_rtld_bind_start)
-	sub	sp, sp, #96		/* reserve stack space */
-	stp	x29, x30, [sp, #80]	/* save FP & LR */
-	add	x29, sp, #80		/* get new FP */
-	str	x24, [sp, #64]		/* save caller-saved register */
-	stp	x6, x7, [sp, #48]	/* save arguments */
-	stp	x4, x5, [sp, #32]	/* save arguments */
-	stp	x2, x3, [sp, #16]	/* save arguments */
-	stp	x0, x1, [sp, #0]	/* save arguments */
+	stp	fp, lr, [sp, #-16]!	/* save x29,x30 */
+	mov	fp, sp			/* new fp */
 
-	sub	x16, x16, #16		/* adjust to &PLTGOT[0] */
-	mov	x24, x17		/* preserve across _rtld_bind */
-	sub	x1, x17, x16		/* x1 = &PLTGOT[N] - &PLTGOT[2] */
-	lsr	x1, x1, #3		/* x1 = N - 2 */
-	ldr	x0, [x16, #8]		/* get obj ptr from &PLTGOT[1] */
+	/* save x0-x8 for arguments */
+	stp	x0, x1, [sp, #-16]!
+	stp	x2, x3, [sp, #-16]!
+	stp	x4, x5, [sp, #-16]!
+	stp	x6, x7, [sp, #-16]!
+	stp	x8, xzr, [sp, #-16]!
+	/* save q0-q7 for arguments */
+	stp	q0, q1, [sp, #-32]!
+	stp	q2, q3, [sp, #-32]!
+	stp	q4, q5, [sp, #-32]!
+	stp	q6, q7, [sp, #-32]!
+
+	ldr	x0, [x16, #-8]	/* x0 = PLTGOT[1] */
+	ldr	x9, [fp, #16]	/* x9 = &PLTGOT[n+3] */
+	sub	x1, x9, x16	/* x1 = &PLTGOT[n+3] - &PLTGOT[1] = offset+8 */
+	sub	x1, x1, #8	/* x1 = offset */
+
+	/* x1 *= 3 (Elf_Rela has 3 entries) */
+	add	x9, x1, x1
+	add	x1, x1, x9
+
 	bl	_rtld_bind
-	str	x0, [x24]		/* save address in PLTGOT[N] */
-	mov	x17, x0			/* save address */
+	mov	x17, x0		/* save result */
 
-	ldp	x0, x1, [sp, #0]	/* restore arguments */
-	ldp	x2, x3, [sp, #16]	/* restore arguments */
-	ldp	x4, x5, [sp, #32]	/* restore arguments */
-	ldp	x6, x7, [sp, #48]	/* restore arguments */
-	ldr	x24, [sp, #64]		/* save caller-saved register */
-	ldp	x29, x30, [sp, #80]	/* restore FP & LR */
-	add	sp, sp, #96		/* reclaim stack */
+	/* restore q0-q7 for arguments */
+	ldp	q6, q7, [sp], #32
+	ldp	q4, q5, [sp], #32
+	ldp	q2, q3, [sp], #32
+	ldp	q0, q1, [sp], #32
+	/* restore x0-x8 for arguments */
+	ldp	x8, xzr, [sp], #16
+	ldp	x6, x7, [sp], #16
+	ldp	x4, x5, [sp], #16
+	ldp	x2, x3, [sp], #16
+	ldp	x0, x1, [sp], #16
+
+	ldp	fp, xzr, [sp], #16	/* restore x29, */
+	ldp	xzr, lr, [sp], #16	/* and x30. adjust sp pushed by plt */
 	br	x17			/* call bound function */
 END(_rtld_bind_start)

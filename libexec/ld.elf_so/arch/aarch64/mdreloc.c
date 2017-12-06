@@ -116,8 +116,8 @@ _rtld_relocate_nonplt_objects(Obj_Entry *obj)
 		where = (Elf_Addr *)(obj->relocbase + rela->r_offset);
 
 		switch (ELF_R_TYPE(rela->r_info)) {
-		case R_TYPE(ABS64):	/* word B + S + A */
-		case R_TYPE(GLOB_DAT):	/* word B + S */
+		case R_TYPE(ABS64):	/* word S + A */
+		case R_TYPE(GLOB_DAT):	/* word S + A */
 		case R_TLS_TYPE(TLS_DTPREL):
 		case R_TLS_TYPE(TLS_DTPMOD):
 		case R_TLS_TYPE(TLS_TPREL):
@@ -138,8 +138,8 @@ _rtld_relocate_nonplt_objects(Obj_Entry *obj)
 		case R_TYPE(NONE):
 			break;
 
-		case R_TYPE(ABS64):	/* word B + S + A */
-		case R_TYPE(GLOB_DAT):	/* word B + S */
+		case R_TYPE(ABS64):	/* word S + A */
+		case R_TYPE(GLOB_DAT):	/* word S + A */
 			tmp = (Elf_Addr)defobj->relocbase + def->st_value +
 			    rela->r_addend;
 			if (*where != tmp)
@@ -226,7 +226,8 @@ _rtld_relocate_plt_lazy(Obj_Entry *obj)
 	for (const Elf_Rela *rela = obj->pltrela; rela < obj->pltrelalim; rela++) {
 		Elf_Addr *where = (Elf_Addr *)(obj->relocbase + rela->r_offset);
 
-		assert(ELF_R_TYPE(rel->r_info) == R_TYPE(JUMP_SLOT));
+		assert((ELF_R_TYPE(rela->r_info) == R_TYPE(JUMP_SLOT)) ||
+		    (ELF_R_TYPE(rela->r_info) == R_TYPE(TLSDESC)));
 
 		/* Just relocate the GOT slots pointing into the PLT */
 		*where += (Elf_Addr)obj->relocbase;
@@ -274,7 +275,8 @@ _rtld_relocate_plt_object(const Obj_Entry *obj, const Elf_Rela *rela,
 Elf_Addr
 _rtld_bind(const Obj_Entry *obj, Elf_Word reloff)
 {
-	const Elf_Rela *rela = obj->pltrela + reloff;
+	const Elf_Rela *rela =
+	    (const Elf_Rela *)((const uint8_t *)obj->pltrela + reloff);
 	Elf_Addr new_value = 0;	/* XXX gcc */
 
 	_rtld_shared_enter();
