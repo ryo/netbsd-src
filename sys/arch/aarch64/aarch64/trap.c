@@ -389,7 +389,7 @@ cpu_jump_onfault(struct trapframe *tf, const struct faultbuf *fb, int val)
 	tf->tf_reg[28] = fb->fb_reg[FB_X28];
 	tf->tf_reg[29] = fb->fb_reg[FB_X29];
 	tf->tf_sp = fb->fb_reg[FB_SP];
-	tf->tf_lr = fb->fb_reg[FB_LR];
+	tf->tf_pc = fb->fb_reg[FB_LR];
 	tf->tf_reg[0] = val;
 }
 

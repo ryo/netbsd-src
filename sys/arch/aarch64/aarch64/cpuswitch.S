@@ -228,20 +228,20 @@ ENTRY_NP(lwp_trampoline)
 	br	x27			/* call function with arg */
 END(lwp_trampoline)
 
-	.macro unwind_x0_x18
+	.macro unwind_x0_x2
 	ldp	x0, x1, [sp, #TF_X0]
-	ldp	x2, x3, [sp, #TF_X2]
-	ldp	x4, x5, [sp, #TF_X4]
-	ldp	x6, x7, [sp, #TF_X6]
-	ldp	x8, x9, [sp, #TF_X8]
-	ldp	x10, x11, [sp, #TF_X10]
-	ldp	x12, x13, [sp, #TF_X12]
-	ldp	x14, x15, [sp, #TF_X14]
-	ldp	x16, x17, [sp, #TF_X16]
-	ldr	x18, [sp, #TF_X18]
+	ldr	x2, [sp, #TF_X2]
 	.endm
 
-	.macro unwind_x19_x30
+	.macro unwind_x3_x30
+	ldp	x3, x4, [sp, #TF_X3]
+	ldp	x5, x6, [sp, #TF_X5]
+	ldp	x7, x8, [sp, #TF_X7]
+	ldp	x9, x10, [sp, #TF_X9]
+	ldp	x11, x12, [sp, #TF_X11]
+	ldp	x13, x14, [sp, #TF_X13]
+	ldp	x15, x16, [sp, #TF_X15]
+	ldp	x17, x18, [sp, #TF_X17]
 	ldp	x19, x20, [sp, #TF_X19]
 	ldp	x21, x22, [sp, #TF_X21]
 	ldp	x23, x24, [sp, #TF_X23]
@@ -260,21 +260,28 @@ ENTRY_NP(el1_trap)
 ENTRY_NP(el1_trap_exit)
 	DISABLE_INTERRUPT		/* make sure I|F marked */
 
-	unwind_x0_x18
+	unwind_x3_x30
 
 #if TF_PC + 8 == TF_SPSR
-	ldp	x20, x21, [sp, #TF_PC]
+	ldp	x0, x1, [sp, #TF_PC]
 #else
-	ldr	x20, [sp, #TF_PC]
-	ldr	x21, [sp, #TF_SPSR]
+	ldr	x0, [sp, #TF_PC]
+	ldr	x1, [sp, #TF_SPSR]
 #endif
-	msr	elr_el1, x20		/* exception pc */
-	msr	spsr_el1, x21		/* exception pstate */
+	msr	elr_el1, x0		/* exception pc */
+	msr	spsr_el1, x1		/* exception pstate */
 
-	unwind_x19_x30
+	/*
+	 * cpu_jump_onfault() modify tf->tf_sp, therefore
+	 * we need to restore sp from trapframe,
+	 * and unwind x0-x2 without sp.
+	 */
+	mov	x0, sp
+	ldr	x1, [x0, #TF_SP]
+	mov	sp, x1
+	ldp	x1, x2, [x0, #TF_X1]
+	ldr	x0, [x0, #TF_X0]
 
-	/* pop off kernel trapframe on EL1 stack */
-	add	sp, sp, #TF_SIZE
 	eret
 END(el1_trap_exit)
 #ifdef DDB
@@ -317,20 +324,20 @@ ENTRY_NP(el0_trap_exit)
 	msr	cpacr_el1, x23		/* FP unit EL0 handover */
 	isb				/* necessary? */
 
-	unwind_x0_x18
+	unwind_x3_x30
 
 #if TF_PC + 8 == TF_SPSR
-	ldp	x20, x21, [sp, #TF_PC]
+	ldp	x0, x1, [sp, #TF_PC]
 #else
-	ldr	x20, [sp, #TF_PC]
-	ldr	x21, [sp, #TF_SPSR]
+	ldr	x0, [sp, #TF_PC]
+	ldr	x1, [sp, #TF_SPSR]
 #endif
-	ldr	x22, [sp, #TF_SP]
-	msr	elr_el1, x20		/* exception pc */
-	msr	spsr_el1, x21		/* exception pstate */
-	msr	sp_el0, x22		/* restore EL0 stack */
+	ldr	x2, [sp, #TF_SP]
+	msr	elr_el1, x0		/* exception pc */
+	msr	spsr_el1, x1		/* exception pstate */
+	msr	sp_el0, x2		/* restore EL0 stack */
 
-	unwind_x19_x30
+	unwind_x0_x2
 
 	/* leave sp at l_md.md_utf, return back to EL0 user process */
 	eret
