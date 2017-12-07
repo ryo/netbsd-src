@@ -55,12 +55,12 @@ ENTRY_NP(_rtld_start)
 
 	sub	x25, x0, x1		/* relocbase = &_DYNAMIC - GOT:_DYNAMIC */
 	mov	x1, x25			/* pass as 2nd argument */
-	bl	_rtld_relocate_nonplt_self
+	bl	_C_LABEL(_rtld_relocate_nonplt_self)
 
 	sub	sp, sp, #16		/* reserve space for returns */
 	mov	x0, sp			/* pointer to reserved space */
 	mov	x1, x25			/* pass relocbase */
-	bl	_rtld
+	bl	_C_LABEL(_rtld)
 	mov	x17, x0			/* save entry point */
 
 	ldp	x0, x1, [sp], #16	/* pop cleanup & obj_main */
@@ -103,7 +103,7 @@ ENTRY_NP(_rtld_bind_start)
 	add	x9, x1, x1
 	add	x1, x1, x9
 
-	bl	_rtld_bind
+	bl	_C_LABEL(_rtld_bind)
 	mov	x17, x0		/* save result */
 
 	/* restore q0-q7 for arguments */
