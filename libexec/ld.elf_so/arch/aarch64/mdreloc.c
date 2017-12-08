@@ -275,8 +275,7 @@ _rtld_relocate_plt_object(const Obj_Entry *obj, const Elf_Rela *rela,
 Elf_Addr
 _rtld_bind(const Obj_Entry *obj, Elf_Word reloff)
 {
-	const Elf_Rela *rela =
-	    (const Elf_Rela *)((const uint8_t *)obj->pltrela + reloff);
+	const Elf_Rela *rela = obj->pltrela + reloff;
 	Elf_Addr new_value = 0;	/* XXX gcc */
 
 	_rtld_shared_enter();

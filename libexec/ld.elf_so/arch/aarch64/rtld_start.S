@@ -43,7 +43,6 @@ RCSID("$NetBSD: rtld_start.S,v 1.1 2014/08/10 05:47:37 matt Exp $")
  * X30 (LR)	= 0
  * X29 (FP)	= 0
  */
-
 ENTRY_NP(_rtld_start)
 	mov	x24, x2			/* save ps_strings */
 
@@ -72,15 +71,12 @@ END(_rtld_start)
 /*
  * Upon entry from plt0 entry:
  *
- *  SP+0 = &PLTGOT[n + 3]
- *  SP+8 = return addr
- *  X16  = &PLTGOT[2]
- *  X17  = &_rtld_bind_start
- *
+ * SP+0		= &PLTGOT[n + 3]
+ * SP+8		= return addr
+ * X16		= &PLTGOT[2]
  */
 ENTRY_NP(_rtld_bind_start)
-	stp	fp, lr, [sp, #-16]!	/* save x29,x30 */
-	mov	fp, sp			/* new fp */
+	ldr	x9, [sp]		/* x9 = &PLTGOT[n+3] */
 
 	/* save x0-x8 for arguments */
 	stp	x0, x1, [sp, #-16]!
@@ -95,13 +91,9 @@ ENTRY_NP(_rtld_bind_start)
 	stp	q6, q7, [sp, #-32]!
 
 	ldr	x0, [x16, #-8]	/* x0 = PLTGOT[1] */
-	ldr	x9, [fp, #16]	/* x9 = &PLTGOT[n+3] */
 	sub	x1, x9, x16	/* x1 = &PLTGOT[n+3] - &PLTGOT[1] = offset+8 */
 	sub	x1, x1, #8	/* x1 = offset */
-
-	/* x1 *= 3 (Elf_Rela has 3 entries) */
-	add	x9, x1, x1
-	add	x1, x1, x9
+	lsr	x1, x1, #3	/* x1 /= sizeof(void *) */
 
 	bl	_C_LABEL(_rtld_bind)
 	mov	x17, x0		/* save result */
@@ -118,7 +110,6 @@ ENTRY_NP(_rtld_bind_start)
 	ldp	x2, x3, [sp], #16
 	ldp	x0, x1, [sp], #16
 
-	ldp	fp, xzr, [sp], #16	/* restore x29, */
-	ldp	xzr, lr, [sp], #16	/* and x30. adjust sp pushed by plt */
+	ldp	xzr, lr, [sp], #16	/* restore original lr pushed by plt0 */
 	br	x17			/* call bound function */
 END(_rtld_bind_start)
