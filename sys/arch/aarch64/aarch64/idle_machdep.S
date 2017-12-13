@@ -49,6 +49,18 @@ RCSID("$NetBSD: idle_machdep.S,v 1.1 2014/08/10 05:47:37 matt Exp $");
 
 
 ENTRY(cpu_idle)
+#ifdef LAZY_CPUIDLE
+
+	/*
+	 * hardware interrupt -> trap handler -> interrupt handler
+	 */
+	wfi
+
+#else /* LAZY_CPUIDLE */
+
+	/*
+	 * hardware interrupt -> interrupt handler
+	 */
 	sub	sp, sp, #TF_SIZE		/* allocate trapframe */
 	str	x28, [sp, #TF_X28]		/* save x28 */
 	stp	x29, x30, [sp, #TF_X29]		/* save x29,x30 */
@@ -56,7 +68,7 @@ ENTRY(cpu_idle)
 	add	x29, sp, #TF_X29		/* link frame for backtrace */
 #endif
 
-	/* fill the very minimam of trapframe */
+	/* fill the minimum required trapframe */
 	mov	x2, #SPSR_M_EL1H		/* what our spsr should be */
 	str	x2, [sp, #TF_SPSR]
 	adr	x0, 1f
@@ -90,5 +102,8 @@ ENTRY(cpu_idle)
 	lsr	w3, w3, w2			/* shift mask by cpl */
 	cbnz	w3, _C_LABEL(dosoftints)	/* tailcall dosoftints() */
 #endif /* __HAVE_FAST_SOFTINTS && !__HAVE_PIC_FAST_SOFTINTS */
+
+#endif /* LAZY_CPUIDLE */
+
 	ret
 END(cpu_idle)
