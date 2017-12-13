@@ -1590,6 +1590,7 @@ _pmap_remove(struct pmap *pm, vaddr_t va, bool kremove)
 			} else {
 				_pmap_remove_pv(pg, pm, va, pte);
 			}
+			pm->pm_stats.resident_count--;
 		}
 		atomic_swap_64(ptep, 0);
 
@@ -1599,7 +1600,6 @@ _pmap_remove(struct pmap *pm, vaddr_t va, bool kremove)
 		aarch64_tlbi_by_va(va);
 #endif
 	}
-	pm->pm_stats.resident_count--;
 }
 
 void
