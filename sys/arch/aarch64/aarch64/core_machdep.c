@@ -66,11 +66,8 @@ cpu_coredump(struct lwp *l, struct coredump_iostate *iocookie,
 	}
 
 	md_core.reg = l->l_md.md_utf->tf_regs;
-	if (l == curlwp) {
-		md_core.reg.r_tpidr = reg_tpidr_el0_read();
-	} else {
-		md_core.reg.r_tpidr = (uint64_t)(uintptr_t)l->l_private;
-	}
+	md_core.reg.r_tpidr = (uint64_t)(uintptr_t)l->l_private;
+
 	fpu_save(l);
 	if (fpu_used_p(l)) {
 		md_core.fpreg = pcb->pcb_fpregs;

@@ -59,12 +59,6 @@ ENTRY_NP(cpu_switchto)
 	stp	x29, x30, [sp, #TF_X29]
 
 	/*
-	 * Save the EL0 thread ID in the switchframe.
-	 */
-	mrs	x4, tpidr_el0
-	str	x4, [sp, #TF_TPIDR]
-
-	/*
 	 * Save the current stack pointer and the CPACR and save them in
 	 * old lwp md area.
 	 */
@@ -88,9 +82,6 @@ ENTRY_NP(cpu_switchto)
 #endif
 	mov	sp, x4			/* restore stack pointer */
 	msr	cpacr_el1, x5		/* restore cpacr_el1 */
-
-	ldr	x4, [sp, #TF_TPIDR]
-	msr	tpidr_el0, x4		/* restore EL0 thread ID */
 
 	mrs	x3, tpidr_el1
 	str	x1, [x3, #CI_CURLWP]	/* switch curlwp to new lwp */
@@ -134,8 +125,6 @@ ENTRY_NP(cpu_switchto_softint)
 	stp	x25, x26, [sp, #TF_X25]
 	stp	x27, x28, [sp, #TF_X27]
 	stp	x29, x2, [sp, #TF_X29]	/* tf->lr = softint_cleanup; */
-	mrs	x2, tpidr_el0
-	str	x2, [sp, #TF_TPIDR]
 
 	mrs	x3, tpidr_el1		/* x3 := curcpu() */
 	DISABLE_INTERRUPT
@@ -323,6 +312,9 @@ ENTRY_NP(el0_trap_exit)
 	ldr	x23, [x9, #L_MD_CPACR]
 	msr	cpacr_el1, x23		/* FP unit EL0 handover */
 	isb				/* necessary? */
+
+	ldr	x0, [x9, #L_PRIVATE]	/* tpidr_el0 = curlwp->l_private */
+	msr	tpidr_el0, x0
 
 	unwind_x3_x30
 

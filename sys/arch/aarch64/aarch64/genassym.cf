@@ -200,7 +200,6 @@ define	TF_X30			offsetof(struct trapframe, tf_reg[30])
 define	TF_SP			offsetof(struct trapframe, tf_sp)
 define	TF_PC			offsetof(struct trapframe, tf_pc)
 define	TF_SPSR			offsetof(struct trapframe, tf_spsr)
-define	TF_TPIDR		offsetof(struct trapframe, tf_tpidr)
 define	TF_ESR			offsetof(struct trapframe, tf_esr)
 define	TF_FAR			offsetof(struct trapframe, tf_far)
 define	TF_SIZE			TF_SIZE

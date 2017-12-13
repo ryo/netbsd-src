@@ -176,7 +176,6 @@ const struct db_variable db_regs[] = {
 	{ "sp",    (long *) &ddb_regs.tf_sp,      FCN_NULL, NULL },
 	{ "pc",    (long *) &ddb_regs.tf_pc,      FCN_NULL, NULL },
 	{ "spsr",  (long *) &ddb_regs.tf_spsr,    FCN_NULL, NULL },
-	{ "tpidr", (long *) &ddb_regs.tf_tpidr,   FCN_NULL, NULL },
 };
 
 const struct db_variable * const db_eregs = db_regs + __arraycount(db_regs);
@@ -311,6 +310,7 @@ db_md_lwp_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif
 
 	db_printf("\tl->l_cpu          =%p\n", l->l_cpu);
 	db_printf("\tl->l_proc         =%p\n", l->l_proc);
+	db_printf("\tl->l_private      =%p\n", l->l_private);
 	db_printf("\tl->l_name         =%s\n", SAFESTRPTR(l->l_name));
 	db_printf("\tl->l_wmesg        =%s\n", SAFESTRPTR(l->l_wmesg));
 }

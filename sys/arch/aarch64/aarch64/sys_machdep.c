@@ -52,10 +52,5 @@ int
 cpu_lwp_setprivate(lwp_t *l, void *addr)
 {
 	l->l_private = (register_t)addr;
-	if (l == curlwp) {
-		kpreempt_disable();
-		reg_tpidr_el0_write(addr);
-		kpreempt_enable();
-	}
 	return 0;
 }

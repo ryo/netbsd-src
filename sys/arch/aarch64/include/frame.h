@@ -45,7 +45,6 @@ struct trapframe {
 #define tf_pc		tf_regs.r_pc
 #define tf_sp		tf_regs.r_sp
 #define tf_spsr		tf_regs.r_spsr
-#define tf_tpidr	tf_regs.r_tpidr
 };
 
 #ifdef _KERNEL

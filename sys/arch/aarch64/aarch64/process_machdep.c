@@ -47,11 +47,7 @@ int
 process_read_regs(struct lwp *l, struct reg *regs)
 {
 	*regs = l->l_md.md_utf->tf_regs;
-	if (l == curlwp) {
-		regs->r_tpidr = reg_tpidr_el0_read();
-	} else {
-		regs->r_tpidr = (uint64_t)(uintptr_t)l->l_private;
-	}
+	regs->r_tpidr = (uint64_t)(uintptr_t)l->l_private;
 	return 0;
 }
 
@@ -65,9 +61,6 @@ process_write_regs(struct lwp *l, const struct reg *regs)
 
 	l->l_md.md_utf->tf_regs = *regs;
 	l->l_private = regs->r_tpidr;
-	if (l == curlwp) {
-		reg_tpidr_el0_write(regs->r_tpidr);
-	}
 	return 0;
 }
 

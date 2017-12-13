@@ -59,6 +59,14 @@
 	str	x24, [sp, #TF_FAR]
 	.endif
 
+	.if \el == 0
+	/* curlwp->l_private = tpidr_el0 */
+	mrs	x1, tpidr_el1		/* curcpu() */
+	ldr	x1, [x1, #CI_CURLWP]	/* x0 = curcpu()->ci_curlwp */
+	mrs	x0, tpidr_el0
+	str	x0, [x1, #L_PRIVATE]	/* curlwp->l_private = tpidr_el0 */
+	.endif
+
 	adr	lr, el\el\()_trap_exit	/* el[01]_trap_exit */
 	mov	x0, sp
 	b	\label
