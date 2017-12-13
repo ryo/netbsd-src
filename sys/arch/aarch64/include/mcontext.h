@@ -124,19 +124,6 @@ __lwp_getprivate_fast(void)
 	return __tpidr;
 }
 
-static __inline void *
-__lwp_gettcb_fast(void)
-{
-	void *__tpidr;
-	__asm __volatile("mrs\t%0, tpidr_el0" : "=r"(__tpidr));
-	return __tpidr;
-}
-
-static __inline void
-__lwp_settcb(void *__tcb)
-{
-	__asm __volatile("msr\ttpidr_el0, %0" :: "r"(__tcb));
-}
 #endif /* _RTLD_SOURCE || _LIBC_SOURCE || __LIBPTHREAD_SOURCE__ */
 
 #elif defined(__arm__)
