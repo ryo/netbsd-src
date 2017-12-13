@@ -1473,7 +1473,6 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	 * don't allocate pv_entry (don't call _pmap_enter_pv) when kenter mode.
 	 */
 	if (kenter) {
-		KASSERT(VM_PAGE_TO_MD(pg)->mdpg_kenter == 0);	/* XXX? */
 		VM_PAGE_TO_MD(pg)->mdpg_kenter++;
 
 		mdattr = (VM_PROT_READ | VM_PROT_WRITE);
@@ -1579,7 +1578,7 @@ _pmap_remove(struct pmap *pm, vaddr_t va, bool kremove)
 				struct vm_page_md *md = VM_PAGE_TO_MD(pg);
 
 				KASSERT(md->mdpg_flags & PMAP_WIRED);
-				KASSERT(md->mdpg_kenter > 0);
+				KDASSERT(md->mdpg_kenter > 0);
 
 				md->mdpg_kenter--;
 				pm->pm_stats.wired_count--;
@@ -1739,7 +1738,7 @@ pmap_unwire(struct pmap *pm, vaddr_t va)
 }
 
 bool
-pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
+pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot, bool user)
 {
 	struct vm_page *pg;
 	struct vm_page_md *md;
@@ -1821,11 +1820,18 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot)
 	}
 
 #if 1
-	//XXXAARCH64
+	//XXXAARCH64: DEBUG
 	if ((pte & LX_BLKPAG_AF) && ((pte & LX_BLKPAG_AP) == LX_BLKPAG_AP_RW)) {
-		/* pte is readable and writable, but occured fault? */
-		panic("%s: pte is rw, but fault: va=%016lx pte=%08llx\n",
-		    __func__, va, pte);
+		if (!user) {
+			/*
+			 * pte is readable and writable, but occured fault?
+			 * unprivileged load/store, or else ?
+			 */
+			printf("%s: fault: va=%016lx pte=%08llx: pte is rw."
+			    " unprivileged load/store ? (onfault=%p)\n",
+			    __func__, va, pte, curlwp->l_md.md_onfault);
+		}
+		return false;
 	}
 #endif
 	KASSERT(((pte & LX_BLKPAG_AF) == 0) ||

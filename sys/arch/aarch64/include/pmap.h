@@ -108,7 +108,7 @@ struct vm_page_md {
 /* l3pte contains always page entries */
 
 void pmap_bootstrap(vaddr_t, vaddr_t);
-bool pmap_fault_fixup(struct pmap *, vaddr_t, vm_prot_t);
+bool pmap_fault_fixup(struct pmap *, vaddr_t, vm_prot_t, bool user);
 void pmap_db_pteinfo(vaddr_t, void (*)(const char *, ...));
 
 /* Hooks for the pool allocator */

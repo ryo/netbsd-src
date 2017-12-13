@@ -29,6 +29,7 @@
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD$");
 
+#include "opt_ddb.h"
 #include "opt_uvmhist.h"
 
 #include <sys/param.h>
@@ -176,7 +177,7 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 #endif
 
 	/* reference/modified emulation */
-	if (pmap_fault_fixup(map->pmap, va, ftype)) {
+	if (pmap_fault_fixup(map->pmap, va, ftype, user)) {
 		UVMHIST_LOG(pmaphist, "fixed: va=%016llx", tf->tf_far, 0, 0, 0);
 		return true;
 	}
@@ -273,9 +274,10 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 		}
  done_userfault:
 
-#define DUMP_USER_TRAPFRAME_ON_SIGNAL	/* XXX: DEBUG */
+#define DEBUG_DUMP_ON_USERFAULT		/* XXXAARCH64: DEBUG */
+#define DEBUG_DDB_ON_USERFAULT		/* XXXAARCH64: DEBUG */
 
-#ifdef DUMP_USER_TRAPFRAME_ON_SIGNAL
+#if defined(DEBUG_DUMP_ON_USERFAULT) || (defined(DDB) && defined(DEBUG_DDB_ON_USERFAULT))
 		__nothing;
 #else
 		return false;
@@ -293,7 +295,8 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 	else
 		printf(" %s", faultstr);
 
-	if (__SHIFTOUT(esr, ESR_EC) == ESR_EC_DATA_ABT_EL1)
+	if ((__SHIFTOUT(esr, ESR_EC) == ESR_EC_DATA_ABT_EL1) ||
+	    (__SHIFTOUT(esr, ESR_EC) == ESR_EC_DATA_ABT_EL0))
 		printf(" with %s access", (rw == 0) ? "read" : "write");
 
 	if (__SHIFTOUT(esr, ESR_ISS_DATAABORT_EA) != 0)
@@ -303,7 +306,15 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 		printf(", State 2 Fault");
 
 	printf("\n");
+#ifdef DDB
 	dump_trapframe(tf, printf);
+	printf("tpidr_el0=%016llx\n", reg_tpidr_el0_read());
+#endif
+
+#ifdef DEBUG_DDB_ON_USERFAULT
+	if (user)
+		Debugger();
+#endif
 
 	return false;
 }
