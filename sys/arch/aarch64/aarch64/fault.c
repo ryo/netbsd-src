@@ -275,7 +275,7 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
  done_userfault:
 
 #define DEBUG_DUMP_ON_USERFAULT		/* XXXAARCH64: DEBUG */
-#define DEBUG_DDB_ON_USERFAULT		/* XXXAARCH64: DEBUG */
+//#define DEBUG_DDB_ON_USERFAULT		/* XXXAARCH64: DEBUG */
 
 #if defined(DEBUG_DUMP_ON_USERFAULT) || (defined(DDB) && defined(DEBUG_DDB_ON_USERFAULT))
 		__nothing;
