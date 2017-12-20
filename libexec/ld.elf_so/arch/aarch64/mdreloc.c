@@ -43,6 +43,7 @@ __RCSID("$NetBSD: mdreloc.c,v 1.6 2017/08/28 06:59:25 nisimura Exp $");
 void _rtld_bind_start(void);
 void _rtld_relocate_nonplt_self(Elf_Dyn *, Elf_Addr);
 Elf_Addr _rtld_bind(const Obj_Entry *, Elf_Word);
+void *_rtld_tlsdesc(void *);
 
 /*
  * AARCH64 PLT looks like this;
@@ -229,9 +230,20 @@ _rtld_relocate_plt_lazy(Obj_Entry *obj)
 		assert((ELF_R_TYPE(rela->r_info) == R_TYPE(JUMP_SLOT)) ||
 		    (ELF_R_TYPE(rela->r_info) == R_TYPE(TLSDESC)));
 
-		/* Just relocate the GOT slots pointing into the PLT */
-		*where += (Elf_Addr)obj->relocbase;
-		rdbg(("fixup !main in %s --> %p", obj->path, (void *)*where));
+		switch (ELF_R_TYPE(rela->r_info)) {
+		case R_TYPE(JUMP_SLOT):
+			/* Just relocate the GOT slots pointing into the PLT */
+			*where += (Elf_Addr)obj->relocbase;
+			rdbg(("fixup !main in %s --> %p", obj->path, (void *)*where));
+			break;
+		case R_TYPE(TLSDESC):
+			assert(ELF_R_SYM(rela->r_info) == 0);	/* XXX */
+			if (ELF_R_SYM(rela->r_info) == 0) {
+				where[0] = (Elf_Addr)_rtld_tlsdesc;
+				where[1] = obj->tlsoffset + rela->r_addend + sizeof(struct tls_tcb);
+			}
+			break;
+		}
 	}
 
 	return 0;
