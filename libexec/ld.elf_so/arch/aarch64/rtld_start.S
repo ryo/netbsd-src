@@ -113,3 +113,9 @@ ENTRY_NP(_rtld_bind_start)
 	ldp	xzr, lr, [sp], #16	/* restore original lr pushed by plt0 */
 	br	x17			/* call bound function */
 END(_rtld_bind_start)
+
+
+ENTRY(_rtld_tlsdesc)
+	ldr	x0, [x0, #8]
+	ret
+END(_rtld_tlsdesc)
