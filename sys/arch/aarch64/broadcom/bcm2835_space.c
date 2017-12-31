@@ -45,6 +45,7 @@ __KERNEL_RCSID(0, "$NetBSD: bcm2835_space.c,v 1.10 2016/02/02 13:55:50 skrll Exp
 
 /* Prototypes for all the bus_space structure functions */
 bs_protos(bcm2835);
+bs_protos(bcm2836);
 bs_protos(generic_dsb);
 bs_protos(generic);
 bs_protos(bs_notimpl);
@@ -288,43 +289,259 @@ struct bus_space bcm2835_a4x_bs_tag = {
 };
 
 
-#define IN_RANGE(x, start, size)	\
-	(((x) >= (start)) && ((x) < ((start) + (size))))
+struct bus_space bcm2836_bs_tag = {
+	/* stride, flags */
+	.bs_stride = 0,
+	.bs_flags = 0,
+
+	.bs_map = bcm2836_bs_map,
+	.bs_unmap = bcm2835_bs_unmap,
+	.bs_subregion = generic_bs_subregion,
+	.bs_alloc = generic_bs_alloc,
+	.bs_free = generic_bs_free,
+	.bs_vaddr = generic_bs_vaddr,
+	.bs_mmap = generic_bs_mmap,
+	.bs_barrier = generic_bs_barrier,
+
+	/* read */
+	.bs_r_1 = generic_bs_r_1,
+	.bs_r_2 = generic_bs_r_2,
+	.bs_r_4 = generic_bs_r_4,
+	.bs_r_8 = generic_bs_r_8,
+
+	/* write */
+	.bs_w_1 = generic_bs_w_1,
+	.bs_w_2 = generic_bs_w_2,
+	.bs_w_4 = generic_bs_w_4,
+	.bs_w_8 = generic_bs_w_8,
+
+	/* read region */
+	.bs_rr_1 = generic_bs_rr_1,
+	.bs_rr_2 = generic_bs_rr_2,
+	.bs_rr_4 = generic_bs_rr_4,
+	.bs_rr_8 = generic_bs_rr_8,
+
+	/* write region */
+	.bs_wr_1 = generic_bs_wr_1,
+	.bs_wr_2 = generic_bs_wr_2,
+	.bs_wr_4 = generic_bs_wr_4,
+	.bs_wr_8 = generic_bs_wr_8,
+
+	/* copy region */
+	.bs_c_1 = generic_bs_c_1,
+	.bs_c_2 = generic_bs_c_2,
+	.bs_c_4 = generic_bs_c_4,
+	.bs_c_8 = generic_bs_c_8,
+
+	/* set region */
+	.bs_sr_1 = generic_bs_sr_1,
+	.bs_sr_2 = generic_bs_sr_2,
+	.bs_sr_4 = generic_bs_sr_4,
+	.bs_sr_8 = generic_bs_sr_8,
+
+	/* read multi */
+	.bs_rm_1 = generic_bs_rm_1,
+	.bs_rm_2 = generic_bs_rm_2,
+	.bs_rm_4 = generic_bs_rm_4,
+	.bs_rm_8 = generic_bs_rm_8,
+
+	/* write multi */
+	.bs_wm_1 = generic_bs_wm_1,
+	.bs_wm_2 = generic_bs_wm_2,
+	.bs_wm_4 = generic_bs_wm_4,
+	.bs_wm_8 = generic_bs_wm_8,
+
+	/* set multi */
+	.bs_sm_1 = generic_bs_sm_1,
+	.bs_sm_2 = generic_bs_sm_2,
+	.bs_sm_4 = generic_bs_sm_4,
+	.bs_sm_8 = generic_bs_sm_8,
+
+	/* peek */
+	.bs_pe_1 = generic_bs_pe_1,
+	.bs_pe_2 = generic_bs_pe_2,
+	.bs_pe_4 = generic_bs_pe_4,
+	.bs_pe_8 = generic_bs_pe_8,
+
+	/* poke */
+	.bs_po_1 = generic_bs_po_1,
+	.bs_po_2 = generic_bs_po_2,
+	.bs_po_4 = generic_bs_po_4,
+	.bs_po_8 = generic_bs_po_8,
+
+#ifdef __BUS_SPACE_HAS_STREAM_METHODS
+	/* read stream */
+	.bs_r_1_s = generic_bs_r_1,
+	.bs_r_2_s = generic_bs_r_2,
+	.bs_r_4_s = generic_bs_r_4,
+	.bs_r_8_s = generic_bs_r_8,
+
+	/* write stream */
+	.bs_w_1_s = generic_bs_w_1,
+	.bs_w_2_s = generic_bs_w_2,
+	.bs_w_4_s = generic_bs_w_4,
+	.bs_w_8_s = generic_bs_w_8,
+
+	/* read region stream */
+	.bs_rr_1_s = generic_bs_rr_1,
+	.bs_rr_2_s = generic_bs_rr_2,
+	.bs_rr_4_s = generic_bs_rr_4,
+	.bs_rr_8_s = generic_bs_rr_8,
+
+	/* write region stream */
+	.bs_wr_1_s = generic_bs_wr_1,
+	.bs_wr_2_s = generic_bs_wr_2,
+	.bs_wr_4_s = generic_bs_wr_4,
+	.bs_wr_8_s = generic_bs_wr_8,
+
+	/* read multi stream */
+	.bs_rm_1_s = generic_bs_rm_1,
+	.bs_rm_2_s = generic_bs_rm_2,
+	.bs_rm_4_s = generic_bs_rm_4,
+	.bs_rm_8_s = generic_bs_rm_8,
+
+	/* write multi stream */
+	.bs_wm_1_s = generic_bs_wm_1,
+	.bs_wm_2_s = generic_bs_wm_2,
+	.bs_wm_4_s = generic_bs_wm_4,
+	.bs_wm_8_s = generic_bs_wm_8,
+#endif
+};
+
+struct bus_space bcm2836_a4x_bs_tag = {
+	/* stride, flags */
+	.bs_stride = 2,
+	.bs_flags = 0,
+
+	.bs_map = bcm2836_bs_map,
+	.bs_unmap = bcm2835_bs_unmap,
+	.bs_subregion = generic_bs_subregion,
+	.bs_alloc = generic_bs_alloc,
+	.bs_free = generic_bs_free,
+	.bs_vaddr = generic_bs_vaddr,
+	.bs_mmap = generic_bs_mmap,
+	.bs_barrier = generic_bs_barrier,
+
+	/* read */
+	.bs_r_1 = generic_bs_r_1,
+	.bs_r_2 = generic_bs_r_2,
+	.bs_r_4 = generic_bs_r_4,
+	.bs_r_8 = generic_bs_r_8,
+
+	/* write */
+	.bs_w_1 = generic_bs_w_1,
+	.bs_w_2 = generic_bs_w_2,
+	.bs_w_4 = generic_bs_w_4,
+	.bs_w_8 = generic_bs_w_8,
+
+	/* read region */
+	.bs_rr_1 = generic_bs_rr_1,
+	.bs_rr_2 = generic_bs_rr_2,
+	.bs_rr_4 = generic_bs_rr_4,
+	.bs_rr_8 = generic_bs_rr_8,
+
+	/* write region */
+	.bs_wr_1 = generic_bs_wr_1,
+	.bs_wr_2 = generic_bs_wr_2,
+	.bs_wr_4 = generic_bs_wr_4,
+	.bs_wr_8 = generic_bs_wr_8,
+
+	/* copy region */
+	.bs_c_1 = generic_bs_c_1,
+	.bs_c_2 = generic_bs_c_2,
+	.bs_c_4 = generic_bs_c_4,
+	.bs_c_8 = generic_bs_c_8,
+
+	/* set region */
+	.bs_sr_1 = generic_bs_sr_1,
+	.bs_sr_2 = generic_bs_sr_2,
+	.bs_sr_4 = generic_bs_sr_4,
+	.bs_sr_8 = generic_bs_sr_8,
+
+	/* read multi */
+	.bs_rm_1 = generic_bs_rm_1,
+	.bs_rm_2 = generic_bs_rm_2,
+	.bs_rm_4 = generic_bs_rm_4,
+	.bs_rm_8 = generic_bs_rm_8,
+
+	/* write multi */
+	.bs_wm_1 = generic_bs_wm_1,
+	.bs_wm_2 = generic_bs_wm_2,
+	.bs_wm_4 = generic_bs_wm_4,
+	.bs_wm_8 = generic_bs_wm_8,
+
+	/* set multi */
+	.bs_sm_1 = generic_bs_sm_1,
+	.bs_sm_2 = generic_bs_sm_2,
+	.bs_sm_4 = generic_bs_sm_4,
+	.bs_sm_8 = generic_bs_sm_8,
+
+	/* peek */
+	.bs_pe_1 = generic_bs_pe_1,
+	.bs_pe_2 = generic_bs_pe_2,
+	.bs_pe_4 = generic_bs_pe_4,
+	.bs_pe_8 = generic_bs_pe_8,
+
+	/* poke */
+	.bs_po_1 = generic_bs_po_1,
+	.bs_po_2 = generic_bs_po_2,
+	.bs_po_4 = generic_bs_po_4,
+	.bs_po_8 = generic_bs_po_8,
+
+#ifdef __BUS_SPACE_HAS_STREAM_METHODS
+	/* read stream */
+	.bs_r_1_s = generic_bs_r_1,
+	.bs_r_2_s = generic_bs_r_2,
+	.bs_r_4_s = generic_bs_r_4,
+	.bs_r_8_s = generic_bs_r_8,
+
+	/* write stream */
+	.bs_w_1_s = generic_bs_w_1,
+	.bs_w_2_s = generic_bs_w_2,
+	.bs_w_4_s = generic_bs_w_4,
+	.bs_w_8_s = generic_bs_w_8,
+
+	/* read region stream */
+	.bs_rr_1_s = generic_bs_rr_1,
+	.bs_rr_2_s = generic_bs_rr_2,
+	.bs_rr_4_s = generic_bs_rr_4,
+	.bs_rr_8_s = generic_bs_rr_8,
+
+	/* write region stream */
+	.bs_wr_1_s = generic_bs_wr_1,
+	.bs_wr_2_s = generic_bs_wr_2,
+	.bs_wr_4_s = generic_bs_wr_4,
+	.bs_wr_8_s = generic_bs_wr_8,
+
+	/* read multi stream */
+	.bs_rm_1_s = generic_bs_rm_1,
+	.bs_rm_2_s = generic_bs_rm_2,
+	.bs_rm_4_s = generic_bs_rm_4,
+	.bs_rm_8_s = generic_bs_rm_8,
+
+	/* write multi stream */
+	.bs_wm_1_s = generic_bs_wm_1,
+	.bs_wm_2_s = generic_bs_wm_2,
+	.bs_wm_4_s = generic_bs_wm_4,
+	.bs_wm_8_s = generic_bs_wm_8,
+#endif
+};
+
+
+
 
 int
-bcm2835_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
+bcm283x_bs_map(void *, bus_addr_t, bus_size_t, int, bus_space_handle_t *);
+
+int
+bcm283x_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
     bus_space_handle_t *bshp)
 {
-	const struct pmap_devmap *pd;
-	paddr_t startpa, endpa, pa;
+	u_long startpa, endpa, pa;
 	vaddr_t va;
-	int pmapflags;
-	bool match = false;
 
-	/* Attempt to find the PA device mapping */
-	if (IN_RANGE(ba, BCM2835_PERIPHERALS_BASE_BUS,
-	    BCM2835_PERIPHERALS_SIZE)) {
-		match = true;
-		pa = BCM2835_PERIPHERALS_BUS_TO_PHYS(ba);
-	}
-#ifdef BCM2836
-	if (IN_RANGE(ba, BCM2836_ARM_LOCAL_BASE, BCM2836_ARM_LOCAL_SIZE)) {
-		match = true;
-		pa = ba;
-	}
-#endif
-
-	if (match && (pd = pmap_devmap_find_pa(pa, size)) != NULL) {
-		/* Device was statically mapped. */
-		*bshp = pd->pd_va + (pa - pd->pd_pa);
-		return 0;
-	}
-
-	/* Now assume bus address so convert to PA */
-	if (ba >= BCM2835_PERIPHERALS_BASE_BUS &&
-	    ba < BCM2835_PERIPHERALS_BASE_BUS + BCM2835_PERIPHERALS_SIZE) {
-		pa = ba & ~BCM2835_BUSADDR_CACHE_MASK;
-	}
+	/* Convert BA to PA */
+	pa = ba & ~BCM2835_BUSADDR_CACHE_MASK;
 
 	startpa = trunc_page(pa);
 	endpa = round_page(pa + size);
@@ -332,17 +549,16 @@ bcm2835_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
 	/* XXX use extent manager to check duplicate mapping */
 
 	va = uvm_km_alloc(kernel_map, endpa - startpa, 0,
-	    UVM_KMF_VAONLY | UVM_KMF_NOWAIT);
-	if (va == 0)
+	    UVM_KMF_VAONLY | UVM_KMF_NOWAIT | UVM_KMF_COLORMATCH);
+	if (!va)
 		return ENOMEM;
 
 	*bshp = (bus_space_handle_t)(va + (pa - startpa));
 
-	if ((flag & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE)) != 0)
-		pmapflags = PMAP_WRITE_BACK;
-	else
-		pmapflags = PMAP_NOCACHE;
-
+	const int pmapflags =
+	    (flag & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE))
+		? 0
+		: PMAP_NOCACHE;
 	for (pa = startpa; pa < endpa; pa += PAGE_SIZE, va += PAGE_SIZE) {
 		pmap_kenter_pa(va, pa, VM_PROT_READ | VM_PROT_WRITE, pmapflags);
 	}
@@ -351,11 +567,65 @@ bcm2835_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
 	return 0;
 }
 
+int
+bcm2835_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
+    bus_space_handle_t *bshp)
+{
+	const struct pmap_devmap *pd;
+	bool match = false;
+	u_long pa;
+
+	/* Attempt to find the PA device mapping */
+	if (ba >= BCM2835_PERIPHERALS_BASE_BUS &&
+	    ba < BCM2835_PERIPHERALS_BASE_BUS + BCM2835_PERIPHERALS_SIZE) {
+		match = true;
+		pa = BCM2835_PERIPHERALS_BUS_TO_PHYS(ba);
+	}
+
+	if (match && (pd = pmap_devmap_find_pa(pa, size)) != NULL) {
+		/* Device was statically mapped. */
+		*bshp = pd->pd_va + (pa - pd->pd_pa);
+		return 0;
+	}
+
+	return bcm283x_bs_map(t, ba, size, flag, bshp);
+}
+
+int
+bcm2836_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
+    bus_space_handle_t *bshp)
+{
+	const struct pmap_devmap *pd;
+	bool match = false;
+	u_long pa;
+
+	/* Attempt to find the PA device mapping */
+	if (ba >= BCM2835_PERIPHERALS_BASE_BUS &&
+	    ba < BCM2835_PERIPHERALS_BASE_BUS + BCM2835_PERIPHERALS_SIZE) {
+		match = true;
+		pa = BCM2836_PERIPHERALS_BUS_TO_PHYS(ba);
+	}
+
+	if (ba >= BCM2836_ARM_LOCAL_BASE &&
+	    ba < BCM2836_ARM_LOCAL_BASE + BCM2836_ARM_LOCAL_SIZE) {
+		match = true;
+		pa = ba;
+	}
+
+	if (match && (pd = pmap_devmap_find_pa(pa, size)) != NULL) {
+		/* Device was statically mapped. */
+		*bshp = pd->pd_va + (pa - pd->pd_pa);
+		return 0;
+	}
+
+	return bcm283x_bs_map(t, ba, size, flag, bshp);
+}
+
 void
 bcm2835_bs_unmap(void *t, bus_space_handle_t bsh, bus_size_t size)
 {
-	vaddr_t va;
-	vsize_t sz;
+	vaddr_t	va;
+	vsize_t	sz;
 
 	if (pmap_devmap_find_va(bsh, size) != NULL) {
 		/* Device was statically mapped; nothing to do. */
@@ -369,3 +639,81 @@ bcm2835_bs_unmap(void *t, bus_space_handle_t bsh, bus_size_t size)
 	pmap_update(pmap_kernel());
 	uvm_km_free(kernel_map, va, sz, UVM_KMF_VAONLY);
 }
+
+#if 0
+
+int
+bcm2835_bs_subregion(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    bus_size_t size, bus_space_handle_t *nbshp)
+{
+
+	*nbshp = bsh + offset;
+	return 0;
+}
+
+int
+bcm2835_a4x_bs_subregion(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    bus_size_t size, bus_space_handle_t *nbshp)
+{
+
+	*nbshp = bsh + 4 * offset;
+	return 0;
+}
+
+void
+bcm2835_bs_barrier(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    bus_size_t len, int flags)
+{
+	flags &= BUS_SPACE_BARRIER_READ|BUS_SPACE_BARRIER_WRITE;
+
+	if (flags)
+		arm_dsb();
+}
+
+void *
+bcm2835_bs_vaddr(void *t, bus_space_handle_t bsh)
+{
+
+	return (void *)bsh;
+}
+
+paddr_t
+bcm2835_bs_mmap(void *t, bus_addr_t bpa, off_t offset, int prot, int flags)
+{
+	paddr_t pa = bpa & ~BCM2835_BUSADDR_CACHE_MASK;
+	paddr_t bus_flags = 0;
+
+	if (flags & BUS_SPACE_MAP_PREFETCHABLE)
+		bus_flags |= ARM32_MMAP_WRITECOMBINE;
+
+	return arm_btop(pa + offset) | bus_flags;
+}
+
+paddr_t
+bcm2835_a4x_bs_mmap(void *t, bus_addr_t bpa, off_t offset, int prot, int flags)
+{
+	paddr_t pa = bpa & ~BCM2835_BUSADDR_CACHE_MASK;
+	paddr_t bus_flags = 0;
+
+	if (flags & BUS_SPACE_MAP_PREFETCHABLE)
+		bus_flags |= ARM32_MMAP_WRITECOMBINE;
+
+	return arm_btop(pa + 4 * offset) | bus_flags;
+}
+
+int
+bcm2835_bs_alloc(void *t, bus_addr_t rstart, bus_addr_t rend,
+    bus_size_t size, bus_size_t alignment, bus_size_t boundary, int flags,
+    bus_addr_t *bpap, bus_space_handle_t *bshp)
+{
+
+	panic("%s(): not implemented\n", __func__);
+}
+
+void
+bcm2835_bs_free(void *t, bus_space_handle_t bsh, bus_size_t size)
+{
+
+	panic("%s(): not implemented\n", __func__);
+}
+#endif

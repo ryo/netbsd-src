@@ -33,6 +33,14 @@
 
 #ifdef _KERNEL
 
+#include <arm/armreg.h>
+
+static inline int
+set_cpufuncs(void)
+{
+	return 0;
+}
+
 struct aarch64_cache_unit {
 	u_int cache_type;
 #define CACHE_TYPE_UNKNOWN	0
@@ -124,6 +132,27 @@ void aarch64_tlbi_by_asid_va_ll(int, vaddr_t);	/*  an ASID, a VA, lastlevel */
 
 /* others */
 #define cpu_drain_writebuf()		aarch64_drain_writebuf()
+
+static inline bool
+cpu_gtmr_exists_p(void)
+{
+
+	return true;
+}
+
+static inline u_int
+cpu_clusterid(void)
+{
+
+	return __SHIFTOUT(reg_mpidr_el1_read(), MPIDR_AFF1);
+}
+
+static inline bool
+cpu_earlydevice_va_p(void)
+{
+
+	return false;
+}
 
 #endif /* _KERNEL */
 

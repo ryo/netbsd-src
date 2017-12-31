@@ -5,17 +5,26 @@ SYSTEM_FIRST_SFILE=	${THISA64}/rpi/rpi_start.S
 
 _OSRELEASE!=		${HOST_SH} $S/conf/osrelease.sh
 
+BOARDTYPE=		rpi64
+
+MKUBOOTIMAGEARGS=	-A arm64 -T kernel -O linux
+MKUBOOTIMAGEARGS+=	-a $(LOADADDRESS) -e $(LOADADDRESS)
+#MKUBOOTIMAGEARGS+=	-a $(KERNEL_BASE_PHYS) -e $(KERNEL_BASE_PHYS)
+MKUBOOTIMAGEARGS+=	-n "NetBSD/$(BOARDTYPE) ${_OSRELEASE}"
+MKUBOOTIMAGEARGS_NONE=	${MKUBOOTIMAGEARGS} -C none
+MKUBOOTIMAGEARGS_GZ=	${MKUBOOTIMAGEARGS} -C gz
+
 GENASSYM_EXTRAS+=	${THISA64}/rpi/genassym.cf
+
+MKKNLIMG=		${THISA64}/../evbarm/compile/rpi-mkknlimg.sh
 
 SYSTEM_LD_TAIL_EXTRA+=; \
 	echo ${OBJCOPY} -S -O binary $@ $@.bin; \
 	${OBJCOPY} -S -O binary $@ $@.bin; \
-#	echo ${TOOL_GZIP} -9c $@.bin > $@.bin.gz; \
-#	${TOOL_GZIP} -9c $@.bin > $@.bin.gz; \
-#	echo ${TOOL_MKUBOOTIMAGE} ${MKUBOOTIMAGEARGS_GZ} $@.bin.gz $@.gz.ub; \
-#	${TOOL_MKUBOOTIMAGE} ${MKUBOOTIMAGEARGS_GZ} $@.bin.gz $@.gz.ub; \
-#	echo ${TOOL_MKUBOOTIMAGE} ${MKUBOOTIMAGEARGS_NONE} $@.bin $@.ub; \
-#	${TOOL_MKUBOOTIMAGE} ${MKUBOOTIMAGEARGS_NONE} $@.bin $@.ub; \
-#	echo
+	echo ${MKKNLIMG} $@.bin $@.img; \
+	${HOST_SH} ${MKKNLIMG} $@.bin $@.img; \
+	echo ${TOOL_MKUBOOTIMAGE} ${MKUBOOTIMAGEARGS_NONE} $@.bin $@.ub; \
+	${TOOL_MKUBOOTIMAGE} ${MKUBOOTIMAGEARGS_NONE} $@.bin $@.ub
 
-EXTRA_KERNELS+= ${KERNELS:@.KERNEL.@${.KERNEL.}.bin@}
+EXTRA_KERNELS+= ${KERNELS:@.KERNEL.@${.KERNEL.}.img@}
+EXTRA_KERNELS+= ${KERNELS:@.KERNEL.@${.KERNEL.}.ub@}

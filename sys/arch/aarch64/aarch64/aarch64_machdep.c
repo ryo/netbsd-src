@@ -46,8 +46,9 @@ __KERNEL_RCSID(1, "$NetBSD: aarch64_machdep.c,v 1.1 2014/08/10 05:47:37 matt Exp
 
 #include <uvm/uvm.h>
 
+#include <machine/bootconfig.h>
+
 #include <aarch64/armreg.h>
-#include <aarch64/bootconfig.h>
 #include <aarch64/cpufunc.h>
 #ifdef DDB
 #include <aarch64/db_machdep.h>
@@ -71,8 +72,6 @@ struct vm_map *phys_map;
 /* XXX */
 vaddr_t physical_start;
 vaddr_t physical_end;
-
-struct BootConfig *aarch64_bootconfig;
 
 /*
  * Upper region: 0xffffffffffffffff  Top of virtual memory
@@ -105,8 +104,9 @@ struct BootConfig *aarch64_bootconfig;
  *
  *               0x0000000000000000  Start of user address space
  */
-void
-initarm64(struct BootConfig *bootconf)
+vaddr_t
+initarm_common(vaddr_t kvm_base, vsize_t kvm_size,
+    const struct boot_physmem *bp, size_t nbp)
 {
 	extern char __kernel_text[];
 	extern char _end[];
@@ -132,11 +132,9 @@ initarm64(struct BootConfig *bootconf)
 	kernstart_phys = kernstart - VM_MIN_KERNEL_ADDRESS;
 	kernend_phys = kernend - VM_MIN_KERNEL_ADDRESS;
 
-	aarch64_bootconfig = bootconf;
-
 	/* XXX */
-	physical_start = bootconf->dram[0].address;
-	physical_end = physical_start + ptoa(bootconf->dram[0].pages);
+	physical_start = bootconfig.dram[0].address;
+	physical_end = physical_start + ptoa(bootconfig.dram[0].pages);
 
 #ifdef VERBOSE_INIT_ARM
 	printf(
@@ -171,7 +169,7 @@ initarm64(struct BootConfig *bootconf)
 	 * against corruption by bootloader, or changing kernel layout.
 	 */
 	physical_end -= round_page(MSGBUFSIZE);
-	bootconf->dram[0].pages = atop(physical_end);
+	bootconfig.dram[0].pages = atop(physical_end);
 	initmsgbuf(AARCH64_PA_TO_KVA(physical_end), MSGBUFSIZE);
 
 #ifdef DDB
@@ -185,92 +183,53 @@ initarm64(struct BootConfig *bootconf)
 	kstartp = atop(kernstart_phys);
 	kendp = atop(kernend_phys);
 
-	KDASSERT(bootconf->dramblocks <= DRAM_BLOCKS);
-	for (i = 0; i < bootconf->dramblocks; i++) {
-		paddr_t startp, endp;
+	KASSERT(bp != NULL || nbp == 0);
+	KASSERT(bp == NULL || nbp != 0);
+
+	KDASSERT(bootconfig.dramblocks <= DRAM_BLOCKS);
+	for (i = 0; i < bootconfig.dramblocks; i++) {
+		paddr_t start, end;
 
 		/* empty is end */
-		if (bootconf->dram[i].address == 0 &&
-		    bootconf->dram[i].pages == 0)
+		if (bootconfig.dram[i].address == 0 &&
+		    bootconfig.dram[i].pages == 0)
 			break;
 
-		memsize_total += ptoa(bootconf->dram[i].pages);
+		start = atop(bootconfig.dram[i].address);
+		end = start + bootconfig.dram[i].pages;
 
-		startp = atop(bootconf->dram[i].address);
-		endp = startp + bootconf->dram[i].pages;
+		int vm_freelist = VM_FREELIST_DEFAULT;
+		/*
+		 * This assumes the bp list is sorted in ascending
+		 * order.
+		 */
+		paddr_t segend = end;
+		for (size_t j = 0; j < nbp; j++ /*, start = segend, segend = end */) {
+			paddr_t bp_start = bp[j].bp_start;
+			paddr_t bp_end = bp_start + bp[j].bp_pages;
 
-		/* exclude kernel text/data/bss from given block */
-		if (kstartp < startp && endp < kendp) {
-			/*
-			 *  +-------+ kstartp
-			 *  |kernel |
-			 *  +- - - -+ startp
-			 *  |kernel |
-			 *  +- - - -+ endp
-			 *  |kernel |
-			 *  +-------+ kendp
-			 */
-			__nothing;
-		} else if (startp <= kstartp && kendp <= endp) {
-			/*
-			 *  +-------+ startp
-			 *  |///////|
-			 *  +-------+ kstartp
-			 *  |       |
-			 *  |kernel |
-			 *  |       |
-			 *  +-------+ kendp
-			 *  |///////|
-			 *  +-------+ endp
-			 */
-			uvm_page_physload(
-#if 1
-			    startp, kendp,
-#else
-			    startp, kstartp,
-#endif
-			    startp, kstartp,
-			    bootconf->dram[i].vmfreelist);
-			uvm_page_physload(
-			    kendp, endp,
-			    kendp, endp,
-			    bootconf->dram[i].vmfreelist);
-		} else if (startp <= kstartp) {
-			/*
-			 *  +-------+ startp
-			 *  |///////|
-			 *  +-------+ kstartp
-			 *  |kernel |
-			 *  |- - - -+ endp
-			 *  |kernel |
-			 *  +-------+ kendp
-			 */
-			uvm_page_physload(
-#if 1
-			    startp, kendp,
-#else
-			    startp, kstartp,
-#endif
-			    startp, kstartp,
-			    bootconf->dram[i].vmfreelist);
-		} else {
-			/*
-			 *  +-------+ kstartp
-			 *  |kernel |
-			 *  |- - - -+ startp
-			 *  |kernel |
-			 *  +-------+ kendp
-			 *  |///////|
-			 *  +-------+ endp
-			 */
-			uvm_page_physload(
-			    kendp, endp,
-			    kendp, endp,
-			    bootconf->dram[i].vmfreelist);
+			KASSERT(bp_start < bp_end);
+			if (start > bp_end || segend < bp_start)
+				continue;
+
+			if (start < bp_start)
+				start = bp_start;
+
+			if (start < bp_end) {
+				if (segend > bp_end) {
+					segend = bp_end;
+				}
+				vm_freelist = bp[j].bp_freelist;
+
+				uvm_page_physload(start, segend, start, segend,
+				    vm_freelist);
+				memsize_total += ptoa(segend - start);
+				start = segend;
+				segend = end;
+			}
 		}
 	}
 	physmem = atop(memsize_total);
-
 
 	/*
 	 * kernel image is mapped on L2 table (2MB*n) by locore.S
@@ -289,6 +248,14 @@ initarm64(struct BootConfig *bootconf)
 	memset(tf, 0, sizeof(struct trapframe));
 	tf->tf_spsr = SPSR_M_EL0T;
 	lwp0.l_md.md_utf = lwp0.l_md.md_ktf = tf;
+
+	return tf;
+}
+
+
+void
+parse_mi_bootargs(char *args)
+{
 }
 
 void

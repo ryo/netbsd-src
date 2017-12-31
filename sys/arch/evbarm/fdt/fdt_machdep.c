@@ -1,4 +1,4 @@
-/* $NetBSD: fdt_machdep.c,v 1.15 2017/11/09 21:38:48 skrll Exp $ */
+/* $NetBSD: fdt_machdep.c,v 1.18 2017/12/14 11:39:31 martin Exp $ */
 
 /*-
  * Copyright (c) 2015-2017 Jared McNeill <jmcneill@invisible.ca>
@@ -27,9 +27,10 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: fdt_machdep.c,v 1.15 2017/11/09 21:38:48 skrll Exp $");
+__KERNEL_RCSID(0, "$NetBSD: fdt_machdep.c,v 1.18 2017/12/14 11:39:31 martin Exp $");
 
 #include "opt_machdep.h"
+#include "opt_bootconfig.h"
 #include "opt_ddb.h"
 #include "opt_md.h"
 #include "opt_arm_debug.h"
@@ -64,9 +65,14 @@ __KERNEL_RCSID(0, "$NetBSD: fdt_machdep.c,v 1.15 2017/11/09 21:38:48 skrll Exp $
 
 #include <machine/bootconfig.h>
 #include <arm/armreg.h>
-#include <arm/undefined.h>
 
+#include <arm/cpufunc.h>
+#ifdef __aarch64__
+#include <aarch64/machdep.h>
+#else
 #include <arm/arm32/machdep.h>
+#endif
+
 
 #include <evbarm/include/autoconf.h>
 #include <evbarm/fdt/platform.h>
@@ -88,7 +94,8 @@ __KERNEL_RCSID(0, "$NetBSD: fdt_machdep.c,v 1.15 2017/11/09 21:38:48 skrll Exp $
 BootConfig bootconfig;
 char bootargs[FDT_MAX_BOOT_STRING] = "";
 char *boot_args = NULL;
-u_int uboot_args[4] = { 0 };	/* filled in by xxx_start.S (not in bss) */
+unsigned long  uboot_args[4] = { 0 };	/* filled in by xxx_start.S (not in bss) */
+const uint8_t *fdt_addr_r;
 
 static char fdt_memory_ext_storage[EXTENT_FIXED_STORAGE_SIZE(DRAM_BLOCKS)];
 static struct extent *fdt_memory_ext;
@@ -108,14 +115,6 @@ static void fdt_device_register(device_t, void *);
 static void fdt_reset(void);
 static void fdt_powerdown(void);
 
-#ifdef PMAP_NEED_ALLOC_POOLPAGE
-static struct boot_physmem bp_lowgig = {
-	.bp_pages = (KERNEL_VM_BASE - KERNEL_BASE) / NBPG,
-	.bp_freelist = VM_FREELIST_ISADMA,
-	.bp_flags = 0
-};
-#endif
-
 #ifdef VERBOSE_INIT_ARM
 static void
 fdt_putchar(char c)
@@ -133,9 +132,9 @@ fdt_putstr(const char *s)
 }
 
 static void
-fdt_printn(u_int n, int base)
+fdt_printn(unsigned long n, int base)
 {
-	char *p, buf[(sizeof(u_int) * NBBY / 3) + 1 + 2 /* ALT + SIGN */];
+	char *p, buf[(sizeof(unsigned long) * NBBY / 3) + 1 + 2 /* ALT + SIGN */];
 
 	p = buf;
 	do {
@@ -183,20 +182,19 @@ fdt_get_memory(uint64_t *paddr, uint64_t *psize)
 	}
 }
 
-static void
+void
 fdt_add_reserved_memory_range(uint64_t addr, uint64_t size)
 {
-	int error;
+	uint64_t start = trunc_page(addr);
+	uint64_t end = round_page(addr + size);
 
-	addr = trunc_page(addr);
-	size = round_page(size);
-
-	error = extent_free(fdt_memory_ext, addr, size, EX_NOWAIT);
+	int error = extent_free(fdt_memory_ext, start,
+	     end - start, EX_NOWAIT);
 	if (error != 0)
 		printf("MEM ERROR: res %llx-%llx failed: %d\n",
-		    addr, addr + size, error);
+		    start, end, error);
 	else
-		DPRINTF("MEM: res %llx-%llx\n", addr, addr + size);
+		DPRINTF("MEM: res %llx-%llx\n", start, end);
 }
 
 /*
@@ -250,8 +248,8 @@ fdt_build_bootconfig(uint64_t mem_addr, uint64_t mem_size)
 		    EX_NOWAIT);
 		if (error != 0)
 			printf("MEM ERROR: add %llx-%llx failed: %d\n",
-			    addr, size, error);
-		DPRINTF("MEM: add %llx-%llx\n", addr, size);
+			    addr, addr + size, error);
+		DPRINTF("MEM: add %llx-%llx\n", addr, addr + size);
 	}
 
 	fdt_add_reserved_memory(max_addr);
@@ -336,6 +334,8 @@ fdt_setup_initrd(void)
 #endif
 }
 
+u_int initarm(void *arg);
+
 u_int
 initarm(void *arg)
 {
@@ -343,7 +343,6 @@ initarm(void *arg)
 	uint64_t memory_addr, memory_size;
 
 	/* Load FDT */
-	const uint8_t *fdt_addr_r = (const uint8_t *)uboot_args[2];
 	int error = fdt_check_header(fdt_addr_r);
 	if (error == 0) {
 		error = fdt_move(fdt_addr_r, fdt_data, sizeof(fdt_data));
@@ -371,14 +370,17 @@ initarm(void *arg)
 
 	DPRINT(" devmap");
 	pmap_devmap_register(plat->devmap());
-
-	DPRINT(" bootstrap");
-	plat->bootstrap();
+#ifdef __aarch64__
+	pmap_devmap_bootstrap(plat->devmap());
+#endif
 
 	/* Heads up ... Setup the CPU / MMU / TLB functions. */
 	DPRINT(" cpufunc");
 	if (set_cpufuncs())
 		panic("cpu not recognized!");
+
+	DPRINT(" bootstrap");
+	plat->bootstrap();
 
 	/*
 	 * If stdout-path is specified on the command line, override the
@@ -391,7 +393,7 @@ initarm(void *arg)
 
 	DPRINTF(" ok\n");
 
-	DPRINTF("uboot: args %#x, %#x, %#x, %#x\n",
+	DPRINTF("uboot: args %#lx, %#lx, %#lx, %#lx\n",
 	    uboot_args[0], uboot_args[1], uboot_args[2], uboot_args[3]);
 
 	cpu_reset_address = fdt_reset;
@@ -406,6 +408,7 @@ initarm(void *arg)
 	parse_mi_bootargs(mi_bootargs);
 #endif
 
+#ifndef __aarch64__
 	DPRINTF("KERNEL_BASE=0x%x, "
 		"KERNEL_VM_BASE=0x%x, "
 		"KERNEL_VM_BASE - KERNEL_BASE=0x%x, "
@@ -414,6 +417,7 @@ initarm(void *arg)
 		KERNEL_VM_BASE,
 		KERNEL_VM_BASE - KERNEL_BASE,
 		KERNEL_BASE_VOFFSET);
+#endif
 
 	fdt_get_memory(&memory_addr, &memory_size);
 
@@ -423,6 +427,7 @@ initarm(void *arg)
 		memory_size = 0x100000000 - memory_addr - PAGE_SIZE;
 #endif
 
+#ifndef __aarch64__
 #ifdef __HAVE_MM_MD_DIRECT_MAPPED_PHYS
 	const bool mapallmem_p = true;
 #ifndef PMAP_NEED_ALLOC_POOLPAGE
@@ -436,32 +441,65 @@ initarm(void *arg)
 #else
 	const bool mapallmem_p = false;
 #endif
+#endif
 
 	/* Parse ramdisk info */
 	fdt_probe_initrd(&initrd_start, &initrd_end);
 
-	/* Populate bootconfig structure for the benefit of pmap.c. */
+	/*
+	 * Populate bootconfig structure for the benefit of
+	 * dodumpsys
+	 */
 	fdt_build_bootconfig(memory_addr, memory_size);
 
-	arm32_bootmem_init(bootconfig.dram[0].address, memory_size,
-	    KERNEL_BASE_PHYS);
+#ifdef __aarch64__
+	extern char __kernel_text[];
+	extern char _end[];
+
+	vaddr_t kernstart = trunc_page((vaddr_t)__kernel_text);
+	vaddr_t kernend = round_page((vaddr_t)_end);
+
+	paddr_t kernstart_phys = kernstart - VM_MIN_KERNEL_ADDRESS;
+	paddr_t kernend_phys = kernend - VM_MIN_KERNEL_ADDRESS;
+
+	DPRINTF("%s: kernel phys start %lx end %lx\n", __func__, kernstart_phys, kernend_phys);
+
+        fdt_add_reserved_memory_range(kernstart_phys,
+	     kernend_phys - kernstart_phys);
+#else
+	arm32_bootmem_init(memory_addr, memory_size, KERNEL_BASE_PHYS);
 	arm32_kernel_vm_init(KERNEL_VM_BASE, ARM_VECTORS_HIGH, 0,
 	    plat->devmap(), mapallmem_p);
+#endif
 
 	DPRINTF("bootargs: %s\n", bootargs);
 
 	parse_mi_bootargs(boot_args);
 
-#ifdef PMAP_NEED_ALLOC_POOLPAGE
-	bp_lowgig.bp_start = memory_addr / NBPG;
-	if (atop(ram_size) > bp_lowgig.bp_pages) {
-		arm_poolpage_vmfreelist = bp_lowgig.bp_freelist;
-		return initarm_common(KERNEL_VM_BASE, KERNEL_VM_SIZE,
-		    &bp_lowgig, 1);
-	}
-#endif
+	#define MAX_PHYSMEM 16
+	static struct boot_physmem fdt_physmem[MAX_PHYSMEM];
+	int nfdt_physmem = 0;
+	struct extent_region *er;
 
-	return initarm_common(KERNEL_VM_BASE, KERNEL_VM_SIZE, NULL, 0);
+	LIST_FOREACH(er, &fdt_memory_ext->ex_regions, er_link) {
+		DPRINTF("  %lx - %lx\n", er->er_start, er->er_end);
+		struct boot_physmem *bp = &fdt_physmem[nfdt_physmem++];
+
+		KASSERT(nfdt_physmem <= MAX_PHYSMEM);
+		bp->bp_start = atop(er->er_start);
+		bp->bp_pages = atop(er->er_end - er->er_start);
+		bp->bp_freelist = VM_FREELIST_DEFAULT;
+
+#ifdef PMAP_NEED_ALLOC_POOLPAGE
+		if (atop(memory_size) > bp->bp_pages) {
+			arm_poolpage_vmfreelist = VM_FREELIST_DIRECTMAP;
+			bp->bp_freelist = VM_FREELIST_DIRECTMAP;
+		}
+#endif
+	}
+
+	return initarm_common(KERNEL_VM_BASE, KERNEL_VM_SIZE, fdt_physmem,
+	     nfdt_physmem);
 }
 
 static void

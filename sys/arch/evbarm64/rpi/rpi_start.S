@@ -29,20 +29,11 @@
 #include "opt_arm_debug.h"	/* VERBOSE_INIT_ARM */
 
 #include <aarch64/asm.h>
+
 RCSID("$NetBSD$")
 
-
-#define AUX_MU_IO_REG	0x3f215040	/* Mini Uart I/O Data (8bit) */
-#define AUX_MU_LSR_REG	0x3f215054	/* Mini Uart Line Status (8bit) */
-
-#define COM_DATA		AUX_MU_IO_REG
-#define COM_LSR			AUX_MU_LSR_REG
-#define COM_LSR_TXFE_BIT	5	/* Transmit fifo empty */
-#define COM_LSR_RXRDY_BIT	0	/* Byte ready in Receive Buffer */
-
 #define PRINT(string)	\
-	stp x0,lr,[sp,#-16]!;bl xprint;.asciz string;.align 2;ldp x0,lr,[sp],#16
-
+	bl xprint;.asciz string;.align 2
 
 /*
  * Kernel start routine for aarch64 boards.
@@ -50,68 +41,32 @@ RCSID("$NetBSD$")
 	.global start
 start:
 	/*
-	 * store uboot arguments to uboot_args[4] in rpi_machdep.c
+	 * store uboot arguments to uboot_args[4]
 	 */
-	ldr	x8, =(uboot_args-start)	/* offset of uboot_args from start */
+
+	ldr	x8, =(uboot_args - start)/* offset of uboot_args from start */
 	adr	x9, start
 	add	x8, x8, x9		/* add load address to offset */
+
 	str	x0, [x8, #(8*0)]
 	str	x1, [x8, #(8*1)]
 	str	x2, [x8, #(8*2)]
 	str	x3, [x8, #(8*3)]
 
+	/*
+	 * ARM64 boot protocol has FDT address in x0 *
+	 */
+	ldr	x8, =(fdt_addr_r - start)
+	adr	x9, start
+	add	x8, x8, x9
+	str	x0, [x8]
+
+
 #ifdef VERBOSE_INIT_ARM
 	PRINT("boot NetBSD/RaspberryPi\r\n")
 #endif
+
 	b	aarch64_start		/* aarch64_start() @ aarch64/locore.S */
 
-
-/*
- * void uartputc(x0:char)
- * char uartgetc(void)
- *   uartputc/uartgetc is a SoC dependent character input/output routine
- *   referenced from locore.S and early console. (before consinit)
- *
- *   Caller (locore.S) expects all registers would be saved.
- *   Don't break any registers.
- *
- * If no uart, please define dummy routine like "uartputc: ret"
- */
 ENTRY_NP(uartputc)
-#if defined(COM_DATA) && defined(COM_LSR) && defined(COM_LSR_TXFE_BIT)
-	stp	x9, x10, [sp, #-16]!
-	stp	x0, x1, [sp, #-16]!
-
-	ldr	x9, =COM_LSR
-1:	ldr	w10, [x9]
-	tbz	w10, #COM_LSR_TXFE_BIT, 1b
-
-	ldr	x9, =COM_DATA
-	and	w0, w0, #0xff
-	str	w0, [x9]
-
-	ldp	x0, x1, [sp], #16
-	ldp	x9, x10, [sp], #16
-#endif /* COM_DATA/COM_LSR/COM_LSR_TXFE_BIT */
-	ret
-END(uartputc)
-
-
-ENTRY_NP(uartgetc)
-#if defined(COM_DATA) && defined(COM_LSR) && defined(COM_LSR_RXRDY_BIT)
-	stp	x9, x10, [sp, #-16]!
-
-	ldr	x9, =COM_LSR
-1:	ldr	w10, [x9]
-	tbz	w10, #COM_LSR_RXRDY_BIT, 1b
-
-	ldr	x9, =COM_DATA
-	ldr	w0, [x9]
-	and	w0, w0, #0xff
-
-	ldp	x9, x10, [sp], #16
-#else /* COM_DATA/COM_LSR/COM_LSR_RXRDY_BIT */
-	mov x0, xzr
-#endif /* COM_DATA/COM_LSR/COM_LSR_RXRDY_BIT */
-	ret
-END(uartgetc)
+	b	bcm2837_platform_early_putchar

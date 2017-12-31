@@ -127,11 +127,11 @@ int _bus_dmamap_load_buffer(bus_dma_tag_t, bus_dmamap_t, void *,
 /*
  * Check to see if the specified page is in an allowed DMA range.
  */
-static inline struct aarch64_dma_range *
-_bus_dma_paddr_inrange(struct aarch64_dma_range *ranges, int nranges,
+static inline struct arm32_dma_range *
+_bus_dma_paddr_inrange(struct arm32_dma_range *ranges, int nranges,
     bus_addr_t curaddr)
 {
-	struct aarch64_dma_range *dr;
+	struct arm32_dma_range *dr;
 	int i;
 
 	for (i = 0, dr = ranges; i < nranges; i++, dr++) {
@@ -149,7 +149,7 @@ _bus_dma_paddr_inrange(struct aarch64_dma_range *ranges, int nranges,
 static inline paddr_t
 _bus_dma_busaddr_to_paddr(bus_dma_tag_t t, bus_addr_t curaddr)
 {
-	struct aarch64_dma_range *dr;
+	struct arm32_dma_range *dr;
 	u_int i;
 
 	if (t->_nranges == 0)
@@ -190,7 +190,7 @@ _bus_dmamap_load_paddr(bus_dma_tag_t t, bus_dmamap_t map,
 	/* Make sure we're in an allowed DMA range. */
 	if (t->_ranges != NULL) {
 		/* XXX cache last result? */
-		const struct aarch64_dma_range * const dr =
+		const struct arm32_dma_range * const dr =
 		    _bus_dma_paddr_inrange(t->_ranges, t->_nranges, paddr);
 		if (dr == NULL)
 			return EINVAL;
@@ -318,7 +318,7 @@ int
 _bus_dmamap_create(bus_dma_tag_t t, bus_size_t size, int nsegments,
     bus_size_t maxsegsz, bus_size_t boundary, int flags, bus_dmamap_t *dmamp)
 {
-	struct aarch64_bus_dmamap *map;
+	struct arm32_bus_dmamap *map;
 	void *mapstore;
 
 #ifdef DEBUG_DMA
@@ -338,14 +338,14 @@ _bus_dmamap_create(bus_dma_tag_t t, bus_size_t size, int nsegments,
 	 * The bus_dmamap_t includes one bus_dma_segment_t, hence
 	 * the (nsegments - 1).
 	 */
-	const size_t mapsize = sizeof(struct aarch64_bus_dmamap) +
+	const size_t mapsize = sizeof(struct arm32_bus_dmamap) +
 	    (sizeof(bus_dma_segment_t) * (nsegments - 1));
 	const int zallocflags =
 	    (flags & BUS_DMA_NOWAIT) ? KM_NOSLEEP : KM_SLEEP;
 	if ((mapstore = kmem_intr_zalloc(mapsize, zallocflags)) == NULL)
 		return ENOMEM;
 
-	map = (struct aarch64_bus_dmamap *)mapstore;
+	map = (struct arm32_bus_dmamap *)mapstore;
 	map->_dm_size = size;
 	map->_dm_segcnt = nsegments;
 	map->_dm_maxmaxsegsz = maxsegsz;
@@ -448,7 +448,7 @@ _bus_dmamap_destroy(bus_dma_tag_t t, bus_dmamap_t map)
 	if (map->dm_nsegs > 0)
 		STAT_INCR(unloads);
 
-	const size_t mapsize = sizeof(struct aarch64_bus_dmamap) +
+	const size_t mapsize = sizeof(struct arm32_bus_dmamap) +
 	    (sizeof(bus_dma_segment_t) * (map->_dm_segcnt - 1));
 	kmem_intr_free(map, mapsize);
 }
@@ -1216,7 +1216,7 @@ _bus_dmamem_alloc(bus_dma_tag_t t, bus_size_t size, bus_size_t alignment,
     bus_size_t boundary, bus_dma_segment_t *segs, int nsegs, int *rsegs,
     int flags)
 {
-	struct aarch64_dma_range *dr;
+	struct arm32_dma_range *dr;
 	int error, i;
 
 #ifdef DEBUG_DMA
@@ -1321,7 +1321,7 @@ _bus_dmamem_map(bus_dma_tag_t t, bus_dma_segment_t *segs, int nsegs,
 		 * a COHERENT dma range, will not be compatible.
 		 */
 		if (t->_ranges != NULL) {
-			const struct aarch64_dma_range * const dr =
+			const struct arm32_dma_range * const dr =
 			    _bus_dma_paddr_inrange(t->_ranges, t->_nranges, pa);
 			if (dr != NULL
 			    && (dr->dr_flags & _BUS_DMAMAP_COHERENT)) {
@@ -1369,7 +1369,7 @@ _bus_dmamem_map(bus_dma_tag_t t, bus_dma_segment_t *segs, int nsegs,
 			if (size == 0)
 				panic("_bus_dmamem_map: size botch");
 
-			const struct aarch64_dma_range * const dr =
+			const struct arm32_dma_range * const dr =
 			    _bus_dma_paddr_inrange(t->_ranges, t->_nranges, pa);
 			/*
 			 * If this dma region is coherent then there is
@@ -1705,7 +1705,7 @@ _bus_dmatag_subregion(bus_dma_tag_t tag, bus_addr_t min_addr,
 {
 
 #ifdef _AARCH64_NEED_BUS_DMA_BOUNCE
-	struct aarch64_dma_range *dr;
+	struct arm32_dma_range *dr;
 	bool subset = false;
 	size_t nranges = 0;
 	size_t i;

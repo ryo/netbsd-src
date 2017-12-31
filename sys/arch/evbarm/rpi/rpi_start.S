@@ -1,4 +1,4 @@
-/*	$NetBSD: rpi_start.S,v 1.14 2015/03/27 11:42:28 skrll Exp $	*/
+/*	$NetBSD: rpi_start.S,v 1.15 2017/12/10 21:38:27 skrll Exp $	*/
 
 /*
  * Copyright (c) 2002, 2003  Genetec Corporation.  All rights reserved.
@@ -83,18 +83,27 @@
 
 #include "opt_bcm283x.h"
 
-#if defined(BCM2836)
+#if defined(SOC_BCM2836)
 #include <evbarm/rpi/rpi2_start.S>
 #else
 
+#include "opt_arm_debug.h"
 #include "opt_cputypes.h"
 #include "opt_cpuoptions.h"
+#include "opt_fdt.h"
 
 #include <machine/asm.h>
 #include <arm/armreg.h>
 #include "assym.h"
 
-RCSID("$NetBSD: rpi_start.S,v 1.14 2015/03/27 11:42:28 skrll Exp $")
+RCSID("$NetBSD: rpi_start.S,v 1.15 2017/12/10 21:38:27 skrll Exp $")
+
+
+#if defined(VERBOSE_INIT_ARM)
+#define	XPUTC(n)	mov r0, n; bl bcm283x_platform_early_putchar
+#else
+#define	XPUTC(n)
+#endif
 
 /*
  * Workaround Erratum 411920
@@ -128,9 +137,13 @@ RCSID("$NetBSD: rpi_start.S,v 1.14 2015/03/27 11:42:28 skrll Exp $")
 
 	.global	_C_LABEL(rpi_start)
 _C_LABEL(rpi_start):
-	adr	r8, rpi_boot_regs
+	ldr	r8, Luboot_args
 	stmia	r8!, {r0-r3}
 
+#ifdef FDT
+	ldr	r8, Lfdt_addr_r
+	str	r2, [r8]
+#endif
 	mrs	r0, cpsr
 	bic	r0, r0, #PSR_MODE
 	orr	r0, r0, #(I32_bit | F32_bit | PSR_SVC32_MODE)
@@ -273,15 +286,24 @@ _C_LABEL(rpi_start):
 	nop
 
 	/* NOTREACHED */
+
 Ll1_s_frame:
 	.word	L1_S_FRAME
 
 Ltemp_l1_table:
 	/* Put the temporary L1 translation table just below the kernel. */
-	.word	0x4000
+	//.word	0x4000
+	//.word	(KERNEL_BASE - KERNEL_BASE_VOFFSET + 128 * L1_S_SIZE - L1_TABLE_SIZE)
+	.word	(128 * L1_S_SIZE - L1_TABLE_SIZE)
 
 Lstart:
 	.word	start
+
+Luboot_args:
+	.word	uboot_args
+Lfdt_addr_r:
+	.word	fdt_addr_r
+
 /*
  * Coprocessor register initialization values
  */
@@ -337,25 +359,27 @@ Lctl_ID_dis:
 #endif
 
 mmu_init_table:
-	/* Add 1MB of VA==PA at 0x00000000 so we can keep the kernel going */
-	MMU_INIT(0x0, 0x0,
-	    (_end - KERNEL_BASE + 2 * L1_S_SIZE - 1),
-	    L1_S_PROTO | L1_S_APv6_KRW)
+	/*
+	 * Map 256MB of VA==PA at 0x00000000 so we can keep the kernel going
+	 * and get access to the FDT the firmware loads
+	 */
+	MMU_INIT(0x0, 0x0, 0x10000000, L1_S_PROTO | L1_S_APv6_KRW)
 
 	MMU_INIT(KERNEL_BASE, 0x0,
 	    (_end - KERNEL_BASE + 2 * L1_S_SIZE - 1),
 	    L1_S_PROTO | L1_S_APv6_KRW  | L1_S_B | L1_S_C)
 
 	/* Map the 16MB of peripherals */
-	MMU_INIT(RPI_KERNEL_IO_VBASE, RPI_KERNEL_IO_PBASE,
-	    (RPI_KERNEL_IO_VSIZE + L1_S_SIZE - 1),
+	MMU_INIT(BCM2835_PERIPHERALS_VBASE, BCM2835_PERIPHERALS_BASE,
+	    (BCM2835_PERIPHERALS_SIZE + L1_S_SIZE - 1),
+	    L1_S_PROTO | L1_S_APv6_KRW)
+
+	/* Map the 16MB of peripherals */
+	MMU_INIT(BCM2835_PERIPHERALS_BASE, BCM2835_PERIPHERALS_BASE,
+	    (BCM2835_PERIPHERALS_SIZE + L1_S_SIZE - 1),
 	    L1_S_PROTO | L1_S_APv6_KRW)
 
 	/* end of table */
 	MMU_INIT(0, 0, 0, 0)
 #endif
 
-
-	.globl	_C_LABEL(rpi_boot_regs)
-rpi_boot_regs:
-	.space 4 * 4

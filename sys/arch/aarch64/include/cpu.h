@@ -147,6 +147,8 @@ cpu_intr_p(void)
 
 #endif /* _KERNEL || _KMEMUSER */
 
+void	cpu_attach(device_t, cpuid_t);
+
 #elif defined(__arm__)
 
 #include <arm/cpu.h>

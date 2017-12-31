@@ -33,6 +33,9 @@
 #include <sys/lwp.h>
 #include <sys/siginfo.h>
 
+// initarm_common
+#include <machine/bootconfig.h>
+
 #define KERN_VTOPHYS(va)	((paddr_t)((vaddr_t)(va) - VM_MIN_KERNEL_ADDRESS))
 #define KERN_PHYSTOV(pa)	((vaddr_t)((paddr_t)(pa) + VM_MIN_KERNEL_ADDRESS))
 
@@ -45,9 +48,9 @@ extern void (*cpu_powerdown_address)(void);
 
 extern char *booted_kernel;
 
-/* aarch64_machdep.c */
-struct BootConfig;
-void initarm64(struct BootConfig *);
+vaddr_t initarm_common(vaddr_t, vsize_t, const struct boot_physmem *, size_t);
+
+void parse_mi_bootargs(char *);
 void dumpsys(void);
 
 struct trapframe;

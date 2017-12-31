@@ -90,6 +90,12 @@ daif_disable(register_t psw)
 	return oldpsw;
 }
 
+static inline void
+arm_isb(void)
+{
+	__asm __volatile("isb" ::: "memory");
+}
+
 #endif /* _LOCORE */
 
 #elif defined(__arm__)

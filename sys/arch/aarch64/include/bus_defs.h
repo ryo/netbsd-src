@@ -66,11 +66,10 @@
 
 #define PRIxBUSADDR	"lx"
 
-typedef uintptr_t bus_addr_t;
-typedef uintptr_t bus_size_t;
-typedef uintptr_t bus_space_handle_t;
+typedef unsigned long bus_addr_t;
+typedef unsigned long bus_size_t;
+typedef unsigned long bus_space_handle_t;
 typedef struct bus_space *bus_space_tag_t;
-
 
 /*
  * bus_space defs
@@ -215,9 +214,9 @@ struct bus_space {
 /*
  * bus_dma defs
  */
-typedef struct aarch64_bus_dma_segment bus_dma_segment_t;
-typedef struct aarch64_bus_dma_tag *bus_dma_tag_t;
-typedef struct aarch64_bus_dmamap *bus_dmamap_t;
+typedef struct arm32_bus_dma_segment bus_dma_segment_t;
+typedef struct arm32_bus_dma_tag *bus_dma_tag_t;
+typedef struct arm32_bus_dmamap *bus_dmamap_t;
 
 /* used in some device drivers */
 #define BUS_SPACE_ALIGNED_POINTER(p, t)	ALIGNED_POINTER(p, t)
@@ -232,7 +231,7 @@ typedef struct aarch64_bus_dmamap *bus_dmamap_t;
 #define _BUS_DMAMAP_IS_BOUNCING 0x20000	/* is bouncing current xfer */
 #define _BUS_DMAMAP_NOALLOC	0x40000	/* don't alloc memory from this range */
 
-struct aarch64_bus_dma_segment {
+struct arm32_bus_dma_segment {
 	/* public: */
 	bus_addr_t	ds_addr;	/* DMA address */
 	bus_size_t	ds_len;		/* length of transfer */
@@ -244,7 +243,7 @@ struct aarch64_bus_dma_segment {
 /*
  * This structure describes a valid DMA range.
  */
-struct aarch64_dma_range {
+struct arm32_dma_range {
 	bus_addr_t dr_sysbase;	/* system base address */
 	bus_addr_t dr_busbase;	/* appears here on bus */
 	bus_size_t dr_len;	/* length of range */
@@ -259,14 +258,14 @@ struct aarch64_dma_range {
  */
 struct mbuf;
 struct uio;
-struct aarch64_bus_dma_tag {
+struct arm32_bus_dma_tag {
 	/*
 	 * DMA range for this tag.  If the page doesn't fall within
 	 * one of these ranges, an error is returned.  The caller
 	 * may then decide what to do with the transfer.  If the
 	 * range pointer is NULL, it is ignored.
 	 */
-	struct aarch64_dma_range *_ranges;
+	struct arm32_dma_range *_ranges;
 	int _nranges;
 
 	/*
@@ -323,7 +322,7 @@ struct aarch64_bus_dma_tag {
  *
  *	Describes a DMA mapping.
  */
-struct aarch64_bus_dmamap {
+struct arm32_bus_dmamap {
 	/*
 	 * PRIVATE MEMBERS: not for use by machine-independent code.
 	 */

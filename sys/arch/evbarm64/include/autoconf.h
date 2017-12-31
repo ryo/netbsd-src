@@ -31,7 +31,7 @@
 
 #include <aarch64/autoconf.h>
 
-extern void (*evbarm64_device_register)(device_t, void *);
-extern void (*evbarm64_device_register_post_config)(device_t, void *);
+extern void (*evbarm_device_register)(device_t, void *);
+extern void (*evbarm_device_register_post_config)(device_t, void *);
 
 #endif /* _EVBARM64_AUTOCONF_H_ */

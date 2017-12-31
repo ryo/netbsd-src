@@ -35,6 +35,7 @@
 #include "opt_cputypes.h"
 #include "opt_multiprocessor.h"
 #include "opt_arm_debug.h"
+#include "opt_fdt.h"
 
 #include <arm/asm.h>
 #include <arm/armreg.h>
@@ -99,6 +100,18 @@ _C_LABEL(exynos_start):
 	sub	r4, r4, #KERNEL_BASE_VOFFSET
 #endif
 	stmia	r4, {r0-r3}			// Save the arguments
+
+#ifdef FDT
+	/*
+	 * ARM boot protocol has FDT address in r2
+	 */
+	movw	r4, #:lower16:fdt_addr_r
+	movt	r4, #:upper16:fdt_addr_r
+#if KERNEL_BASE_VOFFSET != 0
+	sub	r4, r4, #KERNEL_BASE_VOFFSET
+#endif
+	str	r2, [r4]
+#endif
 
 	/* Add DTB PA (1MB) from r2 to MMU init table */
 	movw	r3, #:lower16:(L1_S_SIZE - 1)		/* align DTB PA to 1M */

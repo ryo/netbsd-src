@@ -1,4 +1,4 @@
-/* $NetBSD: ixgbe.c,v 1.113 2017/11/22 15:15:09 msaitoh Exp $ */
+/* $NetBSD: ixgbe.c,v 1.115 2017/12/06 04:08:50 msaitoh Exp $ */
 
 /******************************************************************************
 
@@ -272,6 +272,9 @@ DRIVER_MODULE(ix, pci, ix_driver, ix_devclass, 0, 0);
 
 MODULE_DEPEND(ix, pci, 1, 1, 1);
 MODULE_DEPEND(ix, ether, 1, 1, 1);
+#ifdef DEV_NETMAP
+MODULE_DEPEND(ix, netmap, 1, 1, 1);
+#endif
 #endif
 
 /*
@@ -498,9 +501,6 @@ ixgbe_initialize_rss_mapping(struct adapter *adapter)
 		mrqc |= IXGBE_MRQC_RSS_FIELD_IPV6_EX_TCP;
 	if (rss_hash_config & RSS_HASHTYPE_RSS_UDP_IPV4)
 		mrqc |= IXGBE_MRQC_RSS_FIELD_IPV4_UDP;
-	if (rss_hash_config & RSS_HASHTYPE_RSS_UDP_IPV4_EX)
-		device_printf(adapter->dev, "%s: RSS_HASHTYPE_RSS_UDP_IPV4_EX defined, but not supported\n",
-		    __func__);
 	if (rss_hash_config & RSS_HASHTYPE_RSS_UDP_IPV6)
 		mrqc |= IXGBE_MRQC_RSS_FIELD_IPV6_UDP;
 	if (rss_hash_config & RSS_HASHTYPE_RSS_UDP_IPV6_EX)
@@ -1003,8 +1003,13 @@ ixgbe_attach(device_t parent, device_t dev, void *aux)
 		high = (nvmreg >> 12) & 0x0f;
 		low = (nvmreg >> 4) & 0xff;
 		id = nvmreg & 0x000f;
-		aprint_normal(" PHY FW Revision %u.%02x ID 0x%x,", high, low,
-		    id);
+		aprint_normal(" PHY FW Revision %u.", high);
+		if (hw->mac.type == ixgbe_mac_X540)
+			str = "%x";
+		else
+			str = "%02x";
+		aprint_normal(str, low);
+		aprint_normal(" ID 0x%x,", id);
 		break;
 	default:
 		break;
@@ -2180,15 +2185,17 @@ ixgbe_setup_vlan_hw_support(struct adapter *adapter)
 		return;
 
 	/* Setup the queues for vlans */
-	for (i = 0; i < adapter->num_queues; i++) {
-		rxr = &adapter->rx_rings[i];
-		/* On 82599 the VLAN enable is per/queue in RXDCTL */
-		if (hw->mac.type != ixgbe_mac_82598EB) {
-			ctrl = IXGBE_READ_REG(hw, IXGBE_RXDCTL(rxr->me));
-			ctrl |= IXGBE_RXDCTL_VME;
-			IXGBE_WRITE_REG(hw, IXGBE_RXDCTL(rxr->me), ctrl);
+	if (ec->ec_capenable & ETHERCAP_VLAN_HWTAGGING) {
+		for (i = 0; i < adapter->num_queues; i++) {
+			rxr = &adapter->rx_rings[i];
+			/* On 82599 the VLAN enable is per/queue in RXDCTL */
+			if (hw->mac.type != ixgbe_mac_82598EB) {
+				ctrl = IXGBE_READ_REG(hw, IXGBE_RXDCTL(rxr->me));
+				ctrl |= IXGBE_RXDCTL_VME;
+				IXGBE_WRITE_REG(hw, IXGBE_RXDCTL(rxr->me), ctrl);
+			}
+			rxr->vtag_strip = TRUE;
 		}
-		rxr->vtag_strip = TRUE;
 	}
 
 	if ((ec->ec_capenable & ETHERCAP_VLAN_HWFILTER) == 0)

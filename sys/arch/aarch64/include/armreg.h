@@ -33,9 +33,6 @@
 #define _AARCH64_ARMREG_H_
 
 #include <arm/cputypes.h>
-
-#ifdef __aarch64__
-
 #include <sys/types.h>
 
 #define AARCH64REG_READ_INLINE2(regname, regdesc)		\
@@ -260,6 +257,7 @@ static const uintmax_t
 AARCH64REG_READ_INLINE(id_aa64mmfr1_el1)
 AARCH64REG_READ_INLINE(id_aa64pfr0_el1)
 AARCH64REG_READ_INLINE(id_aa64pfr1_el1)
+AARCH64REG_READ_INLINE(id_pfr1_el1)
 AARCH64REG_READ_INLINE(isr_el1)
 AARCH64REG_READ_INLINE(midr_el1)
 AARCH64REG_READ_INLINE(mpidr_el1)
@@ -854,13 +852,17 @@ AARCH64REG_READ_INLINE(cntkctl_el1)
 AARCH64REG_WRITE_INLINE(cntkctl_el1)
 
 static const uintmax_t
-    CNTKCTL_EL0PTEN	= __BIT(9),	/* EL0 access for CNTP CVAL/TVAL/CTL */
-    CNTKCTL_EL0VTEN	= __BIT(8),	/* EL0 access for CNTV CVAL/TVAL/CTL */
+    CNTKCTL_EL0PTEN	= __BIT(9),		/* EL0 access for CNTP CVAL/TVAL/CTL */
+    CNTKCTL_PL0PTEN	= CNTKCTL_EL0PTEN,
+    CNTKCTL_EL0VTEN	= __BIT(8),		/* EL0 access for CNTV CVAL/TVAL/CTL */
+    CNTKCTL_PL0VTEN	= CNTKCTL_EL0VTEN,
     CNTKCTL_ELNTI	= __BITS(7,4),
     CNTKCTL_EVNTDIR	= __BIT(3),
     CNTKCTL_EVNTEN	= __BIT(2),
-    CNTKCTL_EL0VCTEN	= __BIT(1),	/* EL0 access for CNTVCT and CNTFRQ */
-    CNTKCTL_EL0PCTEN	= __BIT(0);	/* EL0 access for CNTPCT and CNTFRQ */
+    CNTKCTL_EL0VCTEN	= __BIT(1),		/* EL0 access for CNTVCT and CNTFRQ */
+    CNTKCTL_PL0VCTEN	= CNTKCTL_EL0VCTEN,
+    CNTKCTL_EL0PCTEN	= __BIT(0),		/* EL0 access for CNTPCT and CNTFRQ */
+    CNTKCTL_PL0PCTEN	= CNTKCTL_EL0PCTEN;
 
 AARCH64REG_READ_INLINE(cntp_ctl_el0)
 AARCH64REG_WRITE_INLINE(cntp_ctl_el0)
@@ -934,11 +936,91 @@ static const uintmax_t
     ICC_SRE_EL2_EN			= __BIT(3);
 
 
+/*
+ * GENERIC TIMER REGISTER ACCESS
+ */
+static inline uint32_t
+gtmr_cntfrq_read(void)
+{
 
-#elif defined(__arm__)
+	return reg_cntfrq_el0_read();
+}
 
-#include <arm/armreg.h>
+static inline uint32_t
+gtmr_cntk_ctl_read(void)
+{
 
-#endif /* __aarch64__/__arm__ */
+	return reg_cntkctl_el1_read();
+}
+
+static inline void
+gtmr_cntk_ctl_write(uint32_t val)
+{
+
+	reg_cntkctl_el1_write(val);
+}
+
+/*
+ * Counter-timer Virtual Count timer
+ */
+static inline uint64_t
+gtmr_cntpct_read(void)
+{
+
+	return reg_cntpct_el0_read();
+}
+
+static inline uint64_t
+gtmr_cntvct_read(void)
+{
+
+	return reg_cntvct_el0_read();
+}
+
+/*
+ * Counter-timer Virtual Timer Control register
+ */
+static inline uint32_t
+gtmr_cntv_ctl_read(void)
+{
+
+	return reg_cntv_ctl_el0_read();
+}
+
+static inline void
+gtmr_cntv_ctl_write(uint32_t val)
+{
+
+	reg_cntv_ctl_el0_write(val);
+}
+
+static inline void
+gtmr_cntp_ctl_write(uint32_t val)
+{
+
+
+	reg_cntp_ctl_el0_write(val);
+}
+
+/*
+ * Counter-timer Virtual Timer TimerValue register
+ */
+static inline void
+gtmr_cntv_tval_write(uint32_t val)
+{
+
+	reg_cntv_tval_el0_write(val);
+}
+
+
+/*
+ * Counter-timer Virtual Timer CompareValue register
+ */
+static inline uint64_t
+gtmr_cntv_cval_read(void)
+{
+
+	return reg_cntv_cval_el0_read();
+}
 
 #endif /* _AARCH64_ARMREG_H_ */

@@ -25,6 +25,11 @@ defparam opt_bootconfig.h	DRAM_BLOCKS
 # FP support
 file	arch/aarch64/aarch64/fpu.c
 
+ # Power State Coordination Interface (PSCI)
+device	psci
+file	arch/arm/arm/psci.c			psci
+file	arch/arm/arm/psci_arm.S			psci
+
 # PMAP_DEBUG (heavily abused option)
 defflag				PMAP_DEBUG
 
@@ -49,23 +54,17 @@ device	mainbus { [addr = -1], [size = 0], [intr = -1] }
 attach	mainbus at root
 file	arch/aarch64/dev/mainbus.c			mainbus
 
-device	cpunode { [core = -1] }
-attach	cpunode at mainbus with cpunode_mainbus
-file	arch/aarch64/dev/cpunode.c			cpunode_mainbus
+device cpu { }
+file	arch/aarch64/dev/cpu.c                          cpu
+file	arch/aarch64/aarch64/cpu.c			cpu
 
-device	cpu
-attach	cpu at cpunode with cpu_cpunode
-file	arch/aarch64/dev/cpu.c				cpu_cpunode
-
+# XXXNH use arch/arm/cortex GIC driver
 device	a64gic: pic
 attach	a64gic at mainbus
 file	arch/arm/cortex/gic.c				a64gic
 file	arch/aarch64/dev/a64gic_mainbus.c		a64gic needs-flag
 
-device	a64gtmr
-attach	a64gtmr at mainbus
-file	arch/aarch64/dev/a64gtmr.c			a64gtmr
-
+# XXXNH use arch/arm bus_space
 # bus_space(9)
 define	bus_space_generic
 file	arch/aarch64/aarch64/bus_space.c
@@ -74,6 +73,7 @@ file	arch/aarch64/aarch64/bus_space_notimpl.S
 file	arch/aarch64/aarch64/bus_dma.c
 
 # Standard files
+file	arch/arm/arm/bootconfig.c
 file	arch/aarch64/aarch64/aarch64_machdep.c
 file	arch/aarch64/aarch64/aarch64_reboot.c
 file	arch/aarch64/aarch64/core_machdep.c

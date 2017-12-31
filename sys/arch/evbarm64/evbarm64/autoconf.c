@@ -30,11 +30,14 @@
 #include <sys/conf.h>
 #include <sys/device.h>
 
-#include <aarch64/machdep.h>
+#include <machine/bootconfig.h>
 #include <machine/autoconf.h>
+#include <aarch64/machdep.h>
 
-void (*evbarm64_device_register)(device_t, void *);
-void (*evbarm64_device_register_post_config)(device_t, void *);
+void (*evbarm_device_register)(device_t, void *);
+void (*evbarm_device_register_post_config)(device_t, void *);
+
+extern struct cfdata cfdata[];
 
 void
 cpu_rootconf(void)
@@ -45,10 +48,18 @@ cpu_rootconf(void)
 void
 cpu_configure(void)
 {
-	splhigh();
+	struct mainbus_attach_args maa;
+	struct cfdata *cf;
 
-	if (config_rootfound("mainbus", NULL) == NULL)
-		panic("no mainbus found");
+	(void) splhigh();
+
+	for (cf = &cfdata[0]; cf->cf_name; cf++) {
+		if (cf->cf_pspec == NULL) {
+			maa.mba_name = cf->cf_name;
+			if (config_rootfound(cf->cf_name, &maa) != NULL)
+				break;
+		}
+	}
 
 	/* Turn on interrupt! */
 	spl0();
@@ -57,13 +68,13 @@ cpu_configure(void)
 void
 device_register(device_t dev, void *aux)
 {
-	if (evbarm64_device_register != NULL)
-		(*evbarm64_device_register)(dev, aux);
+	if (evbarm_device_register != NULL)
+		(*evbarm_device_register)(dev, aux);
 }
 
 void
 device_register_post_config(device_t dev, void *aux)
 {
-	if (evbarm64_device_register_post_config != NULL)
-		(*evbarm64_device_register_post_config)(dev, aux);
+	if (evbarm_device_register_post_config != NULL)
+		(*evbarm_device_register_post_config)(dev, aux);
 }

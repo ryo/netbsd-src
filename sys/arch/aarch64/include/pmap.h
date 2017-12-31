@@ -125,6 +125,7 @@ struct pmap_devmap {
 	vm_prot_t pd_prot;	/* protection code */
 	u_int pd_flags;		/* flags for pmap_kenter_pa() */
 };
+
 void pmap_devmap_register(const struct pmap_devmap *);
 void pmap_devmap_bootstrap(const struct pmap_devmap *);
 const struct pmap_devmap *pmap_devmap_find_pa(paddr_t, psize_t);
@@ -135,6 +136,17 @@ paddr_t pmap_devmap_vtophys(paddr_t);
 /* devmap use L2 blocks. (2Mbyte) */
 #define DEVMAP_TRUNC_ADDR(x)	((x) & ~L2_OFFSET)
 #define DEVMAP_ROUND_SIZE(x)	(((x) + L2_SIZE - 1) & ~(L2_SIZE - 1))
+
+#define	DEVMAP_ENTRY(va, pa, sz)			\
+	{						\
+		.pd_va = DEVMAP_TRUNC_ADDR(va),		\
+		.pd_pa = DEVMAP_TRUNC_ADDR(pa),		\
+		.pd_size = DEVMAP_ROUND_SIZE(sz),	\
+		.pd_prot = VM_PROT_READ|VM_PROT_WRITE,	\
+		.pd_flags = PMAP_NOCACHE		\
+	}
+#define	DEVMAP_ENTRY_END	{ 0 }
+
 
 
 /* mmap cookie and flags */

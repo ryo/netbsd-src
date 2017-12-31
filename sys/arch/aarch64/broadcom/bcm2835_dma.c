@@ -37,7 +37,7 @@ __KERNEL_RCSID(0, "$NetBSD: bcm2835_dma.c,v 1.2 2012/09/18 05:47:27 matt Exp $")
 #include <sys/param.h>
 #include <sys/bus.h>
 
-struct aarch64_bus_dma_tag bcm2835_bus_dma_tag = {
+struct arm32_bus_dma_tag bcm2835_bus_dma_tag = {
 	_BUS_DMAMAP_FUNCS,
 	_BUS_DMAMEM_FUNCS,
 	_BUS_DMATAG_FUNCS,

@@ -36,6 +36,9 @@
  * SUCH DAMAGE.
  */
 
+#ifndef _ARM_BOOTCONFIG_H
+#define _ARM_BOOTCONFIG_H
+
 #ifdef _KERNEL
 #define BOOTOPT_TYPE_BOOLEAN		0
 #define BOOTOPT_TYPE_STRING		1
@@ -59,3 +62,5 @@ char *get_bootconf_string(char *, const char *);
 
 extern char *boot_args;
 #endif	/* _KERNEL */
+
+#endif

@@ -37,7 +37,6 @@
 
 RCSID("$NetBSD$")
 
-
 //#define DEBUG_LOCORE
 //#define DEBUG_MMU
 
@@ -50,7 +49,7 @@ RCSID("$NetBSD$")
 #define L2_BLKPAG_ATTR_NORMAL_WT	__SHIFTIN(2, LX_BLKPAG_ATTR_INDX)
 #define L2_BLKPAG_ATTR_DEVICE_MEM	__SHIFTIN(3, LX_BLKPAG_ATTR_INDX)
 
-#define PRINT(string)	stp x0,lr,[sp,#-16]!;bl xprint;.asciz string;.align 2;ldp x0,lr,[sp],#16
+#define PRINT(string)	bl xprint;.asciz string;.align 2
 
 #ifdef VERBOSE_LOCORE
 #define VERBOSE(string)	PRINT(string)
@@ -60,72 +59,77 @@ RCSID("$NetBSD$")
 
 ENTRY_NP(aarch64_start)
 
+	adr	x0, lwp0uspace
+	add	x0, x0, #(UPAGES * PAGE_SIZE)
+	sub	x0, x0, #TF_SIZE	/* lwp0space + USPACE - TF_SIZE */
+	mov	sp, x0			/* define lwp0 ksp bottom */
+
+	PRINT("SP               = ")
+	mov	x0, sp
+	bl	print_x0
+
+	PRINT("PC               = ")
+	bl	1f
+1:	mov	x0, lr
+	bl	print_x0
+
 #ifdef DEBUG_LOCORE
+	PRINT("CurrentEL        = ")
 	mrs	x0, CurrentEL
 	lsr	x0, x0, #2
-	PRINT("CurrentEL=")
 	bl	print_x0
 
 	cmp	x0, #2
 	bne	1f
 
 	/* EL2 registers can be accessed in EL2 or higher */
+	PRINT("SCTLR_EL2        = ")
 	mrs	x0, sctlr_el2
-	PRINT("SCTLR_EL2=")
 	bl	print_x0
 
+	PRINT("HCR_EL2          = ")
 	mrs	x0, hcr_el2
-	PRINT("HCR_EL2=")
 	bl	print_x0
 1:
 
+	PRINT("CNTFREQ_EL0      = ")
 	mrs	x0, cntfrq_el0
-	PRINT("CNTFREQ_EL0=")
 	bl	print_x0
 
+	PRINT("DAIF             = ")
 	mrs	x0, daif
-	PRINT("DAIF=")
 	bl	print_x0
 
-	mov	x0, sp
-	PRINT("SP=")
-	bl	print_x0
-
-	bl	1f
-	PRINT("PC=")
-1:	mov	x0, lr
-	bl	print_x0
-
+	PRINT("MPIDR_EL1        = ")
 	mrs	x0, mpidr_el1
-	PRINT("MPIDR_EL1=")
 	bl	print_x0
 
+	PRINT("L2CTLR_EL1       = ")
 	mrs	x0, s3_1_c11_c0_2
-	PRINT("L2CTLR_EL1=")
 	bl	print_x0
 
-	PRINT("ID_AA64MPFR0_EL1=")
+	PRINT("ID_AA64MPFR0_EL1 = ")
 	mrs	x0, id_aa64pfr0_el1
 	bl	print_x0
 
-	PRINT("ID_AA64MPFR1_EL1=")
+	PRINT("ID_AA64MPFR1_EL1 = ")
 	mrs	x0, id_aa64pfr1_el1
 	bl	print_x0
 
-	PRINT("ID_AA64ISAR0_EL1=")
+	PRINT("ID_AA64ISAR0_EL1 = ")
 	mrs	x0, id_aa64isar0_el1
 	bl	print_x0
 
-	PRINT("ID_AA64ISAR1_EL1=")
+	PRINT("ID_AA64ISAR1_EL1 = ")
 	mrs	x0, id_aa64isar1_el1
 	bl	print_x0
 
 
-	PRINT("ID_AA64MMFR0_EL1=")
+	PRINT("ID_AA64MMFR0_EL1 = ")
 	mrs	x0, id_aa64mmfr0_el1
 	bl	print_x0
 
-	PRINT("ID_AA64MMFR1_EL1=")
+	PRINT("ID_AA64MMFR1_EL1 = ")
 	mrs	x0, id_aa64mmfr1_el1
 	bl	print_x0
 #endif
@@ -136,16 +140,16 @@ ENTRY_NP(aarch64_start)
 # include <aarch64/aarch64/locore_el2.S>
 	VERBOSE("OK\r\n")
 #ifdef DEBUG_LOCORE
+	PRINT("CurrentEL        = ")
 	mrs	x0, CurrentEL
 	lsr	x0, x0, #2
-	PRINT("CurrentEL=")
 	bl	print_x0
 #endif /* DEBUG_LOCORE */
 #endif /* LOCORE_EL2 */
 
 #ifdef DEBUG_LOCORE
+	PRINT("DAIF             = ")
 	mrs	x0, daif
-	PRINT("DAIF=")
 	bl	print_x0
 #endif
 
@@ -164,16 +168,20 @@ ENTRY_NP(aarch64_start)
 	msr	vbar_el1, x2
 
 #ifdef DEBUG_LOCORE
+	PRINT("SPSR_EL1        = ")
 	mrs	x0, spsr_el1
-	PRINT("SPSR_EL1=")
 	bl	print_x0
 #endif
 
 #ifdef DEBUG_LOCORE
+	PRINT("DAIF            = ")
 	mrs	x0, daif
-	PRINT("DAIF=")
 	bl	print_x0
 #endif
+
+	PRINT("VSTART          = ")
+	ldr	x0, .Lvstart	# virtual address of vstart
+	bl	print_x0
 
 	ldr	x0, .Lvstart	# virtual address of vstart
 	br	x0		# jump to the kernel virtual address
@@ -188,7 +196,7 @@ vstart:
 	mov	sp, x0			/* define lwp0 ksp bottom */
 
 #ifdef DEBUG_LOCORE
-	PRINT("SP=")
+	PRINT("VSP             = ")
 	mov	x0, sp
 	bl	print_x0
 #endif
@@ -196,15 +204,17 @@ vstart:
 	/* Zero the BSS */
 	ldr	x0, .Lbss
 	ldr	x1, .Lend
+	b	2f
 1:	stp	xzr, xzr, [x0], #16
-	cmp	x0, x1
-	bcc	1b
+2:	cmp	x0, x1
+	b.lo	1b
 
 	msr	tpidr_el0, xzr		/* tpidr_el0 (for TLS) = NULL */
 	bl	set_cpuinfo
 
 	mov	fp, #0			/* trace back starts here */
 	bl	_C_LABEL(initarm)	/* Off we go */
+
 	bl	_C_LABEL(main)		/* call main() */
 
 	adr	x0, .Lmainreturned
@@ -223,13 +233,12 @@ END(aarch64_start)
 .Lbss:
 	.quad	__bss_start
 .Lend:
-	.quad	_end
+	.quad	__bss_end__
 
-
+	.text
 /*
  * xprint - print strings pointed by $PC(LR)
  *          and return to the end of string.
- *          all registers are saved.
  * e.g.)
  *    bl        xprint        <- call
  *    .ascii    "Hello\r\n\0" <- wouldn't return here
@@ -238,34 +247,33 @@ END(aarch64_start)
  */
 	.global xprint
 xprint:
-	stp	x0, x1, [sp, #-16]!
-	mov	x0, lr
-	bl	uartputs
+	mov	x11, lr
+	mov	x12, x0
+	ldrb	w0, [x11], #1
+	cbz	w0, 2f
 
-1:	ldrb	w1, [x0], #1
-	cbnz	w1, 1b
+1:
+	bl	uartputc
+	ldrb	w0, [x11], #1
+	cbnz	w0, 1b
 
-	add	x0, x0, #3
-	bic	lr, x0, #3
-
-	ldp	x0, x1, [sp], #16
+2:
+	add	x11, x11, #3
+	bic	lr, x11, #3
+	mov	x0, x12
 	ret
 END(xprint)
 
 	.global _C_LABEL(uartputs)
 _C_LABEL(uartputs):
-	stp	x8, lr, [sp, #-16]!
-	stp	x0, x1, [sp, #-16]!
-
-	mov	x8, x0
-	ldrb	w0, [x8], #1
+	mov	x11, x0
+	ldrb	w0, [x11], #1
 	cbz	w0, 9f
 1:	bl	uartputc
-	ldrb	w0, [x8], #1
+	ldrb	w0, [x11], #1
 	cbnz	w0, 1b
 9:
-	ldp	x0, x1, [sp], #16
-	ldp	x8, lr, [sp], #16
+	mov 	x0, x11
 	ret
 END(_C_LABEL(uartputs))
 
@@ -350,6 +358,17 @@ arm_cpuinit_too_many_cpu:
 arm_boot_l0pt_init:
 	stp	x0, lr, [sp, #-16]!
 
+	/* Clean the page table */
+	adr	x0, mmutables_start
+	adr	x1, mmutables_end
+1:
+	stp	xzr, xzr, [x0], #16
+	stp	xzr, xzr, [x0], #16
+	stp	xzr, xzr, [x0], #16
+	stp	xzr, xzr, [x0], #16
+	cmp	x0, x1
+	b.lo	1b
+
 	VERBOSE("Creating VA=PA tables\r\n")
 	/* VA=PA table for L0 */
 	adr	x0, ttbr0_l0table
@@ -404,8 +423,7 @@ arm_boot_l0pt_init:
 
 	/* kernelsize = _end - _start */
 	ldr	x4, .Lend
-	ldr	x5, .Lkernel_text
-	sub	x4, x4, x5
+	sub	x4, x4, x1
 
 	/* round up kernelsize to L2_SIZE (2MB) */
 	add	x4, x4, #L2_SIZE
@@ -425,7 +443,7 @@ arm_boot_l0pt_init:
 
 	.align 3
 .L_devmap_addr:
-	.quad	VM_MAX_KERNEL_ADDRESS - L2_SIZE
+	.quad	KERNEL_IO_VBASE
 
 /*
  *	x0 = l0table
@@ -723,6 +741,8 @@ _C_LABEL(lwp0uspace):
 	.space	UPAGES * PAGE_SIZE
 
 	.align PGSHIFT
+
+mmutables_start:
 /*
  * PA == VA mapping using L1 1G block (whole 32bit)
  */
@@ -746,3 +766,4 @@ ttbr1_l2table_kva:
 	.space	PAGE_SIZE
 ttbr1_l2table_devmap:
 	.space	PAGE_SIZE
+mmutables_end:

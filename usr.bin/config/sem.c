@@ -1,4 +1,4 @@
-/*	$NetBSD: sem.c,v 1.80 2017/11/19 00:41:10 kre Exp $	*/
+/*	$NetBSD: sem.c,v 1.82 2017/11/27 00:25:46 christos Exp $	*/
 
 /*
  * Copyright (c) 1992, 1993
@@ -45,7 +45,7 @@
 #endif
 
 #include <sys/cdefs.h>
-__RCSID("$NetBSD: sem.c,v 1.80 2017/11/19 00:41:10 kre Exp $");
+__RCSID("$NetBSD: sem.c,v 1.82 2017/11/27 00:25:46 christos Exp $");
 
 #include <sys/param.h>
 #include <ctype.h>
@@ -79,8 +79,7 @@ static int has_errobj(struct attrlist *, struct attr *);
 static struct nvlist *addtoattr(struct nvlist *, struct devbase *);
 static int resolve(struct nvlist **, const char *, const char *,
 		   struct nvlist *, int);
-static struct pspec *getpspec(struct attr *, struct devbase *, int,
-    struct deva *);
+static struct pspec *getpspec(struct attr *, struct devbase *, int, int);
 static struct devi *newdevi(const char *, int, struct devbase *d);
 static struct devi *getdevi(const char *);
 static void remove_devi(struct devi *);
@@ -214,7 +213,8 @@ fixdev(struct devbase *dev)
 	CFGDBG(4, "fixing devbase `%s'", dev->d_name);
 	for (al = dev->d_attrs; al != NULL; al = al->al_next) {
 		a = al->al_this;
-		CFGDBG(4, "fixing devbase `%s' attr `%s'", dev->d_name, a->a_name);
+		CFGDBG(4, "fixing devbase `%s' attr `%s'", dev->d_name,
+		    a->a_name);
 		if (a->a_iattr) {
 			a->a_refs = addtoattr(a->a_refs, dev);
 			CFGDBG(3, "device `%s' has iattr `%s'", dev->d_name,
@@ -228,8 +228,8 @@ fixdev(struct devbase *dev)
 			}
 			if (dev->d_classattr == NULL) {
 				dev->d_classattr = a;
-				CFGDBG(3, "device `%s' is devclass `%s'", dev->d_name,
-				    a->a_name);
+				CFGDBG(3, "device `%s' is devclass `%s'",
+				    dev->d_name, a->a_name);
 			}
 		} else {
 			if (strcmp(dev->d_name, a->a_name) != 0) {
@@ -396,7 +396,7 @@ defiattr(const char *name, struct loclist *locs, struct attrlist *deps,
 	struct loclist *ll;
 
 	if (devclass)
-		panic("defattr(%s): locators and devclass", name);
+		panic("%s: %s has both locators and devclass", __func__, name);
 
 	if (defattr(name, locs, deps, devclass) != 0)
 		return (1);
@@ -426,7 +426,8 @@ defdevclass(const char *name, struct loclist *locs, struct attrlist *deps,
 	int errored = 0;
 
 	if (deps)
-		panic("defattr(%s): dependencies and devclass", name);
+		panic("%s: %s has both dependencies and devclass", __func__,
+		    name);
 
 	if (defattr(name, locs, deps, devclass) != 0)
 		return (1);
@@ -434,9 +435,9 @@ defdevclass(const char *name, struct loclist *locs, struct attrlist *deps,
 	a = getattr(name);
 	(void)snprintf(classenum, sizeof(classenum), "DV_%s", name);
 	for (cp = classenum + 3; *cp; cp++) {
-		if (!errored &&
-		    (!isalnum((unsigned char)*cp) ||
-		      (isalpha((unsigned char)*cp) && !islower((unsigned char)*cp)))) {
+		if (!errored && (!isalnum((unsigned char)*cp) ||
+		      (isalpha((unsigned char)*cp)
+		      && !islower((unsigned char)*cp)))) {
 			cfgerror("device class names must be "
 			    "lower-case alphanumeric characters");
 			errored = 1;
@@ -625,7 +626,7 @@ getdevbase(const char *name)
 		dev->d_umax = 0;
 		TAILQ_INSERT_TAIL(&allbases, dev, d_next);
 		if (ht_insert(devbasetab, name, dev))
-			panic("getdevbase(%s)", name);
+			panic("%s: Can't insert %s", __func__, name);
 		CFGDBG(3, "devbase defined `%s'", dev->d_name);
 	}
 	return (dev);
@@ -765,7 +766,7 @@ getdevattach(const char *name)
 		deva->d_ipp = &deva->d_ihead;
 		TAILQ_INSERT_TAIL(&alldevas, deva, d_next);
 		if (ht_insert(devatab, name, deva))
-			panic("getdeva(%s)", name);
+			panic("%s: Can't insert %s", __func__, name);
 	}
 	return (deva);
 }
@@ -938,7 +939,7 @@ resolve(struct nvlist **nvp, const char *name, const char *what,
 	char buf[NAMESIZE];
 
 	if ((part -= 'a') >= maxpartitions || part < 0)
-		panic("resolve");
+		panic("%s: Bad partition %c", __func__, part);
 	if ((nv = *nvp) == NULL) {
 		dev_t	d = NODEV;
 		/*
@@ -1111,7 +1112,7 @@ delconf(const char *name, int nowarn)
 		if (!strcmp(cf->cf_name, name))
 			break;
 	if (cf == NULL)
-		panic("lost configuration `%s'", name);
+		panic("%s: lost configuration for %s", __func__, name);
 
 	TAILQ_REMOVE(&allcf, cf, cf_next);
 }
@@ -1251,14 +1252,12 @@ adddev(const char *name, const char *at, struct loclist *loclist, int flags)
 	struct devbase *ab;	/* not NULL => at another dev */
 	struct deva *iba;	/* devbase attachment used */
 	struct deva *lastiba;
-	int atunit;
+	int atunit, first;
 
 	lastiba = NULL;
 	if ((i = getdevi(name)) == NULL)
 		goto bad;
 	ib = i->i_base;
-	iba = NULL;
-	p = NULL;
 	attr = finddevattr(name, at, ib, &ab, &atunit);
 	if (attr == NULL) {
 		i->i_active = DEVI_BROKEN;
@@ -1271,11 +1270,13 @@ adddev(const char *name, const char *at, struct loclist *loclist, int flags)
 			    attr == &errattr ? NULL : attr))
 				break;
 
+		first = lastiba == ib->d_ahead;
 		if (iba == NULL) {
-			if (lastiba != ib->d_ahead)
+			if (!first)
 				goto bad;
 			if (attr != &errattr) {
-				panic("adddev: can't figure out attachment");
+				panic("%s: can't figure out attachment",
+				    __func__);
 			} else {
 				cfgerror("`%s' cannot attach to the root",
 				    ib->d_name);
@@ -1283,7 +1284,7 @@ adddev(const char *name, const char *at, struct loclist *loclist, int flags)
 			}
 		}
 		// get a new one if it is not the first time
-		if (lastiba != ib->d_ahead && (i = getdevi(name)) == NULL)
+		if (!first && (i = getdevi(name)) == NULL)
 			goto bad;
 
 		if (attr != &errattr) {
@@ -1294,9 +1295,10 @@ adddev(const char *name, const char *at, struct loclist *loclist, int flags)
 			 * XXX: This creates multiple pspecs that look the
 			 * same in the config file and could be merged.
 			 */
-			p = getpspec(attr, ab, atunit, iba);
+			p = getpspec(attr, ab, atunit, first);
 			p->p_devs = newnv(NULL, NULL, i, 0, p->p_devs);
-		}
+		} else
+			p = NULL;
 
 		if ((i->i_locs = fixloc(name, attr, loclist)) == NULL) {
 			i->i_active = DEVI_BROKEN;
@@ -1399,7 +1401,7 @@ remove_devi(struct devi *i)
 	CFGDBG(5, "removing devi `%s'", i->i_name);
 	f = ht_lookup(devitab, i->i_name);
 	if (f == NULL)
-		panic("remove_devi(): instance %s disappeared from devitab",
+		panic("%s: instance %s disappeared from devitab", __func__,
 		    i->i_name);
 
 	if (i->i_active == DEVI_BROKEN) {
@@ -1447,8 +1449,8 @@ remove_devi(struct devi *i)
 		    ppi = &(*ppi)->i_bsame)
 			continue;
 		if (*ppi == NULL)
-			panic("deldev: dev (%s) doesn't list the devi"
-			    " (%s at %s)", d->d_name, i->i_name, i->i_at);
+			panic("%s: dev (%s) doesn't list the devi (%s at %s)",
+			    __func__, d->d_name, i->i_name, i->i_at);
 		f = *ppi;
 		if (f == i)
 			/* That implies d->d_ihead == i */
@@ -1474,7 +1476,7 @@ remove_devi(struct devi *i)
 	    ppi = &(*ppi)->i_asame)
 		continue;
 	if (*ppi == NULL)
-		panic("deldev: deva (%s) doesn't list the devi (%s)",
+		panic("%s: deva (%s) doesn't list the devi (%s)", __func__,
 		    iba->d_name, i->i_name);
 	f = *ppi;
 	if (f == i)
@@ -1513,7 +1515,7 @@ remove_devi(struct devi *i)
 	f = ht_lookup(deaddevitab, i->i_name);
 	if (f == NULL) {
 		if (ht_insert(deaddevitab, i->i_name, i))
-			panic("remove_devi(%s) - can't add to deaddevitab",
+			panic("%s: can't add %s to deaddevitab", __func__,
 			    i->i_name);
 	} else {
 		for (j = f; j->i_alias != NULL; j = j->i_alias)
@@ -1733,7 +1735,8 @@ addpseudoroot(const char *name)
 	/* ok, everything should be set up, so instantiate a fake device */
 	i = getdevi(name);
 	if (i == NULL)
-		panic("device `%s' expected to be present", name);
+		panic("%s: device `%s' expected to be present", __func__,
+		    name);
 	ib = i->i_base;
 	iba = ib->d_ahead;
 
@@ -1767,9 +1770,9 @@ deldevbase(struct devbase *d)
 	d->d_ihead = NULL;	/* make sure it won't be considered active */
 	TAILQ_REMOVE(&allpseudo, i, i_next);
 	if (ht_remove(devitab, name))
-		panic("%s(%s) - can't remove from devitab", __func__, name);
+		panic("%s: Can't remove %s from devitab", __func__, name);
 	if (ht_insert(deaddevitab, name, i))
-		panic("%s(%s) - can't add to deaddevitab", __func__, name);
+		panic("%s: Can't add %s to deaddevitab", __func__, name);
 }
 
 void
@@ -1793,7 +1796,7 @@ addpseudo(const char *name, int number)
 	}
 	i = newdevi(name, number - 1, d);	/* foo 16 => "foo0..foo15" */
 	if (ht_insert(devitab, name, i))
-		panic("addpseudo(%s)", name);
+		panic("%s: %s", __func__, name);
 	/* Useful to retrieve the instance from the devbase */
 	d->d_ihead = i;
 	i->i_active = DEVI_ACTIVE;
@@ -1863,6 +1866,7 @@ adddevm(const char *name, devmajor_t cmajor, devmajor_t bmajor,
 int
 fixdevis(void)
 {
+	const char *msg;
 	struct devi *i;
 	struct pspec *p;
 	int error = 0;
@@ -1878,11 +1882,11 @@ fixdevis(void)
 			 */
 			++error;
 			p = i->i_pspec;
+			msg = p == NULL ? "no parent" :
+			    (p->p_atunit == WILD ? "nothing matching" : "no");
 			cfgxerror(i->i_srcfile, i->i_lineno,
 			    "`%s at %s' is orphaned (%s `%s' found)", 
-			    i->i_name, i->i_at,
-			    p == NULL || p->p_atunit == WILD ?
-			    "nothing matching" : "no", i->i_at);
+			    i->i_name, i->i_at, msg, i->i_at);
 		} else if (vflag && i->i_active == DEVI_IGNORED)
 			cfgxwarn(i->i_srcfile, i->i_lineno, "ignoring "
 			    "explicitly orphaned instance `%s at %s'",
@@ -1902,17 +1906,23 @@ fixdevis(void)
  * Look up a parent spec, creating a new one if it does not exist.
  */
 static struct pspec *
-getpspec(struct attr *attr, struct devbase *ab, int atunit, struct deva *da)
+getpspec(struct attr *attr, struct devbase *ab, int atunit, int first)
 {
 	struct pspec *p;
 	int inst = npspecs;
+	int ref = 1;
 
 	TAILQ_FOREACH(p, &allpspecs, p_list) {
 		if (p->p_iattr == attr && p->p_atdev == ab &&
 		    p->p_atunit == atunit) {
-			if (p->p_deva == da)
-				return (p);
-		   	inst = p->p_inst; 
+			p->p_ref++;
+			if (first)
+				return p;
+			else {
+				inst = p->p_inst;
+				ref = p->p_ref;
+			}
+				
 		}
 	}
 
@@ -1924,8 +1934,8 @@ getpspec(struct attr *attr, struct devbase *ab, int atunit, struct deva *da)
 	p->p_inst = inst;
 	if (inst == npspecs)
 		npspecs++;
-	p->p_deva = da;
 	p->p_active = 0;
+	p->p_ref = ref;
 
 	TAILQ_INSERT_TAIL(&allpspecs, p, p_list);
 
@@ -1960,7 +1970,7 @@ getdevi(const char *name)
 	i = newdevi(name, unit, d);
 	if (firsti == NULL) {
 		if (ht_insert(devitab, name, i))
-			panic("getdevi(%s)", name);
+			panic("%s: %s", __func__, name);
 		*d->d_ipp = i;
 		d->d_ipp = &i->i_bsame;
 	} else {
@@ -2233,7 +2243,7 @@ fixloc(const char *name, struct attr *attr, struct loclist *got)
 		lp[ord] = m->ll_string;
 	}
 	if (ord != attr->a_loclen)
-		panic("fixloc");
+		panic("%s: bad length", __func__);
 	lp[ord] = NULL;
 	nextra = 0;
 	ep = extra;

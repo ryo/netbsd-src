@@ -46,10 +46,11 @@
 
 #ifdef _KERNEL
 
+#include <sys/param.h>
 #include <sys/types.h>
+
 #include <arm/armreg.h>
 #include <arm/cpuconf.h>
-#include <arm/armreg.h>
 #include <arm/cpufunc_proto.h>
 
 struct cpu_functions {
@@ -360,6 +361,27 @@ cpsid(register_t psw)
 #else 
 	return disable_interrupts(psw);
 #endif
+}
+
+static inline bool
+cpu_gtmr_exists_p(void)
+{
+
+	return armreg_pfr1_read() & ARM_PFR1_GTIMER_MASK;
+}
+
+static inline u_int
+cpu_clusterid(void)
+{
+
+        return __SHIFTOUT(armreg_mpidr_read(), MPIDR_AFF1);
+}
+
+static inline bool
+cpu_earlydevice_va_p(void)
+{
+
+	return armreg_sctlr_read() & CPU_CONTROL_MMU_ENABLE;
 }
 
 #else /* ! __PROG32 */

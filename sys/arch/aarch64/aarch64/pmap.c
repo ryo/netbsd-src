@@ -1331,7 +1331,6 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	UVMHIST_LOG(pmaphist, "va=%016lx, pa=%016lx, prot=%08x, flags=%08x",
 	    va, pa, prot, flags);
 
-
 	PM_ADDR_CHECK(pm, va);
 
 #ifdef PMAPCOUNTERS
@@ -1359,19 +1358,17 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	}
 #endif
 
-
 	pg = PHYS_TO_VM_PAGE(pa);
 	if (pg == NULL) {
 		PMAP_COUNT(unmanaged_mappings);
 		//XXXAARCH64
-		panic("%s:%d", __func__, __LINE__);
+		//panic("%s:%d", __func__, __LINE__);
 	} else {
 		PMAP_COUNT(managed_mappings);
 	}
 
-
 	/*
-	 * _pmap_enter() may called nestedly. In case of
+	 * _pmap_enter() may be called recursively. In case of
 	 * pmap_enter() -> _pmap_enter_pv() -> pool_cache_get() -> pmap_kenter()
 	 */
 	pm_locked = PM_LOCKED(pm);
@@ -1428,7 +1425,7 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	idx = l3pte_index(va);
 	ptep = &l3[idx];	/* as PTE */
 
-	KASSERT(pg != NULL);
+//	KASSERT(pg != NULL);
 
 	pte = *ptep;
 	executable = l3pte_executable(pte);
@@ -1472,28 +1469,28 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	 * _pmap_enter_pv() may call pmap_kenter() internally.
 	 * don't allocate pv_entry (don't call _pmap_enter_pv) when kenter mode.
 	 */
-	if (kenter) {
-		VM_PAGE_TO_MD(pg)->mdpg_kenter++;
-
-		mdattr = (VM_PROT_READ | VM_PROT_WRITE);
-		VM_PAGE_TO_MD(pg)->mdpg_flags |= (PMAP_WIRED | mdattr);
-		pm->pm_stats.wired_count++;
-		VM_PAGE_TO_MD(pg)->mdpg_wiredcount++;
-	} else {
-		error = _pmap_enter_pv(pg, pm, va, ptep, pa, flags);
-		if (error != 0) {
-			PMAP_COUNT(pv_entry_cannotalloc);
-			if (flags & PMAP_CANFAIL)
-				goto done;
-			panic("pmap_enter: failed to allocate pv_entry");
-		}
-
-		if (flags & PMAP_WIRED) {
-			mdattr = (VM_PROT_READ | VM_PROT_WRITE);
+	mdattr = VM_PROT_READ | VM_PROT_WRITE;
+	if (pg) {
+		if (kenter) {
+			VM_PAGE_TO_MD(pg)->mdpg_kenter++;
 			VM_PAGE_TO_MD(pg)->mdpg_flags |= (PMAP_WIRED | mdattr);
+			VM_PAGE_TO_MD(pg)->mdpg_wiredcount++;
+
+			pm->pm_stats.wired_count++;
 		} else {
-			mdattr = VM_PAGE_TO_MD(pg)->mdpg_flags &
-			    (VM_PROT_READ | VM_PROT_WRITE);
+			error = _pmap_enter_pv(pg, pm, va, ptep, pa, flags);
+			if (error != 0) {
+				PMAP_COUNT(pv_entry_cannotalloc);
+				if (flags & PMAP_CANFAIL)
+					goto done;
+				panic("pmap_enter: failed to allocate pv_entry");
+			}
+
+			if (flags & PMAP_WIRED) {
+				VM_PAGE_TO_MD(pg)->mdpg_flags |= (PMAP_WIRED | mdattr);
+			} else {
+				mdattr &= VM_PAGE_TO_MD(pg)->mdpg_flags;
+			}
 		}
 	}
 

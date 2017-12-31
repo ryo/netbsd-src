@@ -1168,7 +1168,8 @@ extent_print(struct extent *ex)
 	if (ex == NULL)
 		panic("extent_print: NULL extent");
 
-	mutex_enter(&ex->ex_lock);
+	if (!(ex->ex_flags & EXF_EARLY))
+		mutex_enter(&ex->ex_lock);
 
 	printf("extent `%s' (0x%lx - 0x%lx), flags = 0x%x\n", ex->ex_name,
 	    ex->ex_start, ex->ex_end, ex->ex_flags);
@@ -1176,5 +1177,6 @@ extent_print(struct extent *ex)
 	LIST_FOREACH(rp, &ex->ex_regions, er_link)
 		printf("     0x%lx - 0x%lx\n", rp->er_start, rp->er_end);
 
-	mutex_exit(&ex->ex_lock);
+	if (!(ex->ex_flags & EXF_EARLY))
+		mutex_exit(&ex->ex_lock);
 }
