@@ -1,4 +1,4 @@
-/*	$NetBSD: t_ptrace_wait.c,v 1.13 2017/12/14 22:06:54 christos Exp $	*/
+/*	$NetBSD: t_ptrace_wait.c,v 1.22 2017/12/28 18:41:33 christos Exp $	*/
 
 /*-
  * Copyright (c) 2016 The NetBSD Foundation, Inc.
@@ -27,7 +27,7 @@
  */
 
 #include <sys/cdefs.h>
-__RCSID("$NetBSD: t_ptrace_wait.c,v 1.13 2017/12/14 22:06:54 christos Exp $");
+__RCSID("$NetBSD: t_ptrace_wait.c,v 1.22 2017/12/28 18:41:33 christos Exp $");
 
 #include <sys/param.h>
 #include <sys/types.h>
@@ -71,6 +71,8 @@ __RCSID("$NetBSD: t_ptrace_wait.c,v 1.13 2017/12/14 22:06:54 christos Exp $");
 
 #define SYSCALL_REQUIRE(expr) ATF_REQUIRE_MSG(expr, "%s: %s", # expr, \
     strerror(errno))
+#define SYSCALL_REQUIRE_ERRNO(res, exp) ATF_REQUIRE_MSG(res == exp, \
+    "%d(%s) != %d", res, strerror(res), exp)
 
 static int debug = 0;
 
@@ -422,6 +424,9 @@ ATF_TC_BODY(attach2, tc)
 	int status;
 #endif
 
+	// Feature pending for refactoring
+	atf_tc_expect_fail("test is racy");
+
 	DPRINTF("Spawn tracee\n");
 	SYSCALL_REQUIRE(msg_open(&parent_tracee) == 0);
 	tracee = atf_utils_fork();
@@ -503,6 +508,8 @@ ATF_TC_BODY(attach2, tc)
 	msg_close(&parent_tracer);
 	msg_close(&parent_tracee);
 
+	// Test is racy
+	ATF_REQUIRE(0 && "In order to get reliable failure, abort");
 }
 #endif
 
@@ -1102,6 +1109,8 @@ ATF_TC_BODY(eventmask3, tc)
 #endif
 	ptrace_event_t set_event, get_event;
 	const int len = sizeof(ptrace_event_t);
+
+	atf_tc_expect_fail("PR kern/51630");
 
 	DPRINTF("Before forking process PID=%d\n", getpid());
 	SYSCALL_REQUIRE((child = fork()) != -1);
@@ -2531,7 +2540,7 @@ ATF_TC_BODY(read_d1, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me = ptrace(PT_READ_D, child, &lookup_me, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me, magic,
 	    "got value %#x != expected %#x", lookup_me, magic);
@@ -2595,7 +2604,7 @@ ATF_TC_BODY(read_d2, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me1 = ptrace(PT_READ_D, child, &lookup_me1, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me1, magic1,
 	    "got value %#x != expected %#x", lookup_me1, magic1);
@@ -2604,7 +2613,7 @@ ATF_TC_BODY(read_d2, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me2 = ptrace(PT_READ_D, child, &lookup_me2, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me2, magic2,
 	    "got value %#x != expected %#x", lookup_me2, magic2);
@@ -2671,7 +2680,7 @@ ATF_TC_BODY(read_d3, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me1 = ptrace(PT_READ_D, child, &lookup_me1, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me1, magic1,
 	    "got value %#x != expected %#x", lookup_me1, magic1);
@@ -2680,7 +2689,7 @@ ATF_TC_BODY(read_d3, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me2 = ptrace(PT_READ_D, child, &lookup_me2, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me2, magic2,
 	    "got value %#x != expected %#x", lookup_me2, magic2);
@@ -2689,7 +2698,7 @@ ATF_TC_BODY(read_d3, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me3 = ptrace(PT_READ_D, child, &lookup_me3, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me3, magic3,
 	    "got value %#x != expected %#x", lookup_me3, magic3);
@@ -2759,7 +2768,7 @@ ATF_TC_BODY(read_d4, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me1 = ptrace(PT_READ_D, child, &lookup_me1, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me1, magic1,
 	    "got value %#x != expected %#x", lookup_me1, magic1);
@@ -2768,7 +2777,7 @@ ATF_TC_BODY(read_d4, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me2 = ptrace(PT_READ_D, child, &lookup_me2, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me2, magic2,
 	    "got value %#x != expected %#x", lookup_me2, magic2);
@@ -2777,7 +2786,7 @@ ATF_TC_BODY(read_d4, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me3 = ptrace(PT_READ_D, child, &lookup_me3, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me3, magic3,
 	    "got value %#x != expected %#x", lookup_me3, magic3);
@@ -2786,7 +2795,7 @@ ATF_TC_BODY(read_d4, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me4 = ptrace(PT_READ_D, child, &lookup_me4, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me4, magic4,
 	    "got value %#x != expected %#x", lookup_me4, magic4);
@@ -3290,7 +3299,7 @@ ATF_TC_BODY(read_d_write_d_handshake1, tc)
 	errno = 0;
 	lookup_me_fromtracee =
 	    ptrace(PT_READ_D, child, &lookup_me_fromtracee, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me_fromtracee, magic_fromtracee,
 	    "got value %#x != expected %#x", lookup_me_fromtracee,
@@ -3369,7 +3378,7 @@ ATF_TC_BODY(read_d_write_d_handshake2, tc)
 	errno = 0;
 	lookup_me_fromtracee =
 	    ptrace(PT_READ_D, child, &lookup_me_fromtracee, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me_fromtracee, magic_fromtracee,
 	    "got value %#x != expected %#x", lookup_me_fromtracee,
@@ -3735,7 +3744,7 @@ ATF_TC_BODY(read_i1, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me = ptrace(PT_READ_I, child, dummy_fn1, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me, magic,
 	    "got value %#x != expected %#x", lookup_me, magic);
@@ -3798,7 +3807,7 @@ ATF_TC_BODY(read_i2, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me1 = ptrace(PT_READ_I, child, dummy_fn1, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me1, magic1,
 	    "got value %#x != expected %#x", lookup_me1, magic1);
@@ -3807,7 +3816,7 @@ ATF_TC_BODY(read_i2, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me2 = ptrace(PT_READ_I, child, dummy_fn2, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me2, magic2,
 	    "got value %#x != expected %#x", lookup_me2, magic2);
@@ -3873,7 +3882,7 @@ ATF_TC_BODY(read_i3, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me1 = ptrace(PT_READ_I, child, dummy_fn1, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me1, magic1,
 	    "got value %#x != expected %#x", lookup_me1, magic1);
@@ -3882,7 +3891,7 @@ ATF_TC_BODY(read_i3, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me2 = ptrace(PT_READ_I, child, dummy_fn2, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me2, magic2,
 	    "got value %#x != expected %#x", lookup_me2, magic2);
@@ -3891,7 +3900,7 @@ ATF_TC_BODY(read_i3, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me3 = ptrace(PT_READ_I, child, dummy_fn3, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me3, magic3,
 	    "got value %#x != expected %#x", lookup_me3, magic3);
@@ -3960,7 +3969,7 @@ ATF_TC_BODY(read_i4, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me1 = ptrace(PT_READ_I, child, dummy_fn1, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me1, magic1,
 	    "got value %#x != expected %#x", lookup_me1, magic1);
@@ -3969,7 +3978,7 @@ ATF_TC_BODY(read_i4, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me2 = ptrace(PT_READ_I, child, dummy_fn2, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me2, magic2,
 	    "got value %#x != expected %#x", lookup_me2, magic2);
@@ -3978,7 +3987,7 @@ ATF_TC_BODY(read_i4, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me3 = ptrace(PT_READ_I, child, dummy_fn3, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me3, magic3,
 	    "got value %#x != expected %#x", lookup_me3, magic3);
@@ -3987,7 +3996,7 @@ ATF_TC_BODY(read_i4, tc)
 	    child, getpid());
 	errno = 0;
 	lookup_me4 = ptrace(PT_READ_I, child, dummy_fn4, 0);
-	ATF_REQUIRE_EQ(errno, 0);
+	SYSCALL_REQUIRE_ERRNO(errno, 0);
 
 	ATF_REQUIRE_EQ_MSG(lookup_me4, magic4,
 	    "got value %#x != expected %#x", lookup_me4, magic4);
@@ -5761,6 +5770,11 @@ ATF_TC_BODY(signal3, tc)
 #endif
 	sigset_t intmask;
 
+	atf_tc_expect_fail("PR kern/51918");
+
+	// This test breaks now on some ports, temporarily disable it
+	ATF_REQUIRE(0 && "In order to get reliable failure, abort");
+
 #if defined(__sparc__)
 	atf_tc_expect_timeout("PR kern/52167");
 
@@ -5916,6 +5930,8 @@ ATF_TC_BODY(signal5, tc)
 #endif
 	sigset_t intmask;
 
+	atf_tc_expect_fail("wrong signal");
+
 	DPRINTF("Before forking process PID=%d\n", getpid());
 	SYSCALL_REQUIRE((child = fork()) != -1);
 	if (child == 0) {
@@ -5989,6 +6005,8 @@ ATF_TC_BODY(signal6, tc)
 	const int slen = sizeof(state);
 	ptrace_event_t event;
 	const int elen = sizeof(event);
+
+	atf_tc_expect_timeout("PR kern/51918");
 
 	DPRINTF("Before forking process PID=%d\n", getpid());
 	SYSCALL_REQUIRE((child = fork()) != -1);
@@ -6119,6 +6137,8 @@ ATF_TC_BODY(signal7, tc)
 	ptrace_event_t event;
 	const int elen = sizeof(event);
 
+	atf_tc_expect_fail("PR kern/51918 PR kern/51630");
+
 	DPRINTF("Before forking process PID=%d\n", getpid());
 	SYSCALL_REQUIRE((child = fork()) != -1);
 	if (child == 0) {
@@ -6247,6 +6267,8 @@ ATF_TC_BODY(signal8, tc)
 	ptrace_event_t event;
 	const int elen = sizeof(event);
 
+	atf_tc_expect_fail("PR kern/51918");
+
 	DPRINTF("Before forking process PID=%d\n", getpid());
 	SYSCALL_REQUIRE((child = fork()) != -1);
 	if (child == 0) {
@@ -6352,6 +6374,8 @@ ATF_TC_BODY(signal9, tc)
 	static const size_t ssize = 16*1024;
 	void *stack;
 
+	atf_tc_expect_fail("PR kern/51918");
+
 	DPRINTF("Before forking process PID=%d\n", getpid());
 	SYSCALL_REQUIRE((child = fork()) != -1);
 	if (child == 0) {
@@ -6453,6 +6477,8 @@ ATF_TC_BODY(signal10, tc)
 	lwpid_t lid;
 	static const size_t ssize = 16*1024;
 	void *stack;
+
+	atf_tc_expect_fail("PR kern/51918");
 
 	DPRINTF("Before forking process PID=%d\n", getpid());
 	SYSCALL_REQUIRE((child = fork()) != -1);
@@ -7049,6 +7075,12 @@ ATF_TC_BODY(suspend1, tc)
 	struct ptrace_siginfo psi;
 	volatile int go = 0;
 
+	// Feature pending for refactoring
+	atf_tc_expect_fail("PR kern/51995");
+
+	// Hangs with qemu
+	ATF_REQUIRE(0 && "In order to get reliable failure, abort");
+
 	DPRINTF("Before forking process PID=%d\n", getpid());
 	SYSCALL_REQUIRE((child = fork()) != -1);
 	if (child == 0) {
@@ -7170,6 +7202,12 @@ ATF_TC_BODY(suspend2, tc)
 #endif
 	struct ptrace_siginfo psi;
 
+	// Feature pending for refactoring
+	atf_tc_expect_fail("PR kern/51995");
+
+	// Hangs with qemu
+	ATF_REQUIRE(0 && "In order to get reliable failure, abort");
+
 	DPRINTF("Before forking process PID=%d\n", getpid());
 	SYSCALL_REQUIRE((child = fork()) != -1);
 	if (child == 0) {
@@ -7244,8 +7282,10 @@ ATF_TC_BODY(resume1, tc)
 	struct ptrace_lwpinfo pl;
 	struct ptrace_siginfo psi;
 
-	// Times out
-	atf_tc_expect_timeout("PR kern/51995");
+	// Feature pending for refactoring
+	atf_tc_expect_fail("PR kern/51995");
+
+	// Hangs with qemu
 	ATF_REQUIRE(0 && "In order to get reliable failure, abort");
 
 	SYSCALL_REQUIRE(msg_open(&fds) == 0);

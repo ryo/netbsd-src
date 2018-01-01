@@ -1,4 +1,4 @@
-/* $NetBSD: armreg.h,v 1.2 2015/04/27 06:54:12 skrll Exp $ */
+/* $NetBSD: armreg.h,v 1.3 2017/12/20 14:58:08 skrll Exp $ */
 
 /*-
  * Copyright (c) 2014 The NetBSD Foundation, Inc.
