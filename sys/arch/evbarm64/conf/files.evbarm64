@@ -35,9 +35,3 @@ defparam	opt_evbarm_boardtype.h EVBARM_BOARDTYPE
 defflag	opt_plcom.h		PLCOM_DEBUG
 device	plcom { }: tty
 file	arch/evbarm/dev/plcom.c			plcom needs-flag
-
-#
-# Flattened Device Tree (FDT) support
-#
-include "dev/ofw/files.ofw"
-include "dev/fdt/files.fdt"
