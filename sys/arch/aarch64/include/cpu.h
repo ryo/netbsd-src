@@ -145,9 +145,9 @@ cpu_intr_p(void)
 	return curcpu()->ci_intr_depth > 0;
 }
 
-#endif /* _KERNEL || _KMEMUSER */
-
 void	cpu_attach(device_t, cpuid_t);
+
+#endif /* _KERNEL || _KMEMUSER */
 
 #elif defined(__arm__)
 
