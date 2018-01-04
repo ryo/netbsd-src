@@ -178,8 +178,7 @@ trap_el1h_sync(struct trapframe *tf)
 	switch (eclass) {
 	case ESR_EC_INSN_ABT_EL1:
 	case ESR_EC_DATA_ABT_EL1:
-		if (!data_abort_handler(tf, eclass, trapname))
-			panic("Fatal abort");
+		data_abort_handler(tf, eclass, trapname);
 		break;
 
 	case ESR_EC_BRKPNT_EL1:
@@ -281,8 +280,6 @@ void
 interrupt(struct trapframe *tf)
 {
 	struct cpu_info * const ci = curcpu();
-
-	__asm __volatile ("clrex; dmb sy");	/* XXX */
 
 	/* enable traps */
 	daif_enable(DAIF_D|DAIF_A);

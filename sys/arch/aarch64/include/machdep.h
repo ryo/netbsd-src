@@ -56,7 +56,7 @@ void dumpsys(void);
 struct trapframe;
 
 /* fault.c */
-bool data_abort_handler(struct trapframe *, uint32_t, const char *);
+void data_abort_handler(struct trapframe *, uint32_t, const char *);
 
 /* trap.c */
 void lwp_trampoline(void);
