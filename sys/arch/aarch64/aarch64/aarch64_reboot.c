@@ -236,7 +236,7 @@ cpu_reboot(int howto, char *bootstr)
 	/* Say NO to interrupts for the duration of the dump */
 	int s = splhigh();
 
-#if notyet //XXXAARCH64
+#if notyet	/* XXX */
 	/* Do a dump if requested. */
 	if ((howto & (RB_DUMP | RB_HALT)) == RB_DUMP)
 		dumpsys();
