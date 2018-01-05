@@ -165,11 +165,11 @@ initarm_common(vaddr_t kvm_base, vsize_t kvm_size,
 #endif
 
 	/*
-	 * msgbuf is always allocated from bottom of memory
+	 * msgbuf is always allocated from bottom of 1st memory block.
 	 * against corruption by bootloader, or changing kernel layout.
 	 */
 	physical_end -= round_page(MSGBUFSIZE);
-	bootconfig.dram[0].pages = atop(physical_end);
+	bootconfig.dram[0].pages -= atop(MSGBUFSIZE);
 	initmsgbuf(AARCH64_PA_TO_KVA(physical_end), MSGBUFSIZE);
 
 #ifdef DDB
