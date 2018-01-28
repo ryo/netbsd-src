@@ -91,6 +91,12 @@ daif_disable(register_t psw)
 }
 
 static inline void
+arm_dsb(void)
+{
+	__asm __volatile("dsb sy" ::: "memory");
+}
+
+static inline void
 arm_isb(void)
 {
 	__asm __volatile("isb" ::: "memory");

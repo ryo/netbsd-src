@@ -36,7 +36,7 @@
 
 #include <sys/cdefs.h>
 #include <sys/featuretest.h>
-#include <aarch64/int_types.h>
+#include <arm/int_types.h>
 
 #if defined(_KERNEL) || defined(_KMEMUSER) || defined(_KERNTYPES) || defined(_STANDALONE)
 typedef	unsigned long	vm_offset_t;	/* depreciated */

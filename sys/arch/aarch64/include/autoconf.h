@@ -32,11 +32,4 @@
 #include <sys/types.h>
 #include <sys/bus.h>
 
-struct mainbus_attach_args {
-	const char *mba_name;
-	bus_addr_t mba_addr;
-	bus_size_t mba_size;
-	int mba_intr;
-};
-
 #endif

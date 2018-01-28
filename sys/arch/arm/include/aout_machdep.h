@@ -52,7 +52,7 @@ struct relocation_info_arm6 {
 };
 
 #define relocation_info relocation_info_arm6
-                                                                                                                                                                                       
+
 /* No special executable format */
 #define	cpu_exec_aout_makecmds(a, b)	ENOEXEC
 

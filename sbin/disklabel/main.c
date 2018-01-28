@@ -262,7 +262,6 @@ static const struct disklabel_params {
 	{ "prep",	1, 1,  8, 2,  0,  0, BIG_ENDIAN },	/* powerpc */
 
 	{ "dreamcast",	1, 1, 16, 2,  0,  0, LITTLE_ENDIAN },	/* sh3 */
-	{ "evbarm64",	1, 1, 16, 2,  0,  0, 0 },		/* aarch64 */
 	{ "evbcf",	1, 1, 16, 2,  0,  0, BIG_ENDIAN },	/* coldfire */
 	{ "evbppc-mbr",	1, 1, 16, 2,  0,  0, BIG_ENDIAN },	/* powerpc */
 	{ "evbsh3",	1, 1, 16, 2,  0,  0, 0 },		/* sh3 */

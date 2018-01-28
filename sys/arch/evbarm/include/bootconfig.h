@@ -36,11 +36,18 @@
  * SUCH DAMAGE.
  */
 
+#ifndef _EVBARM_BOOTCONFIG_H
+#define _EVBARM_BOOTCONFIG_H
+
 #ifdef _KERNEL_OPT
 #include "opt_machdep.h"
 #endif
 
 #include <arm/bootconfig.h>
+
+#ifdef __aarch64__
+#include <aarch64/bootconfig.h>
+#endif
 
 typedef struct _PhysMem {
 	u_int address;
@@ -61,5 +68,7 @@ typedef struct _BootConfig {
 
 extern BootConfig bootconfig;
 #define MAX_BOOT_STRING 255
+
+#endif
 
 /* End of bootconfig.h */

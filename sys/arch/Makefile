@@ -16,9 +16,7 @@ ARCHSUBDIR= mips
 ARCHSUBDIR= powerpc
 .endif
 
-.if ${MACHINE_CPU} == "aarch64"
-SUBDIR= evbarm64
-.elif ${MACHINE_CPU} == "arm"
+.if ${MACHINE_CPU} == "arm"
 SUBDIR= acorn26 acorn32 cats epoc32 evbarm hpcarm iyonix netwinder shark zaurus
 .else
 SUBDIR=	${MACHINE}

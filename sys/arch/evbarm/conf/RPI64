@@ -1,10 +1,13 @@
 # $NetBSD$
 #
-# RPI3 - Raspberry Pi 3
+# RPI - Raspberry Pi 3 and Pi 2 v1.2 in AARCH64 mode
 #
 
-include 	"arch/evbarm64/conf/std.rpi"
-include 	"arch/evbarm64/conf/GENERIC.common"
+include		"arch/evbarm/conf/std.evbarm64"
+#include		"arch/evbarm/conf/std.rpi64"
+include 	"arch/evbarm/conf/GENERIC.common"
+
+include		"arch/evbarm/conf/files.rpi"
 
 # CPU options
 options 	CPU_CORTEXA53
@@ -22,20 +25,6 @@ options 	VERBOSE_LOCORE
 options 	VERBOSE_INIT_ARM
 options 	MSGBUFSIZE=32768
 
-# XXX for DEBUG
-no file-system	MFS
-no file-system	EXT2FS
-no file-system	NTFS
-no file-system	CD9660
-no file-system	MSDOSFS
-no file-system	OVERLAY
-no file-system	PUFFS
-no pseudo-device	putter
-no file-system	SMBFS
-no pseudo-device	nsmb
-no file-system	UMAPFS
-no file-system	UNION
-
 #options 	HZ=16
 #options 	SYSCALL_DEBUG
 options 	DEBUG
@@ -44,24 +33,7 @@ options 	UVMHIST
 options 	UVMHIST_MAPHIST_SIZE=5000
 options 	UVMHIST_PDHIST_SIZE=5000
 
-no options	IPSEC
-no options	BPFJIT
-no options	KDTRACE_HOOKS
-no pseudo-device	bridge
-no pseudo-device	vlan
-no pseudo-device	ppp
-no pseudo-device	pppoe
-no pseudo-device	tun
-no pseudo-device	tap
-no pseudo-device	gre
-no pseudo-device	npf
-no pseudo-device	veriexec
-no options	FILEASSOC
-
-no options	VERIFIED_EXEC_FP_SHA256
-no options	VERIFIED_EXEC_FP_SHA384
-no options	VERIFIED_EXEC_FP_SHA512
-
+# XXXDEBUG
 no options 	PAX_ASLR_DEBUG
 no options 	PAX_SEGVGUARD
 no options 	PAX_MPROTECT

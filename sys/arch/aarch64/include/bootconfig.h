@@ -44,10 +44,4 @@ struct physmem_desc {
 #define DRAM_BLOCKS	16	/* large enough by default? */
 #endif
 
-struct _BootConfig {
-	u_int dramblocks;
-	struct physmem_desc dram[DRAM_BLOCKS];
-};
-typedef struct _BootConfig BootConfig;
-
 #endif /* _AARCH64_BOOTCONFIG_H_ */

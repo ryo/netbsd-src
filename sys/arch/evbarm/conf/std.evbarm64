@@ -1,0 +1,31 @@
+#	$NetBSD$
+#
+# standard NetBSD/evbarm with FDT support
+
+machine		evbarm aarch64
+include		"conf/std"
+include		"arch/aarch64/conf/std.aarch64"	# arch standard options
+
+options 	AARCH64
+options 	FDT				# Flattened Device Tree support
+options 	DRAM_BLOCKS=256
+
+# XXXNH not yet
+#options 	__HAVE_CPU_UAREA_ALLOC_IDLELWP
+#options 	MODULAR
+#options 	MODULAR_DEFAULT_AUTOLOAD
+
+options 	FPU_VFP
+
+options 	ARM_HAS_VBAR
+options 	KERNEL_BASE_EXT=0x80000000
+
+options 	EVBARM_BOARDTYPE="FDT"
+makeoptions	BOARDMKFRAG="${THISARM}/conf/mk.evbarm64"
+#makeoptions	LOADADDRESS="0x80008000"
+
+options 	ARM_INTR_IMPL="<arch/arm/fdt/fdt_intr.h>"
+options 	ARM_GENERIC_TODR
+
+options 	CHILD_MAX=1024	# 160 is too few
+options 	OPEN_MAX=1024	# 128 is too few

@@ -42,6 +42,10 @@
 #define	_MACHINE	evbarm
 #define	MACHINE		"evbarm"
 
+#ifdef __aarch64__
+#include <aarch64/param.h>
+#else
 #include <arm/arm32/param.h>
+#endif
 
 #endif	/* _EVBARM_PARAM_H_ */

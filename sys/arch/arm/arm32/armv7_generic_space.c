@@ -58,6 +58,9 @@ struct bus_space armv7_generic_bs_tag = {
 	/* cookie */
 	(void *) 0,
 
+	0,
+	0,
+
 	/* mapping/unmapping */
 	armv7_generic_bs_map,
 	armv7_generic_bs_unmap,
@@ -172,6 +175,9 @@ struct bus_space armv7_generic_bs_tag = {
 struct bus_space armv7_generic_a4x_bs_tag = {
 	/* cookie */
 	(void *) 0,
+
+	0,
+	0,
 
 	/* mapping/unmapping */
 	armv7_generic_bs_map,

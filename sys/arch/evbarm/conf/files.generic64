@@ -1,0 +1,10 @@
+#	$NetBSD$
+#
+
+
+# Add other board files here
+#
+include "arch/arm/nvidia/files.tegra"
+
+
+

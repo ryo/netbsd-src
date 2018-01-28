@@ -118,15 +118,9 @@ void bcmgenfb_set_ioctl(int(*)(void *, void *, u_long, void *, int, struct lwp *
 extern void bcmgenfb_ddb_trap_callback(int where);
 static int rpi_ioctl(void *, void *, u_long, void *, int, lwp_t *);
 
-extern struct bus_space armv7_generic_bs_tag;
-extern struct bus_space armv7_generic_a4x_bs_tag;
-extern struct arm32_bus_dma_tag armv7_generic_dma_tag;
-
 /* Prototypes for all the bus_space structure functions */
 bs_protos(bcm2835);
 bs_protos(bcm2835_a4x);
-bs_protos(armv7_generic);
-bs_protos(armv7_generic_a4x);
 bs_protos(generic);
 bs_protos(generic_armv4);
 bs_protos(a4x);

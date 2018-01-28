@@ -105,7 +105,12 @@ tegra_pmc_get_bs(bus_space_tag_t *pbst, bus_space_handle_t *pbsh)
 		*pbst = pmc_softc->sc_bst;
 		*pbsh = pmc_softc->sc_bsh;
 	} else {
+#ifdef __aarch64__
+		extern struct bus_space aarch64_generic_bs_tag;
+		*pbst = &aarch64_generic_bs_tag;
+#else
 		*pbst = &armv7_generic_bs_tag;
+#endif
 		bus_space_subregion(*pbst, tegra_apb_bsh,
 		    TEGRA_PMC_OFFSET, TEGRA_PMC_SIZE, pbsh);
 	}

@@ -114,9 +114,6 @@
 ./usr/include/arm/vfpreg.h			comp-c-include
 ./usr/include/arm/vmparam.h			comp-c-include
 ./usr/include/arm/wchar_limits.h		comp-c-include
-./usr/include/evbarm64				comp-c-include
-./usr/include/evbarm64/disklabel.h		comp-c-include
-./usr/include/evbarm64/intr.h			comp-c-include
 ./usr/include/gcc-4.8/arm_neon.h		comp-c-include		gcccmds,gcc
 ./usr/include/gcc-4.8/mmintrin.h		comp-c-include		gcccmds,gcc
 ./usr/include/gcc-4.8/tgmath.h			comp-c-include		gcccmds,gcc

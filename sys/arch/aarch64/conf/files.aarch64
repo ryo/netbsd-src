@@ -5,6 +5,12 @@ defflag opt_cpuoptions.h	AARCH64_EL0_STACK_ALIGNMENT_CHECK
 defflag opt_cpuoptions.h	AARCH64_EL1_STACK_ALIGNMENT_CHECK
 defflag opt_cpuoptions.h	AARCH64_HAVE_L2CTLR
 
+defflag	opt_cputypes.h		CPU_ARMV8
+defflag	opt_cputypes.h		CPU_CORTEX: CPU_ARMV8
+defflag	opt_cputypes.h		CPU_CORTEXA35: CPU_CORTEX
+defflag	opt_cputypes.h		CPU_CORTEXA53: CPU_CORTEX
+defflag	opt_cputypes.h		CPU_CORTEXA57: CPU_CORTEX
+
 # Interrupt implementation header definition
 defparam opt_arm_intr_impl.h	ARM_INTR_IMPL
 
@@ -20,12 +26,12 @@ defflag opt_bus_space.h 	__BUS_SPACE_HAS_STREAM_METHODS
 				__BUS_DMA_NEEDS_BOUNCE
 				BUSDMA_COUNTERS
 
-defparam opt_bootconfig.h	DRAM_BLOCKS
-
 # FP support
 file	arch/aarch64/aarch64/fpu.c
 
- # Power State Coordination Interface (PSCI)
+file	arch/arm/arm/arm_generic_dma.c
+
+# Power State Coordination Interface (PSCI)
 device	psci
 file	arch/arm/arm/psci.c			psci
 file	arch/arm/arm/psci_arm.S			psci
@@ -59,10 +65,10 @@ file	arch/aarch64/dev/cpu.c                          cpu
 file	arch/aarch64/aarch64/cpu.c			cpu
 
 # XXXNH use arch/arm/cortex GIC driver
-device	a64gic: pic
-attach	a64gic at mainbus
-file	arch/arm/cortex/gic.c				a64gic
-file	arch/aarch64/dev/a64gic_mainbus.c		a64gic needs-flag
+#device	a64gic: pic
+#attach	a64gic at mainbus
+#file	arch/arm/cortex/gic.c				a64gic
+#file	arch/aarch64/dev/a64gic_mainbus.c		a64gic needs-flag
 
 # XXXNH use arch/arm bus_space
 # bus_space(9)
@@ -122,5 +128,3 @@ file	arch/aarch64/aarch64/netbsd32_machdep.c		compat_netbsd32
 #file	arch/aarch64/aarch64/linux_sigcode.S	compat_linux
 #file	arch/aarch64/aarch64/linux_syscall.c	compat_linux
 #file	arch/aarch64/aarch64/linux_trap.c	compat_linux
-
-include "arch/aarch64/conf/majors.aarch64"

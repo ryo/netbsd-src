@@ -60,8 +60,10 @@ bs_protos(bs_notimpl);
 #endif
 
 struct bus_space bcm2835_bs_tag = {
-	/* cookie */
-	(void *) 0,
+	.bs_cookie = NULL,
+
+	.bs_stride = 0,
+	.bs_flags = 0,
 
 	/* mapping/unmapping */
 	bcm2835_bs_map,
@@ -175,8 +177,10 @@ struct bus_space bcm2835_bs_tag = {
 };
 
 struct bus_space bcm2835_a4x_bs_tag = {
-	/* cookie */
-	(void *) 0,
+	.bs_cookie = NULL,
+
+	.bs_stride = 2,
+	.bs_flags = 0,
 
 	/* mapping/unmapping */
 	bcm2835_bs_map,
@@ -295,8 +299,10 @@ struct bus_space bcm2835_a4x_bs_tag = {
  * This is for RPI2 and above
  */
 struct bus_space bcm2836_bs_tag = {
-	/* cookie */
-	(void *) 0,
+	.bs_cookie = NULL,
+
+	.bs_stride = 0,
+	.bs_flags = 0,
 
 	/* mapping/unmapping */
 	bcm2836_bs_map,
@@ -410,8 +416,10 @@ struct bus_space bcm2836_bs_tag = {
 };
 
 struct bus_space bcm2836_a4x_bs_tag = {
-	/* cookie */
-	(void *) 0,
+	.bs_cookie = NULL,
+
+	.bs_stride = 2,
+	.bs_flags = 0,
 
 	/* mapping/unmapping */
 	bcm2836_bs_map,
@@ -677,8 +685,13 @@ bcm2835_bs_mmap(void *t, bus_addr_t bpa, off_t offset, int prot, int flags)
 	paddr_t pa = bpa & ~BCM2835_BUSADDR_CACHE_MASK;
 	paddr_t bus_flags = 0;
 
+#ifdef __aarch64__
+        if ((flags & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE)) != 0)
+                bus_flags |= AARCH64_MMAP_WRITEBACK;
+#else
 	if (flags & BUS_SPACE_MAP_PREFETCHABLE)
 		bus_flags |= ARM32_MMAP_WRITECOMBINE;
+#endif
 
 	return arm_btop(pa + offset) | bus_flags;
 }
@@ -689,8 +702,13 @@ bcm2835_a4x_bs_mmap(void *t, bus_addr_t bpa, off_t offset, int prot, int flags)
 	paddr_t pa = bpa & ~BCM2835_BUSADDR_CACHE_MASK;
 	paddr_t bus_flags = 0;
 
+#ifdef __aarch64__
+        if ((flags & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE)) != 0)
+                bus_flags |= AARCH64_MMAP_WRITEBACK;
+#else
 	if (flags & BUS_SPACE_MAP_PREFETCHABLE)
 		bus_flags |= ARM32_MMAP_WRITECOMBINE;
+#endif
 
 	return arm_btop(pa + 4 * offset) | bus_flags;
 }

@@ -570,7 +570,7 @@ FC=		${TOOL_FC.${ACTIVE_FC}}
 OBJC=		${TOOL_OBJC.${ACTIVE_OBJC}}
 
 # For each ${MACHINE_CPU}, list the ports that use it.
-MACHINES.aarch64=	evbarm64
+MACHINES.aarch64=	evbarm
 MACHINES.alpha=		alpha
 MACHINES.arm=		acorn26 acorn32 cats epoc32 evbarm hpcarm \
 			iyonix netwinder shark zaurus

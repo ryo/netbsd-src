@@ -36,8 +36,25 @@
 // initarm_common
 #include <machine/bootconfig.h>
 
-#define KERN_VTOPHYS(va)	((paddr_t)((vaddr_t)(va) - VM_MIN_KERNEL_ADDRESS))
-#define KERN_PHYSTOV(pa)	((vaddr_t)((paddr_t)(pa) + VM_MIN_KERNEL_ADDRESS))
+
+static inline paddr_t
+aarch64_kern_vtophys(vaddr_t va)
+{
+	extern u_long kern_vtopdiff;
+
+	return va - kern_vtopdiff;
+}
+
+static inline vaddr_t
+aarch64_kern_phystov(paddr_t pa)
+{
+	extern u_long kern_vtopdiff;
+
+	return pa + kern_vtopdiff;
+}
+
+#define KERN_VTOPHYS(va)	aarch64_kern_vtophys(va)
+#define KERN_PHYSTOV(pa)	aarch64_kern_phystov(pa)
 
 extern paddr_t physical_start;
 extern paddr_t physical_end;

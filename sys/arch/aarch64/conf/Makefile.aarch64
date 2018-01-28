@@ -24,7 +24,7 @@ NEED_OWN_INSTALL_TARGET?=no
 ##
 ## (1) port identification
 ##
-THISA64=	$S/arch/${MACHINE}
+THISARM=	$S/arch/${MACHINE}
 A64=		$S/arch/aarch64
 GENASSYM_CONF=	${A64}/aarch64/genassym.cf
 .-include "$S/arch/${MACHINE}/conf/Makefile.${MACHINE}.inc"
@@ -65,7 +65,7 @@ locore.o: ${A64}/aarch64/locore.S assym.h
 ## (5) link settings
 ##
 KERNLDSCRIPT?=	${A64}/conf/kern.ldscript
-LOADADDRESS?=	0xFFFFFFFF00000000
+LOADADDRESS?=	0xffffffc000000040
 LINKFLAGS_NORMAL=	-X
 
 # Strip AArch64 mapping symbols from the kernel image, as they interfere

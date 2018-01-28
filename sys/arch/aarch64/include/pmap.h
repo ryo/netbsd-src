@@ -147,8 +147,6 @@ paddr_t pmap_devmap_vtophys(paddr_t);
 	}
 #define	DEVMAP_ENTRY_END	{ 0 }
 
-
-
 /* mmap cookie and flags */
 #define AARCH64_MMAP_FLAG_SHIFT		(64 - PGSHIFT)
 #define AARCH64_MMAP_FLAG_MASK		0xf

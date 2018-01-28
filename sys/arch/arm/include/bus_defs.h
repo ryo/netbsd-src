@@ -101,6 +101,9 @@ struct bus_space {
 	/* cookie */
 	void		*bs_cookie;
 
+	int		 bs_stride;	/* offset <<= bs_stride (if needed) */
+	int		 bs_flags;
+
 	/* mapping/unmapping */
 	int		(*bs_map)(void *, bus_addr_t, bus_size_t,
 			    int, bus_space_handle_t *);
@@ -155,7 +158,7 @@ struct bus_space {
 			    bus_size_t, uint32_t *, bus_size_t);
 	void		(*bs_rr_8)(void *, bus_space_handle_t,
 			    bus_size_t, uint64_t *, bus_size_t);
-					
+
 	/* write (single) */
 	void		(*bs_w_1)(void *, bus_space_handle_t,
 			    bus_size_t, uint8_t);
@@ -175,7 +178,7 @@ struct bus_space {
 			    bus_size_t, const uint32_t *, bus_size_t);
 	void		(*bs_wm_8)(void *, bus_space_handle_t,
 			    bus_size_t, const uint64_t *, bus_size_t);
-					
+
 	/* write region */
 	void		(*bs_wr_1)(void *, bus_space_handle_t,
 			    bus_size_t, const uint8_t *, bus_size_t);
@@ -236,7 +239,7 @@ struct bus_space {
 			    bus_size_t, uint32_t *, bus_size_t);
 	void		(*bs_rm_8_s)(void *, bus_space_handle_t,
 			    bus_size_t, uint64_t *, bus_size_t);
-					
+
 	/* read region stream */
 	void		(*bs_rr_1_s)(void *, bus_space_handle_t,
 			    bus_size_t, uint8_t *, bus_size_t);
@@ -246,7 +249,7 @@ struct bus_space {
 			    bus_size_t, uint32_t *, bus_size_t);
 	void		(*bs_rr_8_s)(void *, bus_space_handle_t,
 			    bus_size_t, uint64_t *, bus_size_t);
-					
+
 	/* write stream (single) */
 	void		(*bs_w_1_s)(void *, bus_space_handle_t,
 			    bus_size_t, uint8_t);
@@ -266,7 +269,7 @@ struct bus_space {
 			    bus_size_t, const uint32_t *, bus_size_t);
 	void		(*bs_wm_8_s)(void *, bus_space_handle_t,
 			    bus_size_t, const uint64_t *, bus_size_t);
-					
+
 	/* write region stream */
 	void		(*bs_wr_1_s)(void *, bus_space_handle_t,
 			    bus_size_t, const uint8_t *, bus_size_t);

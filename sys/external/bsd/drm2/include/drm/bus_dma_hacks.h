@@ -43,7 +43,7 @@
 #if defined(__i386__) || defined(__x86_64__)
 #include <x86/bus_private.h>
 #include <x86/machdep.h>
-#elif defined(__arm__)
+#elif defined(__arm__) || defined(__aarch64__)
 #else
 #error DRM GEM/TTM need new MI bus_dma APIs!  Halp!
 #endif

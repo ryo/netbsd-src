@@ -82,6 +82,8 @@ typedef struct bus_space *bus_space_tag_t;
 #define COUNT	bus_size_t
 
 struct bus_space {
+	void *bs_cookie;
+
 	int bs_stride;	/* offset <<= bs_stride (if needed) */
 	int bs_flags;
 

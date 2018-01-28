@@ -22,7 +22,6 @@ file	arch/arm32/fpe-arm/armfpe_glue.S	armfpe
 file	arch/arm32/fpe-arm/armfpe_init.c	armfpe
 file	arch/arm32/fpe-arm/armfpe.s		armfpe
 
-
 #
 # Machine-independent drivers
 #
@@ -47,6 +46,13 @@ defparam	opt_evbarm_boardtype.h EVBARM_BOARDTYPE
 defflag	opt_plcom.h	PLCOM_DEBUG
 device	plcom { }: tty
 file	arch/evbarm/dev/plcom.c			plcom needs-flag
+
+include "arch/evbarm/conf/files.fdt"
+
+# Add other board files here
+# XXXNH hmm...
+# RPI64 didn't like this
+#include "arch/arm/nvidia/files.tegra"
 
 #
 # Maximum number of memory ranges

@@ -41,8 +41,6 @@
 ./epoc32/include/elf_machdep.h
 ./evbarm/include/disklabel.h
 ./evbarm/include/elf_machdep.h
-./evbarm64/include/disklabel.h
-./evbarm64/include/elf_machdep.h
 ./evbcf/include/disklabel.h
 ./evbcf/include/elf_machdep.h
 ./evbmips/include/disklabel.h

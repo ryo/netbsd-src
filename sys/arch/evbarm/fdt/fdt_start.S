@@ -26,12 +26,56 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _EVBARM64_AUTOCONF_H_
-#define _EVBARM64_AUTOCONF_H_
+#include "opt_arm_debug.h"	/* VERBOSE_INIT_ARM */
 
-#include <aarch64/autoconf.h>
+#include <aarch64/asm.h>
 
-extern void (*evbarm_device_register)(device_t, void *);
-extern void (*evbarm_device_register_post_config)(device_t, void *);
+RCSID("$NetBSD$")
 
-#endif /* _EVBARM64_AUTOCONF_H_ */
+#define PRINT(string)	\
+	bl xprint;.asciz string;.align 2
+
+/*
+ * Kernel start routine for aarch64 boards.
+ */
+	.global start
+start:
+	adr	x9, start
+	ldr	x10, =start
+
+	sub	x10, x10, x9
+
+	ldr	x8, =(kern_vtopdiff - start)
+	add	x8, x8, x9
+	str	x10, [x8]
+
+	/*
+	 * store uboot arguments to uboot_args[4]
+	 */
+
+	/* offset of uboot_args from start */
+	ldr	x8, =(uboot_args - start)
+	add	x8, x8, x9		/* add load address to offset */
+
+	str	x0, [x8, #(8*0)]
+	str	x1, [x8, #(8*1)]
+	str	x2, [x8, #(8*2)]
+	str	x3, [x8, #(8*3)]
+
+	/*
+	 * ARM64 boot protocol has FDT address in x0 *
+	 */
+	ldr	x8, =(fdt_addr_r - start)
+	add	x8, x8, x9
+	str	x0, [x8]
+
+
+#ifdef VERBOSE_INIT_ARM
+	PRINT("boot NetBSD/RaspberryPi\r\n")
+#endif
+
+	b	aarch64_start		/* aarch64_start() @ aarch64/locore.S */
+
+ENTRY_NP(uartputc)
+//	b	tegra_platform_early_putchar
+	b	bcm2837_platform_early_putchar

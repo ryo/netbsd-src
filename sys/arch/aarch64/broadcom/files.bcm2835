@@ -10,7 +10,7 @@
 include "arch/arm/pic/files.pic"
 
 # XXXNH
-file	arch/aarch64/broadcom/bcm2835_dma.c
+file	arch/aarch64/broadcom/bcm2835_dma.c	aarch64
 
 file	arch/arm/broadcom/bcm2835_mbox_subr.c
 file	arch/arm/broadcom/bcm283x_platform.c
@@ -25,7 +25,7 @@ file	arch/arm/cortex/gtmr.c                  armgtmr
 define bcmmboxbus { }
 
 # XXXNH
-file	arch/aarch64/broadcom/bcm2835_space.c
+file	arch/aarch64/broadcom/bcm2835_space.c	aarch64
 
 # Interrupt Controller (BCM2835_ARMICU_BASE) #, pic_splfuncs
 device	bcmicu: pic, pic_splfuncs

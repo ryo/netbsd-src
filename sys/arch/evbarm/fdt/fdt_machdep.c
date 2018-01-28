@@ -97,6 +97,10 @@ char *boot_args = NULL;
 unsigned long  uboot_args[4] = { 0 };	/* filled in by xxx_start.S (not in bss) */
 const uint8_t *fdt_addr_r;
 
+
+extern char KERNEL_BASE_phys[];
+#define KERNEL_BASE_PHYS ((paddr_t)KERNEL_BASE_phys)
+
 static char fdt_memory_ext_storage[EXTENT_FIXED_STORAGE_SIZE(DRAM_BLOCKS)];
 static struct extent *fdt_memory_ext;
 
@@ -106,9 +110,6 @@ static uint64_t initrd_start, initrd_end;
 #include <dev/fdt/fdtvar.h>
 #define FDT_BUF_SIZE	(128*1024)
 static uint8_t fdt_data[FDT_BUF_SIZE];
-
-extern char KERNEL_BASE_phys[];
-#define KERNEL_BASE_PHYS ((paddr_t)KERNEL_BASE_phys)
 
 static void fdt_update_stdout_path(void);
 static void fdt_device_register(device_t, void *);
@@ -459,8 +460,8 @@ initarm(void *arg)
 	vaddr_t kernstart = trunc_page((vaddr_t)__kernel_text);
 	vaddr_t kernend = round_page((vaddr_t)_end);
 
-	paddr_t kernstart_phys = kernstart - VM_MIN_KERNEL_ADDRESS;
-	paddr_t kernend_phys = kernend - VM_MIN_KERNEL_ADDRESS;
+	paddr_t	kernstart_phys = KERN_VTOPHYS(kernstart);
+	paddr_t kernend_phys = KERN_VTOPHYS(kernend);
 
 	DPRINTF("%s: kernel phys start %lx end %lx\n", __func__, kernstart_phys, kernend_phys);
 

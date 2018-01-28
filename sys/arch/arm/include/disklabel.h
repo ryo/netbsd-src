@@ -57,6 +57,8 @@
 #define RAW_PART		2	/* raw partition: XX?c */
 #endif
 
+
+#ifdef __HAVE_OLD_DISKLABEL
 /*
  * We use the highest bit of the minor number for the partition number.
  * This maintains backward compatibility with device nodes created before
@@ -69,6 +71,7 @@
 #define	DISKMINOR(unit, part) \
     (((unit) * OLDMAXPARTITIONS) + ((part) % OLDMAXPARTITIONS) + \
      ((part) / OLDMAXPARTITIONS) * (__ARM_MAXDISKS * OLDMAXPARTITIONS))
+#endif
 
 #if HAVE_NBTOOL_CONFIG_H
 #include <nbinclude/sys/dkbad.h>

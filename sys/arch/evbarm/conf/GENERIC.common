@@ -66,7 +66,8 @@ options 	NFS_BOOT_RWSIZE=1024
 # Compatibility options
 
 include 	"conf/compat_netbsd60.config"
-options 	COMPAT_NETBSD32	# allow running arm (e.g. non-earm) binaries
+#XXXNH make this work
+#options 	COMPAT_NETBSD32	# allow running arm (e.g. non-earm) binaries
 
 # Shared memory options
 

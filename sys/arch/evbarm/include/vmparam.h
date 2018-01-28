@@ -34,6 +34,18 @@
 
 #if defined(_KERNEL) || defined(_KMEMUSER)
 
+#ifdef __aarch64__
+
+#include <aarch64/vmparam.h>
+
+/*
+ * 4GB minus  256MB of IO space
+ */
+#define KERNEL_IO_VBASE 0xfffffffff0000000L
+#define KERNEL_IO_VSIZE (KERNEL_IO_VBASE - VM_MAX_KERNEL_ADDRESS)
+
+#else
+
 #include <arm/arm32/vmparam.h>
 
 /*
@@ -89,6 +101,8 @@
 #define	VM_FREELIST_DEFAULT	0
 #define	VM_FREELIST_ISADMA	1
 #define	VM_FREELIST_DIRECTMAP	2
+
+#endif
 
 #endif /* _KERNEL || _KMEMUSER */
 

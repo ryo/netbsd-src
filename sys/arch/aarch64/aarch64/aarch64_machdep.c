@@ -72,6 +72,8 @@ struct vm_map *phys_map;
 /* XXX */
 vaddr_t physical_start;
 vaddr_t physical_end;
+u_long kern_vtopdiff;
+
 
 /*
  * Upper region: 0xffffffffffffffff  Top of virtual memory
@@ -116,7 +118,6 @@ initarm_common(vaddr_t kvm_base, vsize_t kvm_size,
 	psize_t memsize_total;
 	vaddr_t kernstart, kernend;
 	vaddr_t kernstart_l2, kernend_l2;	/* L2 table 2MB aligned */
-	paddr_t kernstart_phys, kernend_phys;
 	paddr_t kstartp, kendp;			/* physical page of kernel */
 	int i;
 
@@ -129,8 +130,8 @@ initarm_common(vaddr_t kvm_base, vsize_t kvm_size,
 	kernstart_l2 = kernstart & -L2_SIZE;		/* trunk L2_SIZE(2M) */
 	kernend_l2 = (kernend + L2_SIZE - 1) & -L2_SIZE;/* round L2_SIZE(2M) */
 
-	kernstart_phys = kernstart - VM_MIN_KERNEL_ADDRESS;
-	kernend_phys = kernend - VM_MIN_KERNEL_ADDRESS;
+	paddr_t kernstart_phys = KERN_VTOPHYS(kernstart);
+	paddr_t kernend_phys = KERN_VTOPHYS(kernend);
 
 	/* XXX */
 	physical_start = bootconfig.dram[0].address;
@@ -139,6 +140,7 @@ initarm_common(vaddr_t kvm_base, vsize_t kvm_size,
 #ifdef VERBOSE_INIT_ARM
 	printf(
 	    "------------------------------------------\n"
+	    "kern_vtopdiff         = 0x%016lx\n"
 	    "physical_start        = 0x%016lx\n"
 	    "kernel_start_phys     = 0x%016lx\n"
 	    "kernel_end_phys       = 0x%016lx\n"
@@ -152,6 +154,7 @@ initarm_common(vaddr_t kvm_base, vsize_t kvm_size,
 	    "(devmap va area)\n"
 	    "VM_MAX_KERNEL_ADDRESS = 0x%016lx\n"
 	    "------------------------------------------\n",
+	    kern_vtopdiff,
 	    physical_start,
 	    kernstart_phys,
 	    kernend_phys,

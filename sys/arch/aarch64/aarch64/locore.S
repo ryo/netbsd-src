@@ -418,7 +418,6 @@ arm_boot_l0pt_init:
 	adr	x2, start		/* physical addr. before MMU */
 	and	x2, x2, #L2_BLK_OA	/* L2 block size aligned (2MB) */
 	mov	x1, #VM_MIN_KERNEL_ADDRESS
-	add	x1, x1, x2		/* add kernel load address */
 	mov	x3, #L2_BLKPAG_ATTR_NORMAL_WB
 
 	/* kernelsize = _end - _start */
