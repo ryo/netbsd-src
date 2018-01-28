@@ -118,7 +118,7 @@ is_fatal_abort(uint32_t esr)
 	return true;
 }
 
-bool
+void
 data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 {
 	struct proc *p;
@@ -136,6 +136,8 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 
 	UVMHIST_FUNC(__func__);
 	UVMHIST_CALLED(pmaphist);
+
+	__asm __volatile ("clrex");
 
 	l = curlwp;
 
@@ -179,7 +181,7 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 	/* reference/modified emulation */
 	if (pmap_fault_fixup(map->pmap, va, ftype, user)) {
 		UVMHIST_LOG(pmaphist, "fixed: va=%016llx", tf->tf_far, 0, 0, 0);
-		return true;
+		return;
 	}
 
 	fb = cpu_disable_onfault();
@@ -193,7 +195,7 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 
 		UVMHIST_LOG(pmaphist, "uvm_fault success: va=%016llx",
 		    tf->tf_far, 0, 0, 0);
-		return true;
+		return;
 	}
 
 
@@ -202,7 +204,7 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 	fb = cpu_disable_onfault();
 	if (fb != NULL) {
 		cpu_jump_onfault(tf, fb, EFAULT);
-		return true;
+		return;
 	}
 
 	fsc = __SHIFTOUT(esr, ESR_ISS_DATAABORT_DFSC); /* also IFSC */
@@ -274,18 +276,18 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 		}
  done_userfault:
 
-#define DEBUG_DUMP_ON_USERFAULT		/* XXXAARCH64: DEBUG */
-//#define DEBUG_DDB_ON_USERFAULT		/* XXXAARCH64: DEBUG */
+#undef DEBUG_DUMP_ON_USERFAULT		/* DEBUG */
+#undef DEBUG_DDB_ON_USERFAULT		/* DEBUG */
 
 #if defined(DEBUG_DUMP_ON_USERFAULT) || (defined(DDB) && defined(DEBUG_DDB_ON_USERFAULT))
 		__nothing;
 #else
-		return false;
+		return;
 #endif
 	}
 
 	/*
-	 * fatal abort. dump trapframe
+	 * fatal abort. dump trapframe and panic
 	 */
 	printf("Trap: %s:", trapname);
 
@@ -308,7 +310,6 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 	printf("\n");
 #ifdef DDB
 	dump_trapframe(tf, printf);
-	printf("tpidr_el0=%016llx\n", reg_tpidr_el0_read());
 #endif
 
 #ifdef DEBUG_DDB_ON_USERFAULT
@@ -316,5 +317,6 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 		Debugger();
 #endif
 
-	return false;
+	if (!user)
+		panic("Fatal abort: %s", trapname);
 }

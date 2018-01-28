@@ -94,7 +94,7 @@ db_write_bytes(vaddr_t addr, size_t size, const char *data)
 	vaddr_t lastpage = -1;
 	char *dst;
 
-	//XXXAARCH64: check read only block/page
+	/* XXX: need to check read only block/page */
 	for (dst = (char *)addr; size > 0;) {
 		uintptr_t tmp;
 
@@ -131,14 +131,14 @@ db_write_bytes(vaddr_t addr, size_t size, const char *data)
 db_addr_t
 db_branch_taken(db_expr_t inst, db_addr_t pc, db_regs_t *regs)
 {
-	// XXXAARCH64
+	/* XXX */
 	return pc + 4;
 }
 
 bool
 db_inst_unconditional_flow_transfer(db_expr_t inst)
 {
-	// XXXAARCH64
+	/* XXX */
 	return false;
 }
 

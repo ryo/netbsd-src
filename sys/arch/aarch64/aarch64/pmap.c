@@ -1220,7 +1220,7 @@ pmap_activate(struct lwp *l)
 
 	UVMHIST_LOG(pmaphist, "lwp=%p (pid=%d)", l, l->l_proc->p_pid, 0, 0);
 
-	/* XXXAARCH64 */
+	/* XXX */
 	CTASSERT(PID_MAX <= 65535);	/* 16bit ASID */
 	if (pm->pm_asid == -1)
 		pm->pm_asid = l->l_proc->p_pid;
@@ -1246,7 +1246,7 @@ pmap_deactivate(struct lwp *l)
 
 	UVMHIST_LOG(pmaphist, "lwp=%p, asid=%d", l, pm->pm_asid, 0, 0);
 
-	//XXXAARCH64
+	/* XXX */
 	pm->pm_activated = false;
 
 	PMAP_COUNT(deactivate);
@@ -1361,8 +1361,8 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	pg = PHYS_TO_VM_PAGE(pa);
 	if (pg == NULL) {
 		PMAP_COUNT(unmanaged_mappings);
-		//XXXAARCH64
-		//panic("%s:%d", __func__, __LINE__);
+		/* XXX */
+		/* panic("%s:%d", __func__, __LINE__); */
 	} else {
 		PMAP_COUNT(managed_mappings);
 	}
@@ -1383,9 +1383,6 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	idx = l0pde_index(va);
 	pde = l0[idx];
 	if (!l0pde_valid(pde)) {
-//XXXAARCH64?
-//		KASSERT(!kenter);
-
 		_pmap_alloc_pdp(pm, &pdppa);
 		KASSERT(pdppa != POOL_PADDR_INVALID);
 		atomic_swap_64(&l0[idx], pdppa | L0_TABLE);
@@ -1397,9 +1394,6 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	idx = l1pde_index(va);
 	pde = l1[idx];
 	if (!l1pde_valid(pde)) {
-//XXXAARCH64?
-//		KASSERT(!kenter);	// already growed
-
 		_pmap_alloc_pdp(pm, &pdppa);
 		KASSERT(pdppa != POOL_PADDR_INVALID);
 		atomic_swap_64(&l1[idx], pdppa | L1_TABLE);
@@ -1411,9 +1405,6 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	idx = l2pde_index(va);
 	pde = l2[idx];
 	if (!l2pde_valid(pde)) {
-//XXXAARCH64?
-//		KASSERT(!kenter);	// already growed
-
 		_pmap_alloc_pdp(pm, &pdppa);
 		KASSERT(pdppa != POOL_PADDR_INVALID);
 		atomic_swap_64(&l2[idx], pdppa | L2_TABLE);
@@ -1425,7 +1416,7 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	idx = l3pte_index(va);
 	ptep = &l3[idx];	/* as PTE */
 
-//	KASSERT(pg != NULL);
+	/* KASSERT(pg != NULL); */
 
 	pte = *ptep;
 	executable = l3pte_executable(pte);
@@ -1456,7 +1447,7 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 			KASSERT(opg != NULL);
 
 			if (opg == pg) {
-				// XXXAARCH64
+				/* XXX */
 				panic("%s:%d: XXX: not supported yet",
 				    __func__, __LINE__);
 			}
@@ -1636,7 +1627,7 @@ pmap_page_protect(struct vm_page *pg, vm_prot_t prot)
 
 		/* remove all pages reference to this physical page */
 
-		/* XXXAARCH64: todo cleanup */
+		/* XXX: todo cleanup */
 		pmap_pv_lock(md);
 		TAILQ_FOREACH_SAFE(pv, &md->mdpg_pvhead, pv_link, pvtmp) {
 
@@ -1816,9 +1807,8 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot, bool user)
 		return false;
 	}
 
-#if 1
-	//XXXAARCH64: DEBUG
 	if ((pte & LX_BLKPAG_AF) && ((pte & LX_BLKPAG_AP) == LX_BLKPAG_AP_RW)) {
+#if 1 /* XXX: DEBUG */
 		if (!user) {
 			/*
 			 * pte is readable and writable, but occured fault?
@@ -1828,9 +1818,9 @@ pmap_fault_fixup(struct pmap *pm, vaddr_t va, vm_prot_t accessprot, bool user)
 			    " unprivileged load/store ? (onfault=%p)\n",
 			    __func__, va, pte, curlwp->l_md.md_onfault);
 		}
+#endif
 		return false;
 	}
-#endif
 	KASSERT(((pte & LX_BLKPAG_AF) == 0) ||
 	    ((pte & LX_BLKPAG_AP) == LX_BLKPAG_AP_RO));
 

@@ -409,7 +409,6 @@ cpu_ipi(struct cpu_info *ci)
 	intr_ipi_send(ci != NULL ? ci->ci_kcpuset : NULL, IPI_GENERIC);
 }
 
-//XXXARCH64
 int
 pic_ipi_shootdown(void *arg)
 {

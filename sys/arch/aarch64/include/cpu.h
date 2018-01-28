@@ -64,13 +64,6 @@ struct cpu_info {
 
 	uint64_t ci_lastintr;
 
-//XXXAARCH64: notyet
-//	struct cpu_info *ci_clu;	/* cluster ci PTR */
-//	cpuid_t ci_gicid;		/* used for IPIs */
-//	int ci_clusize;			/* cluster size */
-//	void *ci_cacheop;		/* cache operation */
-//	void *ci_tlbop;			/* TLB operation */
-
 	int ci_mtx_oldspl;
 	int ci_mtx_count;
 
@@ -145,9 +138,9 @@ cpu_intr_p(void)
 	return curcpu()->ci_intr_depth > 0;
 }
 
-#endif /* _KERNEL || _KMEMUSER */
-
 void	cpu_attach(device_t, cpuid_t);
+
+#endif /* _KERNEL || _KMEMUSER */
 
 #elif defined(__arm__)
 

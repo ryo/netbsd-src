@@ -178,8 +178,7 @@ trap_el1h_sync(struct trapframe *tf)
 	switch (eclass) {
 	case ESR_EC_INSN_ABT_EL1:
 	case ESR_EC_DATA_ABT_EL1:
-		if (!data_abort_handler(tf, eclass, trapname))
-			panic("Fatal abort");
+		data_abort_handler(tf, eclass, trapname);
 		break;
 
 	case ESR_EC_BRKPNT_EL1:
@@ -245,7 +244,7 @@ trap_el0_sync(struct trapframe *tf)
 		userret(l);
 		break;
 	case ESR_EC_FP_TRAP_A64:
-		do_trapsignal(l, SIGFPE, FPE_FLTUND, NULL, esr);	/* XXXAARCH64 */
+		do_trapsignal(l, SIGFPE, FPE_FLTUND, NULL, esr);	/* XXX */
 		userret(l);
 		break;
 
@@ -262,14 +261,14 @@ trap_el0_sync(struct trapframe *tf)
 	case ESR_EC_BRKPNT_EL0:
 	case ESR_EC_SW_STEP_EL0:
 	case ESR_EC_WTCHPNT_EL0:
-		// XXXAARCH64: notyet
+		/* XXX notyet */
 		printf("%s: %s\n", __func__, trapname);
 		do_trapsignal(l, SIGTRAP, TRAP_BRKPT, tf->tf_pc, esr);
 		userret(l);
 		break;
 
 	default:
-		// XXXAARCH64: notyet
+		/* XXX notyet */
 		printf("%s:%d: %s\n", __func__, __LINE__, trapname);
 		do_trapsignal(l, SIGILL, ILL_ILLTRP, tf->tf_pc, esr);
 		userret(l);
@@ -281,8 +280,6 @@ void
 interrupt(struct trapframe *tf)
 {
 	struct cpu_info * const ci = curcpu();
-
-	__asm __volatile ("clrex; dmb sy");	/* XXXAARCH64: really need dmb ? */
 
 	/* enable traps */
 	daif_enable(DAIF_D|DAIF_A);
@@ -342,14 +339,14 @@ trap_el0_32sync(struct trapframe *tf)
 	case ESR_EC_CP14_RRT:
 	case ESR_EC_FP_TRAP_A32:
 	case ESR_EC_BKPT_INSN_A32:
-		// XXXAARCH64: notyet
+		/* XXX notyet */
 		printf("%s:%d: %s\n", __func__, __LINE__, trapname);
 		do_trapsignal(l SIGILL, ILL_ILLTRP, tf->tf_pc, esr);
 		userret(l);
 		break;
 #endif /* COMPAT_NETBSD32 */
 	default:
-		// XXXAARCH64: notyet
+		/* XXX notyet */
 		printf("%s:%d: %s\n", __func__, __LINE__, trapname);
 		do_trapsignal(l, SIGILL, ILL_ILLTRP, tf->tf_pc, esr);
 		userret(l);
@@ -396,7 +393,7 @@ cpu_jump_onfault(struct trapframe *tf, const struct faultbuf *fb, int val)
 void
 ucas_ras_check(struct trapframe *tf)
 {
-#if 0 /* XXXAARCH64 */
+#if 0 /* XXX notyet */
 	extern char ucas_32_ras_start[];
 	extern char ucas_32_ras_end[];
 	extern char ucas_64_ras_start[];
