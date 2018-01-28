@@ -686,8 +686,8 @@ bcm2835_bs_mmap(void *t, bus_addr_t bpa, off_t offset, int prot, int flags)
 	paddr_t bus_flags = 0;
 
 #ifdef __aarch64__
-        if ((flags & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE)) != 0)
-                bus_flags |= AARCH64_MMAP_WRITEBACK;
+	if ((flags & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE)) != 0)
+		bus_flags |= AARCH64_MMAP_WRITEBACK;
 #else
 	if (flags & BUS_SPACE_MAP_PREFETCHABLE)
 		bus_flags |= ARM32_MMAP_WRITECOMBINE;
@@ -703,8 +703,8 @@ bcm2835_a4x_bs_mmap(void *t, bus_addr_t bpa, off_t offset, int prot, int flags)
 	paddr_t bus_flags = 0;
 
 #ifdef __aarch64__
-        if ((flags & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE)) != 0)
-                bus_flags |= AARCH64_MMAP_WRITEBACK;
+	if ((flags & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE)) != 0)
+		bus_flags |= AARCH64_MMAP_WRITEBACK;
 #else
 	if (flags & BUS_SPACE_MAP_PREFETCHABLE)
 		bus_flags |= ARM32_MMAP_WRITECOMBINE;
