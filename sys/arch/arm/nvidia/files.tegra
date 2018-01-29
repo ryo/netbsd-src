@@ -3,9 +3,6 @@
 # Configuration info for NVIDIA Tegra ARM Peripherals
 #
 
-include "arch/arm/pic/files.pic"
-include "arch/arm/cortex/files.cortex"
-
 file	arch/arm/nvidia/tegra_platform.c
 file	arch/arm/nvidia/tegra_soc.c
 file	arch/arm/nvidia/tegra_cpufreq.c

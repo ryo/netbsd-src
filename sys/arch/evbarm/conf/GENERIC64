@@ -25,6 +25,8 @@ makeoptions	DTS="
 #options 	CPU_CORTEXA53
 options 	CPU_CORTEXA57
 options 	SOC_TEGRA210
+options 	SOC_SUN50I_A64
+options 	SOC_SUN50I_H5
 #options 	MULTIPROCESSOR
 
 pseudo-device 	openfirm	# /dev/openfirm
@@ -52,17 +54,26 @@ cpus*		at fdt? pass 0
 cpu*		at cpus?
 
 # CPU frequency scaling
-tegra124cpu*	at cpu?
+cpufreqdt*	at cpu?
 
-fclock*		at fdt? pass 4
-fregulator*	at fdt? pass 5
+# Power State Coordination Interface (PSCI)
+psci*		at fdt?
+
+fclock*		at fdt? pass 1
+ffclock*	at fdt? pass 1
+fregulator*	at fdt? pass 4
+gregulator*	at fdt? pass 4
 gpiokeys*	at fdt?
 wskbd*		at gpiokeys? console ? mux 1
+gpioleds*	at fdt?
 
 # Timer
 gtmr*		at fdt? pass 1		# ARM Generic Timer
 armgtmr0	at gtmr?
 tegratimer*	at fdt?			# Timers
+
+# Watchdog
+sunxiwdt*	at fdt?			# Allwinner watchdog
 
 # Interrupt controller
 tegralic*	at fdt? pass 1		# LIC
@@ -73,6 +84,7 @@ armgic0		at gic?
 tegramc*	at fdt?	pass 4		# MC
 
 # DMA controller
+sun6idma*	at fdt?			# Allwinner DMA controller (sun6i)
 tegraapbdma*	at fdt? pass 4		# APB DMA
 
 # FUSE controller
@@ -82,18 +94,23 @@ tegrafuse*	at fdt? pass 4		# FUSE
 tegrapmc*	at fdt? pass 4		# PMC
 
 # Clock and Reset controller
-tegra124car*	at fdt? pass 3		# CAR (T124)
+sun8ih3ccu*	at fdt? pass 2		# Allwinner H3/H5 CCU
+sun8ih3rccu*	at fdt? pass 2		# Allwinner H3/H5 CCU (PRCM)
+sun50ia64ccu*	at fdt? pass 2		# Allwinner A64 CCU
+sunxiresets*	at fdt? pass 1		# Allwinner misc. resets
+sunxigates*	at fdt? pass 1		# Allwinner misc. gates
+sunxigmacclk*	at fdt? pass 2		# Allwinner GMAC MII/RGMII clock mux
 tegra210car*	at fdt? pass 3		# CAR (T210)
 
 # GPIO controller
-tegragpio*	at fdt? pass 2		# GPIO
+sunxigpio*	at fdt? pass 3		# Allwinner GPIO
+tegragpio*	at fdt? pass 2		# Tegra GPIO
 gpio*		at gpiobus?
 
 # MPIO / Pinmux
 tegrapinmux*	at fdt?			# MPIO
 
 # XUSB PADCTL
-tegra124xpad*	at fdt?			# XUSB PADCTL (T124)
 tegra210xpad*	at fdt?			# XUSB PADCTL (T210)
 tegra210xphy*	at tegra210xpad?
 
@@ -105,9 +122,11 @@ tegra210xphy*	at tegra210xpad?
 #pci*		at ppb?
 
 # Ethernet
+sunxiemac*	at fdt?				# Allwinner Gigabit Ethernet (EMAC)
 #re*		at pci? dev ? function ?	# Realtek RTL8111GS
-#rgephy*		at mii? phy ?
-#ukphy*		at mii? phy ?
+rgephy*		at mii? phy ?
+rlphy*		at mii? phy ?
+ukphy*		at mii? phy ?
 
 # Mini-PCIe Wireless
 #options 	ATHHAL_AR5212,ATHHAL_RF2425	# AR5BHB63
@@ -116,9 +135,12 @@ tegra210xphy*	at tegra210xpad?
 
 # UART
 com*		at fdt?			# UART
+options 	CONSADDR=0x01c28000
 
 # I2C
-tegrai2c*	at fdt? pass 4		# I2C
+sunxitwi*	at fdt?			# Allwinner TWI
+sunxirsb*	at fdt?			# Allwinner RSB
+tegrai2c*	at fdt? pass 4		# Tegra I2C
 iic*		at tegrai2c?
 titemp*		at iic?
 seeprom*	at iic?
@@ -128,11 +150,14 @@ max77620pmic*	at iic?
 tcagpio*	at iic?
 
 # RTC
-tegrartc*	at fdt?			# RTC
+sunxirtc*	at fdt?			# Allwinner RTC
+tegrartc*	at fdt?			# Tegra RTC
 
 # SDMMC
-sdhc*		at fdt?			# SDMMC
-sdmmc*		at sdhc?
+mmcpwrseq*	at fdt?			# Simple MMC power sequence provider
+sdhc*		at fdt?			# SD Host Controller Interface
+sunximmc*	at fdt?			# Allwinner SD/MMC
+sdmmc*		at sdmmcbus?
 ld0		at sdmmc0
 ld1		at sdmmc1
 ld2		at sdmmc2
@@ -146,14 +171,16 @@ atapibus*	at atapi?
 wd*		at atabus? drive ?
 cd*		at atapibus? drive ?
 
-# HDA
+# Audio support
 hdaudio*	at fdt?			# HDA
 hdafg*		at hdaudiobus?
-audio*		at audiobus?
 options 	HDAUDIOVERBOSE
 options 	HDAUDIO_32BIT_ACCESS
 options 	HDAUDIO_ENABLE_HDMI
 options 	HDAUDIO_ENABLE_DISPLAYPORT
+sunxicodec*	at fdt?			# Allwinner audio codec
+h3codec*	at fdt?			# Allwinner H3 audio codec (analog part)
+audio*		at audiobus?
 
 spkr*		at audio?		# PC speaker (synthesized)
 
@@ -164,6 +191,7 @@ hdmicec*	at hdmicecbus?
 # Display
 #tegradrm*	at fdt?			# Display
 #tegrafb*	at tegrafbbus?
+genfb*		at fdt?			# Simple Framebuffer
 wsdisplay*	at wsemuldisplaydev?
 options 	VCONS_DRAW_INTR
 options 	WSEMUL_VT100
@@ -190,9 +218,14 @@ xhci*		at fdt?			# XUSB
 usb*		at xhci?
 
 # USB 2.0
-tegrausbphy*	at fdt?			# USB PHY
-ehci*		at fdt?			# USB
+sunxiusbphy*	at fdt? pass 9		# Allwinner USB PHY
+tegrausbphy*	at fdt?			# Tegra USB PHY
+ehci*		at fdt?			# EHCI
+ohci*		at fdt?			# OHCI
+motg*		at fdt?			# Mentor Graphics USB OTG
 usb*		at ehci?
+usb*		at ohci?
+usb*		at motg?
 
 include "dev/usb/usbdevices.config"
 midi*		at midibus?

@@ -3,6 +3,9 @@
 # NVIDIA Tegra configuration info
 #
 
+include "arch/arm/pic/files.pic"
+include "arch/arm/cortex/files.cortex"
+
 file	arch/arm/arm32/arm32_boot.c
 file	arch/arm/arm32/arm32_kvminit.c
 file	arch/arm/arm32/arm32_reboot.c

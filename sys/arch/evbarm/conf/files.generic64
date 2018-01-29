@@ -1,10 +1,10 @@
 #	$NetBSD$
 #
 
+include "arch/arm/pic/files.pic"
+include "arch/arm/cortex/files.cortex"
 
 # Add other board files here
 #
+include "arch/arm/sunxi/files.sunxi"
 include "arch/arm/nvidia/files.tegra"
-
-
-
