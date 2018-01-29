@@ -30,9 +30,11 @@
 
 RCSID("$NetBSD: psci_arm.S,v 1.1 2017/06/28 23:48:23 jmcneill Exp $");
 
+#if defined(__arm__)
 	.arch		armv7a
 	.arch_extension	sec
 	.arch_extension	virt
+#endif
 
 /* Invoke PSCI function using Secure Monitor Call interface */
 ENTRY(psci_call_smc)
