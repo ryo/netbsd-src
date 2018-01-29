@@ -95,9 +95,21 @@ __KERNEL_RCSID(0, "$NetBSD: sunxi_platform.c,v 1.19 2018/01/27 14:17:45 jmcneill
 #define	SUN9I_WDT_MODE		0x18
 #define	 SUN9I_WDT_MODE_EN	__BIT(0)
 
+#if defined(__aarch64__)
+extern struct bus_space aarch64_generic_bs_tag;
+extern struct bus_space aarch64_generic_a4x_bs_tag;
+extern struct arm32_bus_dma_tag arm_generic_dma_tag;
+#define	sunxi_bs_tag		aarch64_generic_bs_tag
+#define	sunxi_a4x_bs_tag	aarch64_generic_a4x_bs_tag
+#define	sunxi_dma_tag		arm_generic_dma_tag
+#else
 extern struct bus_space armv7_generic_bs_tag;
 extern struct bus_space armv7_generic_a4x_bs_tag;
 extern struct arm32_bus_dma_tag armv7_generic_dma_tag;
+#define	sunxi_bs_tag		armv7_generic_bs_tag
+#define	sunxi_a4x_bs_tag	armv7_generic_a4x_bs_tag
+#define	sunxi_dma_tag		armv7_generic_dma_tag
+#endif
 
 static const struct pmap_devmap *
 sunxi_platform_devmap(void)
@@ -115,17 +127,27 @@ sunxi_platform_devmap(void)
 static void
 sunxi_platform_init_attach_args(struct fdt_attach_args *faa)
 {
-	faa->faa_bst = &armv7_generic_bs_tag;
-	faa->faa_a4x_bst = &armv7_generic_a4x_bs_tag;
-	faa->faa_dmat = &armv7_generic_dma_tag;
+	faa->faa_bst = &sunxi_bs_tag;
+	faa->faa_a4x_bst = &sunxi_a4x_bs_tag;
+	faa->faa_dmat = &sunxi_dma_tag;
 }
 
-static void
+void sunxi_platform_early_putchar(char);
+
+void
 sunxi_platform_early_putchar(char c)
 {
 #ifdef CONSADDR
+#define CONSADDR_PA	CONSADDR
 #define CONSADDR_VA     ((CONSADDR - SUNXI_CORE_PBASE) + SUNXI_CORE_VBASE)
-	volatile uint32_t *uartaddr = (volatile uint32_t *)CONSADDR_VA;
+	volatile uint32_t *uartaddr =
+#if defined(__aarch64__)
+	    (reg_sctlr_el1_read() & SCTLR_M) ?
+#else
+	    (armreg_sctlr_read() & CPU_CONTROL_MMU_ENABLE) ?
+#endif
+		(volatile uint32_t *)CONSADDR_VA :
+		(volatile uint32_t *)CONSADDR_PA;
 
 	while ((le32toh(uartaddr[com_lsr]) & LSR_TXRDY) == 0)
 		;
@@ -182,7 +204,7 @@ sunxi_platform_psci_bootstrap(void)
 static void
 sun4i_platform_reset(void)
 {
-	bus_space_tag_t bst = &armv7_generic_bs_tag;
+	bus_space_tag_t bst = &sunxi_bs_tag;
 	bus_space_handle_t bsh;
 
 	bus_space_map(bst, SUN4I_WDT_BASE, SUN4I_WDT_SIZE, 0, &bsh);
@@ -198,7 +220,7 @@ sun4i_platform_reset(void)
 static void
 sun4i_platform_delay(u_int n)
 {
-	static bus_space_tag_t bst = &armv7_generic_bs_tag;
+	static bus_space_tag_t bst = &sunxi_bs_tag;
 	static bus_space_handle_t bsh = 0;
 	const long incs_per_us = SUNXI_REF_FREQ / 1000000;
 	long ticks = n * incs_per_us;
@@ -230,7 +252,7 @@ sun4i_platform_delay(u_int n)
 static void
 sun6i_platform_reset(void)
 {
-	bus_space_tag_t bst = &armv7_generic_bs_tag;
+	bus_space_tag_t bst = &sunxi_bs_tag;
 	bus_space_handle_t bsh;
 
 	bus_space_map(bst, SUN6I_WDT_BASE, SUN6I_WDT_SIZE, 0, &bsh);
@@ -242,7 +264,7 @@ sun6i_platform_reset(void)
 static void
 sun9i_platform_reset(void)
 {
-	bus_space_tag_t bst = &armv7_generic_bs_tag;
+	bus_space_tag_t bst = &sunxi_bs_tag;
 	bus_space_handle_t bsh;
 
 	bus_space_map(bst, SUN9I_WDT_BASE, SUN9I_WDT_SIZE, 0, &bsh);
