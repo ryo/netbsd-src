@@ -29,14 +29,14 @@ options 	SOC_TEGRA210
 
 pseudo-device 	openfirm	# /dev/openfirm
 
-#options 	DIAGNOSTIC	# internal consistency checks
-#options 	DEBUG
+options 	DIAGNOSTIC	# internal consistency checks
+options 	DEBUG
 #options 	LOCKDEBUG
 #options 	PMAP_DEBUG	# Enable pmap_debug_level code
 #options 	IPKDB		# remote kernel debugging
-#options 	VERBOSE_INIT_ARM # verbose bootstrapping messages
+options 	VERBOSE_INIT_ARM # verbose bootstrapping messages
 # CONSADDR is required for early init messages from VERBOSE_INIT_ARM.
-#options 	CONSADDR=0x70006300
+options 	CONSADDR=0x70006000
 
 makeoptions	DEBUG="-g"	# compile full symbol table
 makeoptions	COPY_SYMTAB=1

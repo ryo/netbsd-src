@@ -134,7 +134,11 @@ void
 tegra_platform_early_putchar(char c)
 {
 #ifdef CONSADDR
+#ifdef __aarch64__
+#define CONSADDR_VA	CONSADDR
+#else
 #define CONSADDR_VA	(CONSADDR - TEGRA_APB_BASE + TEGRA_APB_VBASE)
+#endif
 	volatile uint32_t *uartaddr = (volatile uint32_t *)CONSADDR_VA;
 
 	while ((uartaddr[com_lsr] & LSR_TXRDY) == 0)
