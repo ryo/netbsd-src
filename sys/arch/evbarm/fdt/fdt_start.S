@@ -28,6 +28,8 @@
 
 #include "opt_arm_debug.h"	/* VERBOSE_INIT_ARM */
 
+#include <sys/cdefs.h>
+
 #include <aarch64/asm.h>
 
 RCSID("$NetBSD$")
@@ -77,5 +79,8 @@ start:
 	b	aarch64_start		/* aarch64_start() @ aarch64/locore.S */
 
 ENTRY_NP(uartputc)
-	b	tegra_platform_early_putchar
-//	b	bcm2837_platform_early_putchar
+#ifdef EARLYCONS
+	b	___CONCAT(EARLYCONS, _platform_early_putchar)
+#else
+	ret
+#endif

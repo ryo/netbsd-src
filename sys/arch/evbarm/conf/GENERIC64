@@ -37,8 +37,9 @@ options 	DEBUG
 #options 	PMAP_DEBUG	# Enable pmap_debug_level code
 #options 	IPKDB		# remote kernel debugging
 options 	VERBOSE_INIT_ARM # verbose bootstrapping messages
-# CONSADDR is required for early init messages from VERBOSE_INIT_ARM.
-options 	CONSADDR=0x70006000
+# EARLYCONS/CONSADDR is required for early init messages from VERBOSE_INIT_ARM.
+#options 	EARLYCONS=tegra, CONSADDR=0x70006000
+#options 	EARLYCONS=sunxi, CONSADDR=0x01c28000
 
 makeoptions	DEBUG="-g"	# compile full symbol table
 makeoptions	COPY_SYMTAB=1
