@@ -77,5 +77,5 @@ start:
 	b	aarch64_start		/* aarch64_start() @ aarch64/locore.S */
 
 ENTRY_NP(uartputc)
-//	b	tegra_platform_early_putchar
-	b	bcm2837_platform_early_putchar
+	b	tegra_platform_early_putchar
+//	b	bcm2837_platform_early_putchar
