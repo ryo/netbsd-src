@@ -421,6 +421,7 @@ arm_boot_l0pt_init:
 	mov	x3, #L2_BLKPAG_ATTR_NORMAL_WB
 
 	/* kernelsize = _end - _start */
+	ldr	x1, =start
 	ldr	x4, .Lend
 	sub	x4, x4, x1
 
@@ -542,7 +543,7 @@ l1_settable:
 l2_setblocks:
 	stp	x0, lr, [sp, #-16]!
 
-	and	x2, x2, #L2_ADDR_BITS
+	and	x2, x2, #L2_BLOCK_MASK
 	mov	x8, #L2_BLOCK
 	orr	x2, x2, x8
 	orr	x2, x2, x3
