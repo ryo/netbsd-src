@@ -31,7 +31,7 @@
 
 #include <arch/evbarm/fdt/platform.h>
 
-#define	SUNXI_CORE_VBASE	(KERNEL_VM_BASE + KERNEL_VM_SIZE)
+#define	SUNXI_CORE_VBASE	KERNEL_IO_VBASE
 #define	SUNXI_CORE_PBASE	0x01c00000
 #define	SUNXI_CORE_SIZE		0x06400000
 
