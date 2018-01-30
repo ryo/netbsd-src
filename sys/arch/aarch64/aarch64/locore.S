@@ -592,7 +592,7 @@ init_sysregs:
 mmu_disable:
 	dsb	sy
 	mrs	x0, sctlr_el1
-	bic	x0, x2, SCTLR_M		/* clear MMU enable bit */
+	bic	x0, x0, SCTLR_M		/* clear MMU enable bit */
 	msr	sctlr_el1, x0
 	isb
 	ret
