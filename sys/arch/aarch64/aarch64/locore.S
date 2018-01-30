@@ -394,7 +394,7 @@ arm_boot_l0pt_init:
 	/* KSEG blocks */
 	adr	x0, ttbr1_l1table_kseg
 	mov	x1, #AARCH64_KSEG_START
-	adr	x2, #0
+	mov	x2, #0
 	mov	x3, #L2_BLKPAG_ATTR_NORMAL_WB
 	orr	x3, x3, #(LX_BLKPAG_PXN|LX_BLKPAG_UXN)
 	mov	x4, #Ln_ENTRIES		/* whole l1 table */
