@@ -81,6 +81,5 @@ start:
 ENTRY_NP(uartputc)
 #ifdef EARLYCONS
 	b	___CONCAT(EARLYCONS, _platform_early_putchar)
-#else
-	ret
 #endif
+	ret
