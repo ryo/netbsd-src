@@ -60,14 +60,6 @@ __KERNEL_RCSID(0, "$NetBSD: sunxi_platform.c,v 1.19 2018/01/27 14:17:45 jmcneill
 
 #include <libfdt.h>
 
-#if defined(__aarch64__)
-#define	SUNXI_CORE_PHYSTOVIRT(pa)	(pa)
-#define	MMU_ENABLED			(reg_sctlr_el1_read() & SCTLR_M)
-#else
-#define	SUNXI_CORE_PHYSTOVIRT(pa)	((pa) - SUNXI_CORE_PBASE) + SUNXI_CORE_VBASE)
-#define	MMU_ENABLED			(armreg_sctlr_read() & CPU_CONTROL_MMU_ENABLE)
-#endif
-
 #define	SUNXI_REF_FREQ	24000000
 
 #define	SUN4I_TIMER_BASE	0x01c20c00
@@ -146,8 +138,9 @@ void
 sunxi_platform_early_putchar(char c)
 {
 #ifdef CONSADDR
-	volatile uint32_t *uartaddr = MMU_ENABLED ?
-	    (volatile uint32_t *)SUNXI_CORE_PHYSTOVIRT(CONSADDR) :
+#define CONSADDR_VA	((CONSADDR - SUNXI_CORE_PBASE) + SUNXI_CORE_VBASE)
+	volatile uint32_t *uartaddr = cpu_earlydevice_va_p() ?
+	    (volatile uint32_t *)CONSADDR_VA :
 	    (volatile uint32_t *)CONSADDR;
 
 	while ((le32toh(uartaddr[com_lsr]) & LSR_TXRDY) == 0)

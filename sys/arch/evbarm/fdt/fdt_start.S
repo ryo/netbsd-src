@@ -73,7 +73,7 @@ start:
 
 
 #ifdef VERBOSE_INIT_ARM
-	PRINT("boot NetBSD/RaspberryPi\r\n")
+	PRINT("boot NetBSD/evbarm (aarch64)\r\n")
 #endif
 
 	b	aarch64_start		/* aarch64_start() @ aarch64/locore.S */
