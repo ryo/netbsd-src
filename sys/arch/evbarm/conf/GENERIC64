@@ -14,9 +14,25 @@ include	"arch/evbarm/conf/GENERIC.common"
 # FDT files supported by this kernel - add to DTSSUBDIR and DTS as
 # appropriate
 #
-makeoptions	DTSGNUARCH="arm64"
-makeoptions	DTSSUBDIR="nvidia"
+makeoptions 	DTSARCH="arm aarch64"
+makeoptions	DTSGNUARCH="arm arm64"
+makeoptions	DTSSUBDIR="allwinner nvidia"
 makeoptions	DTS="
+	sun50i-a64-bananapi-m64.dts
+	sun50i-a64-nanopi-a64.dts
+	sun50i-a64-olinuxino.dts
+	sun50i-a64-orangepi-win.dts
+	sun50i-a64-pine64-plus.dts
+	sun50i-a64-pine64.dts
+	sun50i-a64-pinebook.dts
+	sun50i-a64-sopine-baseboard.dts
+
+	sun50i-h5-nanopi-neo-plus2.dts
+	sun50i-h5-nanopi-neo2.dts
+	sun50i-h5-orangepi-pc2.dts
+	sun50i-h5-orangepi-prime.dts
+	sun50i-h5-orangepi-zero-plus2.dts
+
 	tegra210-p2371-0000.dts
 	tegra210-p2371-2180.dts
 	tegra210-p2571.dts
