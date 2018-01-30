@@ -136,7 +136,6 @@ ukphy*		at mii? phy ?
 
 # UART
 com*		at fdt?			# UART
-options 	CONSADDR=0x01c28000
 
 # I2C
 sunxitwi*	at fdt?			# Allwinner TWI
