@@ -29,6 +29,7 @@
 #include "opt_cpuoptions.h"
 #include "opt_multiprocessor.h"
 #include "opt_ddb.h"
+#include "opt_arm_debug.h"
 
 #include <aarch64/asm.h>
 #include <aarch64/hypervisor.h>
@@ -37,9 +38,11 @@
 
 RCSID("$NetBSD$")
 
-//#define DEBUG_LOCORE
-//#define DEBUG_MMU
-
+#if defined(VERBOSE_INIT_ARM) && defined(EARLYCONS)
+#define DEBUG_LOCORE
+#define DEBUG_MMU
+#define VERBOSE_LOCORE
+#endif
 
 #define LOCORE_EL2
 
