@@ -24,6 +24,7 @@ makeoptions	DTS="
 options 	VERBOSE_LOCORE
 options 	VERBOSE_INIT_ARM
 options 	MSGBUFSIZE=32768
+options 	EARLYCONS=bcm2837
 
 #options 	HZ=16
 #options 	SYSCALL_DEBUG
