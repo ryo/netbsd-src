@@ -246,4 +246,4 @@ usb*		at motg?
 include "dev/usb/usbdevices.config"
 midi*		at midibus?
 
-cinclude "arch/evbarm/conf/TEGRA.local"
+cinclude "arch/evbarm/conf/GENERIC64.local"
