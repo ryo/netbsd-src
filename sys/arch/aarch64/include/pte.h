@@ -90,7 +90,7 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define L0_OFFSET		(L0_SIZE - 1UL)
 #define L0_FRAME		(~L0_OFFSET)
 /*      L0_BLOCK		Level 0 doesn't support block translation */
-#define L0_TABLE		(LX_BLKPAG_NG | LX_TYPE_TBL | LX_VALID)
+#define L0_TABLE		(LX_TYPE_TBL | LX_VALID)
 
 /* L1 table, 1GB/entry * 512 */
 #define L1_SHIFT		30
@@ -99,7 +99,7 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define L1_OFFSET		(L1_SIZE - 1UL)
 #define L1_FRAME		(~L1_OFFSET)
 #define L1_BLOCK		(LX_BLKPAG_NG | LX_TYPE_BLK | LX_VALID)
-#define L1_TABLE		(LX_BLKPAG_NG | LX_TYPE_TBL | LX_VALID)
+#define L1_TABLE		(LX_TYPE_TBL | LX_VALID)
 
 /* L2 table, 2MB/entry * 512 */
 #define L2_SHIFT		21
@@ -108,8 +108,8 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define L2_OFFSET		(L2_SIZE - 1UL)
 #define L2_FRAME		(~L2_OFFSET)
 #define L2_BLOCK		(LX_BLKPAG_NG | LX_TYPE_BLK | LX_VALID)
-#define L2_TABLE		(LX_BLKPAG_NG | LX_TYPE_TBL | LX_VALID)
-#define L2_BLOCK_MASK		0x0000ffffffe00000UL
+#define L2_TABLE		(LX_TYPE_TBL | LX_VALID)
+#define L2_BLOCK_MASK		__BITS(47,21)
 
 /* L3 table, 4KB/entry * 512 */
 #define L3_SHIFT		12
