@@ -76,35 +76,31 @@ u_long kern_vtopdiff;
 
 
 /*
- * Upper region: 0xffffffffffffffff  Top of virtual memory
+ * Upper region: 0xffff_ffff_ffff_ffff  Top of virtual memory
  *
- *               0xffffffffffe00000  End of KVA
- *                                   = VM_MAX_KERNEL_ADDRESS
+ *               0xffff_ffff_ffe0_0000  End of KVA
+ *                                      = VM_MAX_KERNEL_ADDRESS
  *
- *               0xffffffc00???????  End of kernel
- *                                   = _end[]
- *               0xffffffc000??????  Start of kernel
- *                                   = __kernel_text[]
+ *               0xffff_ffc0_0???_????  End of kernel
+ *                                      = _end[]
+ *               0xffff_ffc0_00??_????  Start of kernel
+ *                                      = __kernel_text[]
  *
- *               0xffffffc000000000  Kernel base address & start of KVA
- *                                   = VM_MIN_KERNEL_ADDRESS
+ *               0xffff_ffc0_0000_0000  Kernel base address & start of KVA
+ *                                      = VM_MIN_KERNEL_ADDRESS
  *
- *               0xffffffbfffffffff  End of direct mapped
- *               0xffff000000000000  Start of direct mapped
- *                                   = AARCH64_KSEG_START
- *                                   = AARCH64_KMEMORY_BASE
+ *               0xffff_ffbf_ffff_ffff  End of direct mapped
+ *               0xffff_0000_0000_0000  Start of direct mapped
+ *                                      = AARCH64_KSEG_START
+ *                                      = AARCH64_KMEMORY_BASE
  *
- * Hole:         0xfffeffffffffffff
- *               0x0001000000000000
+ * Hole:         0xfffe_ffff_ffff_ffff
+ *               0x0001_0000_0000_0000
  *
- * Lower region: 0x0000fffffffff000  End of user address space
- *                                   = VM_MAXUSER_ADDRESS
+ * Lower region: 0x0000_ffff_ffff_ffff  End of user address space
+ *                                      = VM_MAXUSER_ADDRESS
  *
- *               0x000000000???????  End of Loaded kernel image (boot)
- *               0x0000000000??????  Start of Loaded kernel image (boot)
- *                                   = LOADADDRESS
- *
- *               0x0000000000000000  Start of user address space
+ *               0x0000_0000_0000_0000  Start of user address space
  */
 vaddr_t
 initarm_common(vaddr_t kvm_base, vsize_t kvm_size,
