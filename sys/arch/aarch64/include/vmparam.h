@@ -104,7 +104,7 @@
 
 /*
  * Give ourselves 64GB of mappable kernel space.  That leaves the rest
- * to be user for directly mapped (block addressable) addresses. 
+ * to be user for directly mapped (block addressable) addresses.
  */
 #define VM_MIN_KERNEL_ADDRESS	((vaddr_t) 0xffffffc000000000L)
 #define VM_MAX_KERNEL_ADDRESS	((vaddr_t) 0xffffffffffe00000L)
