@@ -328,7 +328,7 @@ set_cpuinfo:
 	cmp	x1, #MAXCPUS
 	bcs	arm_cpuinit_too_many_cpu
 
-	ldr	x0, .Lcpu_info
+	ldr	x0, =cpu_info
 	ldr	x0, [x0, x1, lsl #3]	/* x0 = cpu_info[cpuid] */
 	msr	tpidr_el1, x0		/* tpidr_el1 = my cpu info */
 	str	x1, [x0, #CI_CPUID]	/* ci->ci_cpuid = CPUID */
@@ -344,9 +344,6 @@ arm_cpuinit_too_many_cpu:
 	ret
 
 	.align 3
-.Lcpu_info:
-	/* struct cpu_info *cpu_info[] in cpu_machdep.c */
-	.quad	_C_LABEL(cpu_info)
 
 
 arm_boot_l0pt_init:
