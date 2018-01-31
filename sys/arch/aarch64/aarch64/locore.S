@@ -183,10 +183,10 @@ ENTRY_NP(aarch64_start)
 #endif
 
 	PRINT("VSTART          = ")
-	ldr	x0, .Lvstart	# virtual address of vstart
+	ldr	x0, =vstart	# virtual address of vstart
 	bl	print_x0
 
-	ldr	x0, .Lvstart	# virtual address of vstart
+	ldr	x0, =vstart	# virtual address of vstart
 	br	x0		# jump to the kernel virtual address
 
 /*
@@ -205,8 +205,8 @@ vstart:
 #endif
 
 	/* Zero the BSS */
-	ldr	x0, .Lbss
-	ldr	x1, .Lend
+	ldr	x0, =__bss_start__
+	ldr	x1, =__bss_end__
 	b	2f
 1:	stp	xzr, xzr, [x0], #16
 2:	cmp	x0, x1
@@ -229,15 +229,6 @@ END(aarch64_start)
 	.asciz	"main() returned"
 
 	.align 3
-.Lvstart:
-	.quad	vstart
-.Lkernel_text:
-	.quad	__kernel_text
-.Lbss:
-	.quad	__bss_start
-.Lend:
-	.quad	__bss_end__
-
 	.text
 /*
  * xprint - print strings pointed by $PC(LR)
@@ -425,7 +416,7 @@ arm_boot_l0pt_init:
 
 	/* kernelsize = _end - _start */
 	ldr	x1, =start
-	ldr	x4, .Lend
+	ldr	x4, =_end
 	sub	x4, x4, x1
 
 	/* round up kernelsize to L2_SIZE (2MB) */
