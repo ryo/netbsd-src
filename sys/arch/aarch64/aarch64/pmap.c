@@ -355,9 +355,9 @@ pmap_devmap_find_va(vaddr_t va, vsize_t size)
 
 	endva = va + size;
 	for (i = 0; pmap_devmap_table[i].pd_size != 0; i++) {
-		if ((va <= pmap_devmap_table[i].pd_va) &&
+		if ((va >= pmap_devmap_table[i].pd_va) &&
 		    (endva <= pmap_devmap_table[i].pd_va +
-		    pmap_devmap_table[i].pd_size))
+			      pmap_devmap_table[i].pd_size))
 			return &pmap_devmap_table[i];
 	}
 	return NULL;
@@ -374,10 +374,10 @@ pmap_devmap_find_pa(paddr_t pa, psize_t size)
 
 	endpa = pa + size;
 	for (i = 0; pmap_devmap_table[i].pd_size != 0; i++) {
-		if ((pa <= pmap_devmap_table[i].pd_pa) &&
-		    (endpa <= pmap_devmap_table[i].pd_pa +
-		    pmap_devmap_table[i].pd_size))
-			return &pmap_devmap_table[i];
+		if (pa >= pmap_devmap_table[i].pd_pa &&
+		    endpa <= pmap_devmap_table[i].pd_pa +
+			     pmap_devmap_table[i].pd_size)
+			return (&pmap_devmap_table[i]);
 	}
 	return NULL;
 }
