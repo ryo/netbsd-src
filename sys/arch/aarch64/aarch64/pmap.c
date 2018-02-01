@@ -136,18 +136,6 @@ PMAP_COUNTER(unwire_wired, "pmap_unwire but already unwire");
 #define PMAP_COUNT(name)		__nothing
 #endif /* PMAPCOUNTERS */
 
-
-#ifdef PMAP_DEBUG
-#define DPRINTF(format, args...)	\
-	printf("%s:%d: " format , __func__, __LINE__, args)
-#else
-#define DPRINTF(args...)
-#endif
-
-#define dprintf(format, args...)	\
-	printf("%s:%d: " format , __func__, __LINE__, args)
-
-
 /* saved permission bit for referenced/modified emulation */
 #define LX_BLKPAG_OS_READ	LX_BLKPAG_OS_0
 #define LX_BLKPAG_OS_WRITE	LX_BLKPAG_OS_1
