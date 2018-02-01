@@ -178,11 +178,14 @@ static struct pool_cache _pmap_pv_pool;
 static inline void
 pmap_pv_lock(struct vm_page_md *md)
 {
+
 	mutex_enter(&md->mdpg_pvlock);
 }
+
 static inline void
 pmap_pv_unlock(struct vm_page_md *md)
 {
+
 	mutex_exit(&md->mdpg_pvlock);
 }
 
@@ -967,12 +970,11 @@ _pmap_enter_pv(struct vm_page *pg, struct pmap *pm, vaddr_t va,
 	md = VM_PAGE_TO_MD(pg);
 
 	pmap_pv_lock(md);
-	{
-		/* pv is already registered? */
-		TAILQ_FOREACH(pv, &md->mdpg_pvhead, pv_link) {
-			if ((pm == pv->pv_pmap) && (va == pv->pv_va)) {
-				break;
-			}
+
+	/* pv is already registered? */
+	TAILQ_FOREACH(pv, &md->mdpg_pvhead, pv_link) {
+		if ((pm == pv->pv_pmap) && (va == pv->pv_va)) {
+			break;
 		}
 	}
 
@@ -2096,72 +2098,70 @@ pmap_db_pteinfo(vaddr_t va, void (*pr)(const char *, ...))
 	}
 
 
-	{
-		pd_entry_t *l0, *l1, *l2, *l3;
-		pd_entry_t pde;
-		pt_entry_t pte;
-		struct vm_page_md *md;
-		paddr_t pa;
-		unsigned int idx;
+	pd_entry_t *l0, *l1, *l2, *l3;
+	pd_entry_t pde;
+	pt_entry_t pte;
+	struct vm_page_md *md;
+	paddr_t pa;
+	unsigned int idx;
 
-		/*
-		 * traverse L0 -> L1 -> L2 -> L3 table
-		 */
-		l0 = pm->pm_l0table;
+	/*
+	 * traverse L0 -> L1 -> L2 -> L3 table
+	 */
+	l0 = pm->pm_l0table;
 
-		pr("TTBR%d=%016llx (%016llx)", user ? 0 : 1,
-		    pm->pm_l0table_pa, l0);
-		pr(", input-va=%016llx,"
-		    " L0-index=%d, L1-index=%d, L2-index=%d, L3-index=%d\n",
-		    va,
-		    (va & L0_ADDR_BITS) >> L0_SHIFT,
-		    (va & L1_ADDR_BITS) >> L1_SHIFT,
-		    (va & L2_ADDR_BITS) >> L2_SHIFT,
-		    (va & L3_ADDR_BITS) >> L3_SHIFT);
+	pr("TTBR%d=%016llx (%016llx)", user ? 0 : 1,
+	    pm->pm_l0table_pa, l0);
+	pr(", input-va=%016llx,"
+	    " L0-index=%d, L1-index=%d, L2-index=%d, L3-index=%d\n",
+	    va,
+	    (va & L0_ADDR_BITS) >> L0_SHIFT,
+	    (va & L1_ADDR_BITS) >> L1_SHIFT,
+	    (va & L2_ADDR_BITS) >> L2_SHIFT,
+	    (va & L3_ADDR_BITS) >> L3_SHIFT);
 
-		idx = l0pde_index(va);
-		pde = l0[idx];
+	idx = l0pde_index(va);
+	pde = l0[idx];
 
-		pr("L0[%3d]=%016llx", idx, pde);
-		pmap_db_pte_print(pde, 0, pr);
+	pr("L0[%3d]=%016llx", idx, pde);
+	pmap_db_pte_print(pde, 0, pr);
 
-		if (!l0pde_valid(pde))
-			return;
+	if (!l0pde_valid(pde))
+		return;
 
-		l1 = AARCH64_PA_TO_KVA(l0pde_pa(pde));
-		idx = l1pde_index(va);
-		pde = l1[idx];
+	l1 = AARCH64_PA_TO_KVA(l0pde_pa(pde));
+	idx = l1pde_index(va);
+	pde = l1[idx];
 
-		pr(" L1[%3d]=%016llx", idx, pde);
-		pmap_db_pte_print(pde, 1, pr);
+	pr(" L1[%3d]=%016llx", idx, pde);
+	pmap_db_pte_print(pde, 1, pr);
 
-		if (!l1pde_valid(pde) || l1pde_is_block(pde))
-			return;
+	if (!l1pde_valid(pde) || l1pde_is_block(pde))
+		return;
 
-		l2 = AARCH64_PA_TO_KVA(l1pde_pa(pde));
-		idx = l2pde_index(va);
-		pde = l2[idx];
+	l2 = AARCH64_PA_TO_KVA(l1pde_pa(pde));
+	idx = l2pde_index(va);
+	pde = l2[idx];
 
-		pr("  L2[%3d]=%016llx", idx, pde);
-		pmap_db_pte_print(pde, 2, pr);
+	pr("  L2[%3d]=%016llx", idx, pde);
+	pmap_db_pte_print(pde, 2, pr);
 
-		if (!l2pde_valid(pde) || l2pde_is_block(pde))
-			return;
+	if (!l2pde_valid(pde) || l2pde_is_block(pde))
+		return;
 
-		l3 = AARCH64_PA_TO_KVA(l2pde_pa(pde));
-		idx = l3pte_index(va);
-		pte = l3[idx];
+	l3 = AARCH64_PA_TO_KVA(l2pde_pa(pde));
+	idx = l3pte_index(va);
+	pte = l3[idx];
 
-		pr("   L3[%3d]=%016llx", idx, pte);
-		pmap_db_pte_print(pte, 3, pr);
+	pr("   L3[%3d]=%016llx", idx, pte);
+	pmap_db_pte_print(pte, 3, pr);
 
-		pa = l3pte_pa(pte);
-		pg = PHYS_TO_VM_PAGE(pa);
-		if (pg != NULL) {
-			pg_dump(pg, pr);
-			md = VM_PAGE_TO_MD(pg);
-			pv_dump(md, pr);
-		}
+	pa = l3pte_pa(pte);
+	pg = PHYS_TO_VM_PAGE(pa);
+	if (pg != NULL) {
+		pg_dump(pg, pr);
+		md = VM_PAGE_TO_MD(pg);
+		pv_dump(md, pr);
 	}
 }
 #endif /* DDB */
