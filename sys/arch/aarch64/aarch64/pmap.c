@@ -243,7 +243,7 @@ _pmap_map_chunk(pd_entry_t *l2, vaddr_t va, paddr_t pa, vsize_t size,
 	KDASSERT(!l2pde_valid(oldpte));
 
 	attr = _pmap_pte_adjust_prot(L2_BLOCK, prot, VM_PROT_ALL);
-	attr = _pmap_pte_adjust_cacheflags(attr, flags);
+	attr = _pmap_pte_adjust_cacheflags(attr, flags | PMAP_DEV);
 #ifdef MULTIPROCESSOR
 	attr |= LX_BLKPAG_SH_IS;
 #endif
@@ -820,24 +820,25 @@ _pmap_pte_adjust_prot(pt_entry_t pte, vm_prot_t prot, vm_prot_t protmask)
 static pt_entry_t
 _pmap_pte_adjust_cacheflags(pt_entry_t pte, u_int flags)
 {
+
 	pte &= ~LX_BLKPAG_ATTR_MASK;
 
-	switch (flags & PMAP_CACHE_MASK) {
+	switch (flags & (PMAP_CACHE_MASK|PMAP_DEV)) {
+	case PMAP_DEV ... PMAP_DEV | PMAP_CACHE_MASK:
+		pte |= LX_BLKPAG_ATTR_DEVICE_MEM;	/* nGnRnE */
+		break;
 	case PMAP_NOCACHE:
 	case PMAP_NOCACHE_OVR:
-#if 0
 		pte |= LX_BLKPAG_ATTR_NORMAL_NC;	/* only no-cache */
-#else
-		pte |= LX_BLKPAG_ATTR_DEVICE_MEM;	/* nGnRnE */
-#endif
 		break;
 	case PMAP_WRITE_COMBINE:
 	case PMAP_WRITE_BACK:
-	default:
 	case 0:
+	default:
 		pte |= LX_BLKPAG_ATTR_NORMAL_WB;
 		break;
 	}
+
 	return pte;
 }
 
@@ -1484,7 +1485,7 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 	}
 #endif
 
-	attr = _pmap_pte_adjust_prot(L3_TABLE, prot, mdattr);
+	attr = _pmap_pte_adjust_prot(L3_PAGE, prot, mdattr);
 	attr = _pmap_pte_adjust_cacheflags(attr, flags);
 	if (VM_MAXUSER_ADDRESS > va)
 		attr |= LX_BLKPAG_APUSER;
@@ -2108,6 +2109,7 @@ pmap_db_pteinfo(vaddr_t va, void (*pr)(const char *, ...))
 	/*
 	 * traverse L0 -> L1 -> L2 -> L3 table
 	 */
+
 	l0 = pm->pm_l0table;
 
 	pr("TTBR%d=%016llx (%016llx)", user ? 0 : 1,

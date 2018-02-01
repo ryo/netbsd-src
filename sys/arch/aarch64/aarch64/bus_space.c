@@ -544,7 +544,7 @@ generic_bs_map(void *t, bus_addr_t bpa, bus_size_t size, int flag,
 	if ((flag & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE)) != 0)
 		pmapflags = PMAP_WRITE_BACK;
 	else
-		pmapflags = PMAP_NOCACHE;
+		pmapflags = PMAP_DEV;
 
 	for (pa = startpa; pa < endpa; pa += PAGE_SIZE, va += PAGE_SIZE) {
 		pmap_kenter_pa(va, pa, VM_PROT_READ | VM_PROT_WRITE, pmapflags);

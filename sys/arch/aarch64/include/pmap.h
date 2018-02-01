@@ -153,6 +153,10 @@ paddr_t pmap_devmap_vtophys(paddr_t);
 #define AARCH64_MMAP_WRITEBACK		0
 #define AARCH64_MMAP_NOCACHE		1
 #define AARCH64_MMAP_DEVICE		3
+
+#define	PMAP_PTE			0x10000000 /* kenter_pa */
+#define	PMAP_DEV			0x20000000 /* kenter_pa */
+
 static inline u_int
 aarch64_mmap_flags(paddr_t mdpgno)
 {
@@ -176,12 +180,16 @@ aarch64_mmap_flags(paddr_t mdpgno)
 		break;
 	default:
 	case AARCH64_MMAP_NOCACHE:
-	case AARCH64_MMAP_DEVICE:
 		pflag = PMAP_NOCACHE;
+		break;
+	case AARCH64_MMAP_DEVICE:
+		pflag = PMAP_DEV;
 		break;
 	}
 	return pflag;
 }
+
+
 #define pmap_phys_address(pa)		aarch64_ptob((pa))
 #define pmap_mmap_flags(ppn)		aarch64_mmap_flags((ppn))
 
