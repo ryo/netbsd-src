@@ -64,12 +64,6 @@ device cpu { }
 file	arch/aarch64/dev/cpu.c                          cpu
 file	arch/aarch64/aarch64/cpu.c			cpu
 
-# XXXNH use arch/arm/cortex GIC driver
-#device	a64gic: pic
-#attach	a64gic at mainbus
-#file	arch/arm/cortex/gic.c				a64gic
-#file	arch/aarch64/dev/a64gic_mainbus.c		a64gic needs-flag
-
 # XXXNH use arch/arm bus_space
 # bus_space(9)
 define	bus_space_generic
