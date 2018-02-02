@@ -35,7 +35,7 @@
 RCSID("$NetBSD$");
 
 	.macro enter_cpu_onfault
-	stp	fp, lr, [sp, #-16]!	/* save fp, sp */
+	stp	fp, lr, [sp, #-16]!	/* save fp, lr */
 	mov	fp, sp			/* link frame pointer */
 	stp	x19, x20, [sp, #-16]!	/* save x19, x20 */
 	mov	x19, x0			/* x19 = arg0 */
@@ -57,7 +57,7 @@ RCSID("$NetBSD$");
 9:
 	add	sp, sp, #FB_T_SIZE		/* pop stack */
 	ldp	x19, x20, [sp], #16		/* restore x19, x20 */
-	ldp	fp, lr, [sp], #16		/* restore fp, sp */
+	ldp	fp, lr, [sp], #16		/* restore fp, lr */
 	mov	x0, x8				/* x0 = return value */
 	.endm
 
