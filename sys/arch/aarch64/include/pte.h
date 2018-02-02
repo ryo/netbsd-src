@@ -117,7 +117,7 @@ typedef uint64_t pt_entry_t;	/* L3(4k) table entry */
 #define L3_SIZE			(1UL << L3_SHIFT)
 #define L3_OFFSET		(L3_SIZE - 1UL)
 #define L3_FRAME		(~L3_OFFSET)
-#define L3_PAGE			(L3_TYPE_PAG | LX_VALID)
+#define L3_PAGE			(LX_BLKPAG_NG | L3_TYPE_PAG | LX_VALID)
 
 #define Ln_ENTRIES_SHIFT	9
 #define Ln_ENTRIES		(1 << Ln_ENTRIES_SHIFT)
