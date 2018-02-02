@@ -46,6 +46,8 @@
 
 #ifdef _KERNEL
 
+#if !defined(_RUMPKERNEL)
+
 #include <sys/param.h>
 #include <sys/types.h>
 
@@ -432,6 +434,9 @@ extern u_int arm_dcache_align_mask;
 
 extern struct arm_cache_info arm_pcache;
 extern struct arm_cache_info arm_scache;
+
+#endif	/* _GRRRRUMP */
+
 #endif	/* _KERNEL */
 
 #if defined(_KERNEL) || defined(_KMEMUSER)
