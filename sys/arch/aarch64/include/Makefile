@@ -17,7 +17,7 @@ INCS=	ansi.h aout_machdep.h armreg.h asm.h \
 	param.h pcb.h pmap.h \
 	proc.h profile.h pte.h ptrace.h \
 	reg.h rwlock.h \
-	setjmp.h signal.h \
+	setjmp.h signal.h sysarch.h \
 	types.h \
 	vmparam.h \
 	wchar_limits.h
