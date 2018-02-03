@@ -42,7 +42,7 @@ __RCSID("$NetBSD: mdreloc.c,v 1.6 2017/08/28 06:59:25 nisimura Exp $");
 
 void _rtld_bind_start(void);
 void _rtld_relocate_nonplt_self(Elf_Dyn *, Elf_Addr);
-Elf_Addr _rtld_bind(const Obj_Entry *, int);
+Elf_Addr _rtld_bind(const Obj_Entry *, Elf_Word);
 void *_rtld_tlsdesc(void *);
 
 /*
@@ -74,6 +74,7 @@ void *_rtld_tlsdesc(void *);
 void
 _rtld_setup_pltgot(const Obj_Entry *obj)
 {
+
 	obj->pltgot[1] = (Elf_Addr) obj;
 	obj->pltgot[2] = (Elf_Addr) &_rtld_bind_start;
 }
@@ -105,12 +106,11 @@ _rtld_relocate_nonplt_self(Elf_Dyn *dynp, Elf_Addr relocbase)
 int
 _rtld_relocate_nonplt_objects(Obj_Entry *obj)
 {
-	const Elf_Rela *rela;
 	const Elf_Sym *def = NULL;
 	const Obj_Entry *defobj = NULL;
 	unsigned long last_symnum = ULONG_MAX;
 
-	for (rela = obj->rela; rela < obj->relalim; rela++) {
+	for (const Elf_Rela *rela = obj->rela; rela < obj->relalim; rela++) {
 		Elf_Addr        *where;
 		Elf_Addr	tmp;
 		unsigned long	symnum;
@@ -222,12 +222,11 @@ _rtld_relocate_nonplt_objects(Obj_Entry *obj)
 int
 _rtld_relocate_plt_lazy(Obj_Entry *obj)
 {
-	const Elf_Rela *rela;
 
 	if (!obj->relocbase)
 		return 0;
 
-	for (rela = obj->pltrela; rela < obj->pltrelalim; rela++) {
+	for (const Elf_Rela *rela = obj->pltrela; rela < obj->pltrelalim; rela++) {
 		Elf_Addr *where = (Elf_Addr *)(obj->relocbase + rela->r_offset);
 
 		assert((ELF_R_TYPE(rela->r_info) == R_TYPE(JUMP_SLOT)) ||
@@ -250,6 +249,27 @@ _rtld_relocate_plt_lazy(Obj_Entry *obj)
 	}
 
 	return 0;
+}
+
+void
+_rtld_call_ifunc(Obj_Entry *obj, sigset_t *mask, u_int cur_objgen)
+{
+	const Elf_Rela *rela;
+	Elf_Addr *where, target;
+
+	while (obj->ifunc_remaining > 0 && _rtld_objgen == cur_objgen) {
+		rela = obj->pltrelalim - obj->ifunc_remaining;
+		--obj->ifunc_remaining;
+		if (ELF_R_TYPE(rela->r_info) == R_TYPE(IRELATIVE)) {
+			where = (Elf_Addr *)(obj->relocbase + rela->r_offset);
+			target = (Elf_Addr)(obj->relocbase + rela->r_addend);
+			_rtld_exclusive_exit(mask);
+			target = _rtld_resolve_ifunc2(obj, target);
+			_rtld_exclusive_enter(mask);
+			if (*where != target)
+				*where = target;
+		}
+	}
 }
 
 static int
@@ -288,7 +308,7 @@ _rtld_relocate_plt_object(const Obj_Entry *obj, const Elf_Rela *rela,
 }
 
 Elf_Addr
-_rtld_bind(const Obj_Entry *obj, int relaidx)
+_rtld_bind(const Obj_Entry *obj, Elf_Word relaidx)
 {
 	const Elf_Rela *rela = obj->pltrela + relaidx;
 	Elf_Addr new_value;

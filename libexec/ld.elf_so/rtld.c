@@ -366,12 +366,12 @@ _rtld_init(caddr_t mapbase, caddr_t relocbase, const char *execname)
 
 	_rtld_digest_dynamic(_rtld_path, &_rtld_objself);
 	assert(!_rtld_objself.needed);
-#if !defined(__hppa__) && !defined(__aarch64__)
+#if !defined(__hppa__)
 	assert(!_rtld_objself.pltrel && !_rtld_objself.pltrela);
 #else
 	_rtld_relocate_plt_objects(&_rtld_objself);
 #endif
-#if !defined(__mips__) && !defined(__hppa__) && !defined(__aarch64__)
+#if !defined(__mips__) && !defined(__hppa__)
 	assert(!_rtld_objself.pltgot);
 #endif
 #if !defined(__arm__) && !defined(__mips__) && !defined(__sh__)
