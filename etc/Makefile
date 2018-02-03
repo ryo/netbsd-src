@@ -118,7 +118,8 @@ BIN1+=	etc.${MACHINE}/disktab
 BIN1+=	disktab
 .endif
 
-.if exists(etc.${MACHINE}/ld.so.conf) && empty(MACHINE_ARCH:M*arm*hf*)
+.if exists(etc.${MACHINE}/ld.so.conf) && \
+    empty(MACHINE_ARCH:M*arm*hf*) && ${MACHINE_ARCH} != "aarch64"
 BIN1+=	etc.${MACHINE}/ld.so.conf
 .endif
 

@@ -8,11 +8,13 @@
 SUBDIR=		gzboot instkernel cdroms
 TARGETS+=	release
 
+.if ${MACHINE_CPU} == "arm"
 BOOTOBJ!=	cd ${KERNSRCDIR}/arch/evbarm/stand/boot2440 && ${PRINTOBJDIR}
 MDECBOOT=	${BOOTOBJ}/bootmini2440 
 
 release: check_RELEASEDIR .WAIT ${MDECBOOT}
 	${RELEASE_INSTALL} ${MDECBOOT} ${RELEASEDIR}/${RELEASEMACHINEDIR}/installation
+.endif
 
 iso_image:
 	${MAKEDIRTARGET} cdroms iso_image
