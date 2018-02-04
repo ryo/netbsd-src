@@ -32,17 +32,6 @@
 RCSID("$NetBSD$")
 #endif
 
-#ifdef _KERNEL
-/*
- * aarch64 Device-nGnRnE memory must be accessed aligned, and some
- * device drivers (usb?) use memcpy() for unaligned address of device memory.
- */
-#ifndef STRICT_ALIGNMENT
-#define STRICT_ALIGNMENT
-#endif
-
-#endif /* _KERNEL */
-
 #if defined(MEMCOPY)
 
 /*
