@@ -15,3 +15,5 @@
 ./usr/libexec/ld.elf_so-eabi			base-compat-shlib	compat,pic
 ./usr/libexec/ld.elf_so-eabihf			base-compat-shlib	compat,pic
 ./usr/libexec/ld.elf_so-oabi			base-sysutil-bin	compat,pic
+./usr/sbin/ofctl				base-sysutil-bin
+./usr/sbin/tpctl				base-sysutil-bin

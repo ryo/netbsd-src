@@ -7,6 +7,7 @@
 	|| ${MACHINE} == "macppc" \
 	|| ${MACHINE} == "ofppc" \
 	|| ${MACHINE_CPU} == "arm" \
+	|| ${MACHINE_CPU} == "aarch64" \
 	|| ${MACHINE} == "sparc"
 
 PROG=	ofctl

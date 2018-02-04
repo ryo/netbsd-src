@@ -2,7 +2,10 @@
 
 .include <bsd.own.mk>
 
-.if ${MACHINE_CPU} == "arm" || ${MACHINE} == "hpcmips" || ${MACHINE} == "hpcsh"
+.if ${MACHINE_CPU} == "aarch64" || \
+    ${MACHINE_CPU} == "arm" || \
+    ${MACHINE} == "hpcmips" || \
+    ${MACHINE} == "hpcsh"
 PROG=	tpctl
 SRCS=	main.c fb.c tp.c data.c
 .endif

@@ -15,3 +15,5 @@
 ./usr/libdata/debug/usr/libexec/ld.elf_so-eabi.debug		comp-sys-debug	debug,compat
 ./usr/libdata/debug/usr/libexec/ld.elf_so-eabihf.debug		comp-sys-debug	debug,compat
 ./usr/libdata/debug/usr/libexec/ld.elf_so-oabi.debug		comp-sys-debug	debug,compat
+./usr/libdata/debug/usr/sbin/ofctl.debug			comp-util-debug		debug
+./usr/libdata/debug/usr/sbin/tpctl.debug			comp-sysutil-debug	debug
