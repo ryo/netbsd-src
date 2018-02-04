@@ -50,7 +50,7 @@
 #endif
 
 typedef struct _PhysMem {
-	u_int address;
+	u_long address;
 	u_int pages;
 	u_int flags;
 #define BOOT_DRAM_CAN_DMA 1	/* Can DMA direct to this memory.  */

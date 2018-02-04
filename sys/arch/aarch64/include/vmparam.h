@@ -130,9 +130,10 @@
 #define VM_PHYSSEG_MAX		16              /* XXX */
 #define VM_PHYSSEG_STRAT	VM_PSTRAT_BSEARCH
 
-#define VM_NFREELIST		2
+#define VM_NFREELIST		3
 #define VM_FREELIST_DEFAULT	0
 #define VM_FREELIST_FIRST4GB	1
+#define VM_FREELIST_HIGHMEM	2
 
 #elif defined(__arm__)
 
