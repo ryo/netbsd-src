@@ -238,10 +238,10 @@ sunxiusbphy*	at fdt? pass 9		# Allwinner USB PHY
 tegrausbphy*	at fdt?			# Tegra USB PHY
 ehci*		at fdt?			# EHCI
 ohci*		at fdt?			# OHCI
-motg*		at fdt?			# Mentor Graphics USB OTG
+#motg*		at fdt?			# Mentor Graphics USB OTG
 usb*		at ehci?
 usb*		at ohci?
-usb*		at motg?
+#usb*		at motg?
 
 include "dev/usb/usbdevices.config"
 midi*		at midibus?
