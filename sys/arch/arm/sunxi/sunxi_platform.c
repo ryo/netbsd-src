@@ -182,9 +182,14 @@ sunxi_platform_bootstrap(void)
 		const int chosen_off = fdt_path_offset(fdt_data, "/chosen");
 		const int framebuffer_off =
 		    fdt_path_offset(fdt_data, "/chosen/framebuffer");
-		if (chosen_off >= 0 && framebuffer_off >= 0)
-			fdt_setprop_string(fdt_data, chosen_off, "stdout-path",
-			    "/chosen/framebuffer");
+		if (chosen_off >= 0 && framebuffer_off >= 0) {
+			const char *status = fdt_getprop(fdt_data,
+			    framebuffer_off, "status", NULL);
+			if (status == NULL || strncmp(status, "ok", 2) == 0) {
+				fdt_setprop_string(fdt_data, chosen_off,
+				    "stdout-path", "/chosen/framebuffer");
+			}
+		}
 	}
 }
 
