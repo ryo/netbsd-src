@@ -1,4 +1,4 @@
-#	$NetBSD: bsd.own.mk,v 1.1029 2018/01/27 23:59:17 christos Exp $
+#	$NetBSD: bsd.own.mk,v 1.1031 2018/02/04 03:19:53 christos Exp $
 
 # This needs to be before bsd.init.mk
 .if defined(BSD_MK_COMPAT_FILE)
@@ -67,7 +67,7 @@ MKGCC?=		no
 .if ${MACHINE_CPU} == "aarch64"
 HAVE_GCC?=	0
 .else
-HAVE_GCC?=	53
+HAVE_GCC?=	5
 .endif
 
 #
@@ -80,13 +80,32 @@ MKGCCCMDS?=	no
 # We import the old gcc as "gcc.old" when upgrading.  EXTERNAL_GCC_SUBDIR is
 # set to the relevant subdirectory in src/external/gpl3 for his HAVE_GCC.
 #
-.if ${HAVE_GCC} == 53
+.if ${HAVE_GCC} == 6
+EXTERNAL_GCC_SUBDIR?=	gcc
+.elif ${HAVE_GCC} == 5
 EXTERNAL_GCC_SUBDIR?=	gcc.old
 .else
 EXTERNAL_GCC_SUBDIR=?	/does/not/exist
 .endif
 .else
 MKGCCCMDS?=	no
+.endif
+
+#
+# What OpenSSL is used?
+# 
+.if ${MACHINE} == "amd64"
+HAVE_OPENSSL?=  10
+.else
+HAVE_OPENSSL?=  10
+.endif
+
+.if ${HAVE_OPENSSL} == 11
+EXTERNAL_OPENSSL_SUBDIR=openssl
+.elif ${HAVE_OPENSSL} == 10
+EXTERNAL_OPENSSL_SUBDIR=openssl.old
+.else
+EXTERNAL_OPENSSL_SUBDIR=/does/not/exist
 .endif
 
 .if !empty(MACHINE_ARCH:Mearm*)

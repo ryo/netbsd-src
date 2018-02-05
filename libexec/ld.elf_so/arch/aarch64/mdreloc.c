@@ -1,4 +1,4 @@
-/* $NetBSD: mdreloc.c,v 1.6 2017/08/28 06:59:25 nisimura Exp $ */
+/* $NetBSD: mdreloc.c,v 1.7 2018/02/04 21:49:51 skrll Exp $ */
 
 /*-
  * Copyright (c) 2014 The NetBSD Foundation, Inc.
@@ -31,7 +31,7 @@
 
 #include <sys/cdefs.h>
 #ifndef lint
-__RCSID("$NetBSD: mdreloc.c,v 1.6 2017/08/28 06:59:25 nisimura Exp $");
+__RCSID("$NetBSD: mdreloc.c,v 1.7 2018/02/04 21:49:51 skrll Exp $");
 #endif /* not lint */
 
 #include <sys/types.h>

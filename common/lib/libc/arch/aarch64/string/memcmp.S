@@ -1,4 +1,4 @@
-/* $NetBSD: memcmp.S,v 1.1 2014/08/10 05:47:35 matt Exp $ */
+/* $NetBSD: memcmp.S,v 1.2 2018/02/04 21:52:16 skrll Exp $ */
 
 /*-
  * Copyright (c) 2014 The NetBSD Foundation, Inc.
@@ -31,7 +31,7 @@
 
 #include <machine/asm.h>
 
-RCSID("$NetBSD: memcmp.S,v 1.1 2014/08/10 05:47:35 matt Exp $")
+RCSID("$NetBSD: memcmp.S,v 1.2 2018/02/04 21:52:16 skrll Exp $")
 
 ENTRY(memcmp)
 	mov	x9, x0

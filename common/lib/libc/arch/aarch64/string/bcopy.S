@@ -1,4 +1,4 @@
-/* $NetBSD$ */
+/* $NetBSD: bcopy.S,v 1.1 2018/02/04 21:52:16 skrll Exp $ */
 
 /*
  * Copyright (c) 2018 Ryo Shimizu <ryo@nerv.org>
@@ -29,7 +29,7 @@
 #include <machine/asm.h>
 
 #if defined(LIBC_SCCS)
-RCSID("$NetBSD$")
+RCSID("$NetBSD: bcopy.S,v 1.1 2018/02/04 21:52:16 skrll Exp $")
 #endif
 
 #if defined(MEMCOPY)
