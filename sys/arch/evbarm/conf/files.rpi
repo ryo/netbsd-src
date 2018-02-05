@@ -3,17 +3,8 @@
 # Raspberry Pi
 #
 
-file	arch/evbarm/rpi/vcprop_subr.c
-makeoptions	"COPTS.vcprop_subr.c"+="-fno-stack-protector"
+include "arch/arm/pic/files.pic"
+include "arch/arm/cortex/files.cortex"
 
 # CPU support and integrated peripherals
 include "arch/arm/broadcom/files.bcm2835"
-
-# Raspberry Pi Mailbox interface
-device	vcmbox: sysmon_envsys
-attach	vcmbox at bcmmboxbus
-file	arch/evbarm/rpi/rpi_vcmbox.c		vcmbox
-
-# Maximum command-line length
-defparam opt_vcprop.h				VCPROP_MAXCMDLINE
-defflag opt_rpi.h				RPI_HWCURSOR

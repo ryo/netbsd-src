@@ -8,5 +8,6 @@ include "arch/arm/cortex/files.cortex"
 
 # Add other board files here
 #
-include "arch/arm/sunxi/files.sunxi"
+include "arch/arm/broadcom/files.bcm2835"
 include "arch/arm/nvidia/files.tegra"
+include "arch/arm/sunxi/files.sunxi"
