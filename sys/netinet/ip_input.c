@@ -1,4 +1,4 @@
-/*	$NetBSD: ip_input.c,v 1.364 2018/01/01 00:51:36 christos Exp $	*/
+/*	$NetBSD: ip_input.c,v 1.372 2018/02/05 15:23:14 maxv Exp $	*/
 
 /*
  * Copyright (C) 1995, 1996, 1997, and 1998 WIDE Project.
@@ -29,7 +29,7 @@
  * SUCH DAMAGE.
  */
 
-/*-
+/*
  * Copyright (c) 1998 The NetBSD Foundation, Inc.
  * All rights reserved.
  *
@@ -91,7 +91,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: ip_input.c,v 1.364 2018/01/01 00:51:36 christos Exp $");
+__KERNEL_RCSID(0, "$NetBSD: ip_input.c,v 1.372 2018/02/05 15:23:14 maxv Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_inet.h"
@@ -153,50 +153,22 @@ __KERNEL_RCSID(0, "$NetBSD: ip_input.c,v 1.364 2018/01/01 00:51:36 christos Exp 
 #ifndef	IPFORWARDING
 #ifdef GATEWAY
 #define	IPFORWARDING	1	/* forward IP packets not for us */
-#else /* GATEWAY */
-#define	IPFORWARDING	0	/* don't forward IP packets not for us */
-#endif /* GATEWAY */
-#endif /* IPFORWARDING */
-#ifndef	IPSENDREDIRECTS
-#define	IPSENDREDIRECTS	1
-#endif
-#ifndef IPFORWSRCRT
-#define	IPFORWSRCRT	1	/* forward source-routed packets */
-#endif
-#ifndef IPALLOWSRCRT
-#define	IPALLOWSRCRT	1	/* allow source-routed packets */
-#endif
-#ifndef IPMTUDISC
-#define IPMTUDISC	1
-#endif
-#ifndef IPMTUDISCTIMEOUT
-#define IPMTUDISCTIMEOUT (10 * 60)	/* as per RFC 1191 */
-#endif
-
-/*
- * Note: DIRECTED_BROADCAST is handled this way so that previous
- * configuration using this option will Just Work.
- */
-#ifndef IPDIRECTEDBCAST
-#ifdef DIRECTED_BROADCAST
-#define IPDIRECTEDBCAST	1
 #else
-#define	IPDIRECTEDBCAST	0
-#endif /* DIRECTED_BROADCAST */
-#endif /* IPDIRECTEDBCAST */
-int	ipforwarding = IPFORWARDING;
-int	ipsendredirects = IPSENDREDIRECTS;
-int	ip_defttl = IPDEFTTL;
-int	ip_forwsrcrt = IPFORWSRCRT;
-int	ip_directedbcast = IPDIRECTEDBCAST;
-int	ip_allowsrcrt = IPALLOWSRCRT;
-int	ip_mtudisc = IPMTUDISC;
-int	ip_mtudisc_timeout = IPMTUDISCTIMEOUT;
-#ifdef DIAGNOSTIC
-int	ipprintfs = 0;
+#define	IPFORWARDING	0	/* don't forward IP packets not for us */
+#endif
 #endif
 
-int	ip_do_randomid = 0;
+#define IPMTUDISCTIMEOUT (10 * 60)	/* as per RFC 1191 */
+
+int ipforwarding = IPFORWARDING;
+int ipsendredirects = 1;
+int ip_defttl = IPDEFTTL;
+int ip_forwsrcrt = 0;
+int ip_directedbcast = 0;
+int ip_allowsrcrt = 0;
+int ip_mtudisc = 1;
+int ip_mtudisc_timeout = IPMTUDISCTIMEOUT;
+int ip_do_randomid = 0;
 
 /*
  * XXX - Setting ip_checkinterface mostly implements the receive side of
@@ -482,13 +454,13 @@ ip_input(struct mbuf *m)
 	 */
 	if (IP_HDR_ALIGNED_P(mtod(m, void *)) == 0) {
 		if ((m = m_copyup(m, sizeof(struct ip),
-				  (max_linkhdr + 3) & ~3)) == NULL) {
+		    (max_linkhdr + 3) & ~3)) == NULL) {
 			/* XXXJRT new stat, please */
 			IP_STATINC(IP_STAT_TOOSMALL);
 			goto out;
 		}
-	} else if (__predict_false(m->m_len < sizeof (struct ip))) {
-		if ((m = m_pullup(m, sizeof (struct ip))) == NULL) {
+	} else if (__predict_false(m->m_len < sizeof(struct ip))) {
+		if ((m = m_pullup(m, sizeof(struct ip))) == NULL) {
 			IP_STATINC(IP_STAT_TOOSMALL);
 			goto out;
 		}
@@ -530,8 +502,7 @@ ip_input(struct mbuf *m)
 	}
 
 	switch (m->m_pkthdr.csum_flags &
-		((ifp->if_csum_flags_rx & M_CSUM_IPv4) |
-		 M_CSUM_IPv4_BAD)) {
+		((ifp->if_csum_flags_rx & M_CSUM_IPv4) | M_CSUM_IPv4_BAD)) {
 	case M_CSUM_IPv4|M_CSUM_IPv4_BAD:
 		INET_CSUM_COUNTER_INCR(&ip_hwcsum_bad);
 		IP_STATINC(IP_STAT_BADSUM);
@@ -570,10 +541,9 @@ ip_input(struct mbuf *m)
 	}
 
 	/*
-	 * Check that the amount of data in the buffers
-	 * is as at least much as the IP header would have us expect.
-	 * Trim mbufs if longer than we expect.
-	 * Drop packet if shorter than we expect.
+	 * Check that the amount of data in the buffers is at least as much
+	 * as the IP header would have us expect. Trim mbufs if longer than
+	 * we expect. Drop packet if shorter than we expect.
 	 */
 	if (m->m_pkthdr.len < len) {
 		IP_STATINC(IP_STAT_TOOSHORT);
@@ -654,7 +624,7 @@ ip_input(struct mbuf *m)
 	 * error was detected (causing an icmp message
 	 * to be sent and the original packet to be freed).
 	 */
-	if (hlen > sizeof (struct ip) && ip_dooptions(m)) {
+	if (hlen > sizeof(struct ip) && ip_dooptions(m)) {
 		m = NULL;
 		goto out;
 	}
@@ -788,7 +758,7 @@ ours:
 		}
 		/*
 		 * Reassembly is done, we have the final packet.
-		 * Updated cached data in local variable(s).
+		 * Update cached data in local variable(s).
 		 */
 		ip = mtod(m, struct ip *);
 		hlen = ip->ip_hl << 2;
@@ -878,14 +848,19 @@ ip_dooptions(struct mbuf *m)
 	struct ip_timestamp *ipt;
 	struct in_ifaddr *ia;
 	int opt, optlen, cnt, off, code, type = ICMP_PARAMPROB, forward = 0;
+	int srr_present, rr_present, ts_present;
 	struct in_addr dst;
 	n_time ntime;
 	struct ifaddr *ifa = NULL;
 	int s;
 
+	srr_present = 0;
+	rr_present = 0;
+	ts_present = 0;
+
 	dst = ip->ip_dst;
 	cp = (u_char *)(ip + 1);
-	cnt = (ip->ip_hl << 2) - sizeof (struct ip);
+	cnt = (ip->ip_hl << 2) - sizeof(struct ip);
 	for (; cnt > 0; cnt -= optlen, cp += optlen) {
 		opt = cp[IPOPT_OPTVAL];
 		if (opt == IPOPT_EOL)
@@ -928,6 +903,10 @@ ip_dooptions(struct mbuf *m)
 			if (ip_allowsrcrt == 0) {
 				type = ICMP_UNREACH;
 				code = ICMP_UNREACH_NET_PROHIB;
+				goto bad;
+			}
+			if (srr_present++) {
+				code = &cp[IPOPT_OPTVAL] - (u_char *)ip;
 				goto bad;
 			}
 			if (optlen < IPOPT_OFFSET + sizeof(*cp)) {
@@ -1004,6 +983,10 @@ ip_dooptions(struct mbuf *m)
 			    .sin_family = AF_INET,
 			};
 
+			if (rr_present++) {
+				code = &cp[IPOPT_OPTVAL] - (u_char *)ip;
+				goto bad;
+			}
 			if (optlen < IPOPT_OFFSET + sizeof(*cp)) {
 				code = &cp[IPOPT_OLEN] - (u_char *)ip;
 				goto bad;
@@ -1045,6 +1028,10 @@ ip_dooptions(struct mbuf *m)
 		case IPOPT_TS:
 			code = cp - (u_char *)ip;
 			ipt = (struct ip_timestamp *)cp;
+			if (ts_present++) {
+				code = &cp[IPOPT_OPTVAL] - (u_char *)ip;
+				goto bad;
+			}
 			if (ipt->ipt_len < 4 || ipt->ipt_len > 40) {
 				code = (u_char *)&ipt->ipt_len - (u_char *)ip;
 				goto bad;
@@ -1053,7 +1040,7 @@ ip_dooptions(struct mbuf *m)
 				code = (u_char *)&ipt->ipt_ptr - (u_char *)ip;
 				goto bad;
 			}
-			if (ipt->ipt_ptr > ipt->ipt_len - sizeof (int32_t)) {
+			if (ipt->ipt_ptr > ipt->ipt_len - sizeof(int32_t)) {
 				if (++ipt->ipt_oflw == 0) {
 					code = (u_char *)&ipt->ipt_ptr -
 					    (u_char *)ip;

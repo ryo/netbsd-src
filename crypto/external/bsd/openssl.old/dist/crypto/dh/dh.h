@@ -387,6 +387,7 @@ void ERR_load_DH_strings(void);
 # define DH_R_PEER_KEY_ERROR                              113
 # define DH_R_SHARED_INFO_ERROR                           114
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
 static inline void
 DH_get0_key(const DH *dh, const BIGNUM **pub_key, const BIGNUM **priv_key)
 {
@@ -425,6 +426,15 @@ DH_set_length(DH *dh, long length)
 {
 	dh->length = length;
 }
+
+static inline const char *
+DH_meth_get0_name(const DH_METHOD *meth)
+{
+	return meth->name;
+}   
+
+
+#endif
 
 #ifdef  __cplusplus
 }

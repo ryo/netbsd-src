@@ -660,6 +660,8 @@ void ERR_load_RSA_strings(void);
 
 #include <string.h>
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+
 static inline RSA_METHOD *RSA_meth_dup(const RSA_METHOD *meth)
 {
 	RSA_METHOD *ret = malloc(sizeof(*meth));
@@ -681,6 +683,14 @@ static inline int RSA_meth_set1_name(RSA_METHOD *meth, const char *name)
 		return 0;
 	free(__UNCONST(meth->name));
 	meth->name = nname;
+	return 1;
+}
+
+static inline int RSA_meth_set_pub_enc(RSA_METHOD *meth,
+    int (*pub_enc) (int flen, const unsigned char *from,
+    unsigned char *to, RSA *rsa, int padding))
+{
+	meth->rsa_pub_enc = pub_enc;
 	return 1;
 }
 
@@ -820,7 +830,6 @@ static inline int RSA_bits(const RSA *r)
 	return BN_num_bits(r->n);
 }
 
-
 static inline void RSA_get0_crt_params(const RSA *r, const BIGNUM **dmp1,
      const BIGNUM **dmq1, const BIGNUM **iqmp)
 {
@@ -831,6 +840,19 @@ static inline void RSA_get0_crt_params(const RSA *r, const BIGNUM **dmp1,
 	if (iqmp)
 		*iqmp = r->iqmp;
 }
+
+static inline int RSA_meth_set_init(RSA_METHOD *meth, int (*init)(RSA *rsa))
+{
+	meth->init = init;
+	return 1;
+}   
+
+static inline const char *RSA_meth_get0_name(const RSA_METHOD *meth)
+{
+	return meth->name;
+}   
+
+#endif
 
 
 #ifdef  __cplusplus
