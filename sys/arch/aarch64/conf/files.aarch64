@@ -61,7 +61,6 @@ attach	mainbus at root
 file	arch/aarch64/dev/mainbus.c			mainbus
 
 device cpu { }
-file	arch/aarch64/dev/cpu.c                          cpu
 file	arch/aarch64/aarch64/cpu.c			cpu
 
 # XXXNH use arch/arm bus_space
