@@ -48,7 +48,6 @@ __KERNEL_RCSID(0, "$NetBSD: gtmr.c,v 1.23 2017/11/30 14:50:34 skrll Exp $");
 #include <arm/cpufunc.h>
 
 #include <arm/cortex/gtmr_var.h>
-
 #include <arm/cortex/mpcore_var.h>
 
 static int gtmr_match(device_t, cfdata_t, void *);
