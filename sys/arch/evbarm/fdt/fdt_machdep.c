@@ -434,8 +434,8 @@ initarm(void *arg)
 #ifndef _LP64
 	uint64_t memory_size = memory_end - memory_start;
 	/* Cannot map memory above 4GB */
-	if (memory_addr + memory_size >= 0x100000000)
-		memory_size = 0x100000000 - memory_addr - PAGE_SIZE;
+	if (memory_end >= 0x100000000ULL)
+		memory_size = 0x100000000ULL - memory_start - PAGE_SIZE;
 #endif
 
 #ifndef __aarch64__
@@ -478,7 +478,7 @@ initarm(void *arg)
         fdt_add_reserved_memory_range(kernstart_phys,
 	     kernend_phys - kernstart_phys);
 #else
-	arm32_bootmem_init(memory_addr, memory_size, KERNEL_BASE_PHYS);
+	arm32_bootmem_init(memory_start, memory_size, KERNEL_BASE_PHYS);
 	arm32_kernel_vm_init(KERNEL_VM_BASE, ARM_VECTORS_HIGH, 0,
 	    plat->devmap(), mapallmem_p);
 #endif
