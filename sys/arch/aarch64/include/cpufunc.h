@@ -133,6 +133,8 @@ void aarch64_tlbi_by_asid_va_ll(int, vaddr_t);	/*  an ASID, a VA, lastlevel */
 /* others */
 #define cpu_drain_writebuf()		aarch64_drain_writebuf()
 
+extern u_int arm_dcache_align;
+
 static inline bool
 cpu_gtmr_exists_p(void)
 {

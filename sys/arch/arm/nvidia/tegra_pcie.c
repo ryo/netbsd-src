@@ -40,6 +40,8 @@ __KERNEL_RCSID(0, "$NetBSD: tegra_pcie.c,v 1.23 2017/10/19 16:01:58 skrll Exp $"
 #include <sys/mutex.h>
 #include <sys/kmem.h>
 
+#include <machine/cpu.h>
+
 #include <arm/cpufunc.h>
 
 #include <dev/pci/pcireg.h>

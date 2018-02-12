@@ -290,6 +290,10 @@ cpu_identify(device_t self, struct cpu_info *ci)
 	    __SHIFTOUT(ctr, CTR_EL0_CWG_LINE) * 4,
 	    __SHIFTOUT(ctr, CTR_EL0_ERG_LINE) * 4);
 
+	aprint_normal_dev(self, "Dcache line %ld, Icache line %ld\n",
+	    sizeof(int) << __SHIFTOUT(ctr, CTR_EL0_DMIN_LINE),
+	    sizeof(int) << __SHIFTOUT(ctr, CTR_EL0_IMIN_LINE));
+
 	for (level = 0; level < MAX_CACHE_LEVEL; level++) {
 		if (prt_cache(self, level) < 0)
 			break;

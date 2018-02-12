@@ -42,6 +42,8 @@ struct aarch64_cache_info aarch64_cache_info[MAX_CACHE_LEVEL];
 u_int aarch64_cache_vindexsize;
 u_int aarch64_cache_prefer_mask;
 
+u_int arm_dcache_minline;
+u_int arm_dcache_align;
 
 static void
 extract_cacheunit(int level, bool insn, int cachetype)
@@ -104,6 +106,9 @@ aarch64_getcacheinfo(void)
 		cachetype = 0;
 		break;
 	}
+
+	arm_dcache_minline = __SHIFTOUT(ctr, CTR_EL0_DMIN_LINE);
+	arm_dcache_align = sizeof(int) << arm_dcache_minline;
 
 	/*
 	 * CLIDR -  Cache Level ID Register
