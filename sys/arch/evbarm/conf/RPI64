@@ -3,8 +3,7 @@
 # RPI - Raspberry Pi 3 and Pi 2 v1.2 in AARCH64 mode
 #
 
-include		"arch/evbarm/conf/std.evbarm64"
-#include		"arch/evbarm/conf/std.rpi64"
+include		"arch/evbarm/conf/std.generic64"
 include 	"arch/evbarm/conf/GENERIC.common"
 
 include		"arch/evbarm/conf/files.rpi"

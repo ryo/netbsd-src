@@ -49,14 +49,13 @@ file	arch/evbarm/dev/plcom.c			plcom needs-flag
 
 include "arch/evbarm/conf/files.fdt"
 
-# Add other board files here
-# XXXNH hmm...
-# RPI64 didn't like this
-#include "arch/arm/nvidia/files.tegra"
-
 #
 # Maximum number of memory ranges
 #
 defparam	opt_bootconfig.h		DRAM_BLOCKS
 
+ifdef arm32
 include "arch/arm/conf/majors.arm32"
+else
+include "arch/aarch64/conf/majors.aarch64"
+endif

@@ -1,63 +1,51 @@
 #
 #	$NetBSD$
 #
-#	GENERIC ARM (aarch64) kernel
+#	GENERIC ARM (aarch32) kernel
 #
 
-include	"arch/evbarm/conf/std.generic64"
-include "arch/evbarm/conf/files.generic64"
+include	"arch/evbarm/conf/std.generic"
+include "arch/evbarm/conf/files.generic"
 include	"arch/evbarm/conf/GENERIC.common"
 
 #
 # FDT files supported by this kernel - add to DTSSUBDIR and DTS as
 # appropriate
 #
-makeoptions 	DTSARCH="arm aarch64"
-makeoptions	DTSGNUARCH="arm arm64"
-makeoptions	DTSSUBDIR="allwinner broadcom nvidia"
+makeoptions 	DTSARCH="arm"
+makeoptions	DTSGNUARCH="arm"
+makeoptions	DTSSUBDIR="allwinner nvidia"
 makeoptions	DTS="
-	bcm2837-rpi-3-b.dts
-
-	sun50i-a64-bananapi-m64.dts
-	sun50i-a64-nanopi-a64.dts
-	sun50i-a64-olinuxino.dts
-	sun50i-a64-orangepi-win.dts
-	sun50i-a64-pine64-plus.dts
-	sun50i-a64-pine64.dts
-	sun50i-a64-pinebook.dts
-	sun50i-a64-sopine-baseboard.dts
-
-	sun50i-h5-nanopi-neo-plus2.dts
-	sun50i-h5-nanopi-neo2.dts
-	sun50i-h5-orangepi-pc2.dts
-	sun50i-h5-orangepi-prime.dts
-	sun50i-h5-orangepi-zero-plus2.dts
-
-	tegra210-p2371-0000.dts
-	tegra210-p2371-2180.dts
-	tegra210-p2571.dts
-	tegra210-smaug.dts
+	tegra124-apalis-eval.dts
+	tegra124-jetson-tk1.dts
+	tegra124-nyan-big.dts
+	tegra124-nyan-blaze.dts
+	tegra124-venice2.dts
 "
-options 	CPU_CORTEXA53
+
+options 	CPU_CORTEXA15
 options 	CPU_CORTEXA57
-options 	SOC_BCM2837
-options 	SOC_TEGRA210
-options 	SOC_SUN50I_A64
-options 	SOC_SUN50I_H5
-#options 	MULTIPROCESSOR
+options 	SOC_TEGRA124
+options 	SOC_SUN4I_A10
+options 	SOC_SUN5I_A13
+options 	SOC_SUN6I_A31
+options 	SOC_SUN7I_A20
+options 	SOC_SUN8I_A83T
+options 	SOC_SUN8I_H3
+options 	SOC_SUN9I_A80
+options 	MULTIPROCESSOR
 
 pseudo-device 	openfirm	# /dev/openfirm
 
-options 	DIAGNOSTIC	# internal consistency checks
-options 	DEBUG
+#options 	DIAGNOSTIC	# internal consistency checks
+#options 	DEBUG
 #options 	LOCKDEBUG
 #options 	PMAP_DEBUG	# Enable pmap_debug_level code
 #options 	IPKDB		# remote kernel debugging
 options 	VERBOSE_INIT_ARM # verbose bootstrapping messages
 # EARLYCONS is required for early init messages from VERBOSE_INIT_ARM.
-#options 	EARLYCONS=bcm2837
-#options 	EARLYCONS=sunxi, CONSADDR=0x01c28000
-#options 	EARLYCONS=tegra, CONSADDR=0x70006000
+#options        EARLYCONS=sunxi, CONSADDR=0x01c28000
+#options        EARLYCONS=tegra, CONSADDR=0x70006000
 
 makeoptions	DEBUG="-g"	# compile full symbol table
 makeoptions	COPY_SYMTAB=1
@@ -93,10 +81,8 @@ tegratimer*	at fdt?			# Timers
 
 # Watchdog
 sunxiwdt*	at fdt?			# Allwinner watchdog
-watchdog*	at fdt?			# Broadcom BCM283x watchdog
 
 # Interrupt controller
-bcmicu*		at fdt? pass 1		# Broadcom BCM283x ICU
 tegralic*	at fdt? pass 1		# NVIDIA Tegra LIC
 gic*		at fdt? pass 1		# ARM GIC
 armgic0		at gic?
@@ -104,12 +90,7 @@ armgic0		at gic?
 # Memory controller
 tegramc*	at fdt?	pass 4		# NVIDIA Tegra MC
 
-# Firmware devices
-bcmmbox*	at fdt?			# Broadcom VideoCore IV mailbox
-vcmbox*		at bcmmbox?
-
 # DMA controller
-bcmdmac*	at fdt?			# Broadcom BCM283x DMA controller
 sun6idma*	at fdt?			# Allwinner DMA controller (sun6i)
 tegraapbdma*	at fdt? pass 4		# NVIDIA Tegra APB DMA
 
@@ -120,8 +101,6 @@ tegrafuse*	at fdt? pass 4		# NVIDIA Tegra FUSE
 tegrapmc*	at fdt? pass 4		# NVIDIA Tegra PMC
 
 # Clock and Reset controller
-bcmcprman*	at fdt? pass 1		# Broadcom BCM283x Clock Manager
-bcmaux*		at fdt? pass 1		# Broadcom BCM283x Aux Periph Clocks
 sun8ih3ccu*	at fdt? pass 2		# Allwinner H3/H5 CCU
 sun8ih3rccu*	at fdt? pass 2		# Allwinner H3/H5 CCU (PRCM)
 sun50ia64ccu*	at fdt? pass 2		# Allwinner A64 CCU
@@ -131,7 +110,6 @@ sunxigmacclk*	at fdt? pass 2		# Allwinner GMAC MII/RGMII clock mux
 tegra210car*	at fdt? pass 3		# NVIDIA Tegra CAR (T210)
 
 # GPIO controller
-bcmgpio*	at fdt?			# Broadcom BCM283x GPIO
 sunxigpio*	at fdt? pass 3		# Allwinner GPIO
 tegragpio*	at fdt? pass 2		# NVIDIA Tegra GPIO
 gpio*		at gpiobus?
@@ -190,7 +168,6 @@ com*		at fdt?			# UART
 plcom*		at fdt?			# ARM PL011 UART
 
 # I2C controllers
-bsciic*		at fdt?			# Broadcom BCM283x Serial Control
 sunxirsb*	at fdt?			# Allwinner RSB
 sunxitwi*	at fdt?			# Allwinner TWI
 tegrai2c*	at fdt? pass 4		# NVIDIA Tegra I2C
@@ -205,7 +182,6 @@ max77620pmic*	at iic?
 tcagpio*	at iic?
 
 # Random number generators
-bcmrng*		at fdt?			# Broadcom BCM283x RNG
 
 # RTC
 sunxirtc*	at fdt?			# Allwinner RTC
@@ -214,7 +190,6 @@ tegrartc*	at fdt?			# NVIDIA Tegra RTC
 # SDMMC
 mmcpwrseq*	at fdt?			# Simple MMC power sequence provider
 sdhc*		at fdt?			# SD Host Controller Interface
-sdhost*		at fdt?			# Broadcom BCM283x SD Host Interface
 sunximmc*	at fdt?			# Allwinner SD/MMC
 sdmmc*		at sdmmcbus?
 ld0		at sdmmc0
@@ -231,8 +206,7 @@ wd*		at atabus? drive ?
 cd*		at atapibus? drive ?
 
 # SPI controllers
-bcmspi*		at fdt?			# Broadcom BCM283x SPI
-spi*		at spibus?
+#spi*		at spibus?
 
 # Audio support
 hdaudio*	at fdt?			# Intel HDA
@@ -279,7 +253,7 @@ tegrasoctherm*	at fdt?			# NVIDIA Tegra SOC_THERM
 # USB
 sunxiusbphy*	at fdt? pass 9		# Allwinner USB PHY
 tegrausbphy*	at fdt?			# NVIDIA Tegra USB PHY
-dwctwo*		at fdt?			# Designware USB DRD
+#dwctwo*		at fdt?			# Designware USB DRD
 ehci*		at fdt?			# EHCI
 #motg*		at fdt?			# Mentor Graphics USB OTG
 ohci*		at fdt?			# OHCI
@@ -289,4 +263,4 @@ usb*		at usbus?
 include "dev/usb/usbdevices.config"
 midi*		at midibus?
 
-cinclude "arch/evbarm/conf/GENERIC64.local"
+cinclude "arch/evbarm/conf/GENERIC.local"
