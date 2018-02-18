@@ -499,7 +499,7 @@ generic_bs_map(void *t, bus_addr_t bpa, bus_size_t size, int flag,
 
 	if ((flag & BUS_SPACE_MAP_PREFETCHABLE) != 0)
 		pmapflags = PMAP_WRITE_COMBINE;
-	else if ((flag & BUS_SPACE_MAP_PREFETCHABLE) != 0)
+	else if ((flag & BUS_SPACE_MAP_CACHEABLE) != 0)
 		pmapflags = PMAP_WRITE_BACK;
 	else
 		pmapflags = PMAP_DEV;
