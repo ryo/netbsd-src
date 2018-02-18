@@ -146,7 +146,8 @@ simplefb_attach_genfb(struct simplefb_softc *sc)
 		return ENXIO;
 	}
 
-	if (bus_space_map(sc->sc_bst, addr, size, BUS_SPACE_MAP_LINEAR,
+	if (bus_space_map(sc->sc_bst, addr, size,
+	    BUS_SPACE_MAP_LINEAR | BUS_SPACE_MAP_PREFETCHABLE,
 	    &sc->sc_bsh) != 0) {
 		aprint_error(": failed to map fb\n");
 		return ENXIO;
