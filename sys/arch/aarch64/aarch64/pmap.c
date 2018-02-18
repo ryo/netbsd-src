@@ -829,9 +829,9 @@ _pmap_pte_adjust_cacheflags(pt_entry_t pte, u_int flags)
 		break;
 	case PMAP_NOCACHE:
 	case PMAP_NOCACHE_OVR:
+	case PMAP_WRITE_COMBINE:
 		pte |= LX_BLKPAG_ATTR_NORMAL_NC;	/* only no-cache */
 		break;
-	case PMAP_WRITE_COMBINE:
 	case PMAP_WRITE_BACK:
 	case 0:
 	default:
