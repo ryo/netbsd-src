@@ -356,7 +356,7 @@ struct arm32_bus_dmamap {
 #define _BUS_DMA_BUFTYPE_UIO		3
 #define _BUS_DMA_BUFTYPE_RAW		4
 
-#ifdef _AARCH64_BUS_DMA_PRIVATE
+#ifdef _ARM32_BUS_DMA_PRIVATE
 /*
  * Cookie used for bounce buffers. A pointer to one of these it stashed in
  * the DMA map.
@@ -392,7 +392,7 @@ struct aarch64_bus_dma_cookie {
 /* id_flags */
 #define _BUS_DMA_IS_BOUNCING		0x04	/* is bouncing current xfer */
 #define _BUS_DMA_HAS_BOUNCE		0x02	/* has bounce buffers */
-#endif /* _AARCH64_BUS_DMA_PRIVATE */
+#endif /* _ARM32_BUS_DMA_PRIVATE */
 #define _BUS_DMA_MIGHT_NEED_BOUNCE	0x01	/* may need bounce buffers */
 
 #endif /* _AARCH64_BUS_DEFS_H_ */

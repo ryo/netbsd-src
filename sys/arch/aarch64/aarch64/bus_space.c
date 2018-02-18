@@ -43,7 +43,9 @@ __KERNEL_RCSID(1, "$NetBSD$");
 bs_protos(generic)
 bs_protos(generic_dsb)
 
-struct bus_space aarch64_generic_bs_tag = {
+struct bus_space arm_generic_bs_tag = {
+	.bs_cookie = &arm_generic_bs_tag,
+
 	.bs_stride = 0,
 	.bs_flags = 0,
 
@@ -109,18 +111,6 @@ struct bus_space aarch64_generic_bs_tag = {
 	.bs_sm_2 = generic_bs_sm_2,
 	.bs_sm_4 = generic_bs_sm_4,
 	.bs_sm_8 = generic_bs_sm_8,
-
-	/* peek */
-	.bs_pe_1 = generic_bs_pe_1,
-	.bs_pe_2 = generic_bs_pe_2,
-	.bs_pe_4 = generic_bs_pe_4,
-	.bs_pe_8 = generic_bs_pe_8,
-
-	/* poke */
-	.bs_po_1 = generic_bs_po_1,
-	.bs_po_2 = generic_bs_po_2,
-	.bs_po_4 = generic_bs_po_4,
-	.bs_po_8 = generic_bs_po_8,
 
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	/* read stream */
@@ -228,18 +218,6 @@ struct bus_space aarch64_generic_dsb_bs_tag = {
 	.bs_sm_4 = generic_dsb_bs_sm_4,
 	.bs_sm_8 = generic_dsb_bs_sm_8,
 
-	/* peek */
-	.bs_pe_1 = generic_bs_pe_1,
-	.bs_pe_2 = generic_bs_pe_2,
-	.bs_pe_4 = generic_bs_pe_4,
-	.bs_pe_8 = generic_bs_pe_8,
-
-	/* poke */
-	.bs_po_1 = generic_bs_po_1,
-	.bs_po_2 = generic_bs_po_2,
-	.bs_po_4 = generic_bs_po_4,
-	.bs_po_8 = generic_bs_po_8,
-
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	/* read stream */
 	.bs_r_1_s = generic_dsb_bs_r_1,
@@ -279,7 +257,9 @@ struct bus_space aarch64_generic_dsb_bs_tag = {
 #endif
 };
 
-struct bus_space aarch64_generic_a4x_bs_tag = {
+struct bus_space arm_generic_a4x_bs_tag = {
+	.bs_cookie = &arm_generic_a4x_bs_tag,
+
 	.bs_stride = 2,
 	.bs_flags = 0,
 
@@ -345,18 +325,6 @@ struct bus_space aarch64_generic_a4x_bs_tag = {
 	.bs_sm_2 = generic_bs_sm_2,
 	.bs_sm_4 = generic_bs_sm_4,
 	.bs_sm_8 = generic_bs_sm_8,
-
-	/* peek */
-	.bs_pe_1 = generic_bs_pe_1,
-	.bs_pe_2 = generic_bs_pe_2,
-	.bs_pe_4 = generic_bs_pe_4,
-	.bs_pe_8 = generic_bs_pe_8,
-
-	/* poke */
-	.bs_po_1 = generic_bs_po_1,
-	.bs_po_2 = generic_bs_po_2,
-	.bs_po_4 = generic_bs_po_4,
-	.bs_po_8 = generic_bs_po_8,
 
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	/* read stream */
@@ -463,18 +431,6 @@ struct bus_space aarch64_generic_a4x_dsb_bs_tag = {
 	.bs_sm_2 = generic_dsb_bs_sm_2,
 	.bs_sm_4 = generic_dsb_bs_sm_4,
 	.bs_sm_8 = generic_dsb_bs_sm_8,
-
-	/* peek */
-	.bs_pe_1 = generic_bs_pe_1,
-	.bs_pe_2 = generic_bs_pe_2,
-	.bs_pe_4 = generic_bs_pe_4,
-	.bs_pe_8 = generic_bs_pe_8,
-
-	/* poke */
-	.bs_po_1 = generic_bs_po_1,
-	.bs_po_2 = generic_bs_po_2,
-	.bs_po_4 = generic_bs_po_4,
-	.bs_po_8 = generic_bs_po_8,
 
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	/* read stream */
@@ -622,119 +578,3 @@ generic_bs_free(void *t, bus_space_handle_t bsh, bus_size_t size)
 	panic("%s(): not implemented\n", __func__);
 }
 
-int
-generic_bs_pe_1(void *t, bus_space_handle_t bsh, bus_size_t offset,
-    uint8_t *datap)
-{
-	struct faultbuf fb;
-	int error;
-
-	if ((error = cpu_set_onfault(&fb)) == 0) {
-		*datap = generic_dsb_bs_r_1(t, bsh, offset);
-		cpu_unset_onfault();
-	}
-	return error;
-}
-
-int
-generic_bs_pe_2(void *t, bus_space_handle_t bsh, bus_size_t offset,
-    uint16_t *datap)
-{
-	struct faultbuf fb;
-	int error;
-
-	if ((error = cpu_set_onfault(&fb)) == 0) {
-		*datap = generic_dsb_bs_r_2(t, bsh, offset);
-		cpu_unset_onfault();
-	}
-	return error;
-}
-
-int
-generic_bs_pe_4(void *t, bus_space_handle_t bsh, bus_size_t offset,
-    uint32_t *datap)
-{
-	struct faultbuf fb;
-	int error;
-
-	if ((error = cpu_set_onfault(&fb)) == 0) {
-		*datap = generic_dsb_bs_r_4(t, bsh, offset);
-		cpu_unset_onfault();
-	}
-	return error;
-}
-
-int
-generic_bs_pe_8(void *t, bus_space_handle_t bsh, bus_size_t offset,
-    uint64_t *datap)
-{
-	struct faultbuf fb;
-	int error;
-
-	if ((error = cpu_set_onfault(&fb)) == 0) {
-		*datap = generic_dsb_bs_r_8(t, bsh, offset);
-		cpu_unset_onfault();
-	}
-	return error;
-}
-
-int
-generic_bs_po_1(void *t, bus_space_handle_t bsh, bus_size_t offset,
-    uint8_t data)
-{
-	struct faultbuf fb;
-	int error;
-
-	if ((error = cpu_set_onfault(&fb)) == 0) {
-		generic_dsb_bs_w_1(t, bsh, offset, data);
-		cpu_unset_onfault();
-	}
-	return error;
-}
-
-int
-generic_bs_po_2(void *t, bus_space_handle_t bsh, bus_size_t offset,
-    uint16_t data)
-{
-	struct faultbuf fb;
-	int error;
-
-	if ((error = cpu_set_onfault(&fb)) == 0) {
-		generic_dsb_bs_w_2(t, bsh, offset, data);
-		cpu_unset_onfault();
-	}
-	return error;
-}
-
-int
-generic_bs_po_4(void *t, bus_space_handle_t bsh, bus_size_t offset,
-    uint32_t data)
-{
-	struct faultbuf fb;
-	int error;
-
-	if ((error = cpu_set_onfault(&fb)) == 0) {
-		generic_dsb_bs_w_4(t, bsh, offset, data);
-		cpu_unset_onfault();
-	}
-	return error;
-}
-
-int
-generic_bs_po_8(void *t, bus_space_handle_t bsh, bus_size_t offset,
-    uint64_t data)
-{
-	struct faultbuf fb;
-	int error;
-
-	if ((error = cpu_set_onfault(&fb)) == 0) {
-		generic_dsb_bs_w_8(t, bsh, offset, data);
-		cpu_unset_onfault();
-	}
-	return error;
-}
-
-void
-bus_space_mallocok()
-{
-}

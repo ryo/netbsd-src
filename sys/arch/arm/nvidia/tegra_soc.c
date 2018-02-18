@@ -55,14 +55,8 @@ bus_space_handle_t tegra_ahb_a2_bsh;
 void
 tegra_bootstrap(void)
 {
-
-// XXXNH fix
-#ifdef __aarch64__
-	extern struct bus_space aarch64_generic_bs_tag;
-	bus_space_tag_t bst = &aarch64_generic_bs_tag;
-#else
-	bus_space_tag_t bst = &armv7_generic_bs_tag;
-#endif
+	extern struct bus_space arm_generic_bs_tag;
+	bus_space_tag_t bst = &arm_generic_bs_tag;
 
 	if (bus_space_map(bst, TEGRA_HOST1X_BASE, TEGRA_HOST1X_SIZE, 0,
 	    &tegra_host1x_bsh) != 0)

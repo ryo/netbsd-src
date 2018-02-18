@@ -118,13 +118,16 @@ void bcmgenfb_set_ioctl(int(*)(void *, void *, u_long, void *, int, struct lwp *
 extern void bcmgenfb_ddb_trap_callback(int where);
 static int rpi_ioctl(void *, void *, u_long, void *, int, lwp_t *);
 
+extern struct bus_space arm_generic_bs_tag;
+extern struct bus_space arm_generic_a4x_bs_tag;
+
 /* Prototypes for all the bus_space structure functions */
+bs_protos(arm_generic);
+bs_protos(arm_generic_a4x);
 bs_protos(bcm2835);
 bs_protos(bcm2835_a4x);
-bs_protos(generic);
-bs_protos(generic_armv4);
-bs_protos(a4x);
-bs_protos(bs_notimpl);
+bs_protos(bcm2836);
+bs_protos(bcm2836_a4x);
 
 struct arm32_dma_range bcm2835_dma_ranges[] = {
 	[0] = {
@@ -1060,6 +1063,12 @@ static void
 bcm2835_platform_bootstrap(void)
 {
 
+	bcm2835_bs_tag = arm_generic_bs_tag;
+	bcm2835_a4x_bs_tag = arm_generic_a4x_bs_tag;
+
+	bcm2835_bs_tag.bs_map = bcm2835_bs_map;
+	bcm2835_a4x_bs_tag.bs_map = bcm2835_bs_map;
+
 	fdtbus_set_decoderegprop(false);
 
 	bcm2835_uartinit();
@@ -1072,6 +1081,12 @@ bcm2835_platform_bootstrap(void)
 static void
 bcm2836_platform_bootstrap(void)
 {
+
+	bcm2836_bs_tag = arm_generic_bs_tag;
+	bcm2836_a4x_bs_tag = arm_generic_a4x_bs_tag;
+
+	bcm2836_bs_tag.bs_map = bcm2836_bs_map;
+	bcm2836_a4x_bs_tag.bs_map = bcm2836_bs_map;
 
 	fdtbus_set_decoderegprop(false);
 
