@@ -107,7 +107,7 @@ inst_trap_return(db_expr_t insn)
 	return insn == 0xd69f03e0;			/* eret */
 }
 
-static inline bool 
+static inline bool
 inst_call(db_expr_t insn)
 {
 	return ((insn & 0xfc000000) == 0x94000000)	/* bl */
