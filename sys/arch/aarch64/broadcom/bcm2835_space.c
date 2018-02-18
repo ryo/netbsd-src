@@ -51,6 +51,8 @@ bs_protos(generic);
 bs_protos(bs_notimpl);
 
 struct bus_space bcm2835_bs_tag = {
+	.bs_cookie = &bcm2835_bs_tag,
+
 	/* stride, flags */
 	.bs_stride = 0,
 	.bs_flags = 0,
@@ -118,18 +120,6 @@ struct bus_space bcm2835_bs_tag = {
 	.bs_sm_4 = generic_bs_sm_4,
 	.bs_sm_8 = generic_bs_sm_8,
 
-	/* peek */
-	.bs_pe_1 = generic_bs_pe_1,
-	.bs_pe_2 = generic_bs_pe_2,
-	.bs_pe_4 = generic_bs_pe_4,
-	.bs_pe_8 = generic_bs_pe_8,
-
-	/* poke */
-	.bs_po_1 = generic_bs_po_1,
-	.bs_po_2 = generic_bs_po_2,
-	.bs_po_4 = generic_bs_po_4,
-	.bs_po_8 = generic_bs_po_8,
-
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	/* read stream */
 	.bs_r_1_s = generic_bs_r_1,
@@ -170,6 +160,8 @@ struct bus_space bcm2835_bs_tag = {
 };
 
 struct bus_space bcm2835_a4x_bs_tag = {
+	.bs_cookie = &bcm2835_a4x_bs_tag,
+
 	/* stride, flags */
 	.bs_stride = 2,
 	.bs_flags = 0,
@@ -236,18 +228,6 @@ struct bus_space bcm2835_a4x_bs_tag = {
 	.bs_sm_2 = generic_bs_sm_2,
 	.bs_sm_4 = generic_bs_sm_4,
 	.bs_sm_8 = generic_bs_sm_8,
-
-	/* peek */
-	.bs_pe_1 = generic_bs_pe_1,
-	.bs_pe_2 = generic_bs_pe_2,
-	.bs_pe_4 = generic_bs_pe_4,
-	.bs_pe_8 = generic_bs_pe_8,
-
-	/* poke */
-	.bs_po_1 = generic_bs_po_1,
-	.bs_po_2 = generic_bs_po_2,
-	.bs_po_4 = generic_bs_po_4,
-	.bs_po_8 = generic_bs_po_8,
 
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	/* read stream */
@@ -290,6 +270,8 @@ struct bus_space bcm2835_a4x_bs_tag = {
 
 
 struct bus_space bcm2836_bs_tag = {
+	.bs_cookie = &bcm2836_bs_tag,
+
 	/* stride, flags */
 	.bs_stride = 0,
 	.bs_flags = 0,
@@ -357,18 +339,6 @@ struct bus_space bcm2836_bs_tag = {
 	.bs_sm_4 = generic_bs_sm_4,
 	.bs_sm_8 = generic_bs_sm_8,
 
-	/* peek */
-	.bs_pe_1 = generic_bs_pe_1,
-	.bs_pe_2 = generic_bs_pe_2,
-	.bs_pe_4 = generic_bs_pe_4,
-	.bs_pe_8 = generic_bs_pe_8,
-
-	/* poke */
-	.bs_po_1 = generic_bs_po_1,
-	.bs_po_2 = generic_bs_po_2,
-	.bs_po_4 = generic_bs_po_4,
-	.bs_po_8 = generic_bs_po_8,
-
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	/* read stream */
 	.bs_r_1_s = generic_bs_r_1,
@@ -409,6 +379,8 @@ struct bus_space bcm2836_bs_tag = {
 };
 
 struct bus_space bcm2836_a4x_bs_tag = {
+	.bs_cookie = &bcm2836_a4x_bs_tag,
+
 	/* stride, flags */
 	.bs_stride = 2,
 	.bs_flags = 0,
@@ -475,18 +447,6 @@ struct bus_space bcm2836_a4x_bs_tag = {
 	.bs_sm_2 = generic_bs_sm_2,
 	.bs_sm_4 = generic_bs_sm_4,
 	.bs_sm_8 = generic_bs_sm_8,
-
-	/* peek */
-	.bs_pe_1 = generic_bs_pe_1,
-	.bs_pe_2 = generic_bs_pe_2,
-	.bs_pe_4 = generic_bs_pe_4,
-	.bs_pe_8 = generic_bs_pe_8,
-
-	/* poke */
-	.bs_po_1 = generic_bs_po_1,
-	.bs_po_2 = generic_bs_po_2,
-	.bs_po_4 = generic_bs_po_4,
-	.bs_po_8 = generic_bs_po_8,
 
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	/* read stream */

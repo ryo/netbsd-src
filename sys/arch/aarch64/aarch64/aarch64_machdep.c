@@ -303,8 +303,6 @@ cpu_startup(void)
 
 	/* Hello! */
 	banner();
-
-	bus_space_mallocok();
 }
 
 void

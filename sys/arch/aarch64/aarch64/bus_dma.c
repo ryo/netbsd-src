@@ -30,9 +30,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define _AARCH64_BUS_DMA_PRIVATE
+#define _ARM32_BUS_DMA_PRIVATE
 
-#include "opt_bus_space.h"
+#include "opt_arm_bus_space.h"
 
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD: bus_dma.c,v 1.98 2017/01/05 09:08:45 msaitoh Exp $");

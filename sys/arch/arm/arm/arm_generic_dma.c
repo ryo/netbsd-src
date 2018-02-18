@@ -29,8 +29,6 @@
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD$");
 
-// XXXNH *sigh*
-#define _AARCH64_BUS_DMA_PRIVATE
 #define	_ARM32_BUS_DMA_PRIVATE
 
 #include <sys/param.h>

@@ -32,7 +32,6 @@
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD: bcm2835_dma.c,v 1.2 2012/09/18 05:47:27 matt Exp $");
 
-#define _AARCH64_BUS_DMA_PRIVATE
 #define _ARM32_BUS_DMA_PRIVATE
 
 #include <sys/param.h>

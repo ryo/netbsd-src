@@ -164,12 +164,8 @@ void
 tegra_timer_delay(u_int us)
 {
 	static bool timerus_configured = false;
-#ifdef __aarch64__
-	extern struct bus_space aarch64_generic_bs_tag;
-	bus_space_tag_t bst = &aarch64_generic_bs_tag;
-#else
-	bus_space_tag_t bst = &armv7_generic_bs_tag;
-#endif
+	extern struct bus_space arm_generic_bs_tag;
+	bus_space_tag_t bst = &arm_generic_bs_tag;
 	bus_space_handle_t bsh;
 
 	bus_space_subregion(bst, tegra_ppsb_bsh, TEGRA_TIMER_OFFSET,

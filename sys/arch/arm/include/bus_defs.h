@@ -341,6 +341,10 @@ struct arm32_bus_dma_segment {
 	 */
 	bus_addr_t	ds_addr;	/* DMA address */
 	bus_size_t	ds_len;		/* length of transfer */
+
+	/*
+	 * PRIVATE MEMBERS:
+	 */
 	uint32_t	_ds_flags;	/* _BUS_DMAMAP_COHERENT */
 };
 typedef struct arm32_bus_dma_segment	bus_dma_segment_t;
