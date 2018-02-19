@@ -34,6 +34,8 @@
 
 #ifdef __aarch64__
 
+#define	__USE_TOPDOWN_VM
+
 /*
  * AARCH64 supports 3 page sizes: 4KB, 16KB, 64KB.  Each page table can
  * even have its own page size.
