@@ -34,6 +34,7 @@
 #include "opt_multiprocessor.h"
 #include "opt_arm_debug.h"
 #include "opt_fdt_arm.h"
+#include "opt_fdt.h"
 
 #include <arm/asm.h>
 #include <arm/armreg.h>

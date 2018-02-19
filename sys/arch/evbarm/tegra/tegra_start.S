@@ -35,6 +35,7 @@
 #include "opt_multiprocessor.h"
 #include "opt_arm_debug.h"
 #include "opt_fdt_arm.h"
+#include "opt_fdt.h"
 
 #include <arm/asm.h>
 #include <arm/armreg.h>
@@ -102,9 +103,7 @@ _C_LABEL(tegra_start):
 	 */
 	movw	r4, #:lower16:fdt_addr_r
 	movt	r4, #:upper16:fdt_addr_r
-#if KERNEL_BASE_VOFFSET != 0
 	sub	r4, r4, #KERNEL_BASE_VOFFSET
-#endif
 	str	r2, [r4]
 #endif
 

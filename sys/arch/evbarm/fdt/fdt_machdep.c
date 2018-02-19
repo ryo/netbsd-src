@@ -94,9 +94,11 @@ __KERNEL_RCSID(0, "$NetBSD: fdt_machdep.c,v 1.19 2017/12/21 08:28:55 skrll Exp $
 BootConfig bootconfig;
 char bootargs[FDT_MAX_BOOT_STRING] = "";
 char *boot_args = NULL;
-unsigned long  uboot_args[4] = { 0 };	/* filled in by xxx_start.S (not in bss) */
-const uint8_t *fdt_addr_r;
-
+/*
+ * filled in by xxx_start.S (not in bss)
+ */
+unsigned long  uboot_args[4] = { 0 };
+const uint8_t *fdt_addr_r = (const uint8_t *)0xdeadc0de;
 
 extern char KERNEL_BASE_phys[];
 #define KERNEL_BASE_PHYS ((paddr_t)KERNEL_BASE_phys)
@@ -432,10 +434,11 @@ initarm(void *arg)
 	fdt_get_memory(&memory_start, &memory_end);
 
 #ifndef _LP64
-	uint64_t memory_size = memory_end - memory_start;
 	/* Cannot map memory above 4GB */
 	if (memory_end >= 0x100000000ULL)
-		memory_size = 0x100000000ULL - memory_start - PAGE_SIZE;
+		memory_end = 0x100000000ULL - PAGE_SIZE;
+
+	uint64_t memory_size = memory_end - memory_start;
 #endif
 
 #ifndef __aarch64__
