@@ -57,7 +57,7 @@ cpu_coredump(struct lwp *l, struct coredump_iostate *iocookie,
 	int error;
 
 	if (iocookie == NULL) {
-		CORE_SETMAGIC(*chdr, COREMAGIC, MID_POWERPC, 0);
+		CORE_SETMAGIC(*chdr, COREMAGIC, MID_MACHINE, 0);
 		chdr->c_hdrsize = ALIGN(sizeof *chdr);
 		chdr->c_seghdrsize = ALIGN(sizeof cseg);
 		chdr->c_cpusize = sizeof md_core;
