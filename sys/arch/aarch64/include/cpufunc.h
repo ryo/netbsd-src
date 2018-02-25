@@ -29,8 +29,6 @@
 #ifndef _AARCH64_CPUFUNC_H_
 #define _AARCH64_CPUFUNC_H_
 
-#ifdef __aarch64__
-
 #ifdef _KERNEL
 
 #include <arm/armreg.h>
@@ -86,8 +84,6 @@ void aarch64_icache_inv_all(void);
 /* cache op in cpufunc_asm_armv8.S */
 void aarch64_nullop(void);
 uint32_t aarch64_cpuid(void);
-int aarch64_dcache_line_size(void);
-int aarch64_icache_line_size(void);
 void aarch64_icache_sync_range(vaddr_t, vsize_t);
 void aarch64_idcache_wbinv_range(vaddr_t, vsize_t);
 void aarch64_dcache_wbinv_range(vaddr_t, vsize_t);
@@ -109,8 +105,6 @@ void aarch64_tlbi_by_asid_va_ll(int, vaddr_t);	/*  an ASID, a VA, lastlevel */
 #define cpu_idnum()			aarch64_cpuid()
 
 /* cache op */
-#define cpu_icache_line_size()		aarch64_dcache_line_size()
-#define cpu_dcache_line_size()		aarch64_icache_line_size()
 
 #define cpu_dcache_wbinv_all()		aarch64_dcache_wbinv_all()
 #define cpu_dcache_inv_all()		aarch64_dcache_inv_all()
@@ -134,6 +128,7 @@ void aarch64_tlbi_by_asid_va_ll(int, vaddr_t);	/*  an ASID, a VA, lastlevel */
 #define cpu_drain_writebuf()		aarch64_drain_writebuf()
 
 extern u_int arm_dcache_align;
+extern u_int arm_dcache_align_mask;
 
 static inline bool
 cpu_gtmr_exists_p(void)
@@ -157,11 +152,5 @@ cpu_earlydevice_va_p(void)
 }
 
 #endif /* _KERNEL */
-
-#elif defined(__arm__)
-
-#include <arm/cpufunc.h>
-
-#endif /* __aarch64__/__arm__ */
 
 #endif /* _AARCH64_CPUFUNC_H_ */

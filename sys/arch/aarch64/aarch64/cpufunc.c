@@ -44,6 +44,7 @@ u_int aarch64_cache_prefer_mask;
 
 u_int arm_dcache_minline;
 u_int arm_dcache_align;
+u_int arm_dcache_align_mask;
 
 static void
 extract_cacheunit(int level, bool insn, int cachetype)
@@ -109,6 +110,7 @@ aarch64_getcacheinfo(void)
 
 	arm_dcache_minline = __SHIFTOUT(ctr, CTR_EL0_DMIN_LINE);
 	arm_dcache_align = sizeof(int) << arm_dcache_minline;
+	arm_dcache_align_mask = arm_dcache_align - 1;
 
 	/*
 	 * CLIDR -  Cache Level ID Register

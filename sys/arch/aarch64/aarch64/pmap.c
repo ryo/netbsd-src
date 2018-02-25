@@ -609,6 +609,15 @@ pmap_growkernel(vaddr_t maxkvaddr)
 }
 
 bool
+pmap_extract_coherency(struct pmap *pm, vaddr_t va, paddr_t *pap, bool *coherencyp)
+{
+	if (coherencyp)
+		*coherencyp = false;
+
+	return pmap_extract(pm, va, pap);
+}
+
+bool
 pmap_extract(struct pmap *pm, vaddr_t va, paddr_t *pap)
 {
 	static pt_entry_t *ptep;

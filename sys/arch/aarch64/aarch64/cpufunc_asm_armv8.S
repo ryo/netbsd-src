@@ -90,28 +90,6 @@ ENTRY(aarch64_cpuid)
 END(aarch64_cpuid)
 
 /*
- * int aarch64_dcache_line_size(void)
- */
-ENTRY(aarch64_dcache_line_size)
-	mrs	x0, ctr_el0
-	ubfx	x0, x0, #16, #4		/* x0 = D cache shift */
-	mov	x1, #4			/* size of word */
-	lsl	x0, x1, x0		/* x0 = D cache line size */
-	ret
-END(aarch64_dcache_line_size)
-
-/*
- * int aarch64_icache_line_size(void)
- */
-ENTRY(aarch64_icache_line_size)
-	mrs	x0, ctr_el0
-	and	x0, x0, #15		/* x0 = I cache shift */
-	mov	x1, #4			/* size of word */
-	lsl	x0, x1, x0		/* x0 = I cache line size */
-	ret
-END(aarch64_icache_line_size)
-
-/*
  * void aarch64_dcache_wb_range(vaddr_t, vsize_t)
  */
 ENTRY(aarch64_dcache_wb_range)

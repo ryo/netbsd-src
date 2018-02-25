@@ -152,7 +152,13 @@ paddr_t pmap_devmap_vtophys(paddr_t);
 #define AARCH64_MMAP_FLAG_MASK		0xf
 #define AARCH64_MMAP_WRITEBACK		0
 #define AARCH64_MMAP_NOCACHE		1
+#define AARCH64_MMAP_WRITECOMBINE	2
 #define AARCH64_MMAP_DEVICE		3
+
+#define ARM_MMAP_WRITECOMBINE		AARCH64_MMAP_WRITECOMBINE
+#define ARM_MMAP_WRITEBACK		AARCH64_MMAP_WRITEBACK
+#define ARM_MMAP_NOCACHE		AARCH64_MMAP_NOCACHE
+#define ARM_MMAP_DEVICE			AARCH64_MMAP_DEVICE
 
 #define	PMAP_PTE			0x10000000 /* kenter_pa */
 #define	PMAP_DEV			0x20000000 /* kenter_pa */
@@ -175,15 +181,18 @@ aarch64_mmap_flags(paddr_t mdpgno)
 
 	nflag = (mdpgno >> AARCH64_MMAP_FLAG_SHIFT) & AARCH64_MMAP_FLAG_MASK;
 	switch (nflag) {
+	case AARCH64_MMAP_DEVICE:
+		pflag = PMAP_DEV;
+		break;
+	case AARCH64_MMAP_WRITECOMBINE:
+		pflag = PMAP_WRITE_COMBINE;
+		break;
 	case AARCH64_MMAP_WRITEBACK:
 		pflag = PMAP_WRITE_BACK;
 		break;
-	default:
 	case AARCH64_MMAP_NOCACHE:
+	default:
 		pflag = PMAP_NOCACHE;
-		break;
-	case AARCH64_MMAP_DEVICE:
-		pflag = PMAP_DEV;
 		break;
 	}
 	return pflag;
@@ -198,6 +207,9 @@ aarch64_mmap_flags(paddr_t mdpgno)
 #define pmap_wired_count(pmap)		((pmap)->pm_stats.wired_count)
 #define pmap_resident_count(pmap)	((pmap)->pm_stats.resident_count)
 
+bool	pmap_extract_coherency(pmap_t, vaddr_t, paddr_t *, bool *);
+
+#define	PMAP_MAPSIZE1	L2_SIZE
 
 #elif defined(__arm__)
 

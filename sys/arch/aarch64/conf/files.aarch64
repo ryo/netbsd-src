@@ -30,6 +30,7 @@ defflag  opt_arm_bus_space.h	__BUS_SPACE_HAS_STREAM_METHODS
 file	arch/aarch64/aarch64/fpu.c
 
 file	arch/arm/arm/arm_generic_dma.c
+file	arch/arm/arm32/bus_dma.c
 
 # Power State Coordination Interface (PSCI)
 device	psci
@@ -63,13 +64,11 @@ file	arch/aarch64/dev/mainbus.c			mainbus
 device cpu { }
 file	arch/aarch64/aarch64/cpu.c			cpu
 
-# XXXNH use arch/arm bus_space
 # bus_space(9)
 define	bus_space_generic
 file	arch/aarch64/aarch64/bus_space.c
 file	arch/aarch64/aarch64/bus_space_asm_generic.S	# bus_space_generic
 file	arch/aarch64/aarch64/bus_space_notimpl.S
-file	arch/aarch64/aarch64/bus_dma.c
 
 # Standard files
 file	arch/arm/arm/bootconfig.c
