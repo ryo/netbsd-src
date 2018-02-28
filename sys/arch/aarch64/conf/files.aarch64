@@ -54,6 +54,7 @@ file	arch/aarch64/aarch64/db_disasm.c		ddb
 file	arch/aarch64/aarch64/db_interface.c		ddb|kgdb
 file	arch/aarch64/aarch64/db_trace.c			ddb
 file	arch/aarch64/aarch64/db_machdep.c		ddb
+file	arch/aarch64/aarch64/disasm.c			ddb
 file	arch/aarch64/aarch64/kgdb_machdep.c		kgdb
 
 # mainbus files
