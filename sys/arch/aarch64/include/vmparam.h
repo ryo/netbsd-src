@@ -63,7 +63,7 @@
  * USRSTACK is the top (end) of the user stack.  The user VA space is a
  * 48-bit address space starting at 0.  Place the stack at its top end.
  */
-#define USRSTACK	((vaddr_t) 0x0000ffffffff0000)
+#define USRSTACK	VM_MAXUSER_ADDRESS
 #define USRSTACK32	((vaddr_t) 0x7ffff000)
 
 #ifndef MAXTSIZ

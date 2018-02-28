@@ -3,15 +3,14 @@ $NetBSD$
 TODO list for NetBSD/aarch64
 
 - known bugs
-  - __thread variables doesn't work (ld.elf_so)
+  - __thread attributed variables fail to work (ld_elf.so issue?)
   - C++ stack unwinding (libunwind?)
 
 - not yet
   - SMP
-  - kernel text/rodata segments are mapped writable. it shoule be mapped as RO when no options DDB.
+  - kernel text/rodata segments are mapped writable. it should be mapped as RO when no options DDB.
   - ucas_ras_check() is not implemented yet
-  - ddb disassembler
   - crash(8), savecore(8) and libkvm (cpu_kcore_hdr_t)
   - pmap should be work even if PID_MAX >= 65536
-  - TLB ASID in pmap shoule be randomize
+  - TLB ASID in pmap should be randomized
   - COMPAT_NETBSD32

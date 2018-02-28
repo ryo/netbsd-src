@@ -1,7 +1,7 @@
-/* $NetBSD$ */
+/*	$NetBSD$	*/
 
 /*
- * Copyright (c) 2017 Ryo Shimizu <ryo@nerv.org>
+ * Copyright (c) 2018 Ryo Shimizu <ryo@nerv.org>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,40 +26,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD$");
+#ifndef _AARCH64_DISASM_H_
+#define _AARCH64_DISASM_H_
 
-#include <sys/param.h>
-#include <machine/db_machdep.h>
-#include <ddb/db_interface.h>
-#include <ddb/db_sym.h>
-#include <ddb/db_output.h>
-#include <ddb/db_access.h>
+typedef struct {
+	uint32_t (*di_readword)(uintptr_t);	/* disasm_insn() doesn't use */
+	void (*di_printaddr)(uintptr_t);
+	void (*di_printf)(const char *, ...) __printflike(1, 2);
+} disasm_interface_t;
 
-#include <arch/aarch64/aarch64/disasm.h>
+void disasm_insn(const disasm_interface_t *, uintptr_t, uint32_t);
+uintptr_t disasm(const disasm_interface_t *, uintptr_t);
 
-static uint32_t
-db_disasm_readword(uintptr_t address)
-{
-	return db_get_value(address, sizeof(uint32_t), false);
-}
-
-static void
-db_disasm_printaddr(uintptr_t address)
-{
-	db_printf("%lx <", address);
-	db_printsym((db_addr_t)address, DB_STGY_ANY, db_printf);
-	db_printf(">");
-}
-
-static const disasm_interface_t db_disasm_interface = {
-	.di_readword = db_disasm_readword,
-	.di_printaddr = db_disasm_printaddr,
-	.di_printf = db_printf
-};
-
-db_addr_t
-db_disasm(db_addr_t loc, bool altfmt)
-{
-	return disasm(&db_disasm_interface, loc);
-}
+#endif /* _AARCH64_DISASM_H_ */
