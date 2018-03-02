@@ -45,10 +45,6 @@
 
 #include <arm/bootconfig.h>
 
-#ifdef __aarch64__
-#include <aarch64/bootconfig.h>
-#endif
-
 typedef struct _PhysMem {
 	u_long address;
 	u_int pages;
