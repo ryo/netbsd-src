@@ -139,15 +139,6 @@
 
 #elif defined(__arm__)
 
-// These exist for building the RUMP libraries with MKCOMPAT
-
-#define KERNEL_BASE		0x80000000
-#define PGSHIFT			12
-#define	NBPG			(1 << PGSHIFT)
-#define VM_PHYSSEG_MAX		1
-#define VM_NFREELIST		1
-#define	VM_FREELIST_DEFAULT	0
-
 #include <arm/vmparam.h>
 
 #endif /* __aarch64__/__arm__ */
