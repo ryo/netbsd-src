@@ -11,10 +11,6 @@ file	arch/arm/arm32/armv7_generic_space.c		arm32
 file	arch/arm/arm32/armv7_generic_dma.c		arm32
 file	arch/arm/arm/bus_space_a4x.S			arm32
 
-#file	arch/aarch64/aarch64/bus_space_asm_generic.S	aarch64
-file	arch/aarch64/broadcom/bcm2835_space.c		aarch64
-file	arch/arm/broadcom/bcm2835_space.c		arm32
-
 file	arch/arm/broadcom/bcm2835_dma.c
 file	arch/arm/broadcom/bcm2835_mbox_subr.c
 

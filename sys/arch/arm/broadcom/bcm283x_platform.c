@@ -129,6 +129,101 @@ bs_protos(bcm2835_a4x);
 bs_protos(bcm2836);
 bs_protos(bcm2836_a4x);
 
+struct bus_space bcm2835_bs_tag;
+struct bus_space bcm2835_a4x_bs_tag;
+struct bus_space bcm2836_bs_tag;
+struct bus_space bcm2836_a4x_bs_tag;
+
+int bcm283x_bs_map(void *, bus_addr_t, bus_size_t, int, bus_space_handle_t *);
+
+int
+bcm283x_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
+    bus_space_handle_t *bshp)
+{
+	u_long startpa, endpa, pa;
+	vaddr_t va;
+
+	/* Convert BA to PA */
+	pa = ba & ~BCM2835_BUSADDR_CACHE_MASK;
+
+	startpa = trunc_page(pa);
+	endpa = round_page(pa + size);
+
+	/* XXX use extent manager to check duplicate mapping */
+
+	va = uvm_km_alloc(kernel_map, endpa - startpa, 0,
+	    UVM_KMF_VAONLY | UVM_KMF_NOWAIT | UVM_KMF_COLORMATCH);
+	if (!va)
+		return ENOMEM;
+
+	*bshp = (bus_space_handle_t)(va + (pa - startpa));
+
+	const int pmapflags =
+	    (flag & (BUS_SPACE_MAP_CACHEABLE|BUS_SPACE_MAP_PREFETCHABLE))
+		? 0
+		: PMAP_NOCACHE;
+	for (pa = startpa; pa < endpa; pa += PAGE_SIZE, va += PAGE_SIZE) {
+		pmap_kenter_pa(va, pa, VM_PROT_READ | VM_PROT_WRITE, pmapflags);
+	}
+	pmap_update(pmap_kernel());
+
+	return 0;
+}
+
+int
+bcm2835_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
+    bus_space_handle_t *bshp)
+{
+	const struct pmap_devmap *pd;
+	bool match = false;
+	u_long pa;
+
+	/* Attempt to find the PA device mapping */
+	if (ba >= BCM2835_PERIPHERALS_BASE_BUS &&
+	    ba < BCM2835_PERIPHERALS_BASE_BUS + BCM2835_PERIPHERALS_SIZE) {
+		match = true;
+		pa = BCM2835_PERIPHERALS_BUS_TO_PHYS(ba);
+	}
+
+	if (match && (pd = pmap_devmap_find_pa(pa, size)) != NULL) {
+		/* Device was statically mapped. */
+		*bshp = pd->pd_va + (pa - pd->pd_pa);
+		return 0;
+	}
+
+	return bcm283x_bs_map(t, ba, size, flag, bshp);
+}
+
+int
+bcm2836_bs_map(void *t, bus_addr_t ba, bus_size_t size, int flag,
+    bus_space_handle_t *bshp)
+{
+	const struct pmap_devmap *pd;
+	bool match = false;
+	u_long pa;
+
+	/* Attempt to find the PA device mapping */
+	if (ba >= BCM2835_PERIPHERALS_BASE_BUS &&
+	    ba < BCM2835_PERIPHERALS_BASE_BUS + BCM2835_PERIPHERALS_SIZE) {
+		match = true;
+		pa = BCM2836_PERIPHERALS_BUS_TO_PHYS(ba);
+	}
+
+	if (ba >= BCM2836_ARM_LOCAL_BASE &&
+	    ba < BCM2836_ARM_LOCAL_BASE + BCM2836_ARM_LOCAL_SIZE) {
+		match = true;
+		pa = ba;
+	}
+
+	if (match && (pd = pmap_devmap_find_pa(pa, size)) != NULL) {
+		/* Device was statically mapped. */
+		*bshp = pd->pd_va + (pa - pd->pd_pa);
+		return 0;
+	}
+
+	return bcm283x_bs_map(t, ba, size, flag, bshp);
+}
+
 struct arm32_dma_range bcm2835_dma_ranges[] = {
 	[0] = {
 		.dr_sysbase = 0,
