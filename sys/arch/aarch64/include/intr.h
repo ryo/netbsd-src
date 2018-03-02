@@ -70,24 +70,16 @@
 #define IST_MPSAFE		0x100	/* interrupt is MPSAFE */
 
 
-#ifndef _LKM
 #ifndef ARM_INTR_IMPL
 #error ARM_INTR_IMPL not defined.
 #endif
 #include ARM_INTR_IMPL
-#endif /* _LKM */
 
 #ifdef _LOCORE
 
 #include "assym.h"
 
 #else /* _LOCORE */
-
-#ifdef _LKM
-int _splraise(int);
-int _spllower(int);
-void splx(int);
-#endif /* _LKM */
 
 typedef uint8_t ipl_t;
 typedef struct {
