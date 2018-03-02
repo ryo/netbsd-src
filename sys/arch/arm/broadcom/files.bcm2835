@@ -8,12 +8,11 @@ file	arch/arm/arm32/arm32_kvminit.c			arm32
 file	arch/arm/arm32/arm32_reboot.c			arm32
 file	arch/arm/arm32/irq_dispatch.S			arm32
 file	arch/arm/arm32/armv7_generic_space.c		arm32
-file	arch/arm/arm32/armv7_generic_dma.c		arm32
 file	arch/arm/arm/bus_space_a4x.S			arm32
+#file	arch/arm/arm/arm_generic_dma.c
 
 file	arch/arm/broadcom/bcm2835_dma.c
 file	arch/arm/broadcom/bcm2835_mbox_subr.c
-
 file	arch/arm/broadcom/bcm283x_platform.c
 
 define bcmmboxbus { }

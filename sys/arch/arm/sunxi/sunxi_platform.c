@@ -95,18 +95,11 @@ __KERNEL_RCSID(0, "$NetBSD: sunxi_platform.c,v 1.19 2018/01/27 14:17:45 jmcneill
 #define	SUN9I_WDT_MODE		0x18
 #define	 SUN9I_WDT_MODE_EN	__BIT(0)
 
-#if defined(__aarch64__)
 extern struct arm32_bus_dma_tag arm_generic_dma_tag;
-#define	sunxi_dma_tag		arm_generic_dma_tag
-#else
-extern struct arm32_bus_dma_tag armv7_generic_dma_tag;
-#define	sunxi_dma_tag		armv7_generic_dma_tag
-#endif
-
-
 extern struct bus_space arm_generic_bs_tag;
 extern struct bus_space arm_generic_a4x_bs_tag;
 
+#define	sunxi_dma_tag		arm_generic_dma_tag
 #define	sunxi_bs_tag		arm_generic_bs_tag
 #define	sunxi_a4x_bs_tag	arm_generic_a4x_bs_tag
 

@@ -111,21 +111,11 @@ tegra_platform_init_attach_args(struct fdt_attach_args *faa)
 {
 	extern struct bus_space arm_generic_bs_tag;
 	extern struct bus_space arm_generic_a4x_bs_tag;
+	extern struct arm32_bus_dma_tag arm_generic_dma_tag;
 
 	faa->faa_bst = &arm_generic_bs_tag;
 	faa->faa_a4x_bst = &arm_generic_a4x_bs_tag;
-
-// XXXNH bleurgh
-
-#ifdef __aarch64__
-	extern struct arm32_bus_dma_tag arm_generic_dma_tag;
-
 	faa->faa_dmat = &arm_generic_dma_tag;
-#else
-	extern struct arm32_bus_dma_tag armv7_generic_dma_tag;
-
-	faa->faa_dmat = &armv7_generic_dma_tag;
-#endif
 }
 
 void
