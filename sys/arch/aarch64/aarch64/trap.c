@@ -341,7 +341,7 @@ trap_el0_32sync(struct trapframe *tf)
 	case ESR_EC_BKPT_INSN_A32:
 		/* XXX notyet */
 		printf("%s:%d: %s\n", __func__, __LINE__, trapname);
-		do_trapsignal(l SIGILL, ILL_ILLTRP, tf->tf_pc, esr);
+		do_trapsignal(l, SIGILL, ILL_ILLTRP, tf->tf_pc, esr);
 		userret(l);
 		break;
 #endif /* COMPAT_NETBSD32 */

@@ -64,14 +64,9 @@
  * 48-bit address space starting at 0.  Place the stack at its top end.
  */
 #define USRSTACK	VM_MAXUSER_ADDRESS
-#define USRSTACK32	((vaddr_t) 0x7ffff000)
 
 #ifndef MAXTSIZ
 #define	MAXTSIZ		(1L << 30)	/* max text size (1GB) */
-#endif
-
-#ifndef MAXTSIZ32
-#define	MAXTSIZ32	(1L << 26)	/* 32bit max text size (64MB) */
 #endif
 
 #ifndef MAXDSIZ
@@ -86,16 +81,30 @@
 #define	DFLDSIZ		(1L << 32)	/* default data size (4GB) */
 #endif
 
-#ifndef DFLDSIZ32
-#define	DFLDSIZ32	(1L << 27)	/* 32bit default data size (128MB) */
-#endif
-
 #ifndef DFLSSIZ
 #define	DFLSSIZ		(1L << 23)	/* default stack size (8MB) */
 #endif
 
+#define USRSTACK32	VM_MAXUSER_ADDRESS32
+
+#ifndef MAXTSIZ32
+#define	MAXTSIZ32	(1L << 26)	/* 32bit max text size (64MB) */
+#endif
+
+#ifndef	MAXDSIZ32
+#define	MAXDSIZ32	(1536*1024*1024)	/* max data size */
+#endif
+
+#ifndef	MAXSSIZ32
+#define	MAXSSIZ32	(64*1024*1024)		/* max stack size */
+#endif
+
+#ifndef DFLDSIZ32
+#define	DFLDSIZ32	(1L << 27)	/* 32bit default data size (128MB) */
+#endif
+
 #ifndef DFLSSIZ32
-#define	DFLSSIZ32	(1L << 21)	/* 32bit default stack size (2MB) */
+#define	DFLSSIZ32	(1L << 21)		/* 32bit default stack size (2MB) */
 #endif
 
 #define	VM_MIN_ADDRESS		((vaddr_t) 0x0)
