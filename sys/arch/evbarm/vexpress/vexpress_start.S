@@ -1,4 +1,4 @@
-/*	$NetBSD: vexpress_start.S,v 1.5 2017/06/04 19:15:46 jmcneill Exp $	*/
+/*	$NetBSD: vexpress_start.S,v 1.6 2018/03/03 13:46:33 skrll Exp $	*/
 
 /*-
  * Copyright (c) 2015 The NetBSD Foundation, Inc.
@@ -41,7 +41,7 @@
 
 #include <arm/vexpress/vexpress_platform.h>
 
-RCSID("$NetBSD: vexpress_start.S,v 1.5 2017/06/04 19:15:46 jmcneill Exp $")
+RCSID("$NetBSD: vexpress_start.S,v 1.6 2018/03/03 13:46:33 skrll Exp $")
 
 #ifdef VERBOSE_INIT_ARM
 #define	XPUTC(n)	mov r0, n; bl xputc
@@ -83,9 +83,7 @@ _C_LABEL(vexpress_start):
 	 */
 	movw	r4, #:lower16:fdt_addr_r
 	movt	r4, #:upper16:fdt_addr_r
-#if KERNEL_BASE_VOFFSET != 0
 	sub	r4, r4, #KERNEL_BASE_VOFFSET
-#endif
 	str	r2, [r4]
 #endif
 

@@ -1,4 +1,4 @@
-/*	$NetBSD: exynos_start.S,v 1.4 2017/06/10 23:20:56 jmcneill Exp $	*/
+/*	$NetBSD: exynos_start.S,v 1.5 2018/03/03 13:46:32 skrll Exp $	*/
 
 /*-
  * Copyright (c) 2014 The NetBSD Foundation, Inc.
@@ -46,7 +46,7 @@
 
 #include <evbarm/exynos/platform.h>
 
-RCSID("$NetBSD: exynos_start.S,v 1.4 2017/06/10 23:20:56 jmcneill Exp $")
+RCSID("$NetBSD: exynos_start.S,v 1.5 2018/03/03 13:46:32 skrll Exp $")
 
 
 #if defined(VERBOSE_INIT_ARM)
@@ -96,9 +96,7 @@ _C_LABEL(exynos_start):
 	 */
 	movw	r4, #:lower16:uboot_args
 	movt	r4, #:upper16:uboot_args
-#if KERNEL_BASE_VOFFSET != 0
 	sub	r4, r4, #KERNEL_BASE_VOFFSET
-#endif
 	stmia	r4, {r0-r3}			// Save the arguments
 
 #ifdef FDT
@@ -107,9 +105,7 @@ _C_LABEL(exynos_start):
 	 */
 	movw	r4, #:lower16:fdt_addr_r
 	movt	r4, #:upper16:fdt_addr_r
-#if KERNEL_BASE_VOFFSET != 0
 	sub	r4, r4, #KERNEL_BASE_VOFFSET
-#endif
 	str	r2, [r4]
 #endif
 

@@ -1,4 +1,4 @@
-/*	$NetBSD: if_wm.c,v 1.562 2018/01/30 08:15:47 knakahara Exp $	*/
+/*	$NetBSD: if_wm.c,v 1.566 2018/03/01 03:32:33 msaitoh Exp $	*/
 
 /*
  * Copyright (c) 2001, 2002, 2003, 2004 Wasabi Systems, Inc.
@@ -83,7 +83,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: if_wm.c,v 1.562 2018/01/30 08:15:47 knakahara Exp $");
+__KERNEL_RCSID(0, "$NetBSD: if_wm.c,v 1.566 2018/03/01 03:32:33 msaitoh Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_net_mpsafe.h"
@@ -115,6 +115,8 @@ __KERNEL_RCSID(0, "$NetBSD: if_wm.c,v 1.562 2018/01/30 08:15:47 knakahara Exp $"
 #include <net/if_ether.h>
 
 #include <net/bpf.h>
+
+#include <net/rss_config.h>
 
 #include <netinet/in.h>			/* XXX for struct ip */
 #include <netinet/in_systm.h>		/* XXX for struct ip */
@@ -715,7 +717,6 @@ static void	wm_flush_desc_rings(struct wm_softc *);
 static void	wm_reset(struct wm_softc *);
 static int	wm_add_rxbuf(struct wm_rxqueue *, int);
 static void	wm_rxdrain(struct wm_rxqueue *);
-static void	wm_rss_getkey(uint8_t *);
 static void	wm_init_rss(struct wm_softc *);
 static void	wm_adjust_qnum(struct wm_softc *, int);
 static inline bool	wm_is_using_msix(struct wm_softc *);
@@ -775,8 +776,8 @@ static void	wm_nq_send_common_locked(struct ifnet *, struct wm_txqueue *, bool);
 static void	wm_deferred_start_locked(struct wm_txqueue *);
 static void	wm_handle_queue(void *);
 /* Interrupt */
-static int	wm_txeof(struct wm_txqueue *, u_int);
-static void	wm_rxeof(struct wm_rxqueue *, u_int);
+static bool	wm_txeof(struct wm_txqueue *, u_int);
+static bool	wm_rxeof(struct wm_rxqueue *, u_int);
 static void	wm_linkintr_gmii(struct wm_softc *, uint32_t);
 static void	wm_linkintr_tbi(struct wm_softc *, uint32_t);
 static void	wm_linkintr_serdes(struct wm_softc *, uint32_t);
@@ -884,7 +885,7 @@ static int	wm_nvm_read_word_invm(struct wm_softc *, uint16_t, uint16_t *);
 static int	wm_nvm_read_invm(struct wm_softc *, int, int, uint16_t *);
 /* Lock, detecting NVM type, validate checksum and read */
 static int	wm_nvm_is_onboard_eeprom(struct wm_softc *);
-static int	wm_nvm_get_flash_presence_i210(struct wm_softc *);
+static int	wm_nvm_flash_presence_i210(struct wm_softc *);
 static int	wm_nvm_validate_checksum(struct wm_softc *);
 static void	wm_nvm_version_invm(struct wm_softc *);
 static void	wm_nvm_version(struct wm_softc *);
@@ -2255,7 +2256,7 @@ alloc_retry:
 	case WM_T_I211:
 		/* Allow a single clear of the SW semaphore on I210 and newer*/
 		sc->sc_flags |= WM_F_WA_I210_CLSEM;
-		if (wm_nvm_get_flash_presence_i210(sc)) {
+		if (wm_nvm_flash_presence_i210(sc)) {
 			sc->nvm.read = wm_nvm_read_eerd;
 			/* Don't use WM_F_LOCK_EECD because we use EERD */
 			sc->sc_flags |= WM_F_EEPROM_FLASH_HW;
@@ -2352,12 +2353,20 @@ alloc_retry:
 	/* Reset the chip to a known state. */
 	wm_reset(sc);
 
-	/* Check for I21[01] PLL workaround */
-	if (sc->sc_type == WM_T_I210)
+	/*
+	 * Check for I21[01] PLL workaround.
+	 *
+	 * Three cases:
+	 * a) Chip is I211.
+	 * b) Chip is I210 and it uses INVM (not FLASH).
+	 * c) Chip is I210 (and it uses FLASH) and the NVM image version < 3.25
+	 */
+	if (sc->sc_type == WM_T_I211)
 		sc->sc_flags |= WM_F_PLL_WA_I210;
-	if ((sc->sc_type == WM_T_I210) && wm_nvm_get_flash_presence_i210(sc)) {
-		/* NVM image release 3.25 has a workaround */
-		if ((sc->sc_nvm_ver_major < 3)
+	if (sc->sc_type == WM_T_I210) {
+		if (!wm_nvm_flash_presence_i210(sc))
+			sc->sc_flags |= WM_F_PLL_WA_I210;
+		else if ((sc->sc_nvm_ver_major < 3)
 		    || ((sc->sc_nvm_ver_major == 3)
 			&& (sc->sc_nvm_ver_minor < 25))) {
 			aprint_verbose_dev(sc->sc_dev,
@@ -4838,43 +4847,6 @@ wm_rxdrain(struct wm_rxqueue *rxq)
 	}
 }
 
-
-/*
- * XXX copy from FreeBSD's sys/net/rss_config.c
- */
-/*
- * RSS secret key, intended to prevent attacks on load-balancing.  Its
- * effectiveness may be limited by algorithm choice and available entropy
- * during the boot.
- *
- * XXXRW: And that we don't randomize it yet!
- *
- * This is the default Microsoft RSS specification key which is also
- * the Chelsio T5 firmware default key.
- */
-#define RSS_KEYSIZE 40
-static uint8_t wm_rss_key[RSS_KEYSIZE] = {
-	0x6d, 0x5a, 0x56, 0xda, 0x25, 0x5b, 0x0e, 0xc2,
-	0x41, 0x67, 0x25, 0x3d, 0x43, 0xa3, 0x8f, 0xb0,
-	0xd0, 0xca, 0x2b, 0xcb, 0xae, 0x7b, 0x30, 0xb4,
-	0x77, 0xcb, 0x2d, 0xa3, 0x80, 0x30, 0xf2, 0x0c,
-	0x6a, 0x42, 0xb7, 0x3b, 0xbe, 0xac, 0x01, 0xfa,
-};
-
-/*
- * Caller must pass an array of size sizeof(rss_key).
- *
- * XXX
- * As if_ixgbe may use this function, this function should not be
- * if_wm specific function.
- */
-static void
-wm_rss_getkey(uint8_t *key)
-{
-
-	memcpy(key, wm_rss_key, sizeof(wm_rss_key));
-}
-
 /*
  * Setup registers for RSS.
  *
@@ -4886,7 +4858,7 @@ wm_init_rss(struct wm_softc *sc)
 	uint32_t mrqc, reta_reg, rss_key[RSSRK_NUM_REGS];
 	int i;
 
-	CTASSERT(sizeof(rss_key) == sizeof(wm_rss_key));
+	CTASSERT(sizeof(rss_key) == RSS_KEYSIZE);
 
 	for (i = 0; i < RETA_NUM_ENTRIES; i++) {
 		int qid, reta_ent;
@@ -4912,7 +4884,7 @@ wm_init_rss(struct wm_softc *sc)
 		CSR_WRITE(sc, WMREG_RETA_Q(i), reta_reg);
 	}
 
-	wm_rss_getkey((uint8_t *)rss_key);
+	rss_getkey((uint8_t *)rss_key);
 	for (i = 0; i < RSSRK_NUM_REGS; i++)
 		CSR_WRITE(sc, WMREG_RSSRK(i), rss_key[i]);
 
@@ -8066,7 +8038,7 @@ wm_deferred_start_locked(struct wm_txqueue *txq)
  *
  *	Helper; handle transmit interrupts.
  */
-static int
+static bool
 wm_txeof(struct wm_txqueue *txq, u_int limit)
 {
 	struct wm_softc *sc = txq->txq_sc;
@@ -8076,11 +8048,12 @@ wm_txeof(struct wm_txqueue *txq, u_int limit)
 	int i;
 	uint8_t status;
 	struct wm_queue *wmq = container_of(txq, struct wm_queue, wmq_txq);
+	bool more = false;
 
 	KASSERT(mutex_owned(txq->txq_lock));
 
 	if (txq->txq_stopping)
-		return 0;
+		return false;
 
 	txq->txq_flags &= ~WM_TXQ_NO_SPACE;
 	/* for ALTQ and legacy(not use multiqueue) ethernet controller */
@@ -8093,8 +8066,13 @@ wm_txeof(struct wm_txqueue *txq, u_int limit)
 	 */
 	for (i = txq->txq_sdirty; txq->txq_sfree != WM_TXQUEUELEN(txq);
 	     i = WM_NEXTTXS(txq, i), txq->txq_sfree++) {
-		if (limit-- == 0)
+		if (limit-- == 0) {
+			more = true;
+			DPRINTF(WM_DEBUG_TX,
+			    ("%s: TX: loop limited, job %d is not processed\n",
+				device_xname(sc->sc_dev), i));
 			break;
+		}
 
 		txs = &txq->txq_soft[i];
 
@@ -8168,7 +8146,7 @@ wm_txeof(struct wm_txqueue *txq, u_int limit)
 	if (txq->txq_sfree == WM_TXQUEUELEN(txq))
 		txq->txq_watchdog = false;
 
-	return count;
+	return more;
 }
 
 static inline uint32_t
@@ -8381,7 +8359,7 @@ wm_rxdesc_ensure_checksum(struct wm_rxqueue *rxq, uint32_t status,
  *
  *	Helper; handle receive interrupts.
  */
-static void
+static bool
 wm_rxeof(struct wm_rxqueue *rxq, u_int limit)
 {
 	struct wm_softc *sc = rxq->rxq_sc;
@@ -8392,12 +8370,17 @@ wm_rxeof(struct wm_rxqueue *rxq, u_int limit)
 	int count = 0;
 	uint32_t status, errors;
 	uint16_t vlantag;
+	bool more = false;
 
 	KASSERT(mutex_owned(rxq->rxq_lock));
 
 	for (i = rxq->rxq_ptr;; i = WM_NEXTRX(i)) {
 		if (limit-- == 0) {
 			rxq->rxq_ptr = i;
+			more = true;
+			DPRINTF(WM_DEBUG_RX,
+			    ("%s: RX: loop limited, descriptor %d is not processed\n",
+				device_xname(sc->sc_dev), i));
 			break;
 		}
 
@@ -8571,6 +8554,8 @@ wm_rxeof(struct wm_rxqueue *rxq, u_int limit)
 
 	DPRINTF(WM_DEBUG_RX,
 	    ("%s: RX: rxptr -> %d\n", device_xname(sc->sc_dev), i));
+
+	return more;
 }
 
 /*
@@ -9009,6 +8994,8 @@ wm_txrxintr_msix(void *arg)
 	struct wm_softc *sc = txq->txq_sc;
 	u_int txlimit = sc->sc_tx_intr_process_limit;
 	u_int rxlimit = sc->sc_rx_intr_process_limit;
+	bool txmore;
+	bool rxmore;
 
 	KASSERT(wmq->wmq_intr_idx == wmq->wmq_id);
 
@@ -9025,7 +9012,7 @@ wm_txrxintr_msix(void *arg)
 	}
 
 	WM_Q_EVCNT_INCR(txq, txdw);
-	wm_txeof(txq, txlimit);
+	txmore = wm_txeof(txq, txlimit);
 	/* wm_deferred start() is done in wm_handle_queue(). */
 	mutex_exit(txq->txq_lock);
 
@@ -9039,12 +9026,15 @@ wm_txrxintr_msix(void *arg)
 	}
 
 	WM_Q_EVCNT_INCR(rxq, rxintr);
-	wm_rxeof(rxq, rxlimit);
+	rxmore = wm_rxeof(rxq, rxlimit);
 	mutex_exit(rxq->rxq_lock);
 
 	wm_itrs_writereg(sc, wmq);
 
-	softint_schedule(wmq->wmq_si);
+	if (txmore || rxmore)
+		softint_schedule(wmq->wmq_si);
+	else
+		wm_txrxintr_enable(wmq);
 
 	return 1;
 }
@@ -9058,13 +9048,15 @@ wm_handle_queue(void *arg)
 	struct wm_softc *sc = txq->txq_sc;
 	u_int txlimit = sc->sc_tx_process_limit;
 	u_int rxlimit = sc->sc_rx_process_limit;
+	bool txmore;
+	bool rxmore;
 
 	mutex_enter(txq->txq_lock);
 	if (txq->txq_stopping) {
 		mutex_exit(txq->txq_lock);
 		return;
 	}
-	wm_txeof(txq, txlimit);
+	txmore = wm_txeof(txq, txlimit);
 	wm_deferred_start_locked(txq);
 	mutex_exit(txq->txq_lock);
 
@@ -9074,10 +9066,13 @@ wm_handle_queue(void *arg)
 		return;
 	}
 	WM_Q_EVCNT_INCR(rxq, rxdefer);
-	wm_rxeof(rxq, rxlimit);
+	rxmore = wm_rxeof(rxq, rxlimit);
 	mutex_exit(rxq->rxq_lock);
 
-	wm_txrxintr_enable(wmq);
+	if (txmore || rxmore)
+		softint_schedule(wmq->wmq_si);
+	else
+		wm_txrxintr_enable(wmq);
 }
 
 /*
@@ -12498,7 +12493,7 @@ wm_nvm_is_onboard_eeprom(struct wm_softc *sc)
 }
 
 static int
-wm_nvm_get_flash_presence_i210(struct wm_softc *sc)
+wm_nvm_flash_presence_i210(struct wm_softc *sc)
 {
 	uint32_t eec;
 
@@ -12662,7 +12657,7 @@ wm_nvm_version(struct wm_softc *sc)
 		have_uid = false;
 		goto printver;
 	case WM_T_I210:
-		if (!wm_nvm_get_flash_presence_i210(sc)) {
+		if (!wm_nvm_flash_presence_i210(sc)) {
 			wm_nvm_version_invm(sc);
 			have_uid = false;
 			goto printver;
@@ -14314,6 +14309,8 @@ wm_reset_mdicnfg_82580(struct wm_softc *sc)
 	uint16_t nvmword;
 	int rv;
 
+	if (sc->sc_type != WM_T_82580)
+		return;
 	if ((sc->sc_flags & WM_F_SGMII) == 0)
 		return;
 

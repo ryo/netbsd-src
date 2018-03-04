@@ -1,4 +1,4 @@
-/*	$NetBSD: cpu.c,v 1.147 2018/01/27 09:33:25 maxv Exp $	*/
+/*	$NetBSD: cpu.c,v 1.149 2018/02/22 13:27:18 maxv Exp $	*/
 
 /*
  * Copyright (c) 2000-2012 NetBSD Foundation, Inc.
@@ -62,7 +62,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: cpu.c,v 1.147 2018/01/27 09:33:25 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: cpu.c,v 1.149 2018/02/22 13:27:18 maxv Exp $");
 
 #include "opt_ddb.h"
 #include "opt_mpbios.h"		/* for MPDEBUG */
@@ -589,6 +589,9 @@ cpu_init(struct cpu_info *ci)
 	 * hardware supports it.
 	 */
 	if (cpu_feature[0] & CPUID_PGE)
+#ifdef SVS
+		if (!svs_enabled)
+#endif
 		cr4 |= CR4_PGE;	/* enable global TLB caching */
 
 	/*
@@ -1090,7 +1093,7 @@ mp_cpu_start_cleanup(struct cpu_info *ci)
 
 #ifdef __x86_64__
 typedef void (vector)(void);
-extern vector Xsyscall, Xsyscall32;
+extern vector Xsyscall, Xsyscall32, Xsyscall_svs;
 #endif
 
 void
@@ -1103,6 +1106,11 @@ cpu_init_msrs(struct cpu_info *ci, bool full)
 	wrmsr(MSR_LSTAR, (uint64_t)Xsyscall);
 	wrmsr(MSR_CSTAR, (uint64_t)Xsyscall32);
 	wrmsr(MSR_SFMASK, PSL_NT|PSL_T|PSL_I|PSL_C|PSL_D|PSL_AC);
+
+#ifdef SVS
+	if (svs_enabled)
+		wrmsr(MSR_LSTAR, (uint64_t)Xsyscall_svs);
+#endif
 
 	if (full) {
 		wrmsr(MSR_FSBASE, 0);

@@ -1,4 +1,4 @@
-#	$NetBSD: Makefile.inc,v 1.28 2018/02/04 03:19:52 christos Exp $
+#	$NetBSD: Makefile.inc,v 1.30 2018/02/25 00:16:48 mrg Exp $
 
 .if !defined(BIND9_MAKEFILE_INC)
 BIND9_MAKEFILE_INC=yes
@@ -87,16 +87,17 @@ LIBDPLIBS+=      pthread  ${NETBSDSRCDIR}/lib/libpthread
 .endif
 
 .if ${NAMED_USE_OPENSSL} == "yes"
-CPPFLAGS+=-DOPENSSL -DUSE_ISC_SPNEGO -DHAVE_OPENSSL_GOST
+CPPFLAGS+=-DOPENSSL -DUSE_ISC_SPNEGO
+.if ${HAVE_OPENSSL} == 10
+CPPFLAGS+=-DHAVE_OPENSSL_GOST
+.endif
 .if ${MKKERBEROS} != "no"
 CPPFLAGS+=-DGSSAPI
 .endif
 .if ${MKKERBEROS} != "no"
 .if !defined (LIB) || empty(LIB)
-LDADD+= -lgssapi -lheimntlm -lkrb5 -lhx509 -lheimbase \
-	-lcom_err  -lroken -lasn1 -lwind -lsqlite3
-DPADD+= ${LIBGSSAPI} ${LIBKRB5} ${LIBHX509} ${LIBHEIMNTLM} ${LIBHEIMBASE} \
-	${LIBCOM_ERR} ${LIBROKEN} ${LIBASN1} ${LIBWIND} ${LIBSQLITE3}
+LDADD+= -lgssapi -lheimntlm ${LIBKRB5_LDADD}
+DPADD+= ${LIBGSSAPI} ${LIBHEIMNTLM} ${LIBKRB5_DPADD}
 .else
 .for L in gssapi krb5 hx509 heimntlm heimbase com_err roken asn1 wind
 LIBDPLIBS+=	$L ${NETBSDSRCDIR}/crypto/external/bsd/heimdal/lib/lib$L

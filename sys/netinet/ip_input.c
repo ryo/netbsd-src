@@ -1,4 +1,4 @@
-/*	$NetBSD: ip_input.c,v 1.373 2018/02/06 06:36:40 maxv Exp $	*/
+/*	$NetBSD: ip_input.c,v 1.376 2018/02/24 07:37:09 ozaki-r Exp $	*/
 
 /*
  * Copyright (C) 1995, 1996, 1997, and 1998 WIDE Project.
@@ -91,7 +91,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: ip_input.c,v 1.373 2018/02/06 06:36:40 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: ip_input.c,v 1.376 2018/02/24 07:37:09 ozaki-r Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_inet.h"
@@ -404,11 +404,11 @@ ipintr(void *arg __unused)
 
 	KASSERT(cpu_softintr_p());
 
-	SOFTNET_LOCK_UNLESS_NET_MPSAFE();
+	SOFTNET_KERNEL_LOCK_UNLESS_NET_MPSAFE();
 	while ((m = pktq_dequeue(ip_pktq)) != NULL) {
 		ip_input(m);
 	}
-	SOFTNET_UNLOCK_UNLESS_NET_MPSAFE();
+	SOFTNET_KERNEL_UNLOCK_UNLESS_NET_MPSAFE();
 }
 
 /*
@@ -782,7 +782,7 @@ ours:
 	 * Switch out to protocol's input routine.
 	 */
 #if IFA_STATS
-	if (ia && ip) {
+	if (ia) {
 		struct in_ifaddr *_ia;
 		/*
 		 * Keep a reference from ip_match_our_address with psref
@@ -1640,15 +1640,6 @@ sysctl_net_inet_ip_setup(struct sysctllog **clog)
 		       NULL, 0, &ip_defttl, 0,
 		       CTL_NET, PF_INET, IPPROTO_IP,
 		       IPCTL_DEFTTL, CTL_EOL);
-#ifdef IPCTL_DEFMTU
-	sysctl_createv(clog, 0, NULL, NULL,
-		       CTLFLAG_PERMANENT /* |CTLFLAG_READWRITE? */,
-		       CTLTYPE_INT, "mtu",
-		       SYSCTL_DESCR("Default MTA for an INET route"),
-		       NULL, 0, &ip_mtu, 0,
-		       CTL_NET, PF_INET, IPPROTO_IP,
-		       IPCTL_DEFMTU, CTL_EOL);
-#endif /* IPCTL_DEFMTU */
 	sysctl_createv(clog, 0, NULL, NULL,
 		       CTLFLAG_PERMANENT|CTLFLAG_READWRITE,
 		       CTLTYPE_INT, "forwsrcrt",

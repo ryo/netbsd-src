@@ -1,4 +1,4 @@
-/*	$NetBSD: in.c,v 1.216 2018/01/19 08:01:05 ozaki-r Exp $	*/
+/*	$NetBSD: in.c,v 1.219 2018/02/24 07:37:09 ozaki-r Exp $	*/
 
 /*
  * Copyright (C) 1995, 1996, 1997, and 1998 WIDE Project.
@@ -91,7 +91,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: in.c,v 1.216 2018/01/19 08:01:05 ozaki-r Exp $");
+__KERNEL_RCSID(0, "$NetBSD: in.c,v 1.219 2018/02/24 07:37:09 ozaki-r Exp $");
 
 #include "arp.h"
 
@@ -751,9 +751,10 @@ in_control(struct socket *so, u_long cmd, void *data, struct ifnet *ifp)
 {
 	int error;
 
-	SOFTNET_LOCK_UNLESS_NET_MPSAFE();
+#ifndef NET_MPSAFE
+	KASSERT(KERNEL_LOCKED_P());
+#endif
 	error = in_control0(so, cmd, data, ifp);
-	SOFTNET_UNLOCK_UNLESS_NET_MPSAFE();
 
 	return error;
 }
@@ -1539,7 +1540,9 @@ in_if_down(struct ifnet *ifp)
 {
 
 	in_if_link_down(ifp);
+#if NARP > 0
 	lltable_purge_entries(LLTABLE(ifp));
+#endif
 }
 
 void
@@ -2045,11 +2048,7 @@ in_lltable_rtcheck(struct ifnet *ifp, u_int flags, const struct sockaddr *l3addr
 	if (rt->rt_flags & RTF_GATEWAY) {
 		if (!(rt->rt_flags & RTF_HOST) || !rt->rt_ifp ||
 		    rt->rt_ifp->if_type != IFT_ETHER ||
-#ifdef __FreeBSD__
-		    (rt->rt_ifp->if_flags & (IFF_NOARP | IFF_STATICARP)) != 0 ||
-#else
 		    (rt->rt_ifp->if_flags & IFF_NOARP) != 0 ||
-#endif
 		    memcmp(rt->rt_gateway->sa_data, l3addr->sa_data,
 		    sizeof(in_addr_t)) != 0) {
 			goto error;

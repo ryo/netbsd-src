@@ -1,4 +1,4 @@
-/* $NetBSD: ixgbe.c,v 1.120 2018/01/26 09:07:46 msaitoh Exp $ */
+/* $NetBSD: ixgbe.c,v 1.128 2018/03/02 10:19:20 knakahara Exp $ */
 
 /******************************************************************************
 
@@ -207,6 +207,7 @@ static void     ixgbe_update_link_status(struct adapter *);
 static void	ixgbe_set_ivar(struct adapter *, u8, u8, s8);
 static void	ixgbe_configure_ivars(struct adapter *);
 static u8 *	ixgbe_mc_array_itr(struct ixgbe_hw *, u8 **, u32 *);
+static void	ixgbe_eitr_write(struct ix_queue *, uint32_t);
 
 static void	ixgbe_setup_vlan_hw_support(struct adapter *);
 #if 0
@@ -258,6 +259,9 @@ static void	ixgbe_handle_link(void *);
 static void	ixgbe_handle_msf(void *);
 static void	ixgbe_handle_mod(void *);
 static void	ixgbe_handle_phy(void *);
+
+/* Workqueue handler for deferred work */
+static void	ixgbe_handle_que_work(struct work *, void *);
 
 static ixgbe_vendor_info_t *ixgbe_lookup(const struct pci_attach_args *);
 
@@ -313,6 +317,9 @@ SYSCTL_INT(_hw_ix, OID_AUTO, tx_process_limit, CTLFLAG_RDTUN,
 static int ixgbe_flow_control = ixgbe_fc_full;
 SYSCTL_INT(_hw_ix, OID_AUTO, flow_control, CTLFLAG_RDTUN,
     &ixgbe_flow_control, 0, "Default flow control used for all adapters");
+
+/* Which pakcet processing uses workqueue or softint */
+static bool ixgbe_txrx_workqueue = false;
 
 /*
  * Smart speed setting, default to on
@@ -394,10 +401,13 @@ static int (*ixgbe_ring_empty)(struct ifnet *, pcq_t *);
 #define IXGBE_MPSAFE		1
 #define IXGBE_CALLOUT_FLAGS	CALLOUT_MPSAFE
 #define IXGBE_SOFTINFT_FLAGS	SOFTINT_MPSAFE
+#define IXGBE_WORKQUEUE_FLAGS	WQ_PERCPU | WQ_MPSAFE
 #else
 #define IXGBE_CALLOUT_FLAGS	0
 #define IXGBE_SOFTINFT_FLAGS	0
+#define IXGBE_WORKQUEUE_FLAGS	WQ_PERCPU
 #endif
+#define IXGBE_WORKQUEUE_PRI PRI_SOFTNET
 
 /************************************************************************
  * ixgbe_initialize_rss_mapping
@@ -411,6 +421,10 @@ ixgbe_initialize_rss_mapping(struct adapter *adapter)
 	int             i, j;
 	u32             rss_hash_config;
 
+	/* force use default RSS key. */
+#ifdef __NetBSD__
+	rss_getkey((uint8_t *) &rss_key);
+#else
 	if (adapter->feat_en & IXGBE_FEATURE_RSS) {
 		/* Fetch the configured RSS key */
 		rss_getkey((uint8_t *) &rss_key);
@@ -418,6 +432,7 @@ ixgbe_initialize_rss_mapping(struct adapter *adapter)
 		/* set up random bits */
 		cprng_fast(&rss_key, sizeof(rss_key));
 	}
+#endif
 
 	/* Set multiplier for RETA setup and table size based on MAC */
 	index_mult = 0x1;
@@ -2378,8 +2393,13 @@ static inline void
 ixgbe_enable_queue(struct adapter *adapter, u32 vector)
 {
 	struct ixgbe_hw *hw = &adapter->hw;
+	struct ix_queue *que = &adapter->queues[vector];
 	u64             queue = (u64)(1ULL << vector);
 	u32             mask;
+
+	mutex_enter(&que->im_mtx);
+	if (que->im_nest > 0 && --que->im_nest > 0)
+		goto out;
 
 	if (hw->mac.type == ixgbe_mac_82598EB) {
 		mask = (IXGBE_EIMS_RTX_QUEUE & queue);
@@ -2392,6 +2412,8 @@ ixgbe_enable_queue(struct adapter *adapter, u32 vector)
 		if (mask)
 			IXGBE_WRITE_REG(hw, IXGBE_EIMS_EX(1), mask);
 	}
+out:
+	mutex_exit(&que->im_mtx);
 } /* ixgbe_enable_queue */
 
 /************************************************************************
@@ -2401,8 +2423,13 @@ static inline void
 ixgbe_disable_queue(struct adapter *adapter, u32 vector)
 {
 	struct ixgbe_hw *hw = &adapter->hw;
+	struct ix_queue *que = &adapter->queues[vector];
 	u64             queue = (u64)(1ULL << vector);
 	u32             mask;
+
+	mutex_enter(&que->im_mtx);
+	if (que->im_nest++ > 0)
+		goto  out;
 
 	if (hw->mac.type == ixgbe_mac_82598EB) {
 		mask = (IXGBE_EIMS_RTX_QUEUE & queue);
@@ -2415,6 +2442,8 @@ ixgbe_disable_queue(struct adapter *adapter, u32 vector)
 		if (mask)
 			IXGBE_WRITE_REG(hw, IXGBE_EIMC_EX(1), mask);
 	}
+out:
+	mutex_exit(&que->im_mtx);
 } /* ixgbe_disable_queue */
 
 /************************************************************************
@@ -2460,8 +2489,7 @@ ixgbe_msix_que(void *arg)
 	 *    the last interval.
 	 */
 	if (que->eitr_setting)
-		IXGBE_WRITE_REG(&adapter->hw, IXGBE_EITR(que->msix),
-		    que->eitr_setting);
+		ixgbe_eitr_write(que, que->eitr_setting);
 
 	que->eitr_setting = 0;
 
@@ -2484,11 +2512,18 @@ ixgbe_msix_que(void *arg)
 	else
 		newitr = (newitr / 2);
 
-        if (adapter->hw.mac.type == ixgbe_mac_82598EB)
-                newitr |= newitr << 16;
-        else
-                newitr |= IXGBE_EITR_CNT_WDIS;
-                 
+	/*
+	 * When RSC is used, ITR interval must be larger than RSC_DELAY.
+	 * Currently, we use 2us for RSC_DELAY. The minimum value is always
+	 * greater than 2us on 100M (and 10M?(not documented)), but it's not
+	 * on 1G and higher.
+	 */
+	if ((adapter->link_speed != IXGBE_LINK_SPEED_100_FULL)
+	    && (adapter->link_speed != IXGBE_LINK_SPEED_10_FULL)) {
+		if (newitr < IXGBE_MIN_RSC_EITR_10G1G)
+			newitr = IXGBE_MIN_RSC_EITR_10G1G;
+	}
+
         /* save for next interrupt */
         que->eitr_setting = newitr;
 
@@ -2499,9 +2534,30 @@ ixgbe_msix_que(void *arg)
 	rxr->packets = 0;
 
 no_calc:
-	if (more)
-		softint_schedule(que->que_si);
-	else
+	if (more) {
+		if (adapter->txrx_use_workqueue) {
+			/*
+			 * adapter->que_wq is bound to each CPU instead of
+			 * each NIC queue to reduce workqueue kthread. As we
+			 * should consider about interrupt affinity in this
+			 * function, the workqueue kthread must be WQ_PERCPU.
+			 * If create WQ_PERCPU workqueue kthread for each NIC
+			 * queue, that number of created workqueue kthread is
+			 * (number of used NIC queue) * (number of CPUs) =
+			 * (number of CPUs) ^ 2 most often.
+			 *
+			 * The same NIC queue's interrupts are avoided by
+			 * masking the queue's interrupt. And different
+			 * NIC queue's interrupts use different struct work
+			 * (que->wq_cookie). So, "enqueued flag" to avoid
+			 * twice workqueue_enqueue() is not required .
+			 */
+			workqueue_enqueue(adapter->que_wq, &que->wq_cookie,
+			    curcpu());
+		} else {
+			softint_schedule(que->que_si);
+		}
+	} else
 		ixgbe_enable_queue(adapter, que->msix);
 
 	return 1;
@@ -2826,6 +2882,12 @@ ixgbe_msix_link(void *arg)
 	IXGBE_WRITE_REG(hw, IXGBE_EIMC, IXGBE_EIMC_OTHER);
 
 	/* First get the cause */
+	/*
+	 * The specifications of 82598, 82599, X540 and X550 say EICS register
+	 * is write only. However, Linux says it is a workaround for silicon
+	 * errata to read EICS instead of EICR to get interrupt cause. It seems
+	 * there is a problem about read clear mechanism for EICR register.
+	 */
 	eicr = IXGBE_READ_REG(hw, IXGBE_EICS);
 	/* Be sure the queue bits are not cleared */
 	eicr &= ~IXGBE_EICR_RTX_QUEUE;
@@ -2928,6 +2990,21 @@ ixgbe_msix_link(void *arg)
 	return 1;
 } /* ixgbe_msix_link */
 
+static void
+ixgbe_eitr_write(struct ix_queue *que, uint32_t itr)
+{
+	struct adapter *adapter = que->adapter;
+	
+        if (adapter->hw.mac.type == ixgbe_mac_82598EB)
+                itr |= itr << 16;
+        else
+                itr |= IXGBE_EITR_CNT_WDIS;
+
+	IXGBE_WRITE_REG(&adapter->hw, IXGBE_EITR(que->msix),
+	    itr);
+}
+
+
 /************************************************************************
  * ixgbe_sysctl_interrupt_rate_handler
  ************************************************************************/
@@ -2936,6 +3013,7 @@ ixgbe_sysctl_interrupt_rate_handler(SYSCTLFN_ARGS)
 {
 	struct sysctlnode node = *rnode;
 	struct ix_queue *que = (struct ix_queue *)node.sysctl_data;
+	struct adapter  *adapter = que->adapter;
 	uint32_t reg, usec, rate;
 	int error;
 
@@ -2952,14 +3030,26 @@ ixgbe_sysctl_interrupt_rate_handler(SYSCTLFN_ARGS)
 	if (error || newp == NULL)
 		return error;
 	reg &= ~0xfff; /* default, no limitation */
-	ixgbe_max_interrupt_rate = 0;
 	if (rate > 0 && rate < 500000) {
 		if (rate < 1000)
 			rate = 1000;
-		ixgbe_max_interrupt_rate = rate;
 		reg |= ((4000000/rate) & 0xff8);
-	}
-	IXGBE_WRITE_REG(&que->adapter->hw, IXGBE_EITR(que->msix), reg);
+		/*
+		 * When RSC is used, ITR interval must be larger than
+		 * RSC_DELAY. Currently, we use 2us for RSC_DELAY.
+		 * The minimum value is always greater than 2us on 100M
+		 * (and 10M?(not documented)), but it's not on 1G and higher.
+		 */
+		if ((adapter->link_speed != IXGBE_LINK_SPEED_100_FULL)
+		    && (adapter->link_speed != IXGBE_LINK_SPEED_10_FULL)) {
+			if ((adapter->num_queues > 1)
+			    && (reg < IXGBE_MIN_RSC_EITR_10G1G))
+				return EINVAL;
+		}
+		ixgbe_max_interrupt_rate = rate;
+	} else
+		ixgbe_max_interrupt_rate = 0;
+	ixgbe_eitr_write(que, reg);
 
 	return (0);
 } /* ixgbe_sysctl_interrupt_rate_handler */
@@ -3038,6 +3128,12 @@ ixgbe_add_device_sysctls(struct adapter *adapter)
 	    "advertise_speed", SYSCTL_DESCR(IXGBE_SYSCTL_DESC_ADV_SPEED),
 	    ixgbe_sysctl_advertise, 0, (void *)adapter, 0, CTL_CREATE,
 	    CTL_EOL) != 0)
+		aprint_error_dev(dev, "could not create sysctl\n");
+
+	adapter->txrx_use_workqueue = ixgbe_txrx_workqueue;
+	if (sysctl_createv(log, 0, &rnode, &cnode, CTLFLAG_READWRITE,
+	    CTLTYPE_BOOL, "txrx_workqueue", SYSCTL_DESCR("Use workqueue for packet processing"),
+	    NULL, 0, &adapter->txrx_use_workqueue, 0, CTL_CREATE, CTL_EOL) != 0)
 		aprint_error_dev(dev, "could not create sysctl\n");
 
 #ifdef IXGBE_DEBUG
@@ -3172,6 +3268,12 @@ ixgbe_free_softint(struct adapter *adapter)
 		if (que->que_si != NULL)
 			softint_disestablish(que->que_si);
 	}
+	if (adapter->txr_wq != NULL)
+		workqueue_destroy(adapter->txr_wq);
+	if (adapter->txr_wq_enqueued != NULL)
+		percpu_free(adapter->txr_wq_enqueued, sizeof(u_int));
+	if (adapter->que_wq != NULL)
+		workqueue_destroy(adapter->que_wq);
 
 	/* Drain the Link queue */
 	if (adapter->link_si != NULL) {
@@ -3381,6 +3483,10 @@ ixgbe_detach(device_t dev, int flags)
 
 	ixgbe_free_transmit_structures(adapter);
 	ixgbe_free_receive_structures(adapter);
+	for (int i = 0; i < adapter->num_queues; i++) {
+		struct ix_queue * que = &adapter->queues[i];
+		mutex_destroy(&que->im_mtx);
+	}
 	free(adapter->queues, M_DEVBUF);
 	free(adapter->mta, M_DEVBUF);
 
@@ -3774,6 +3880,9 @@ ixgbe_init_locked(struct adapter *adapter)
 		IXGBE_WRITE_REG(hw, IXGBE_CTRL_EXT, ctrl_ext);
 	}
 
+	/* Update saved flags. See ixgbe_ifflags_cb() */
+	adapter->if_flags = ifp->if_flags;
+
 	/* Now inform the stack we're ready */
 	ifp->if_flags |= IFF_RUNNING;
 
@@ -3878,7 +3987,7 @@ ixgbe_configure_ivars(struct adapter *adapter)
 		/* ... and the TX */
 		ixgbe_set_ivar(adapter, txr->me, que->msix, 1);
 		/* Set an Initial EITR value */
-		IXGBE_WRITE_REG(&adapter->hw, IXGBE_EITR(que->msix), newitr);
+		ixgbe_eitr_write(que, newitr);
 	}
 
 	/* For the Link interrupt */
@@ -4519,15 +4628,17 @@ ixgbe_enable_intr(struct adapter *adapter)
 static void
 ixgbe_disable_intr(struct adapter *adapter)
 {
+	struct ix_queue	*que = adapter->queues;
+
+	/* disable interrupts other than queues */
+	IXGBE_WRITE_REG(&adapter->hw, IXGBE_EIMC, ~IXGBE_EIMC_RTX_QUEUE);
+
 	if (adapter->msix_mem)
 		IXGBE_WRITE_REG(&adapter->hw, IXGBE_EIAC, 0);
-	if (adapter->hw.mac.type == ixgbe_mac_82598EB) {
-		IXGBE_WRITE_REG(&adapter->hw, IXGBE_EIMC, ~0);
-	} else {
-		IXGBE_WRITE_REG(&adapter->hw, IXGBE_EIMC, 0xFFFF0000);
-		IXGBE_WRITE_REG(&adapter->hw, IXGBE_EIMC_EX(0), ~0);
-		IXGBE_WRITE_REG(&adapter->hw, IXGBE_EIMC_EX(1), ~0);
-	}
+
+	for (int i = 0; i < adapter->num_queues; i++, que++)
+		ixgbe_disable_queue(adapter, que->msix);
+
 	IXGBE_WRITE_FLUSH(&adapter->hw);
 
 	return;
@@ -5712,13 +5823,14 @@ ixgbe_handle_que(void *context)
 	struct adapter  *adapter = que->adapter;
 	struct tx_ring  *txr = que->txr;
 	struct ifnet    *ifp = adapter->ifp;
+	bool		more = false;
 
 	adapter->handleq.ev_count++;
 
 	if (ifp->if_flags & IFF_RUNNING) {
-		ixgbe_rxeof(que);
+		more = ixgbe_rxeof(que);
 		IXGBE_TX_LOCK(txr);
-		ixgbe_txeof(txr);
+		more |= ixgbe_txeof(txr);
 		if (!(adapter->feat_en & IXGBE_FEATURE_LEGACY_TX))
 			if (!ixgbe_mq_ring_empty(ifp, txr->txr_interq))
 				ixgbe_mq_start_locked(ifp, txr);
@@ -5730,14 +5842,40 @@ ixgbe_handle_que(void *context)
 		IXGBE_TX_UNLOCK(txr);
 	}
 
-	/* Re-enable this interrupt */
-	if (que->res != NULL)
+	if (more) {
+		if (adapter->txrx_use_workqueue) {
+			/*
+			 * "enqueued flag" is not required here.
+			 * See ixgbe_msix_que().
+			 */
+			workqueue_enqueue(adapter->que_wq, &que->wq_cookie,
+			    curcpu());
+		} else {
+			softint_schedule(que->que_si);
+		}
+	} else if (que->res != NULL) {
+		/* Re-enable this interrupt */
 		ixgbe_enable_queue(adapter, que->msix);
-	else
+	} else
 		ixgbe_enable_intr(adapter);
 
 	return;
 } /* ixgbe_handle_que */
+
+/************************************************************************
+ * ixgbe_handle_que_work
+ ************************************************************************/
+static void
+ixgbe_handle_que_work(struct work *wk, void *context)
+{
+	struct ix_queue *que = container_of(wk, struct ix_queue, wq_cookie);
+
+	/*
+	 * "enqueued flag" is not required here.
+	 * See ixgbe_msix_que().
+	 */
+	ixgbe_handle_que(que);
+}
 
 /************************************************************************
  * ixgbe_allocate_legacy - Setup the Legacy or MSI Interrupt handler
@@ -5834,7 +5972,6 @@ alloc_retry:
 	return (0);
 } /* ixgbe_allocate_legacy */
 
-
 /************************************************************************
  * ixgbe_allocate_msix - Setup MSI-X Interrupt resources and handlers
  ************************************************************************/
@@ -5847,6 +5984,7 @@ ixgbe_allocate_msix(struct adapter *adapter, const struct pci_attach_args *pa)
 	pci_chipset_tag_t pc;
 	char		intrbuf[PCI_INTRSTR_LEN];
 	char		intr_xname[32];
+	char		wqname[MAXCOMLEN];
 	const char	*intrstr = NULL;
 	int 		error, vector = 0;
 	int		cpu_id = 0;
@@ -5971,6 +6109,24 @@ ixgbe_allocate_msix(struct adapter *adapter, const struct pci_attach_args *pa)
 			error = ENXIO;
 			goto err_out;
 		}
+	}
+	snprintf(wqname, sizeof(wqname), "%sdeferTx", device_xname(dev));
+	error = workqueue_create(&adapter->txr_wq, wqname,
+	    ixgbe_deferred_mq_start_work, adapter, IXGBE_WORKQUEUE_PRI, IPL_NET,
+	    IXGBE_WORKQUEUE_FLAGS);
+	if (error) {
+		aprint_error_dev(dev, "couldn't create workqueue for deferred Tx\n");
+		goto err_out;
+	}
+	adapter->txr_wq_enqueued = percpu_alloc(sizeof(u_int));
+
+	snprintf(wqname, sizeof(wqname), "%sTxRx", device_xname(dev));
+	error = workqueue_create(&adapter->que_wq, wqname,
+	    ixgbe_handle_que_work, adapter, IXGBE_WORKQUEUE_PRI, IPL_NET,
+	    IXGBE_WORKQUEUE_FLAGS);
+	if (error) {
+		aprint_error_dev(dev, "couldn't create workqueue for Tx/Rx\n");
+		goto err_out;
 	}
 
 	/* and Link */

@@ -1,4 +1,4 @@
-/*	$NetBSD: mcontext.h,v 1.18 2015/03/24 08:38:29 matt Exp $	*/
+/*	$NetBSD: mcontext.h,v 1.19 2018/02/15 15:53:56 kamil Exp $	*/
 
 /*-
  * Copyright (c) 2001, 2002 The NetBSD Foundation, Inc.
@@ -267,12 +267,12 @@ __END_DECLS
 #define _UC_CLRSTACK	0x00040000
 
 #define _UC_MACHINE_SP(uc)	((uc)->uc_mcontext.__gregs[_REG_SP])
+#define _UC_MACHINE_FP(uc)	((uc)->uc_mcontext.__gregs[_REG_FP])
 #define _UC_MACHINE_PC(uc)	((uc)->uc_mcontext.__gregs[_REG_PC])
 #define _UC_MACHINE_INTRV(uc)	((uc)->uc_mcontext.__gregs[_REG_RV])
 
 #define _UC_MACHINE_SET_PC(uc, pc)	\
 				_UC_MACHINE_PC(uc) = (pc)
-
 
 #if defined(_KERNEL)
 __BEGIN_DECLS

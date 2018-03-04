@@ -129,7 +129,7 @@ tegra210xphy*	at tegra210xpad?
 #pci*		at ppb?
 
 # Ethernet
-sunxiemac*	at fdt?				# Allwinner Gigabit Ethernet (EMAC)
+emac*		at fdt?			# Allwinner Gigabit Ethernet (EMAC)
 #re*		at pci? dev ? function ?	# Realtek RTL8111GS
 
 # MII/PHY support

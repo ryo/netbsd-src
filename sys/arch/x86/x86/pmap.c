@@ -1,4 +1,4 @@
-/*	$NetBSD: pmap.c,v 1.279 2018/01/20 08:45:28 maxv Exp $	*/
+/*	$NetBSD: pmap.c,v 1.282 2018/03/01 16:55:01 maxv Exp $	*/
 
 /*
  * Copyright (c) 2008, 2010, 2016, 2017 The NetBSD Foundation, Inc.
@@ -170,7 +170,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: pmap.c,v 1.279 2018/01/20 08:45:28 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: pmap.c,v 1.282 2018/03/01 16:55:01 maxv Exp $");
 
 #include "opt_user_ldt.h"
 #include "opt_lockdebug.h"
@@ -559,7 +559,7 @@ static void pmap_init_pcpu(void);
 #ifdef __HAVE_DIRECT_MAP
 static void pmap_init_directmap(struct pmap *);
 #endif
-#if !defined(XEN) && !defined(SVS)
+#if !defined(XEN)
 static void pmap_remap_global(void);
 #endif
 #ifndef XEN
@@ -1289,7 +1289,7 @@ pmap_bootstrap(vaddr_t kva_start)
 	 * operation of the system.
 	 */
 
-#if !defined(XEN) && !defined(SVS)
+#if !defined(XEN)
 	/*
 	 * Begin to enable global TLB entries if they are supported.
 	 * The G bit has no effect until the CR4_PGE bit is set in CR4,
@@ -1655,7 +1655,7 @@ pmap_init_directmap(struct pmap *kpm)
 }
 #endif /* __HAVE_DIRECT_MAP */
 
-#if !defined(XEN) && !defined(SVS)
+#if !defined(XEN)
 /*
  * Remap all of the virtual pages created so far with the PG_G bit.
  */
@@ -1672,7 +1672,7 @@ pmap_remap_global(void)
 	for ( ; kva < kva_end; kva += PAGE_SIZE) {
 		p1i = pl1_i(kva);
 		if (pmap_valid_entry(PTE_BASE[p1i]))
-			PTE_BASE[p1i] |= PG_G;
+			PTE_BASE[p1i] |= pmap_pg_g;
 	}
 
 	/* kernel segments */
@@ -1685,7 +1685,7 @@ pmap_remap_global(void)
 		for ( ; kva < kva_end; kva += PAGE_SIZE) {
 			p1i = pl1_i(kva);
 			if (pmap_valid_entry(PTE_BASE[p1i]))
-				PTE_BASE[p1i] |= PG_G;
+				PTE_BASE[p1i] |= pmap_pg_g;
 		}
 	}
 
@@ -1695,7 +1695,7 @@ pmap_remap_global(void)
 	for ( ; kva < kva_end; kva += PAGE_SIZE) {
 		p1i = pl1_i(kva);
 		if (pmap_valid_entry(PTE_BASE[p1i]))
-			PTE_BASE[p1i] |= PG_G;
+			PTE_BASE[p1i] |= pmap_pg_g;
 	}
 }
 #endif
@@ -2130,7 +2130,7 @@ pmap_free_ptp(struct pmap *pmap, struct vm_page *ptp, vaddr_t va,
 			xen_kpm_sync(pmap, index);
 		}
 #elif defined(SVS)
-		if (level == PTP_LEVELS - 1) {
+		if (svs_enabled && level == PTP_LEVELS - 1) {
 			svs_pmap_sync(pmap, index);
 		}
 #endif
@@ -2235,7 +2235,7 @@ pmap_get_ptp(struct pmap *pmap, vaddr_t va, pd_entry_t * const *pdes, int flags)
 			xen_kpm_sync(pmap, index);
 		}
 #elif defined(SVS)
-		if (i == PTP_LEVELS) {
+		if (svs_enabled && i == PTP_LEVELS) {
 			svs_pmap_sync(pmap, index);
 		}
 #endif

@@ -1,5 +1,6 @@
-/*	$NetBSD: ipsec_mbuf.c,v 1.17 2018/02/01 17:16:11 maxv Exp $	*/
-/*-
+/*	$NetBSD: ipsec_mbuf.c,v 1.20 2018/02/26 06:17:01 maxv Exp $	*/
+
+/*
  * Copyright (c) 2002, 2003 Sam Leffler, Errno Consulting
  * All rights reserved.
  *
@@ -28,7 +29,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: ipsec_mbuf.c,v 1.17 2018/02/01 17:16:11 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: ipsec_mbuf.c,v 1.20 2018/02/26 06:17:01 maxv Exp $");
 
 /*
  * IPsec-specific mbuf routines.
@@ -45,8 +46,6 @@ __KERNEL_RCSID(0, "$NetBSD: ipsec_mbuf.c,v 1.17 2018/02/01 17:16:11 maxv Exp $")
 #include <netipsec/ipsec.h>
 #include <netipsec/ipsec_var.h>
 #include <netipsec/ipsec_private.h>
-
-#include <net/net_osdep.h>
 
 /*
  * Create a writable copy of the mbuf chain.  While doing this
@@ -225,7 +224,7 @@ m_makespace(struct mbuf *m0, int skip, int hlen, int *off)
 	 * At this point skip is the offset into the mbuf m
 	 * where the new header should be placed.  Figure out
 	 * if there's space to insert the new header.  If so,
-	 * and copying the remainder makese sense then do so.
+	 * and copying the remainder makes sense then do so.
 	 * Otherwise insert a new mbuf in the chain, splitting
 	 * the contents of m as needed.
 	 */
@@ -243,8 +242,7 @@ m_makespace(struct mbuf *m0, int skip, int hlen, int *off)
 			if (todo > MHLEN) {
 				n = m_getcl(M_DONTWAIT, m->m_type, 0);
 				len = MCLBYTES;
-			}
-			else {
+			} else {
 				n = m_get(M_DONTWAIT, m->m_type);
 				len = MHLEN;
 			}
@@ -269,8 +267,7 @@ m_makespace(struct mbuf *m0, int skip, int hlen, int *off)
 				*np = m->m_next;
 				m->m_next = n0;
 			}
-		}
-		else {
+		} else {
 			n = m_get(M_DONTWAIT, m->m_type);
 			if (n == NULL) {
 				m_freem(n0);
@@ -446,42 +443,4 @@ m_striphdr(struct mbuf *m, int skip, int hlen)
 		m->m_pkthdr.len -= hlen;
 	}
 	return (0);
-}
-
-/*
- * Diagnostic routine to check mbuf alignment as required by the
- * crypto device drivers (that use DMA).
- */
-void
-m_checkalignment(const char* where, struct mbuf *m0, int off, int len)
-{
-	int roff;
-	struct mbuf *m = m_getptr(m0, off, &roff);
-	void *addr;
-
-	if (m == NULL)
-		return;
-	printf("%s (off %u len %u): ", where, off, len);
-	addr = mtod(m, char *) + roff;
-	do {
-		int mlen;
-
-		if (((uintptr_t) addr) & 3) {
-			printf("addr misaligned %p,", addr);
-			break;
-		}
-		mlen = m->m_len;
-		if (mlen > len)
-			mlen = len;
-		len -= mlen;
-		if (len && (mlen & 3)) {
-			printf("len mismatch %u,", mlen);
-			break;
-		}
-		m = m->m_next;
-		addr = m ? mtod(m, void *) : NULL;
-	} while (m && len > 0);
-	for (m = m0; m; m = m->m_next)
-		printf(" [%p:%u]", mtod(m, void *), m->m_len);
-	printf("\n");
 }

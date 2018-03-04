@@ -102,7 +102,7 @@ int HMAC_CTX_copy(HMAC_CTX *dctx, HMAC_CTX *sctx);
 
 void HMAC_CTX_set_flags(HMAC_CTX *ctx, unsigned long flags);
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#if OPENSSL_API_COMPAT >= 0x10100000L
 static inline HMAC_CTX *HMAC_CTX_new(void)
 {
 	HMAC_CTX *ctx = calloc(1, sizeof(*ctx));
@@ -118,6 +118,12 @@ static inline void HMAC_CTX_free(HMAC_CTX *ctx)
 		return;
 	HMAC_CTX_cleanup(ctx);
 	free(ctx);
+}
+
+static inline void HMAC_CTX_reset(HMAC_CTX *ctx)
+{
+	HMAC_CTX_cleanup(ctx);
+	HMAC_CTX_init(ctx);
 }
 #endif
 

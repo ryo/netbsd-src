@@ -39,7 +39,7 @@
 
 #include "assym.h"
 
-RCSID("$NetBSD: rpi2_start.S,v 1.4 2017/12/10 21:38:27 skrll Exp $")
+RCSID("$NetBSD: rpi2_start.S,v 1.5 2018/03/03 13:46:32 skrll Exp $")
 
 #if defined(KERNEL_BASES_EQUAL)
 #define CALL(f)		bl	_C_LABEL(f)
@@ -107,9 +107,7 @@ _C_LABEL(rpi_start):
 	 */
 	movw	r4, #:lower16:fdt_addr_r
 	movt	r4, #:upper16:fdt_addr_r
-#if KERNEL_BASE_VOFFSET != 0
 	sub	r4, r4, #KERNEL_BASE_VOFFSET
-#endif
 	str	r2, [r4]
 #endif
 

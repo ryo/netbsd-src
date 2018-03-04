@@ -1,4 +1,4 @@
-/*	$NetBSD: rpi_start.S,v 1.16 2018/01/01 11:28:33 skrll Exp $	*/
+/*	$NetBSD: rpi_start.S,v 1.17 2018/03/03 13:46:32 skrll Exp $	*/
 
 /*
  * Copyright (c) 2002, 2003  Genetec Corporation.  All rights reserved.
@@ -96,7 +96,7 @@
 #include <arm/armreg.h>
 #include "assym.h"
 
-RCSID("$NetBSD: rpi_start.S,v 1.16 2018/01/01 11:28:33 skrll Exp $")
+RCSID("$NetBSD: rpi_start.S,v 1.17 2018/03/03 13:46:32 skrll Exp $")
 
 
 #if defined(VERBOSE_INIT_ARM)

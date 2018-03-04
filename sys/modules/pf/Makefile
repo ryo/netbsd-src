@@ -1,4 +1,4 @@
-# $NetBSD: Makefile,v 1.5 2018/02/06 09:20:50 mrg Exp $
+# $NetBSD: Makefile,v 1.9 2018/02/19 16:21:36 maya Exp $
 
 .include "../Makefile.inc"
 
@@ -19,7 +19,5 @@ SRCS+=	pf_table.c
 SRCS+=	tcp_rndiss.c
 
 CPPFLAGS+=	-I${S}/dist/pf -I${S} -DINET6 -DINET
-
-COPTS.pf_table.c+=	-Wno-error=shift-negative-value
 
 .include <bsd.kmodule.mk>

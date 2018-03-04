@@ -1,4 +1,4 @@
-/*	$NetBSD: ip6_input.c,v 1.189 2018/01/30 15:54:02 maxv Exp $	*/
+/*	$NetBSD: ip6_input.c,v 1.193 2018/02/24 07:37:09 ozaki-r Exp $	*/
 /*	$KAME: ip6_input.c,v 1.188 2001/03/29 05:34:31 itojun Exp $	*/
 
 /*
@@ -62,7 +62,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: ip6_input.c,v 1.189 2018/01/30 15:54:02 maxv Exp $");
+__KERNEL_RCSID(0, "$NetBSD: ip6_input.c,v 1.193 2018/02/24 07:37:09 ozaki-r Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_gateway.h"
@@ -218,7 +218,7 @@ ip6intr(void *arg __unused)
 {
 	struct mbuf *m;
 
-	SOFTNET_LOCK_UNLESS_NET_MPSAFE();
+	SOFTNET_KERNEL_LOCK_UNLESS_NET_MPSAFE();
 	while ((m = pktq_dequeue(ip6_pktq)) != NULL) {
 		struct psref psref;
 		struct ifnet *rcvif = m_get_rcvif_psref(m, &psref);
@@ -238,7 +238,7 @@ ip6intr(void *arg __unused)
 		ip6_input(m, rcvif);
 		m_put_rcvif_psref(rcvif, &psref);
 	}
-	SOFTNET_UNLOCK_UNLESS_NET_MPSAFE();
+	SOFTNET_KERNEL_UNLOCK_UNLESS_NET_MPSAFE();
 }
 
 void
@@ -960,7 +960,7 @@ ip6_process_hopopts(struct mbuf *m, u_int8_t *opthead, int hbhlen,
 
 			/*
 			 * We may see jumbolen in unaligned location, so
-			 * we'd need to perform bcopy().
+			 * we'd need to perform memcpy().
 			 */
 			memcpy(&jumboplen, opt + 2, sizeof(jumboplen));
 			jumboplen = (u_int32_t)htonl(jumboplen);
@@ -1402,7 +1402,7 @@ ip6_get_prevhdr(struct mbuf *m, int off)
 /*
  * get next header offset.  m will be retained.
  */
-static int
+int
 ip6_nexthdr(struct mbuf *m, int off, int proto, int *nxtp)
 {
 	struct ip6_hdr ip6;
@@ -1601,14 +1601,6 @@ sysctl_net_inet6_ip6_setup(struct sysctllog **clog)
 		       NULL, 0, &ip6_defhlim, 0,
 		       CTL_NET, PF_INET6, IPPROTO_IPV6,
 		       IPV6CTL_DEFHLIM, CTL_EOL);
-#ifdef notyet
-	sysctl_createv(clog, 0, NULL, NULL,
-		       CTLFLAG_PERMANENT|CTLFLAG_READWRITE,
-		       CTLTYPE_INT, "mtu", NULL,
-		       NULL, 0, &, 0,
-		       CTL_NET, PF_INET6, IPPROTO_IPV6,
-		       IPV6CTL_DEFMTU, CTL_EOL);
-#endif
 	sysctl_createv(clog, 0, NULL, NULL,
 		       CTLFLAG_PERMANENT|CTLFLAG_READWRITE,
 		       CTLTYPE_INT, "maxfragpackets",

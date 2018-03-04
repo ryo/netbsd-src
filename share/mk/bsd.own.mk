@@ -1,4 +1,4 @@
-#	$NetBSD: bsd.own.mk,v 1.1031 2018/02/04 03:19:53 christos Exp $
+#	$NetBSD: bsd.own.mk,v 1.1039 2018/03/03 00:22:04 christos Exp $
 
 # This needs to be before bsd.init.mk
 .if defined(BSD_MK_COMPAT_FILE)
@@ -66,6 +66,13 @@ MKGCC?=		no
 #
 .if ${MACHINE_CPU} == "aarch64"
 HAVE_GCC?=	0
+.elif \
+    ${MACHINE_CPU} == "x86_64" || \
+    ${MACHINE_CPU} == "hppa" || \
+    ${MACHINE_CPU} == "i386" || \
+    ${MACHINE_CPU} == "sparc" || \
+    ${MACHINE_CPU} == "sparc64"
+HAVE_GCC?=	6
 .else
 HAVE_GCC?=	5
 .endif
@@ -94,8 +101,12 @@ MKGCCCMDS?=	no
 #
 # What OpenSSL is used?
 # 
-.if ${MACHINE} == "amd64"
-HAVE_OPENSSL?=  10
+.if ${MACHINE} == "amd64" || \
+    ${MACHINE} == "arm" || \
+    ${MACHINE} == "i386" || \
+    ${MACHINE} == "sparc" || \
+    ${MACHINE} == "sparc64"
+HAVE_OPENSSL?=  11
 .else
 HAVE_OPENSSL?=  10
 .endif

@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "sanitizer_platform.h"
-#if SANITIZER_FREEBSD || SANITIZER_LINUX
+#if SANITIZER_FREEBSD || SANITIZER_LINUX || SANITIZER_NETBSD
 #include "sanitizer_common.h"
 #include "sanitizer_stacktrace.h"
 
@@ -80,7 +80,7 @@ void SanitizerInitializeUnwinder() {
 #endif
 
 uptr Unwind_GetIP(struct _Unwind_Context *ctx) {
-#if defined(__arm__) && !SANITIZER_MAC
+#if defined(__arm__) && !SANITIZER_MAC && !SANITIZER_NETBSD
   uptr val;
   _Unwind_VRS_Result res = _Unwind_VRS_Get(ctx, _UVRSC_CORE,
       15 /* r15 = PC */, _UVRSD_UINT32, &val);
@@ -88,7 +88,7 @@ uptr Unwind_GetIP(struct _Unwind_Context *ctx) {
   // Clear the Thumb bit.
   return val & ~(uptr)1;
 #else
-  return _Unwind_GetIP(ctx);
+  return (uptr)_Unwind_GetIP(ctx);
 #endif
 }
 
