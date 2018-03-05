@@ -73,11 +73,12 @@ db_show_all_devices(db_expr_t addr, bool haddr, db_expr_t count,
 	for (dv = db_device_first(); dv != NULL; dv = db_device_next(dv)) {
 		db_read_bytes((db_addr_t)dv, sizeof(buf), (char *)&buf);
 
-		if (buf.dv_class < 0 ||
-		    buf.dv_class > __arraycount(classnames))
+		unsigned i = buf.dv_class;
+
+		if (i >= __arraycount(classnames))
 			cl = "????";
 		else
-			cl = classnames[buf.dv_class];
+			cl = classnames[i];
 
 		db_printf("%-16.16s", buf.dv_xname);
 		db_printf(" %10s", cl);
