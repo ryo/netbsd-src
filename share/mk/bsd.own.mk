@@ -1,4 +1,4 @@
-#	$NetBSD: bsd.own.mk,v 1.1039 2018/03/03 00:22:04 christos Exp $
+#	$NetBSD: bsd.own.mk,v 1.1042 2018/03/05 00:24:01 christos Exp $
 
 # This needs to be before bsd.init.mk
 .if defined(BSD_MK_COMPAT_FILE)
@@ -64,14 +64,18 @@ MKGCC?=		no
 #
 # What GCC is used?
 #
-.if ${MACHINE_CPU} == "aarch64"
+.if \
+    ${MACHINE_CPU} == "aarch64"
 HAVE_GCC?=	0
 .elif \
-    ${MACHINE_CPU} == "x86_64" || \
+    ${MACHINE_CPU} == "alpha" || \
     ${MACHINE_CPU} == "hppa" || \
     ${MACHINE_CPU} == "i386" || \
+    ${MACHINE_CPU} == "mips" || \
+    ${MACHINE_CPU} == "powerpc" || \
     ${MACHINE_CPU} == "sparc" || \
-    ${MACHINE_CPU} == "sparc64"
+    ${MACHINE_CPU} == "sparc64" || \
+    ${MACHINE_CPU} == "x86_64"
 HAVE_GCC?=	6
 .else
 HAVE_GCC?=	5
@@ -104,6 +108,8 @@ MKGCCCMDS?=	no
 .if ${MACHINE} == "amd64" || \
     ${MACHINE} == "arm" || \
     ${MACHINE} == "i386" || \
+    ${MACHINE_CPU} == "powerpc" || \
+    ${MACHINE_CPU} == "sh3" || \
     ${MACHINE} == "sparc" || \
     ${MACHINE} == "sparc64"
 HAVE_OPENSSL?=  11

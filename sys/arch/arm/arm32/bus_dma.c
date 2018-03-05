@@ -1,4 +1,4 @@
-/*	$NetBSD: bus_dma.c,v 1.101 2017/12/29 08:58:57 skrll Exp $	*/
+/*	$NetBSD: bus_dma.c,v 1.106 2018/03/04 08:04:59 skrll Exp $	*/
 
 /*-
  * Copyright (c) 1996, 1997, 1998 The NetBSD Foundation, Inc.
@@ -36,10 +36,9 @@
 #include "opt_cputypes.h"
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: bus_dma.c,v 1.101 2017/12/29 08:58:57 skrll Exp $");
+__KERNEL_RCSID(0, "$NetBSD: bus_dma.c,v 1.106 2018/03/04 08:04:59 skrll Exp $");
 
 #include <sys/param.h>
-
 #include <sys/bus.h>
 #include <sys/cpu.h>
 #include <sys/kmem.h>
@@ -797,6 +796,12 @@ _bus_dmamap_sync_segment(vaddr_t va, paddr_t pa, vsize_t len, int ops,
 {
 
 #ifdef CPU_CORTEX
+	/*
+	 * No optimisations are available for readonly mbufs on armv6+, so
+	 * assume it's not readonly from here on.
+	 *
+ 	 * See the comment in _bus_dmamap_sync_mbuf
+	 */
 	readonly_p = false;
 #endif
 

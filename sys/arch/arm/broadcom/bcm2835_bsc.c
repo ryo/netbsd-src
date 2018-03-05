@@ -1,4 +1,4 @@
-/*	$NetBSD: bcm2835_bsc.c,v 1.9 2017/12/28 22:42:36 christos Exp $	*/
+/*	$NetBSD: bcm2835_bsc.c,v 1.10 2018/03/03 16:03:38 skrll Exp $	*/
 
 /*
  * Copyright (c) 2012 Jonathan A. Kollasch
@@ -27,7 +27,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: bcm2835_bsc.c,v 1.9 2017/12/28 22:42:36 christos Exp $");
+__KERNEL_RCSID(0, "$NetBSD: bcm2835_bsc.c,v 1.10 2018/03/03 16:03:38 skrll Exp $");
 
 #if defined(_KERNEL_OPT)
 #include "opt_kernhist.h"
