@@ -40,7 +40,7 @@ static uint64_t inline						\
 reg_##regname##_read(void)					\
 {								\
 	uint64_t __rv;						\
-	__asm __volatile ("mrs %0, " #regdesc : "=r"(__rv));	\
+	__asm __volatile("mrs %0, " #regdesc : "=r"(__rv));	\
 	return __rv;						\
 }
 
@@ -48,14 +48,14 @@ reg_##regname##_read(void)					\
 static void inline						\
 reg_##regname##_write(uint64_t __val)				\
 {								\
-	__asm __volatile ("msr " #regdesc ", %0" :: "r"(__val));\
+	__asm __volatile("msr " #regdesc ", %0" :: "r"(__val));	\
 }
 
 #define AARCH64REG_WRITEIMM_INLINE2(regname, regdesc)		\
 static void inline						\
 reg_##regname##_write(uint64_t __val)				\
 {								\
-	__asm __volatile ("msr " #regdesc ", %0" :: "n"(__val));\
+	__asm __volatile("msr " #regdesc ", %0" :: "n"(__val));	\
 }
 
 #define AARCH64REG_READ_INLINE(regname)				\
