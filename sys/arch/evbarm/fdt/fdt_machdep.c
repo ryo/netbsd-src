@@ -100,9 +100,6 @@ char *boot_args = NULL;
 unsigned long  uboot_args[4] = { 0 };
 const uint8_t *fdt_addr_r = (const uint8_t *)0xdeadc0de;
 
-extern char KERNEL_BASE_phys[];
-#define KERNEL_BASE_PHYS ((paddr_t)KERNEL_BASE_phys)
-
 static char fdt_memory_ext_storage[EXTENT_FIXED_STORAGE_SIZE(DRAM_BLOCKS)];
 static struct extent *fdt_memory_ext;
 
@@ -112,6 +109,9 @@ static uint64_t initrd_start, initrd_end;
 #include <dev/fdt/fdtvar.h>
 #define FDT_BUF_SIZE	(128*1024)
 static uint8_t fdt_data[FDT_BUF_SIZE];
+
+extern char KERNEL_BASE_phys[];
+#define KERNEL_BASE_PHYS ((paddr_t)KERNEL_BASE_phys)
 
 static void fdt_update_stdout_path(void);
 static void fdt_device_register(device_t, void *);
@@ -433,7 +433,7 @@ initarm(void *arg)
 
 	fdt_get_memory(&memory_start, &memory_end);
 
-#ifndef _LP64
+#if !defined(_LP64)
 	/* Cannot map memory above 4GB */
 	if (memory_end >= 0x100000000ULL)
 		memory_end = 0x100000000ULL - PAGE_SIZE;
