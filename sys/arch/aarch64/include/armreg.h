@@ -389,7 +389,7 @@ AARCH64REG_WRITE_INLINE(esr_el1)
 static const uintmax_t
     ESR_EC =		__BITS(31,26),	// Exception Cause
      ESR_EC_UNKNOWN		= 0x00,	// AXX: Unknown Reason
-     ESR_EC_WFX			= 0x01,	// AXX: WFI or WFE Insn Execution
+     ESR_EC_WFX			= 0x01, // AXX: WFI or WFE instruction execution
      ESR_EC_CP15_RT		= 0x03,	// A32: MCR/MRC access to CP15 !EC=0
      ESR_EC_CP15_RRT		= 0x04,	// A32: MCRR/MRRC access to CP15 !EC=0
      ESR_EC_CP14_RT		= 0x05,	// A32: MCR/MRC access to CP14
