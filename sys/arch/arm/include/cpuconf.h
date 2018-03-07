@@ -229,22 +229,29 @@
 #define	ARM_MMU_V7		0
 #endif
 
+#if !defined(_KERNEL_OPT) ||						\
+	 defined(CPU_ARMV8)
+#define	ARM_MMU_V8		1
+#else
+#define	ARM_MMU_V8		0
+#endif
+
 /*
  * Can we use the ASID support in armv6+ MMUs?
  */
 #if !defined(_LOCORE)
-#define	ARM_MMU_EXTENDED	((ARM_MMU_MEMC + ARM_MMU_GENERIC	\
-				  + ARM_MMU_SA1 + ARM_MMU_XSCALE	\
-				  + ARM_MMU_V6C) == 0			\
-				 && (ARM_MMU_V6N + ARM_MMU_V7) > 0)
+#define	ARM_MMU_EXTENDED						\
+    ((ARM_MMU_MEMC + ARM_MMU_GENERIC + ARM_MMU_SA1 + ARM_MMU_XSCALE +	\
+     ARM_MMU_V6C) == 0 &&						\
+    (ARM_MMU_V6N + ARM_MMU_V7 + ARM_MMU_V8) > 0)
 #if ARM_MMU_EXTENDED == 0
 #undef ARM_MMU_EXTENDED
 #endif
 #endif
 
-#define	ARM_NMMUS		(ARM_MMU_MEMC + ARM_MMU_GENERIC +	\
-				 ARM_MMU_SA1 + ARM_MMU_XSCALE +		\
-				 ARM_MMU_V6N + ARM_MMU_V6C + ARM_MMU_V7)
+#define	ARM_NMMUS							\
+    (ARM_MMU_MEMC + ARM_MMU_GENERIC + ARM_MMU_SA1 + ARM_MMU_XSCALE +	\
+     ARM_MMU_V6N + ARM_MMU_V6C + ARM_MMU_V7 + ARM_MMU_V8)
 #if ARM_NMMUS == 0
 #error ARM_NMMUS is 0
 #endif

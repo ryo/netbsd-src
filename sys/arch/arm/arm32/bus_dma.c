@@ -46,6 +46,7 @@ __KERNEL_RCSID(0, "$NetBSD: bus_dma.c,v 1.106 2018/03/04 08:04:59 skrll Exp $");
 
 #include <uvm/uvm.h>
 
+#include <arm/cpuconf.h>
 #include <arm/cpufunc.h>
 
 #ifdef __HAVE_MM_MD_DIRECT_MAPPED_PHYS
@@ -795,7 +796,7 @@ _bus_dmamap_sync_segment(vaddr_t va, paddr_t pa, vsize_t len, int ops,
     bool readonly_p)
 {
 
-#ifdef CPU_CORTEX
+#ifdef ARM_MMU_EXTENDED
 	/*
 	 * No optimisations are available for readonly mbufs on armv6+, so
 	 * assume it's not readonly from here on.
@@ -1141,7 +1142,7 @@ _bus_dmamap_sync(bus_dma_tag_t t, bus_dmamap_t map, bus_addr_t offset,
 	}
 #endif /* _ARM32_NEED_BUS_DMA_BOUNCE */
 
-#ifndef CPU_CORTEX
+#ifndef ARM_MMU_EXTENDED
 	/*
 	 * If the mapping belongs to a non-kernel vmspace, and the
 	 * vmspace has not been active since the last time a full
