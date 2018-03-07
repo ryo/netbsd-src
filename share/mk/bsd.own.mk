@@ -1,4 +1,4 @@
-#	$NetBSD: bsd.own.mk,v 1.1042 2018/03/05 00:24:01 christos Exp $
+#	$NetBSD: bsd.own.mk,v 1.1046 2018/03/05 21:14:34 christos Exp $
 
 # This needs to be before bsd.init.mk
 .if defined(BSD_MK_COMPAT_FILE)
@@ -68,17 +68,12 @@ MKGCC?=		no
     ${MACHINE_CPU} == "aarch64"
 HAVE_GCC?=	0
 .elif \
-    ${MACHINE_CPU} == "alpha" || \
-    ${MACHINE_CPU} == "hppa" || \
-    ${MACHINE_CPU} == "i386" || \
-    ${MACHINE_CPU} == "mips" || \
-    ${MACHINE_CPU} == "powerpc" || \
-    ${MACHINE_CPU} == "sparc" || \
-    ${MACHINE_CPU} == "sparc64" || \
-    ${MACHINE_CPU} == "x86_64"
-HAVE_GCC?=	6
-.else
+    ${MACHINE_CPU} == "m68000" || \
+    ${MACHINE_CPU} == "m68k" || \
+    ${MACHINE_CPU} == "vax"
 HAVE_GCC?=	5
+.else
+HAVE_GCC?=	6
 .endif
 
 #
@@ -105,13 +100,7 @@ MKGCCCMDS?=	no
 #
 # What OpenSSL is used?
 # 
-.if ${MACHINE} == "amd64" || \
-    ${MACHINE} == "arm" || \
-    ${MACHINE} == "i386" || \
-    ${MACHINE_CPU} == "powerpc" || \
-    ${MACHINE_CPU} == "sh3" || \
-    ${MACHINE} == "sparc" || \
-    ${MACHINE} == "sparc64"
+.if ${MACHINE} != "vax"
 HAVE_OPENSSL?=  11
 .else
 HAVE_OPENSSL?=  10
