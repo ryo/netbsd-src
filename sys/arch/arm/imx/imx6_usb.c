@@ -89,7 +89,7 @@ imxusbc_search(device_t parent, cfdata_t cf, const int *ldesc, void *aux)
 	sc = device_private(parent);
 	aa.aa_iot = sc->sc_iot;
 	aa.aa_ioh = sc->sc_ioh;
-	aa.aa_dmat = &armv7_generic_dma_tag;
+	aa.aa_dmat = &arm_generic_dma_tag;
 	aa.aa_unit = cf->cf_loc[IMXUSBCCF_UNIT];
 	aa.aa_irq = cf->cf_loc[IMXUSBCCF_IRQ];
 

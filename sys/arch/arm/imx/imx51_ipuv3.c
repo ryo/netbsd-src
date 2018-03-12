@@ -579,7 +579,7 @@ imx51_ipuv3_attach_sub(struct imx51_ipuv3_softc *sc,
 	LIST_INIT(&sc->screens);
 
 	sc->iot = iot;
-	sc->dma_tag = &armv7_generic_dma_tag;
+	sc->dma_tag = &arm_generic_dma_tag;
 
 	/* map controller registers */
 	error = bus_space_map(iot, IPU_CM_BASE, IPU_CM_SIZE, 0, &sc->cm_ioh);

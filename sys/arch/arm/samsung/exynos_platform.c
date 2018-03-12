@@ -90,11 +90,11 @@ exynos_platform_init_attach_args(struct fdt_attach_args *faa)
 {
 	extern struct bus_space armv7_generic_bs_tag;
 	extern struct bus_space armv7_generic_a4x_bs_tag;
-	extern struct arm32_bus_dma_tag armv7_generic_dma_tag;
+	extern struct arm32_bus_dma_tag arm_generic_dma_tag;
 
 	faa->faa_bst = &armv7_generic_bs_tag;
 	faa->faa_a4x_bst = &armv7_generic_a4x_bs_tag;
-	faa->faa_dmat = &armv7_generic_dma_tag;
+	faa->faa_dmat = &arm_generic_dma_tag;
 }
 
 static void

@@ -42,7 +42,7 @@ struct axi_attach_args {
 };
 
 extern struct bus_space armv7_generic_bs_tag;
-extern struct arm32_bus_dma_tag armv7_generic_dma_tag;
+extern struct arm32_bus_dma_tag arm_generic_dma_tag;
 extern bus_space_tag_t imx7_armcore_bst;
 extern bus_space_handle_t imx7_armcore_bsh;
 
