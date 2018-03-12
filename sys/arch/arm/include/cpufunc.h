@@ -48,7 +48,6 @@
 
 #if !defined(_RUMPKERNEL)
 
-#include <sys/param.h>
 #include <sys/types.h>
 
 #include <arm/armreg.h>
@@ -364,27 +363,6 @@ cpsid(register_t psw)
 #endif
 }
 
-static inline bool
-cpu_gtmr_exists_p(void)
-{
-
-	return armreg_pfr1_read() & ARM_PFR1_GTIMER_MASK;
-}
-
-static inline u_int
-cpu_clusterid(void)
-{
-
-        return __SHIFTOUT(armreg_mpidr_read(), MPIDR_AFF1);
-}
-
-static inline bool
-cpu_earlydevice_va_p(void)
-{
-
-	return armreg_sctlr_read() & CPU_CONTROL_MMU_ENABLE;
-}
-
 
 /* Functions to manipulate the CPSR. */
 u_int	SetCPSR(u_int, u_int);
@@ -445,6 +423,10 @@ extern struct arm_cache_info arm_scache;
  */
 
 int get_pc_str_offset	(void);
+
+bool cpu_gtmr_exists_p(void);
+u_int cpu_clusterid(void);
+bool cpu_earlydevice_va_p(void);
 
 /*
  * Functions to manipulate cpu r13

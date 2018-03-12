@@ -3713,3 +3713,22 @@ sheeva_setup(char *args)
 #endif
 }
 #endif	/* CPU_SHEEVA */
+
+
+bool
+cpu_gtmr_exists_p(void)
+{
+	return armreg_pfr1_read() & ARM_PFR1_GTIMER_MASK;
+}
+
+u_int
+cpu_clusterid(void)
+{
+	return __SHIFTOUT(armreg_mpidr_read(), MPIDR_AFF1);
+}
+
+bool
+cpu_earlydevice_va_p(void)
+{
+	return armreg_sctlr_read() & CPU_CONTROL_MMU_ENABLE;
+}
