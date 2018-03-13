@@ -6,5 +6,7 @@
 include "arch/arm/pic/files.pic"
 include "arch/arm/cortex/files.cortex"
 
+include "arch/evbarm/conf/files.fdt"
+
 # CPU support and integrated peripherals
 include "arch/arm/broadcom/files.bcm2835"

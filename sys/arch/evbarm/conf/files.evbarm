@@ -51,8 +51,6 @@ defflag	opt_plcom.h	PLCOM_DEBUG
 device	plcom { }: tty
 file	arch/evbarm/dev/plcom.c			plcom needs-flag
 
-include "arch/evbarm/conf/files.fdt"
-
 #
 # Maximum number of memory ranges
 #

@@ -6,6 +6,8 @@ defparam opt_arm_debug.h	EARLYCONS
 include "arch/arm/pic/files.pic"
 include "arch/arm/cortex/files.cortex"
 
+include "arch/evbarm/conf/files.fdt"
+
 # Add other board files here
 #
 #include "arch/arm/broadcom/files.bcm2835"
