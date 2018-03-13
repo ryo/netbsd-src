@@ -69,7 +69,7 @@ struct bus_space mainbus_bs_tag = {
 	.bs_subregion = mainbus_bs_subregion,
 
 	/* allocation/deallocation */
-	.bs_alloc =mainbus_bs_alloc,
+	.bs_alloc = mainbus_bs_alloc,
 	.bs_free = mainbus_bs_free,
 
 	/* get kernel virtual address */

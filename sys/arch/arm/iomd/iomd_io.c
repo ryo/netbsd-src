@@ -53,79 +53,83 @@ bs_protos(bs_notimpl);
 
 struct bus_space iomd_bs_tag = {
 	/* cookie */
-	NULL,
+	.bs_cookie = NULL,
+
+	/* stride, flags (not used on arm32) */
+	.bs_stride = 0,
+	.bs_flags = 0,
 
 	/* mapping/unmapping */
-	iomd_bs_map,
-	iomd_bs_unmap,
-	iomd_bs_subregion,
+	.bs_map = iomd_bs_map,
+	.bs_unmap = iomd_bs_unmap,
+	.bs_subregion = iomd_bs_subregion,
 
 	/* allocation/deallocation */
-	iomd_bs_alloc,
-	iomd_bs_free,
+	.bs_alloc = iomd_bs_alloc,
+	.bs_free = iomd_bs_free,
 
 	/* get kernel virtual address */
-	0, /* there is no linear mapping */
+	.bs_vaddr = 0, /* there is no linear mapping */
 
 	/* mmap bus space for userland */
-	bs_notimpl_bs_mmap,	/* XXX correct? XXX */
+	.bs_mmap = bs_notimpl_bs_mmap,	/* XXX correct? XXX */
 
 	/* barrier */
-	iomd_bs_barrier,
+	.bs_barrier = iomd_bs_barrier,
 
 	/* read (single) */
-	iomd_bs_r_1,
-	iomd_bs_r_2,
-	iomd_bs_r_4,
-	bs_notimpl_bs_r_8,
+	.bs_r_1 = iomd_bs_r_1,
+	.bs_r_2 = iomd_bs_r_2,
+	.bs_r_4 = iomd_bs_r_4,
+	.bs_r_8 = bs_notimpl_bs_r_8,
 
 	/* read multiple */
-	bs_notimpl_bs_rm_1,
-	iomd_bs_rm_2,
-	bs_notimpl_bs_rm_4,
-	bs_notimpl_bs_rm_8,
+	.bs_rm_1 = bs_notimpl_bs_rm_1,
+	.bs_rm_2 = iomd_bs_rm_2,
+	.bs_rm_4 = bs_notimpl_bs_rm_4,
+	.bs_rm_8 = bs_notimpl_bs_rm_8,
 
 	/* read region */
-	bs_notimpl_bs_rr_1,
-	bs_notimpl_bs_rr_2,
-	bs_notimpl_bs_rr_4,
-	bs_notimpl_bs_rr_8,
+	.bs_rr_1 = bs_notimpl_bs_rr_1,
+	.bs_rr_2 = bs_notimpl_bs_rr_2,
+	.bs_rr_4 = bs_notimpl_bs_rr_4,
+	.bs_rr_8 = bs_notimpl_bs_rr_8,
 
 	/* write (single) */
-	iomd_bs_w_1,
-	iomd_bs_w_2,
-	iomd_bs_w_4,
-	bs_notimpl_bs_w_8,
+	.bs_w_1 = iomd_bs_w_1,
+	.bs_w_2 = iomd_bs_w_2,
+	.bs_w_4 = iomd_bs_w_4,
+	.bs_w_8 = bs_notimpl_bs_w_8,
 
 	/* write multiple */
-	bs_notimpl_bs_wm_1,
-	iomd_bs_wm_2,
-	bs_notimpl_bs_wm_4,
-	bs_notimpl_bs_wm_8,
+	.bs_wm_1 = bs_notimpl_bs_wm_1,
+	.bs_wm_2 = iomd_bs_wm_2,
+	.bs_wm_4 = bs_notimpl_bs_wm_4,
+	.bs_wm_8 = bs_notimpl_bs_wm_8,
 
 	/* write region */
-	bs_notimpl_bs_wr_1,
-	bs_notimpl_bs_wr_2,
-	bs_notimpl_bs_wr_4,
-	bs_notimpl_bs_wr_8,
+	.bs_wr_1 = bs_notimpl_bs_wr_1,
+	.bs_wr_2 = bs_notimpl_bs_wr_2,
+	.bs_wr_4 = bs_notimpl_bs_wr_4,
+	.bs_wr_8 = bs_notimpl_bs_wr_8,
 
 	/* set multiple */
-	bs_notimpl_bs_sm_1,
-	bs_notimpl_bs_sm_2,
-	bs_notimpl_bs_sm_4,
-	bs_notimpl_bs_sm_8,
+	.bs_sm_1 = bs_notimpl_bs_sm_1,
+	.bs_sm_2 = bs_notimpl_bs_sm_2,
+	.bs_sm_4 = bs_notimpl_bs_sm_4,
+	.bs_sm_8 = bs_notimpl_bs_sm_8,
 
 	/* set region */
-	bs_notimpl_bs_sr_1,
-	bs_notimpl_bs_sr_2,
-	bs_notimpl_bs_sr_4,
-	bs_notimpl_bs_sr_8,
+	.bs_sr_1 = bs_notimpl_bs_sr_1,
+	.bs_sr_2 = bs_notimpl_bs_sr_2,
+	.bs_sr_4 = bs_notimpl_bs_sr_4,
+	.bs_sr_8 = bs_notimpl_bs_sr_8,
 
 	/* copy */
-	bs_notimpl_bs_c_1,
-	bs_notimpl_bs_c_2,
-	bs_notimpl_bs_c_4,
-	bs_notimpl_bs_c_8,
+	.bs_c_1 = bs_notimpl_bs_c_1,
+	.bs_c_2 = bs_notimpl_bs_c_2,
+	.bs_c_4 = bs_notimpl_bs_c_4,
+	.bs_c_8 = bs_notimpl_bs_c_8,
 };
 
 /* bus space functions */

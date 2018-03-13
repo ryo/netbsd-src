@@ -106,7 +106,7 @@ struct bus_space pxa2x0_bs_tag = {
 
 	/* allocation/deallocation */
 	.bs_alloc = pxa2x0_bs_alloc,	/* not implemented */
-	.bs_free=  pxa2x0_bs_free,	/* not implemented */
+	.bs_free = pxa2x0_bs_free,	/* not implemented */
 
 	/* get kernel virtual address */
 	.bs_vaddr = pxa2x0_bs_vaddr,
