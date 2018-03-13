@@ -5,9 +5,6 @@
 
 file	arch/evbarm/awin/awin_machdep.c
 
-# Kernel boot arguments
-defparam opt_machdep.h				BOOT_ARGS
-
 # System config
 defflag	opt_allwinner.h				AWIN_SYSCONFIG
 

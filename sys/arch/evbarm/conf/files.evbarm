@@ -36,6 +36,10 @@ include "dev/sdmmc/files.sdmmc"			# SD/MMC devices
 include "dev/scsipi/files.scsipi"		# SCSI devices
 include "dev/usb/files.usb"			# USB devices
 
+
+# Kernel boot arguments
+defparam	opt_machdep.h			BOOT_ARGS
+
 #
 # ARM evaluation board specific devices
 #

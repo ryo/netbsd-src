@@ -5,6 +5,4 @@
 
 file	arch/evbarm/amlogic/amlogic_machdep.c
 
-defparam opt_machdep.h				BOOT_ARGS
-
 include "arch/arm/amlogic/files.amlogic"
