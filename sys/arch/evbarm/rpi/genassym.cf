@@ -30,6 +30,7 @@
 #
 
 include <arm/broadcom/bcm2835reg.h>
+include <arm/broadcom/bcm283x_platform.h>
 
 define	BCM2836_PERIPHERALS_VBASE	BCM2836_PERIPHERALS_VBASE
 define	BCM2835_PERIPHERALS_VBASE	BCM2835_PERIPHERALS_VBASE
