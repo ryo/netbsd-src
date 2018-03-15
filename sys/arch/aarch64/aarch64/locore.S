@@ -434,7 +434,7 @@ arm_boot_l0pt_init:
 
 	.align 3
 .L_devmap_addr:
-	.quad	KERNEL_IO_VBASE
+	.quad	VM_KERNEL_IO_ADDRESS
 
 /*
  *	x0 = l0table

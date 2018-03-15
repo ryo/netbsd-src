@@ -120,6 +120,13 @@
 #define VM_MIN_KERNEL_ADDRESS	((vaddr_t) 0xffffffc000000000L)
 #define VM_MAX_KERNEL_ADDRESS	((vaddr_t) 0xffffffffffe00000L)
 
+/*
+ * last 254MB of kernel vm area (0xfffffffff0000000-0xffffffffffe00000)
+ * may be used for devmap. address must be aligned 2MB (L2_SIZE)
+ * see also aarch64/pmap.c:pmap_devmap_*
+ */
+#define VM_KERNEL_IO_ADDRESS	0xfffffffff0000000L
+
 /* virtual sizes (bytes) for various kernel submaps */
 #define USRIOSIZE		(PAGE_SIZE / 8)
 #define VM_PHYS_SIZE		(USRIOSIZE * PAGE_SIZE)
