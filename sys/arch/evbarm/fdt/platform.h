@@ -1,4 +1,3 @@
-
 /* $NetBSD: platform.h,v 1.3 2018/03/14 06:35:31 ryo Exp $ */
 
 /*-

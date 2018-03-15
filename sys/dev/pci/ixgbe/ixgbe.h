@@ -1,4 +1,4 @@
-/* $NetBSD: ixgbe.h,v 1.33 2018/03/06 03:47:23 msaitoh Exp $ */
+/* $NetBSD: ixgbe.h,v 1.35 2018/03/09 06:27:53 msaitoh Exp $ */
 
 /******************************************************************************
   SPDX-License-Identifier: BSD-3-Clause
@@ -334,7 +334,10 @@ struct ix_queue {
 	struct rx_ring   *rxr;
 	struct work      wq_cookie;
 	void             *que_si;
-	struct evcnt     irqs;
+	/* Per queue event conters */
+	struct evcnt     irqs;		/* Hardware interrupt */
+	struct evcnt     handleq;	/* software_interrupt */
+	struct evcnt     req;		/* deferred */
 	char             namebuf[32];
 	char             evnamebuf[32];
 
@@ -376,6 +379,15 @@ struct tx_ring {
 	struct evcnt		no_desc_avail;
 	struct evcnt		total_packets;
 	struct evcnt		pcq_drops;
+	/* Per queue conters.  The adapter total is in struct adapter */
+	u64              q_efbig_tx_dma_setup;
+	u64              q_mbuf_defrag_failed;
+	u64              q_efbig2_tx_dma_setup;
+	u64              q_einval_tx_dma_setup;
+	u64              q_other_tx_dma_setup;
+	u64              q_eagain_tx_dma_setup;
+	u64              q_enomem_tx_dma_setup;
+	u64              q_tso_err;
 };
 
 
@@ -556,8 +568,8 @@ struct adapter {
 	void 			(*stop_locked)(void *);
 
 	/* Misc stats maintained by the driver */
-	struct evcnt   		mbuf_defrag_failed;
 	struct evcnt	   	efbig_tx_dma_setup;
+	struct evcnt   		mbuf_defrag_failed;
 	struct evcnt	   	efbig2_tx_dma_setup;
 	struct evcnt	   	einval_tx_dma_setup;
 	struct evcnt	   	other_tx_dma_setup;
@@ -566,8 +578,6 @@ struct adapter {
 	struct evcnt	   	tso_err;
 	struct evcnt	   	watchdog_events;
 	struct evcnt		link_irq;
-	struct evcnt		handleq;
-	struct evcnt		req;
 
 	union {
 		struct ixgbe_hw_stats pf;
