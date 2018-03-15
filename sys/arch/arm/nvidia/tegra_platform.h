@@ -1,8 +1,7 @@
-
-/* $NetBSD: platform.h,v 1.3 2018/03/14 06:35:31 ryo Exp $ */
+/* $NetBSD$ */
 
 /*-
- * Copyright (c) 2015-2017 Jared McNeill <jmcneill@invisible.ca>
+ * Copyright (c) 2015 Jared D. McNeill <jmcneill@invisible.ca>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,33 +26,14 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _EVBARM_FDT_PLATFORM_H
-#define _EVBARM_FDT_PLATFORM_H
+#ifndef _ARM_TEGRA_PLATFORM_H
+#define _ARM_TEGRA_PLATFORM_H
 
-#ifndef _LOCORE
-void fdt_add_reserved_memory_range(uint64_t, uint64_t);
-#endif
+#include <arch/evbarm/fdt/platform.h>
 
-#ifdef __aarch64__
+#define TEGRA_HOST1X_VBASE	(KERNEL_IO_VBASE | 0x0a000000)
+#define TEGRA_PPSB_VBASE	(KERNEL_IO_VBASE | 0x0b000000)
+#define TEGRA_APB_VBASE		(KERNEL_IO_VBASE | 0x0c000000)
+#define TEGRA_AHB_A2_VBASE	(KERNEL_IO_VBASE | 0x0d000000)
 
-#define KERNEL_IO_VBASE		VM_KERNEL_IO_ADDRESS
-
-#define KERNEL_VM_BASE		VM_MIN_KERNEL_ADDRESS
-#define KERNEL_VM_SIZE		(VM_MAX_KERNEL_ADDRESS - VM_MIN_KERNEL_ADDRESS)
-
-#else /* __aarch64__ */
-
-#define KERNEL_IO_VBASE		0xf0000000
-#define KERNEL_IO_VSIZE		(KERNEL_IO_VBASE - VM_MAX_KERNEL_ADDRESS)
-
-#ifdef __HAVE_MM_MD_DIRECT_MAPPED_PHYS
-#define KERNEL_VM_BASE		0xc0000000
-#define KERNEL_VM_SIZE		0x20000000 /* 0x20000000 = 512MB */
-#else
-#define KERNEL_VM_BASE		0x90000000
-#define KERNEL_VM_SIZE		0x50000000 /* 0x50000000 = 1.25GB */
-#endif
-
-#endif /* !__aarch64 */
-
-#endif /* _EVBARM_FDT_PLATFORM_H */
+#endif /* _ARM_TEGRA_PLATFORM_H */

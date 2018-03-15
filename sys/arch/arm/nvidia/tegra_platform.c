@@ -50,6 +50,7 @@ __KERNEL_RCSID(0, "$NetBSD: tegra_platform.c,v 1.9 2017/12/19 09:04:18 skrll Exp
 
 #include <arm/nvidia/tegra_reg.h>
 #include <arm/nvidia/tegra_var.h>
+#include <arm/nvidia/tegra_platform.h>
 
 #include <arm/fdt/arm_fdtvar.h>
 

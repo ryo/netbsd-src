@@ -38,12 +38,6 @@
 
 #include <aarch64/vmparam.h>
 
-/*
- * 4GB minus  256MB of IO space
- */
-#define KERNEL_IO_VBASE 0xfffffffff0000000L
-#define KERNEL_IO_VSIZE (KERNEL_IO_VBASE - VM_MAX_KERNEL_ADDRESS)
-
 #else
 
 #include <arm/arm32/vmparam.h>
@@ -61,9 +55,6 @@
 #else
 #define	KERNEL_BASE		0x80000000
 #endif
-
-#define	KERNEL_IO_VBASE		0xf0000000
-#define	KERNEL_IO_VSIZE		(KERNEL_IO_VBASE - VM_MAX_KERNEL_ADDRESS)
 
 /*
  * Size of User Raw I/O map

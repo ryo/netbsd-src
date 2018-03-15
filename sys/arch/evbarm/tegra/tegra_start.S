@@ -42,6 +42,7 @@
 #include "assym.h"
 
 #include <arm/nvidia/tegra_reg.h>
+#include <arm/nvidia/tegra_platform.h>
 
 RCSID("$NetBSD: tegra_start.S,v 1.16 2018/03/03 13:46:33 skrll Exp $")
 

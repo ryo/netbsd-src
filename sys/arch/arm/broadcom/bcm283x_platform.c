@@ -74,6 +74,7 @@ __KERNEL_RCSID(0, "$NetBSD: bcm283x_platform.c,v 1.2 2017/12/20 14:35:12 skrll E
 
 #include <arm/broadcom/bcm2835reg.h>
 #include <arm/broadcom/bcm2835var.h>
+#include <arm/broadcom/bcm283x_platform.h>
 #include <arm/broadcom/bcm2835_intr.h>
 #include <arm/broadcom/bcm2835_mbox.h>
 #include <arm/broadcom/bcm2835_pmwdogvar.h>
