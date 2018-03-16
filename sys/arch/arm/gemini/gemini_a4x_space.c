@@ -70,7 +70,7 @@ struct bus_space gemini_a4x_bs_tag = {
 
 	/* allocation/deallocation */
 	.bs_alloc = gemini_bs_alloc,	/* not implemented */
-	.bs_free = gemini_bs_free,		/* not implemented */
+	.bs_free = gemini_bs_free,	/* not implemented */
 
 	/* get kernel virtual address */
 	.bs_vaddr = gemini_bs_vaddr,

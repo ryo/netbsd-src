@@ -52,7 +52,7 @@ bs_protos(mainbus);
 /* Declare the external bus space tag */
 struct bus_space external_bs_tag = {
 	/* cookie */
-	.bs_cookie = (void *) 0,			/* Shift to apply to registers */
+	.bs_cookie = (void *) 0,	/* Shift to apply to registers */
 
 	/* mapping/unmapping */
 	.bs_map = mainbus_bs_map,

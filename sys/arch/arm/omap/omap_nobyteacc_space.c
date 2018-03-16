@@ -100,7 +100,7 @@ struct bus_space nobyteacc_bs_tag = {
 
 	/* allocation/deallocation */
 	.bs_alloc = omap_bs_alloc,	/* not implemented */
-	.bs_free = omap_bs_free,		/* not implemented */
+	.bs_free = omap_bs_free,	/* not implemented */
 
 	/* get kernel virtual address */
 	.bs_vaddr = omap_bs_vaddr,

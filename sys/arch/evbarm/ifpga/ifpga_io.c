@@ -64,7 +64,7 @@ bs_unmap_proto(ifpga_mem);
 
 struct bus_space ifpga_bs_tag = {
 	/* cookie */
-	.bs_cookie = (void *) 0,			/* Physical base address */
+	.bs_cookie = (void *) 0,		/* Physical base address */
 
 	/* mapping/unmapping */
 	.bs_map = ifpga_bs_map,
@@ -143,7 +143,7 @@ struct bus_space ifpga_bs_tag = {
 
 struct bus_space ifpga_common_bs_tag = {
 	/* cookie */
-	.bs_cookie = (void *) IFPGA_IO_BASE,		/* Physical base address */
+	.bs_cookie = (void *) IFPGA_IO_BASE,	/* Physical base address */
 
 	/* mapping/unmapping */
 	.bs_map = ifpga_mem_bs_map,

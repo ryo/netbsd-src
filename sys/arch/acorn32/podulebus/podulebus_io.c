@@ -52,7 +52,7 @@ bs_protos(bs_notimpl);
 
 struct bus_space podulebus_bs_tag = {
 	/* cookie */
-	.bs_cookie = (void *) 2,			/* Shift to apply to registers */
+	.bs_cookie = (void *) 2,	/* Shift to apply to registers */
 
 	/* mapping/unmapping */
 	.bs_map = podulebus_bs_map,

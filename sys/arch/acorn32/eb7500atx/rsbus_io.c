@@ -52,7 +52,7 @@ bs_protos(mainbus);
 /* Declare the rsbus bus space tag */
 struct bus_space rsbus_bs_tag = {
 	/* cookie */
-	.bs_cookie = (void *) 2,			/* Shift to apply to registers */
+	.bs_cookie = (void *) 2,	/* Shift to apply to registers */
 
 	/* mapping/unmapping */
 	.bs_map = mainbus_bs_map,
