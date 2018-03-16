@@ -182,7 +182,10 @@ bcmgenfb_shutdown(device_t self, int flags)
 void
 bcmgenfb_set_console_dev(device_t dev)
 {
-	KASSERT(bcmgenfb_console_dev == NULL);
+	/* skip if already set. called from each genfb0,genfb1,... */
+	if (bcmgenfb_console_dev != NULL)
+		return;
+
 	bcmgenfb_console_dev = dev;
 }
 
