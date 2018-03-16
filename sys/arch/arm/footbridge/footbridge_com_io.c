@@ -67,7 +67,7 @@ struct bus_space fcomcons_bs_tag = {
 	.bs_subregion = fcomcons_bs_subregion,
 
 	/* allocation/deallocation */
-	.bs_map = fcomcons_bs_alloc,
+	.bs_alloc = fcomcons_bs_alloc,
 	.bs_free = fcomcons_bs_free,
 
 	/* get kernel virtual address */
