@@ -23,6 +23,7 @@ defflag opt_arm_timer.h		__HAVE_GENERIC_CPU_INITCLOCKS
 
 # Board-specific bus_space(9)/bus_dma(9) definitions
 defflag  opt_arm_bus_space.h	__BUS_SPACE_HAS_STREAM_METHODS
+				__BUS_SPACE_HAS_PROBING_METHODS
 				_ARM32_NEED_BUS_DMA_BOUNCE
 				BUSDMA_COUNTERS
 

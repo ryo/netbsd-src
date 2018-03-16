@@ -101,8 +101,9 @@ struct bus_space {
 	/* cookie */
 	void		*bs_cookie;
 
-	int		 bs_stride;	/* offset <<= bs_stride (if needed) */
-	int		 bs_flags;
+	/* used for aarch64. require ".bs_cookie = bus_space" */
+	int		bs_stride;	/* offset <<= bs_stride (if needed) */
+	int		bs_flags;
 
 	/* mapping/unmapping */
 	int		(*bs_map)(void *, bus_addr_t, bus_size_t,
@@ -280,6 +281,28 @@ struct bus_space {
 	void		(*bs_wr_8_s)(void *, bus_space_handle_t,
 			    bus_size_t, const uint64_t *, bus_size_t);
 #endif	/* __BUS_SPACE_HAS_STREAM_METHODS */
+
+#ifdef __BUS_SPACE_HAS_PROBING_METHODS
+	/* peek */
+	int		(*bs_pe_1)(void *, bus_space_handle_t,
+			    bus_size_t, uint8_t *);
+	int		(*bs_pe_2)(void *, bus_space_handle_t,
+			    bus_size_t, uint16_t *);
+	int		(*bs_pe_4)(void *, bus_space_handle_t,
+			    bus_size_t, uint32_t *);
+	int		(*bs_pe_8)(void *, bus_space_handle_t,
+			    bus_size_t, uint64_t *);
+
+	/* poke */
+	int		(*bs_po_1)(void *, bus_space_handle_t,
+			    bus_size_t, uint8_t);
+	int		(*bs_po_2)(void *, bus_space_handle_t,
+			    bus_size_t, uint16_t);
+	int		(*bs_po_4)(void *, bus_space_handle_t,
+			    bus_size_t, uint32_t);
+	int		(*bs_po_8)(void *, bus_space_handle_t,
+			    bus_size_t, uint64_t);
+#endif /* __BUS_SPACE_HAS_PROBING_METHODS */
 };
 
 #define	BUS_SPACE_BARRIER_READ	0x01

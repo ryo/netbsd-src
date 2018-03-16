@@ -149,6 +149,20 @@ struct bus_space arm_generic_bs_tag = {
 	.bs_wm_4_s = generic_bs_wm_4,
 	.bs_wm_8_s = generic_bs_wm_8,
 #endif
+
+#ifdef __BUS_SPACE_HAS_PROBING_METHODS
+	/* peek */
+	.bs_pe_1 = generic_bs_pe_1,
+	.bs_pe_2 = generic_bs_pe_2,
+	.bs_pe_4 = generic_bs_pe_4,
+	.bs_pe_8 = generic_bs_pe_8,
+
+	/* poke */
+	.bs_po_1 = generic_bs_po_1,
+	.bs_po_2 = generic_bs_po_2,
+	.bs_po_4 = generic_bs_po_4,
+	.bs_po_8 = generic_bs_po_8,
+#endif
 };
 
 struct bus_space aarch64_generic_dsb_bs_tag = {
@@ -254,6 +268,20 @@ struct bus_space aarch64_generic_dsb_bs_tag = {
 	.bs_wm_2_s = generic_dsb_bs_wm_2,
 	.bs_wm_4_s = generic_dsb_bs_wm_4,
 	.bs_wm_8_s = generic_dsb_bs_wm_8,
+#endif
+
+#ifdef __BUS_SPACE_HAS_PROBING_METHODS
+	/* peek */
+	.bs_pe_1 = generic_bs_pe_1,
+	.bs_pe_2 = generic_bs_pe_2,
+	.bs_pe_4 = generic_bs_pe_4,
+	.bs_pe_8 = generic_bs_pe_8,
+
+	/* poke */
+	.bs_po_1 = generic_bs_po_1,
+	.bs_po_2 = generic_bs_po_2,
+	.bs_po_4 = generic_bs_po_4,
+	.bs_po_8 = generic_bs_po_8,
 #endif
 };
 
@@ -363,6 +391,20 @@ struct bus_space arm_generic_a4x_bs_tag = {
 	.bs_wm_4_s = generic_bs_wm_4,
 	.bs_wm_8_s = generic_bs_wm_8,
 #endif
+
+#ifdef __BUS_SPACE_HAS_PROBING_METHODS
+	/* peek */
+	.bs_pe_1 = generic_bs_pe_1,
+	.bs_pe_2 = generic_bs_pe_2,
+	.bs_pe_4 = generic_bs_pe_4,
+	.bs_pe_8 = generic_bs_pe_8,
+
+	/* poke */
+	.bs_po_1 = generic_bs_po_1,
+	.bs_po_2 = generic_bs_po_2,
+	.bs_po_4 = generic_bs_po_4,
+	.bs_po_8 = generic_bs_po_8,
+#endif
 };
 
 struct bus_space aarch64_generic_a4x_dsb_bs_tag = {
@@ -468,6 +510,20 @@ struct bus_space aarch64_generic_a4x_dsb_bs_tag = {
 	.bs_wm_2_s = generic_dsb_bs_wm_2,
 	.bs_wm_4_s = generic_dsb_bs_wm_4,
 	.bs_wm_8_s = generic_dsb_bs_wm_8,
+#endif
+
+#ifdef __BUS_SPACE_HAS_PROBING_METHODS
+	/* peek */
+	.bs_pe_1 = generic_bs_pe_1,
+	.bs_pe_2 = generic_bs_pe_2,
+	.bs_pe_4 = generic_bs_pe_4,
+	.bs_pe_8 = generic_bs_pe_8,
+
+	/* poke */
+	.bs_po_1 = generic_bs_po_1,
+	.bs_po_2 = generic_bs_po_2,
+	.bs_po_4 = generic_bs_po_4,
+	.bs_po_8 = generic_bs_po_8,
 #endif
 };
 
@@ -580,3 +636,116 @@ generic_bs_free(void *t, bus_space_handle_t bsh, bus_size_t size)
 	panic("%s(): not implemented\n", __func__);
 }
 
+#ifdef __BUS_SPACE_HAS_PROBING_METHODS
+int
+generic_bs_pe_1(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint8_t *datap)
+{
+	struct faultbuf fb;
+	int error;
+
+	if ((error = cpu_set_onfault(&fb)) == 0) {
+		*datap = generic_dsb_bs_r_1(t, bsh, offset);
+		cpu_unset_onfault();
+	}
+	return error;
+}
+
+int
+generic_bs_pe_2(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint16_t *datap)
+{
+	struct faultbuf fb;
+	int error;
+
+	if ((error = cpu_set_onfault(&fb)) == 0) {
+		*datap = generic_dsb_bs_r_2(t, bsh, offset);
+		cpu_unset_onfault();
+	}
+	return error;
+}
+
+int
+generic_bs_pe_4(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint32_t *datap)
+{
+	struct faultbuf fb;
+	int error;
+
+	if ((error = cpu_set_onfault(&fb)) == 0) {
+		*datap = generic_dsb_bs_r_4(t, bsh, offset);
+		cpu_unset_onfault();
+	}
+	return error;
+}
+
+int
+generic_bs_pe_8(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint64_t *datap)
+{
+	struct faultbuf fb;
+	int error;
+
+	if ((error = cpu_set_onfault(&fb)) == 0) {
+		*datap = generic_dsb_bs_r_8(t, bsh, offset);
+		cpu_unset_onfault();
+	}
+	return error;
+}
+
+int
+generic_bs_po_1(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint8_t data)
+{
+	struct faultbuf fb;
+	int error;
+
+	if ((error = cpu_set_onfault(&fb)) == 0) {
+		generic_dsb_bs_w_1(t, bsh, offset, data);
+		cpu_unset_onfault();
+	}
+	return error;
+}
+
+int
+generic_bs_po_2(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint16_t data)
+{
+	struct faultbuf fb;
+	int error;
+
+	if ((error = cpu_set_onfault(&fb)) == 0) {
+		generic_dsb_bs_w_2(t, bsh, offset, data);
+		cpu_unset_onfault();
+	}
+	return error;
+}
+
+int
+generic_bs_po_4(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint32_t data)
+{
+	struct faultbuf fb;
+	int error;
+
+	if ((error = cpu_set_onfault(&fb)) == 0) {
+		generic_dsb_bs_w_4(t, bsh, offset, data);
+		cpu_unset_onfault();
+	}
+	return error;
+}
+
+int
+generic_bs_po_8(void *t, bus_space_handle_t bsh, bus_size_t offset,
+    uint64_t data)
+{
+	struct faultbuf fb;
+	int error;
+
+	if ((error = cpu_set_onfault(&fb)) == 0) {
+		generic_dsb_bs_w_8(t, bsh, offset, data);
+		cpu_unset_onfault();
+	}
+	return error;
+}
+#endif /* __BUS_SPACE_HAS_PROBING_METHODS */
