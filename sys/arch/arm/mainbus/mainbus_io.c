@@ -59,10 +59,6 @@ struct bus_space mainbus_bs_tag = {
 	/* cookie */
 	.bs_cookie = NULL,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	/* mapping/unmapping */
 	.bs_map = mainbus_bs_map,
 	.bs_unmap = mainbus_bs_unmap,

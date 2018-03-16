@@ -65,10 +65,6 @@ struct bus_space footbridge_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *) 0,			/* Base address */
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	/* mapping/unmapping */
 	.bs_map = footbridge_bs_map,
 	.bs_unmap = footbridge_bs_unmap,

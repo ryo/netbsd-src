@@ -55,10 +55,6 @@ struct bus_space iomd_bs_tag = {
 	/* cookie */
 	.bs_cookie = NULL,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	/* mapping/unmapping */
 	.bs_map = iomd_bs_map,
 	.bs_unmap = iomd_bs_unmap,

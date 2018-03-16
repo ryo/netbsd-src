@@ -68,10 +68,6 @@ struct bus_space isa_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = NULL, /* initialized below */
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	/* mapping/unmapping */
 	.bs_map = isa_bs_map,
 	.bs_unmap = isa_bs_unmap,
@@ -152,10 +148,6 @@ struct bus_space isa_io_bs_tag = {
 struct bus_space isa_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = NULL, /* initialized below */
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	/* mapping/unmapping */
 	.bs_map = isa_bs_map,

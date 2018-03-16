@@ -70,10 +70,6 @@ const struct bus_space i80321_bs_tag_template = {
 	/* cookie */
 	.bs_cookie = (void *) 0,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	/* mapping/unmapping */
 	.bs_map = NULL,
 	.bs_unmap = NULL,

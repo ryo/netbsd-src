@@ -167,10 +167,6 @@ struct bus_space mvsoc_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)0,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	MVSOC_BUS_SPACE_NORMAL_FUNCS,
@@ -183,10 +179,6 @@ struct bus_space orion_pex0_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ORION_TAG_PEX0_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	MVSOC_BUS_SPACE_NORMAL_FUNCS,
@@ -195,10 +187,6 @@ struct bus_space orion_pex0_mem_bs_tag = {
 struct bus_space orion_pex0_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ORION_TAG_PEX0_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
@@ -209,10 +197,6 @@ struct bus_space orion_pex1_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ORION_TAG_PEX1_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	MVSOC_BUS_SPACE_NORMAL_FUNCS,
@@ -221,10 +205,6 @@ struct bus_space orion_pex1_mem_bs_tag = {
 struct bus_space orion_pex1_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ORION_TAG_PEX1_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
@@ -238,10 +218,6 @@ struct bus_space kirkwood_pex_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)KIRKWOOD_TAG_PEX_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	MVSOC_BUS_SPACE_NORMAL_FUNCS,
@@ -250,10 +226,6 @@ struct bus_space kirkwood_pex_mem_bs_tag = {
 struct bus_space kirkwood_pex_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)KIRKWOOD_TAG_PEX_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
@@ -264,10 +236,6 @@ struct bus_space kirkwood_pex1_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)KIRKWOOD_TAG_PEX1_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	MVSOC_BUS_SPACE_NORMAL_FUNCS,
@@ -276,10 +244,6 @@ struct bus_space kirkwood_pex1_mem_bs_tag = {
 struct bus_space kirkwood_pex1_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)KIRKWOOD_TAG_PEX1_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
@@ -293,10 +257,6 @@ struct bus_space dove_pex0_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)DOVE_TAG_PEX0_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	MVSOC_BUS_SPACE_NORMAL_FUNCS,
@@ -305,10 +265,6 @@ struct bus_space dove_pex0_mem_bs_tag = {
 struct bus_space dove_pex0_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)DOVE_TAG_PEX0_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
@@ -319,10 +275,6 @@ struct bus_space dove_pex1_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)DOVE_TAG_PEX1_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	MVSOC_BUS_SPACE_NORMAL_FUNCS,
@@ -331,10 +283,6 @@ struct bus_space dove_pex1_mem_bs_tag = {
 struct bus_space dove_pex1_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)DOVE_TAG_PEX1_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
@@ -348,19 +296,11 @@ struct bus_space armadaxp_pex00_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX00_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
 struct bus_space armadaxp_pex00_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX00_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
@@ -368,19 +308,11 @@ struct bus_space armadaxp_pex01_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX01_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
 struct bus_space armadaxp_pex01_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX01_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
@@ -388,19 +320,11 @@ struct bus_space armadaxp_pex02_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX02_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
 struct bus_space armadaxp_pex02_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX02_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
@@ -408,19 +332,11 @@ struct bus_space armadaxp_pex03_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX03_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
 struct bus_space armadaxp_pex03_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX03_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
@@ -428,19 +344,11 @@ struct bus_space armadaxp_pex10_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX10_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
 struct bus_space armadaxp_pex10_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX10_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
@@ -448,19 +356,11 @@ struct bus_space armadaxp_pex2_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX2_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
 struct bus_space armadaxp_pex2_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX2_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
@@ -468,19 +368,11 @@ struct bus_space armadaxp_pex3_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX3_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
 struct bus_space armadaxp_pex3_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ARMADAXP_TAG_PEX3_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS
 };
@@ -493,10 +385,6 @@ struct bus_space orion_pci_mem_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ORION_TAG_PCI_MEM,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS
 	MVSOC_BUS_SPACE_NORMAL_FUNCS,
@@ -505,10 +393,6 @@ struct bus_space orion_pci_mem_bs_tag = {
 struct bus_space orion_pci_io_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *)ORION_TAG_PCI_IO,
-
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
 
 	MVSOC_BUS_SPACE_DEFAULT_FUNCS,
 #ifdef __BUS_SPACE_HAS_STREAM_METHODS

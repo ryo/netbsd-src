@@ -59,10 +59,6 @@ struct bus_space pxa2x0_a4x_bs_tag = {
 	/* cookie */
 	.bs_cookie = (void *) 0,
 
-	/* stride, flags (not used on arm32) */
-	.bs_stride = 0,
-	.bs_flags = 0,
-
 	/* mapping/unmapping */
 	.bs_map = pxa2x0_bs_map,
 	.bs_unmap = pxa2x0_bs_unmap,
