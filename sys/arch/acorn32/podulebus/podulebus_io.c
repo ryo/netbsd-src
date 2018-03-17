@@ -1,4 +1,4 @@
-/*	$NetBSD: podulebus_io.c,v 1.8 2012/05/10 10:27:10 skrll Exp $	*/
+/*	$NetBSD: podulebus_io.c,v 1.9 2018/03/16 17:56:31 ryo Exp $	*/
 
 /*
  * Copyright (c) 1997 Mark Brinicombe.
@@ -37,7 +37,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: podulebus_io.c,v 1.8 2012/05/10 10:27:10 skrll Exp $");
+__KERNEL_RCSID(0, "$NetBSD: podulebus_io.c,v 1.9 2018/03/16 17:56:31 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>

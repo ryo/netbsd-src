@@ -1,4 +1,4 @@
-/*	$NetBSD: external_io.c,v 1.2 2013/06/22 13:32:54 kiyohara Exp $	*/
+/*	$NetBSD: external_io.c,v 1.3 2018/03/16 17:56:32 ryo Exp $	*/
 
 /*
  * Copyright (c) 1997 Mark Brinicombe.
@@ -37,7 +37,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: external_io.c,v 1.2 2013/06/22 13:32:54 kiyohara Exp $");
+__KERNEL_RCSID(0, "$NetBSD: external_io.c,v 1.3 2018/03/16 17:56:32 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>

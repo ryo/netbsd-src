@@ -1,4 +1,4 @@
-/* $NetBSD: mpcore_space.c,v 1.3 2014/02/22 20:33:00 matt Exp $ */
+/* $NetBSD: mpcore_space.c,v 1.4 2018/03/16 17:56:32 ryo Exp $ */
 
 /* derived from: */
 /* NetBSD: imx_space.c,v 1.2 2010/11/13 05:00:31 bsh Exp */

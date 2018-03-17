@@ -1,4 +1,4 @@
-/*	$NetBSD: gemini_a4x_space.c,v 1.2 2011/07/01 19:32:28 dyoung Exp $	*/
+/*	$NetBSD: gemini_a4x_space.c,v 1.3 2018/03/16 17:56:31 ryo Exp $	*/
 
 /* adapted from:
  *	NetBSD: pxa2x0_a4x_space.c,v 1.4 2006/07/28 08:15:29 simonb Exp
@@ -43,7 +43,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: gemini_a4x_space.c,v 1.2 2011/07/01 19:32:28 dyoung Exp $");
+__KERNEL_RCSID(0, "$NetBSD: gemini_a4x_space.c,v 1.3 2018/03/16 17:56:31 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>

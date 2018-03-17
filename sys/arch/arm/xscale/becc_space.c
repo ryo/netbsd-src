@@ -1,4 +1,4 @@
-/*	$NetBSD: becc_space.c,v 1.5 2011/07/01 20:32:51 dyoung Exp $	*/
+/*	$NetBSD: becc_space.c,v 1.6 2018/03/16 17:56:32 ryo Exp $	*/
 
 /*
  * Copyright (c) 2001, 2002 Wasabi Systems, Inc.
@@ -40,7 +40,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: becc_space.c,v 1.5 2011/07/01 20:32:51 dyoung Exp $");
+__KERNEL_RCSID(0, "$NetBSD: becc_space.c,v 1.6 2018/03/16 17:56:32 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>

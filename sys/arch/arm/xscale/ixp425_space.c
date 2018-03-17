@@ -1,4 +1,4 @@
-/*	$NetBSD: ixp425_space.c,v 1.8 2011/07/01 20:32:51 dyoung Exp $ */
+/*	$NetBSD: ixp425_space.c,v 1.9 2018/03/16 17:56:32 ryo Exp $ */
 
 /*
  * Copyright (c) 2003
@@ -28,7 +28,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: ixp425_space.c,v 1.8 2011/07/01 20:32:51 dyoung Exp $");
+__KERNEL_RCSID(0, "$NetBSD: ixp425_space.c,v 1.9 2018/03/16 17:56:32 ryo Exp $");
 
 /*
  * bus_space I/O functions for ixp425

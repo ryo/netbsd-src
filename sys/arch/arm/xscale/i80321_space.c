@@ -1,4 +1,4 @@
-/*	$NetBSD: i80321_space.c,v 1.14 2014/03/02 13:23:16 joerg Exp $	*/
+/*	$NetBSD: i80321_space.c,v 1.15 2018/03/16 17:56:32 ryo Exp $	*/
 
 /*
  * Copyright (c) 2001, 2002 Wasabi Systems, Inc.
@@ -40,7 +40,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: i80321_space.c,v 1.14 2014/03/02 13:23:16 joerg Exp $");
+__KERNEL_RCSID(0, "$NetBSD: i80321_space.c,v 1.15 2018/03/16 17:56:32 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>

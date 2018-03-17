@@ -1,4 +1,4 @@
-/*	$NetBSD: mvsoc_space.c,v 1.9 2017/03/10 15:44:24 skrll Exp $	*/
+/*	$NetBSD: mvsoc_space.c,v 1.10 2018/03/16 17:56:32 ryo Exp $	*/
 /*
  * Copyright (c) 2007 KIYOHARA Takashi
  * All rights reserved.
@@ -26,7 +26,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: mvsoc_space.c,v 1.9 2017/03/10 15:44:24 skrll Exp $");
+__KERNEL_RCSID(0, "$NetBSD: mvsoc_space.c,v 1.10 2018/03/16 17:56:32 ryo Exp $");
 
 #include "opt_mvsoc.h"
 #include "mvpex.h"

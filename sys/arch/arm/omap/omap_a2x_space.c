@@ -1,4 +1,4 @@
-/*	$NetBSD: omap_a2x_space.c,v 1.3 2012/07/15 20:54:15 matt Exp $ */
+/*	$NetBSD: omap_a2x_space.c,v 1.4 2018/03/16 17:56:32 ryo Exp $ */
 
 /*
  * Based on arch/arm/xscale/pxa2x0_a4x_space.c
@@ -41,7 +41,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: omap_a2x_space.c,v 1.3 2012/07/15 20:54:15 matt Exp $");
+__KERNEL_RCSID(0, "$NetBSD: omap_a2x_space.c,v 1.4 2018/03/16 17:56:32 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>

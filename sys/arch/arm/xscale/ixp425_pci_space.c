@@ -1,4 +1,4 @@
-/*	$NetBSD: ixp425_pci_space.c,v 1.13 2014/02/24 10:50:40 martin Exp $ */
+/*	$NetBSD: ixp425_pci_space.c,v 1.14 2018/03/16 17:56:32 ryo Exp $ */
 
 /*
  * Copyright (c) 2003
@@ -28,7 +28,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: ixp425_pci_space.c,v 1.13 2014/02/24 10:50:40 martin Exp $");
+__KERNEL_RCSID(0, "$NetBSD: ixp425_pci_space.c,v 1.14 2018/03/16 17:56:32 ryo Exp $");
 
 /*
  * bus_space PCI functions for ixp425

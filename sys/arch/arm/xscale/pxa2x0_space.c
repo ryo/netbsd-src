@@ -1,4 +1,4 @@
-/*	$NetBSD: pxa2x0_space.c,v 1.12 2014/02/24 00:32:17 msaitoh Exp $ */
+/*	$NetBSD: pxa2x0_space.c,v 1.13 2018/03/16 17:56:32 ryo Exp $ */
 
 /*
  * Copyright (c) 2001, 2002 Wasabi Systems, Inc.
@@ -76,7 +76,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: pxa2x0_space.c,v 1.12 2014/02/24 00:32:17 msaitoh Exp $");
+__KERNEL_RCSID(0, "$NetBSD: pxa2x0_space.c,v 1.13 2018/03/16 17:56:32 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>

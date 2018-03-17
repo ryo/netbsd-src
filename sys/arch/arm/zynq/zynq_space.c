@@ -1,4 +1,4 @@
-/*	$NetBSD: zynq_space.c,v 1.2 2015/02/25 13:52:42 joerg Exp $	*/
+/*	$NetBSD: zynq_space.c,v 1.3 2018/03/16 17:56:32 ryo Exp $	*/
 /*-
  * Copyright (c) 2012 The NetBSD Foundation, Inc.
  * All rights reserved.
@@ -29,7 +29,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: zynq_space.c,v 1.2 2015/02/25 13:52:42 joerg Exp $");
+__KERNEL_RCSID(0, "$NetBSD: zynq_space.c,v 1.3 2018/03/16 17:56:32 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>

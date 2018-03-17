@@ -1,4 +1,4 @@
-/*	$NetBSD: s3c2xx0_space.c,v 1.9 2011/07/01 20:31:39 dyoung Exp $ */
+/*	$NetBSD: s3c2xx0_space.c,v 1.10 2018/03/16 17:56:32 ryo Exp $ */
 
 /*
  * Copyright (c) 2002 Fujitsu Component Limited
@@ -74,7 +74,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: s3c2xx0_space.c,v 1.9 2011/07/01 20:31:39 dyoung Exp $");
+__KERNEL_RCSID(0, "$NetBSD: s3c2xx0_space.c,v 1.10 2018/03/16 17:56:32 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>

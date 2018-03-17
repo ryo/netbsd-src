@@ -1,4 +1,4 @@
-/*	$NetBSD: iomd_io.c,v 1.6 2011/07/01 20:26:35 dyoung Exp $	*/
+/*	$NetBSD: iomd_io.c,v 1.7 2018/03/16 17:56:31 ryo Exp $	*/
 
 /*
  * Copyright (c) 1997 Mark Brinicombe.
@@ -38,7 +38,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: iomd_io.c,v 1.6 2011/07/01 20:26:35 dyoung Exp $");
+__KERNEL_RCSID(0, "$NetBSD: iomd_io.c,v 1.7 2018/03/16 17:56:31 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>

@@ -1,4 +1,4 @@
-/*	$NetBSD: footbridge_com_io.c,v 1.8 2012/02/12 16:34:07 matt Exp $	*/
+/*	$NetBSD: footbridge_com_io.c,v 1.9 2018/03/16 17:56:31 ryo Exp $	*/
 
 /*
  * Copyright (c) 1997 Mark Brinicombe.
@@ -43,7 +43,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: footbridge_com_io.c,v 1.8 2012/02/12 16:34:07 matt Exp $");
+__KERNEL_RCSID(0, "$NetBSD: footbridge_com_io.c,v 1.9 2018/03/16 17:56:31 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>

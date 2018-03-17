@@ -1,4 +1,4 @@
-/*	$NetBSD: omap_space.c,v 1.7 2013/01/01 17:28:27 jakllsch Exp $ */
+/*	$NetBSD: omap_space.c,v 1.8 2018/03/16 17:56:32 ryo Exp $ */
 
 /*
  * bus_space functions for Texas Instruments OMAP processor.
@@ -73,7 +73,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: omap_space.c,v 1.7 2013/01/01 17:28:27 jakllsch Exp $");
+__KERNEL_RCSID(0, "$NetBSD: omap_space.c,v 1.8 2018/03/16 17:56:32 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>

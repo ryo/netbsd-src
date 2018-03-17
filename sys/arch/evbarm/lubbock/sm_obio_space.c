@@ -1,4 +1,4 @@
-/*	$NetBSD: sm_obio_space.c,v 1.4 2011/07/01 20:42:37 dyoung Exp $ */
+/*	$NetBSD: sm_obio_space.c,v 1.5 2018/03/16 17:56:33 ryo Exp $ */
 
 /*
  * Copyright (c) 2002, 2003  Genetec Corporation.  All rights reserved.
@@ -34,7 +34,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: sm_obio_space.c,v 1.4 2011/07/01 20:42:37 dyoung Exp $");
+__KERNEL_RCSID(0, "$NetBSD: sm_obio_space.c,v 1.5 2018/03/16 17:56:33 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>

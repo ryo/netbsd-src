@@ -1,4 +1,4 @@
-/*	$NetBSD: ixp425_a4x_space.c,v 1.3 2011/07/01 20:32:51 dyoung Exp $	*/
+/*	$NetBSD: ixp425_a4x_space.c,v 1.4 2018/03/16 17:56:32 ryo Exp $	*/
 
 /*
  * Copyright 2003 Wasabi Systems, Inc.
@@ -43,7 +43,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: ixp425_a4x_space.c,v 1.3 2011/07/01 20:32:51 dyoung Exp $");
+__KERNEL_RCSID(0, "$NetBSD: ixp425_a4x_space.c,v 1.4 2018/03/16 17:56:32 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/systm.h>
