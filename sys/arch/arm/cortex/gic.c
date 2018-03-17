@@ -44,14 +44,10 @@ __KERNEL_RCSID(0, "$NetBSD: gic.c,v 1.32 2018/02/07 20:42:17 jmcneill Exp $");
 #include <sys/intr.h>
 #include <sys/proc.h>
 
-/* XXXAARCH64 */
-#ifdef __aarch64__
-#include <aarch64/locore.h>
-#endif
-
 #include <arm/armreg.h>
-#include <arm/cpufunc.h>
 #include <arm/atomic.h>
+#include <arm/cpufunc.h>
+#include <arm/locore.h>
 
 #include <arm/cortex/gic_reg.h>
 #include <arm/cortex/mpcore_var.h>
