@@ -1,4 +1,4 @@
-/* $NetBSD: cpu_ucode.h,v 1.4 2018/03/17 15:56:32 christos Exp $ */
+/* $NetBSD: compat_60_cpu_ucode.c,v 1.1 2018/03/18 00:17:18 christos Exp $ */
 /*
  * Copyright (c) 2012 The NetBSD Foundation, Inc.
  * All rights reserved.
@@ -14,7 +14,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- *      
+ *
  * THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -24,62 +24,58 @@
  * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE  
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _X86_CPU_UCODE_H_
-#define _X86_CPU_UCODE_H_
+#include <sys/cdefs.h>
+__KERNEL_RCSID(0, "$NetBSD: compat_60_cpu_ucode.c,v 1.1 2018/03/18 00:17:18 christos Exp $");
 
-#define CPU_UCODE_LOADER_AMD 0
-struct cpu_ucode_version_amd {
-	uint64_t version;
-};
+#ifdef _KERNEL_OPT
+#include "opt_cpu_ucode.h"
+#include "opt_compat_netbsd.h"
+#endif
 
-#define CPU_UCODE_LOADER_INTEL1 1
-struct cpu_ucode_version_intel1 {
-	uint32_t ucodeversion;
-	int platformid;
-};
-
-#ifdef _KERNEL
-#include <sys/cpu.h>
+#include <sys/param.h>
 #include <sys/cpuio.h>
+#include <sys/cpu.h>
+
 #include <dev/firmload.h>
 
-int cpu_ucode_amd_get_version(struct cpu_ucode_version *, void *, size_t);
-int cpu_ucode_amd_firmware_open(firmware_handle_t *, const char *);
-int cpu_ucode_amd_apply(struct cpu_ucode_softc *, int);
+#include <machine/cpuvar.h>
+#include <machine/cputypes.h>
 
-int cpu_ucode_intel_get_version(struct cpu_ucode_version *, void *, size_t);
-int cpu_ucode_intel_firmware_open(firmware_handle_t *, const char *);
-int cpu_ucode_intel_apply(struct cpu_ucode_softc *, int);
-#endif /* _KERNEL */
+#include <x86/cpu_ucode.h>
 
-struct intel1_ucode_header {
-	uint32_t	uh_header_ver;
-	uint32_t	uh_rev;
-	uint32_t	uh_date;
-	uint32_t	uh_signature;
-	uint32_t	uh_checksum;
-	uint32_t	uh_loader_rev;
-	uint32_t	uh_proc_flags;
-	uint32_t	uh_data_size;
-	uint32_t	uh_total_size;
-	uint32_t	uh_reserved[3];
-};
+#ifdef COMPAT_60
+int
+compat6_cpu_ucode_get_version(struct compat6_cpu_ucode *data6)
+{
 
-struct intel1_ucode_proc_signature {
-	uint32_t	ups_signature;
-	uint32_t	ups_proc_flags;
-	uint32_t	ups_checksum;
-};
+	if (cpu_vendor != CPUVENDOR_AMD)
+		return EOPNOTSUPP;
 
-struct intel1_ucode_ext_table {
-	uint32_t	uet_count;
-	uint32_t	uet_checksum;
-	uint32_t	uet_reserved[3];
-	struct intel1_ucode_proc_signature uet_proc_sig[1];
-};
+	struct cpu_ucode_version data;
 
-#endif
+	data.loader_version = CPU_UCODE_LOADER_AMD;
+	return cpu_ucode_amd_get_version(&data, &data6->version,
+	    sizeof(data6->version));
+}
+
+int
+compat6_cpu_ucode_apply(const struct compat6_cpu_ucode *data6)
+{
+
+	if (cpu_vendor != CPUVENDOR_AMD)
+		return EOPNOTSUPP;
+
+	struct cpu_ucode data;
+
+	data.loader_version = CPU_UCODE_LOADER_AMD;
+	data.cpu_nr = CPU_UCODE_ALL_CPUS;
+	strcpy(data.fwname, data6->fwname);
+
+	return cpu_ucode_apply(&data);
+}
+
+#endif /* COMPAT60 */

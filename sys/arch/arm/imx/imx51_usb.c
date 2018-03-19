@@ -1,4 +1,4 @@
-/*	$NetBSD: imx51_usb.c,v 1.3 2017/08/17 09:11:04 hkenken Exp $	*/
+/*	$NetBSD: imx51_usb.c,v 1.4 2018/03/17 18:34:09 ryo Exp $	*/
 /*
  * Copyright (c) 2010  Genetec Corporation.  All rights reserved.
  * Written by Hiroyuki Bessho for Genetec Corporation.
@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: imx51_usb.c,v 1.3 2017/08/17 09:11:04 hkenken Exp $");
+__KERNEL_RCSID(0, "$NetBSD: imx51_usb.c,v 1.4 2018/03/17 18:34:09 ryo Exp $");
 
 #include "opt_imx.h"
 

@@ -1,4 +1,4 @@
-/*	$NetBSD: imx6_axi.c,v 1.4 2017/11/09 05:57:23 hkenken Exp $	*/
+/*	$NetBSD: imx6_axi.c,v 1.5 2018/03/17 18:34:09 ryo Exp $	*/
 
 /*
  * Copyright (c) 2014 Ryo Shimizu <ryo@nerv.org>
@@ -27,7 +27,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: imx6_axi.c,v 1.4 2017/11/09 05:57:23 hkenken Exp $");
+__KERNEL_RCSID(0, "$NetBSD: imx6_axi.c,v 1.5 2018/03/17 18:34:09 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/bus.h>

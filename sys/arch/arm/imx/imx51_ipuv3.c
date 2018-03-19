@@ -1,4 +1,4 @@
-/*	$NetBSD: imx51_ipuv3.c,v 1.6 2017/08/17 09:11:04 hkenken Exp $	*/
+/*	$NetBSD: imx51_ipuv3.c,v 1.7 2018/03/17 18:34:09 ryo Exp $	*/
 
 /*
  * Copyright (c) 2011, 2012  Genetec Corporation.  All rights reserved.
@@ -27,7 +27,7 @@
  */
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: imx51_ipuv3.c,v 1.6 2017/08/17 09:11:04 hkenken Exp $");
+__KERNEL_RCSID(0, "$NetBSD: imx51_ipuv3.c,v 1.7 2018/03/17 18:34:09 ryo Exp $");
 
 #include "opt_imx51_ipuv3.h"
 

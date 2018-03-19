@@ -1,4 +1,4 @@
-/* $NetBSD: sunxi_platform.c,v 1.20 2018/03/03 01:19:46 jmcneill Exp $ */
+/* $NetBSD: sunxi_platform.c,v 1.21 2018/03/17 18:34:09 ryo Exp $ */
 
 /*-
  * Copyright (c) 2017 Jared McNeill <jmcneill@invisible.ca>
@@ -31,7 +31,7 @@
 #include "opt_fdt_arm.h"
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: sunxi_platform.c,v 1.20 2018/03/03 01:19:46 jmcneill Exp $");
+__KERNEL_RCSID(0, "$NetBSD: sunxi_platform.c,v 1.21 2018/03/17 18:34:09 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/bus.h>

@@ -1,4 +1,4 @@
-/*	$NetBSD: aout_machdep.h,v 1.7 2014/02/24 16:57:57 christos Exp $	*/
+/*	$NetBSD: aout_machdep.h,v 1.8 2018/03/17 04:16:09 ryo Exp $	*/
 
 /*
  * Copyright (c) 1994-1996 Mark Brinicombe.

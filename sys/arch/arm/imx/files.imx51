@@ -1,4 +1,4 @@
-#	$NetBSD: files.imx51,v 1.17 2017/09/08 05:29:12 hkenken Exp $
+#	$NetBSD: files.imx51,v 1.18 2018/03/17 18:34:09 ryo Exp $
 #
 # Configuration info for the Freescale i.MX5x
 #

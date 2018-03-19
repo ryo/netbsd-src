@@ -1,4 +1,4 @@
-/* $NetBSD: exynos_platform.c,v 1.8 2017/12/19 09:04:19 skrll Exp $ */
+/* $NetBSD: exynos_platform.c,v 1.9 2018/03/17 18:34:09 ryo Exp $ */
 
 /*-
  * Copyright (c) 2017 Jared D. McNeill <jmcneill@invisible.ca>
@@ -33,7 +33,7 @@
 #include "ukbd.h"
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: exynos_platform.c,v 1.8 2017/12/19 09:04:19 skrll Exp $");
+__KERNEL_RCSID(0, "$NetBSD: exynos_platform.c,v 1.9 2018/03/17 18:34:09 ryo Exp $");
 
 #include <sys/param.h>
 #include <sys/bus.h>

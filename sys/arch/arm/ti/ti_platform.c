@@ -1,9 +1,9 @@
-/* $NetBSD: ti_platform.c,v 1.2 2017/12/19 09:15:23 skrll Exp $ */
+/* $NetBSD: ti_platform.c,v 1.3 2018/03/17 18:34:09 ryo Exp $ */
 
 #include "opt_fdt_arm.h"
 
 #include <sys/cdefs.h>
-__KERNEL_RCSID(0, "$NetBSD: ti_platform.c,v 1.2 2017/12/19 09:15:23 skrll Exp $");
+__KERNEL_RCSID(0, "$NetBSD: ti_platform.c,v 1.3 2018/03/17 18:34:09 ryo Exp $");
 
 #include <sys/param.h>
 
