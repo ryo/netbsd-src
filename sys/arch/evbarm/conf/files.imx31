@@ -1,9 +1,9 @@
 #
-#	$Id: files.imx31,v 1.3 2010/11/13 04:53:58 bsh Exp $
+#	$Id: files.imx31,v 1.4 2018/03/19 17:11:24 ryo Exp $
 #
 
 # derived from:
-#	$NetBSD: files.imx31,v 1.3 2010/11/13 04:53:58 bsh Exp $
+#	$NetBSD: files.imx31,v 1.4 2018/03/19 17:11:24 ryo Exp $
 #
 # Freescale iMX31 evaluation board configuration info
 #

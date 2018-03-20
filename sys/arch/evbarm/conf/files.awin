@@ -1,4 +1,4 @@
-#	$NetBSD: files.awin,v 1.3 2014/10/22 00:46:15 jmcneill Exp $
+#	$NetBSD: files.awin,v 1.4 2018/03/19 17:11:24 ryo Exp $
 #
 # Allwinner AXX evaluation board configuration info
 #
