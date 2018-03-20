@@ -187,51 +187,42 @@ db_regs_t ddb_regs;
 void
 dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 {
-	(*pr)( "   pc=%016"PRIxREGISTER
-	    ",   spsr=%016"PRIxREGISTER
-	    ",    esr=%016"PRIxREGISTER
-	    ",    far=%016"PRIxREGISTER"\n",
-	    tf->tf_pc, tf->tf_spsr, tf->tf_esr, tf->tf_far);
-	(*pr)( "   x0=%016"PRIxREGISTER
-	    ",     x1=%016"PRIxREGISTER
-	    ",     x2=%016"PRIxREGISTER
-	    ",     x3=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[0], tf->tf_reg[1], tf->tf_reg[2], tf->tf_reg[3]);
-	(*pr)( "   x4=%016"PRIxREGISTER
-	    ",     x5=%016"PRIxREGISTER
-	    ",     x6=%016"PRIxREGISTER
-	    ",     x7=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[4], tf->tf_reg[5], tf->tf_reg[6], tf->tf_reg[7]);
-	(*pr)( "   x8=%016"PRIxREGISTER
-	    ",     x9=%016"PRIxREGISTER
-	    ",    x10=%016"PRIxREGISTER
-	    ",    x11=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[8], tf->tf_reg[9], tf->tf_reg[10], tf->tf_reg[11]);
-	(*pr)( "  x12=%016"PRIxREGISTER
-	    ",    x13=%016"PRIxREGISTER
-	    ",    x14=%016"PRIxREGISTER
-	    ",    x15=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[12], tf->tf_reg[13], tf->tf_reg[14], tf->tf_reg[15]);
-	(*pr)( "  x16=%016"PRIxREGISTER
-	    ",    x17=%016"PRIxREGISTER
-	    ",    x18=%016"PRIxREGISTER
-	    ",    x19=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[16], tf->tf_reg[17], tf->tf_reg[18], tf->tf_reg[19]);
-	(*pr)( "  x20=%016"PRIxREGISTER
-	    ",    x21=%016"PRIxREGISTER
-	    ",    x22=%016"PRIxREGISTER
-	    ",    x23=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[20], tf->tf_reg[21], tf->tf_reg[22], tf->tf_reg[23]);
-	(*pr)( "  x24=%016"PRIxREGISTER
-	    ",    x25=%016"PRIxREGISTER
-	    ",    x26=%016"PRIxREGISTER
-	    ",    x27=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[24], tf->tf_reg[25], tf->tf_reg[26], tf->tf_reg[27]);
-	(*pr)( "  x28=%016"PRIxREGISTER
-	    ", fp=x29=%016"PRIxREGISTER
-	    ", lr=x30=%016"PRIxREGISTER
-	    ",     sp=%016"PRIxREGISTER"\n",
-	    tf->tf_reg[28], tf->tf_reg[29], tf->tf_reg[30],  tf->tf_sp);
+	(*pr)("    pc=%016"PRIxREGISTER",   spsr=%016"PRIxREGISTER"\n",
+	    tf->tf_pc, tf->tf_spsr);
+	(*pr)("   esr=%016"PRIxREGISTER",    far=%016"PRIxREGISTER"\n",
+	    tf->tf_esr, tf->tf_far);
+	(*pr)("    x0=%016"PRIxREGISTER",     x1=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[0], tf->tf_reg[1]);
+	(*pr)("    x2=%016"PRIxREGISTER",     x3=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[2], tf->tf_reg[3]);
+	(*pr)("    x4=%016"PRIxREGISTER",     x5=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[4], tf->tf_reg[5]);
+	(*pr)("    x6=%016"PRIxREGISTER",     x7=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[6], tf->tf_reg[7]);
+	(*pr)("    x8=%016"PRIxREGISTER",     x9=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[8], tf->tf_reg[9]);
+	(*pr)("   x10=%016"PRIxREGISTER",    x11=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[10], tf->tf_reg[11]);
+	(*pr)("   x12=%016"PRIxREGISTER",    x13=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[12], tf->tf_reg[13]);
+	(*pr)("   x14=%016"PRIxREGISTER",    x15=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[14], tf->tf_reg[15]);
+	(*pr)("   x16=%016"PRIxREGISTER",    x17=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[16], tf->tf_reg[17]);
+	(*pr)("   x18=%016"PRIxREGISTER",    x19=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[18], tf->tf_reg[19]);
+	(*pr)("   x20=%016"PRIxREGISTER",    x21=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[20], tf->tf_reg[21]);
+	(*pr)("   x22=%016"PRIxREGISTER",    x23=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[22], tf->tf_reg[23]);
+	(*pr)("   x24=%016"PRIxREGISTER",    x25=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[24], tf->tf_reg[25]);
+	(*pr)("   x26=%016"PRIxREGISTER",    x27=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[26], tf->tf_reg[27]);
+	(*pr)("   x28=%016"PRIxREGISTER", fp=x29=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[28], tf->tf_reg[29]);
+	(*pr)("lr=x30=%016"PRIxREGISTER",     sp=%016"PRIxREGISTER"\n",
+	    tf->tf_reg[30],  tf->tf_sp);
 }
 
 void
