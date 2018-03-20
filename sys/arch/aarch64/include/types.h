@@ -38,7 +38,8 @@
 #include <sys/featuretest.h>
 #include <arm/int_types.h>
 
-#if defined(_KERNEL) || defined(_KMEMUSER) || defined(_KERNTYPES) || defined(_STANDALONE)
+#if defined(_KERNEL) || defined(_KMEMUSER) || defined(_KERNTYPES) ||	\
+    defined(_STANDALONE)
 typedef	unsigned long	vm_offset_t;	/* depreciated */
 typedef	unsigned long	vm_size_t;	/* depreciated */
 

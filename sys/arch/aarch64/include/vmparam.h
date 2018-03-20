@@ -104,7 +104,7 @@
 #endif
 
 #ifndef DFLSSIZ32
-#define	DFLSSIZ32	(1L << 21)		/* 32bit default stack size (2MB) */
+#define	DFLSSIZ32	(1L << 21)	/* 32bit default stack size (2MB) */
 #endif
 
 #define	VM_MIN_ADDRESS		((vaddr_t) 0x0)
