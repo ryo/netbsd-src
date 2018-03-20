@@ -118,6 +118,19 @@ const char * const trap_names[] = {
 	[ESR_EC_VECTOR_CATCH]	= "A32: Vector Catch Exception"
 };
 
+static inline const char *
+eclass_trapname(uint32_t eclass)
+{
+	static char trapnamebuf[sizeof("Unknown trap 0x????????")];
+
+	if (eclass >= __arraycount(trap_names) || trap_names[eclass] == NULL) {
+		snprintf(trapnamebuf, sizeof(trapnamebuf),
+		    "Unknown trap 0x%02x", eclass);
+		return trapnamebuf;
+	}
+	return trap_names[eclass];
+}
+
 void
 userret(struct lwp *l)
 {
@@ -170,10 +183,7 @@ trap_el1h_sync(struct trapframe *tf)
 	else
 		daif_enable(DAIF_D|DAIF_A);
 
-	if (eclass >= __arraycount(trap_names) || trap_names[eclass] == NULL)
-		trapname = trap_names[0];
-	else
-		trapname = trap_names[eclass];
+	trapname = eclass_trapname(eclass);
 
 	switch (eclass) {
 	case ESR_EC_INSN_ABT_EL1:
@@ -224,10 +234,7 @@ trap_el0_sync(struct trapframe *tf)
 	/* enable traps and interrupts */
 	daif_enable(DAIF_D|DAIF_A|DAIF_I|DAIF_F);
 
-	if (eclass >= __arraycount(trap_names) || trap_names[eclass] == NULL)
-		trapname = trap_names[0];
-	else
-		trapname = trap_names[eclass];
+	trapname = eclass_trapname(eclass);
 
 	switch (eclass) {
 	case ESR_EC_INSN_ABT_EL0:
@@ -302,10 +309,7 @@ trap_el0_32sync(struct trapframe *tf)
 	/* enable traps and interrupts */
 	daif_enable(DAIF_D|DAIF_A|DAIF_I|DAIF_F);
 
-	if (eclass >= __arraycount(trap_names) || trap_names[eclass] == NULL)
-		trapname = trap_names[0];
-	else
-		trapname = trap_names[eclass];
+	trapname = eclass_trapname(eclass);
 
 	switch (eclass) {
 	case ESR_EC_FP_ACCESS:
