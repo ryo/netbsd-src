@@ -215,10 +215,11 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		count = MAXBACKTRACE;
 
 	if (tf != NULL) {
-		(*pr)("--- trapframe %016llx (%d bytes) ---\n",
+		(*pr)("---- trapframe %016llx (%d bytes) ----\n",
 		    tf, sizeof(*tf));
 		dump_trapframe(tf, pr);
-		(*pr)("----------------------------------------\n");
+		(*pr)("------------------------"
+		      "------------------------\n");
 
 		lastfp = lastlr = lr = fp = 0;
 		db_read_bytes(&tf->tf_pc, sizeof(lr), (char *)&lr);
@@ -263,16 +264,16 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 			    (lr == 0))
 				break;
 
-
 			pr_traceaddr("tf", tf, lastlr - 4, flags, pr);
 
 			if (lr == 0)
 				break;
 
-			(*pr)("--- trapframe %016llx (%d bytes) ---\n",
+			(*pr)("---- trapframe %016llx (%d bytes) ----\n",
 			    tf, sizeof(*tf));
 			dump_trapframe(tf, pr);
-			(*pr)("----------------------------------------\n");
+			(*pr)("------------------------"
+			      "------------------------\n");
 			tf = NULL;
 
 			if (!trace_user && IN_USER_VM_ADDRESS(lr))
