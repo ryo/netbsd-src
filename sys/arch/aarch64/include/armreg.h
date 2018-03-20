@@ -76,64 +76,64 @@ static const uintmax_t
    CTR_EL0_ERG_LINE	= __BITS(23,20), // Exclusives Reservation Granule
    CTR_EL0_DMIN_LINE	= __BITS(19,16), // Dcache MIN LINE size (log2 - 2)
    CTR_EL0_L1IP_MASK	= __BITS(15,14),
-   CTR_EL0_L1IP_AIVIVT	= 1,	// ASID-tagged Virtual Index, Virtual Tag
-   CTR_EL0_L1IP_VIPT	= 2,		// Virtual Index, Physical Tag
-   CTR_EL0_L1IP_PIPT	= 3,		// Physical Index, Physical Tag
-   CTR_EL0_IMIN_LINE	= __BITS(3,0);	// Icache MIN LINE size (log2 - 2)
+   CTR_EL0_L1IP_AIVIVT	= 1, // ASID-tagged Virtual Index, Virtual Tag
+   CTR_EL0_L1IP_VIPT	= 2, // Virtual Index, Physical Tag
+   CTR_EL0_L1IP_PIPT	= 3, // Physical Index, Physical Tag
+   CTR_EL0_IMIN_LINE	= __BITS(3,0); // Icache MIN LINE size (log2 - 2)
 
 AARCH64REG_READ_INLINE(dczid_el0)	// Data Cache Zero ID Register
 
 static const uintmax_t
-    DCZID_DZP = __BIT(4),		// Data Zero Prohibited
-    DCZID_BS  = __BITS(3,0);		// Block Size (log2 - 2)
+    DCZID_DZP = __BIT(4),	// Data Zero Prohibited
+    DCZID_BS  = __BITS(3,0);	// Block Size (log2 - 2)
 
 AARCH64REG_READ_INLINE(fpcr)		// Floating Point Control Register
 AARCH64REG_WRITE_INLINE(fpcr)
 
 static const uintmax_t
-    FPCR_AHP    = __BIT(26),		// Alternative Half Precision
-    FPCR_DN     = __BIT(25),		// Default Nan Control
-    FPCR_FZ     = __BIT(24),		// Flush-To-Zero
-    FPCR_RMODE  = __BITS(23,22),	// Rounding Mode
-     FPCR_RN     = 0,			//  Round Nearest
-     FPCR_RP     = 1,			//  Round towards Plus infinity
-     FPCR_RM     = 2,			//  Round towards Minus infinity
-     FPCR_RZ     = 3,			//  Round towards Zero
+    FPCR_AHP    = __BIT(26),	// Alternative Half Precision
+    FPCR_DN     = __BIT(25),	// Default Nan Control
+    FPCR_FZ     = __BIT(24),	// Flush-To-Zero
+    FPCR_RMODE  = __BITS(23,22),// Rounding Mode
+     FPCR_RN     = 0,		//  Round Nearest
+     FPCR_RP     = 1,		//  Round towards Plus infinity
+     FPCR_RM     = 2,		//  Round towards Minus infinity
+     FPCR_RZ     = 3,		//  Round towards Zero
     FPCR_STRIDE = __BITS(21,20),
     FPCR_LEN    = __BITS(18,16),
-    FPCR_IDE    = __BIT(15),		// Input Denormal Exception enable
-    FPCR_IXE    = __BIT(12),		// IneXact Exception enable
-    FPCR_UFE    = __BIT(11),		// UnderFlow Exception enable
-    FPCR_OFE    = __BIT(10),		// OverFlow Exception enable
-    FPCR_DZE    = __BIT(9),		// Divide by Zero Exception enable
-    FPCR_IOE    = __BIT(8),		// Invalid Operation Exception enable
+    FPCR_IDE    = __BIT(15),	// Input Denormal Exception enable
+    FPCR_IXE    = __BIT(12),	// IneXact Exception enable
+    FPCR_UFE    = __BIT(11),	// UnderFlow Exception enable
+    FPCR_OFE    = __BIT(10),	// OverFlow Exception enable
+    FPCR_DZE    = __BIT(9),	// Divide by Zero Exception enable
+    FPCR_IOE    = __BIT(8),	// Invalid Operation Exception enable
     FPCR_ESUM   = 0x1F00;
 
 AARCH64REG_READ_INLINE(fpsr)		// Floating Point Status Register
 AARCH64REG_WRITE_INLINE(fpsr)
 
 static const uintmax_t
-    FPSR_N32  = __BIT(31),		// AARCH32 Negative
-    FPSR_Z32  = __BIT(30),		// AARCH32 Zero
-    FPSR_C32  = __BIT(29),		// AARCH32 Carry
-    FPSR_V32  = __BIT(28),		// AARCH32 Overflow
-    FPSR_QC   = __BIT(27),		// SIMD Saturation
-    FPSR_IDC  = __BIT(7),		// Input Denormal Cumulative status
-    FPSR_IXC  = __BIT(4),		// IneXact Cumulative status
-    FPSR_UFC  = __BIT(3),		// UnderFlow Cumulative status
-    FPSR_OFC  = __BIT(2),		// OverFlow Cumulative status
-    FPSR_DZC  = __BIT(1),		// Divide by Zero Cumulative status
-    FPSR_IOC  = __BIT(0),		// Invalid Operation Cumulative status
+    FPSR_N32  = __BIT(31), // AARCH32 Negative
+    FPSR_Z32  = __BIT(30), // AARCH32 Zero
+    FPSR_C32  = __BIT(29), // AARCH32 Carry
+    FPSR_V32  = __BIT(28), // AARCH32 Overflow
+    FPSR_QC   = __BIT(27), // SIMD Saturation
+    FPSR_IDC  = __BIT(7), // Input Denormal Cumulative status
+    FPSR_IXC  = __BIT(4), // IneXact Cumulative status
+    FPSR_UFC  = __BIT(3), // UnderFlow Cumulative status
+    FPSR_OFC  = __BIT(2), // OverFlow Cumulative status
+    FPSR_DZC  = __BIT(1), // Divide by Zero Cumulative status
+    FPSR_IOC  = __BIT(0), // Invalid Operation Cumulative status
     FPSR_CSUM = 0x1F;
 
 AARCH64REG_READ_INLINE(nzcv)		// condition codes
 AARCH64REG_WRITE_INLINE(nzcv)
 
 static const uintmax_t
-    NZCV_N = __BIT(31),			// Negative
-    NZCV_Z = __BIT(30),			// Zero
-    NZCV_C = __BIT(29),			// Carry
-    NZCV_V = __BIT(28);			// Overflow
+    NZCV_N = __BIT(31), // Negative
+    NZCV_Z = __BIT(30), // Zero
+    NZCV_C = __BIT(29), // Carry
+    NZCV_V = __BIT(28); // Overflow
 
 AARCH64REG_READ_INLINE(tpidr_el0)	// Thread Pointer ID Register (RW)
 AARCH64REG_WRITE_INLINE(tpidr_el0)
@@ -149,7 +149,7 @@ AARCH64REG_READ_INLINE(tpidrro_el0)	// Thread Pointer ID Register (RO)
  */
 AARCH64REG_READ_INLINE(aidr_el1)
 
-AARCH64REG_READ_INLINE2(cbar_el1, s3_1_c15_c3_0)	// Cortex-A57
+AARCH64REG_READ_INLINE2(cbar_el1, s3_1_c15_c3_0)	 // Cortex-A57
 
 static const uintmax_t CBAR_PA = __BITS(47,18);
 
@@ -354,7 +354,7 @@ AARCH64REG_READ_INLINE(cpacr_el1)	// Coprocessor Access Control Regiser
 AARCH64REG_WRITE_INLINE(cpacr_el1)
 
 static const uintmax_t
-    CPACR_TTA		= __BIT(28),	// System Register Access Traps
+    CPACR_TTA		= __BIT(28),	 // System Register Access Traps
     CPACR_FPEN		= __BITS(21,20),
     CPACR_FPEN_NONE	= __SHIFTIN(0, CPACR_FPEN),
     CPACR_FPEN_EL1	= __SHIFTIN(1, CPACR_FPEN),
@@ -387,9 +387,9 @@ AARCH64REG_READ_INLINE(esr_el1)		// Exception Symdrone Register
 AARCH64REG_WRITE_INLINE(esr_el1)
 
 static const uintmax_t
-    ESR_EC =		__BITS(31,26),	// Exception Cause
+    ESR_EC = 		__BITS(31,26), // Exception Cause
      ESR_EC_UNKNOWN		= 0x00,	// AXX: Unknown Reason
-     ESR_EC_WFX			= 0x01, // AXX: WFI or WFE instruction execution
+     ESR_EC_WFX			= 0x01,	// AXX: WFI or WFE instruction execution
      ESR_EC_CP15_RT		= 0x03,	// A32: MCR/MRC access to CP15 !EC=0
      ESR_EC_CP15_RRT		= 0x04,	// A32: MCRR/MRRC access to CP15 !EC=0
      ESR_EC_CP14_RT		= 0x05,	// A32: MCR/MRC access to CP14
@@ -404,13 +404,13 @@ static const uintmax_t
      ESR_EC_SVC_A64		= 0x15,	// A64: SVC Instruction Execution
      ESR_EC_HVC_A64		= 0x16,	// A64: HVC Instruction Execution
      ESR_EC_SMC_A64		= 0x17,	// A64: SMC Instruction Execution
-     ESR_EC_SYS_REG		= 0x18,	// A64: MSR/MRS/SYS insn (!EC0/1/7)
-     ESR_EC_INSN_ABT_EL0	= 0x20,	// AXX: Instruction Abort (EL0)
-     ESR_EC_INSN_ABT_EL1	= 0x21,	// AXX: Instruction Abort (EL1)
-     ESR_EC_PC_ALIGNMENT	= 0x22,	// AXX: Misaligned PC
-     ESR_EC_DATA_ABT_EL0	= 0x24,	// AXX: Data Abort (EL0)
-     ESR_EC_DATA_ABT_EL1	= 0x25,	// AXX: Data Abort (EL1)
-     ESR_EC_SP_ALIGNMENT	= 0x26,	// AXX: Misaligned SP
+     ESR_EC_SYS_REG		= 0x18,	// A64: MSR/MRS/SYS instruction (!EC0/1/7)
+     ESR_EC_INSN_ABT_EL0	= 0x20, // AXX: Instruction Abort (EL0)
+     ESR_EC_INSN_ABT_EL1	= 0x21, // AXX: Instruction Abort (EL1)
+     ESR_EC_PC_ALIGNMENT	= 0x22, // AXX: Misaligned PC
+     ESR_EC_DATA_ABT_EL0	= 0x24, // AXX: Data Abort (EL0)
+     ESR_EC_DATA_ABT_EL1	= 0x25, // AXX: Data Abort (EL1)
+     ESR_EC_SP_ALIGNMENT	= 0x26, // AXX: Misaligned SP
      ESR_EC_FP_TRAP_A32		= 0x28,	// A32: FP Exception
      ESR_EC_FP_TRAP_A64		= 0x2c,	// A64: FP Exception
      ESR_EC_SERROR		= 0x2f,	// AXX: SError Interrupt
@@ -420,11 +420,11 @@ static const uintmax_t
      ESR_EC_SW_STEP_EL1		= 0x33,	// AXX: Software Step (EL1)
      ESR_EC_WTCHPNT_EL0		= 0x34,	// AXX: Watchpoint (EL0)
      ESR_EC_WTCHPNT_EL1		= 0x35,	// AXX: Watchpoint (EL1)
-     ESR_EC_BKPT_INSN_A32	= 0x38,	// A32: BKPT Instruction Execution
-     ESR_EC_VECTOR_CATCH	= 0x3a,	// A32: Vector Catch Exception
-     ESR_EC_BKPT_INSN_A64	= 0x3c,	// A64: BKPT Instruction Execution
-    ESR_IL =		__BIT(25),	// Instruction Length (1=32-bit)
-    ESR_ISS =		__BITS(24,0),	// Instruction Specific Syndrome
+     ESR_EC_BKPT_INSN_A32 = 0x38,	// A32: BKPT Instruction Execution
+     ESR_EC_VECTOR_CATCH = 0x3a,	// A32: Vector Catch Exception
+     ESR_EC_BKPT_INSN_A64 = 0x3c,	// A64: BKPT Instruction Execution
+    ESR_IL = 		__BIT(25), // Instruction Length (1=32-bit)
+    ESR_ISS = 		__BITS(24,0), // Instruction Specific Syndrome
     ESR_ISS_CV =		__BIT(24),	// common
     ESR_ISS_COND =		__BITS(23,20),	// common
     ESR_ISS_WFX_TRAP_INSN =	__BIT(0),	// for ESR_EC_WFX
@@ -828,12 +828,12 @@ AARCH64REG_READ_INLINE(pmccfiltr_el0)
 AARCH64REG_WRITE_INLINE(pmccfiltr_el0)
 
 static const uintmax_t
-    PMCCFILTR_P		= __BIT(31),	// Don't count cycles in EL1
-    PMCCFILTR_U		= __BIT(30),	// Don't count cycles in EL0
-    PMCCFILTR_NSK	= __BIT(29),	// Don't count cycles in NS EL1
-    PMCCFILTR_NSU	= __BIT(28),	// Don't count cycles in NS EL0
-    PMCCFILTR_NSH	= __BIT(27),	// Don't count cycles in NS EL2
-    PMCCFILTR_M		= __BIT(26);	// Don't count cycles in EL3
+    PMCCFILTR_P	  = __BIT(31),	 // Don't count cycles in EL1
+    PMCCFILTR_U	  = __BIT(30),	 // Don't count cycles in EL0
+    PMCCFILTR_NSK = __BIT(29),	 // Don't count cycles in NS EL1
+    PMCCFILTR_NSU = __BIT(28),	 // Don't count cycles in NS EL0
+    PMCCFILTR_NSH = __BIT(27),	 // Don't count cycles in NS EL2
+    PMCCFILTR_M	  = __BIT(26);	 // Don't count cycles in EL3
 
 AARCH64REG_READ_INLINE(pmccntr_el0)
 
@@ -852,16 +852,16 @@ AARCH64REG_READ_INLINE(cntkctl_el1)
 AARCH64REG_WRITE_INLINE(cntkctl_el1)
 
 static const uintmax_t
-    CNTKCTL_EL0PTEN	= __BIT(9),		// EL0 access for CNTP CVAL/TVAL/CTL
+    CNTKCTL_EL0PTEN	= __BIT(9),	// EL0 access for CNTP CVAL/TVAL/CTL
     CNTKCTL_PL0PTEN	= CNTKCTL_EL0PTEN,
-    CNTKCTL_EL0VTEN	= __BIT(8),		// EL0 access for CNTV CVAL/TVAL/CTL
+    CNTKCTL_EL0VTEN	= __BIT(8),	// EL0 access for CNTV CVAL/TVAL/CTL
     CNTKCTL_PL0VTEN	= CNTKCTL_EL0VTEN,
     CNTKCTL_ELNTI	= __BITS(7,4),
     CNTKCTL_EVNTDIR	= __BIT(3),
     CNTKCTL_EVNTEN	= __BIT(2),
-    CNTKCTL_EL0VCTEN	= __BIT(1),		// EL0 access for CNTVCT and CNTFRQ
+    CNTKCTL_EL0VCTEN	= __BIT(1),	// EL0 access for CNTVCT and CNTFRQ
     CNTKCTL_PL0VCTEN	= CNTKCTL_EL0VCTEN,
-    CNTKCTL_EL0PCTEN	= __BIT(0),		// EL0 access for CNTPCT and CNTFRQ
+    CNTKCTL_EL0PCTEN	= __BIT(0),	// EL0 access for CNTPCT and CNTFRQ
     CNTKCTL_PL0PCTEN	= CNTKCTL_EL0PCTEN;
 
 AARCH64REG_READ_INLINE(cntp_ctl_el0)
@@ -890,9 +890,9 @@ AARCH64REG_READ_INLINE(cntvct_el0)
 AARCH64REG_WRITE_INLINE(cntvct_el0)
 
 static const uintmax_t
-    CNTCTL_ISTATUS	= __BIT(2),	// Interrupt Asserted
-    CNTCTL_IMASK	= __BIT(1),	// Timer Interrupt is Masked
-    CNTCTL_ENABLE	= __BIT(0);	// Timer Enabled
+    CNTCTL_ISTATUS = __BIT(2),	// Interrupt Asserted
+    CNTCTL_IMASK   = __BIT(1),	// Timer Interrupt is Masked
+    CNTCTL_ENABLE  = __BIT(0);	// Timer Enabled
 
 
 // ID_AA64PFR0_EL1: AArch64 Processor Feature Register 0
