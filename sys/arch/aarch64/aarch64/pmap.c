@@ -348,7 +348,7 @@ pmap_devmap_find_va(vaddr_t va, vsize_t size)
 	for (i = 0; pmap_devmap_table[i].pd_size != 0; i++) {
 		if ((va >= pmap_devmap_table[i].pd_va) &&
 		    (endva <= pmap_devmap_table[i].pd_va +
-			      pmap_devmap_table[i].pd_size))
+		              pmap_devmap_table[i].pd_size))
 			return &pmap_devmap_table[i];
 	}
 	return NULL;
@@ -366,8 +366,8 @@ pmap_devmap_find_pa(paddr_t pa, psize_t size)
 	endpa = pa + size;
 	for (i = 0; pmap_devmap_table[i].pd_size != 0; i++) {
 		if (pa >= pmap_devmap_table[i].pd_pa &&
-		    endpa <= pmap_devmap_table[i].pd_pa +
-			     pmap_devmap_table[i].pd_size)
+		    (endpa <= pmap_devmap_table[i].pd_pa +
+		             pmap_devmap_table[i].pd_size))
 			return (&pmap_devmap_table[i]);
 	}
 	return NULL;
@@ -609,7 +609,8 @@ pmap_growkernel(vaddr_t maxkvaddr)
 }
 
 bool
-pmap_extract_coherency(struct pmap *pm, vaddr_t va, paddr_t *pap, bool *coherencyp)
+pmap_extract_coherency(struct pmap *pm, vaddr_t va, paddr_t *pap,
+    bool *coherencyp)
 {
 	if (coherencyp)
 		*coherencyp = false;
@@ -1309,7 +1310,7 @@ pmap_destroy(struct pmap *pm)
 
 static int
 _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
-            u_int flags, bool kenter)
+    u_int flags, bool kenter)
 {
 	struct vm_page *pg;
 	pd_entry_t pde;
@@ -1474,11 +1475,13 @@ _pmap_enter(struct pmap *pm, vaddr_t va, paddr_t pa, vm_prot_t prot,
 				PMAP_COUNT(pv_entry_cannotalloc);
 				if (flags & PMAP_CANFAIL)
 					goto done;
-				panic("pmap_enter: failed to allocate pv_entry");
+				panic(
+				    "pmap_enter: failed to allocate pv_entry");
 			}
 
 			if (flags & PMAP_WIRED) {
-				VM_PAGE_TO_MD(pg)->mdpg_flags |= (PMAP_WIRED | mdattr);
+				VM_PAGE_TO_MD(pg)->mdpg_flags |=
+				    (PMAP_WIRED | mdattr);
 			} else {
 				mdattr &= VM_PAGE_TO_MD(pg)->mdpg_flags;
 			}
@@ -1640,7 +1643,8 @@ pmap_page_protect(struct vm_page *pg, vm_prot_t prot)
 			}
 			atomic_swap_64(pv->pv_ptep, 0);
 #if 0
-			aarch64_tlbi_by_asid_va(pv->pv_pmap->pm_asid, pv->pv_va);
+			aarch64_tlbi_by_asid_va(pv->pv_pmap->pm_asid,
+			    pv->pv_va);
 #else
 			aarch64_tlbi_by_va(pv->pv_va);
 #endif

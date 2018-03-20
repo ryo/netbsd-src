@@ -207,8 +207,8 @@ trap_el1h_sync(struct trapframe *tf)
 	case ESR_EC_SP_ALIGNMENT:
 	case ESR_EC_ILL_STATE:
 	default:
-		panic("Trap: fatal %s: pc=%016llx sp=%016llx esr=%08x", trapname,
-		    tf->tf_pc, tf->tf_sp, esr);
+		panic("Trap: fatal %s: pc=%016llx sp=%016llx esr=%08x",
+		    trapname, tf->tf_pc, tf->tf_sp, esr);
 		break;
 	}
 }
@@ -244,7 +244,7 @@ trap_el0_sync(struct trapframe *tf)
 		userret(l);
 		break;
 	case ESR_EC_FP_TRAP_A64:
-		do_trapsignal(l, SIGFPE, FPE_FLTUND, NULL, esr);	/* XXX */
+		do_trapsignal(l, SIGFPE, FPE_FLTUND, NULL, esr); /* XXX */
 		userret(l);
 		break;
 

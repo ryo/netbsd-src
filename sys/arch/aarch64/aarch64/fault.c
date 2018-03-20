@@ -279,7 +279,8 @@ data_abort_handler(struct trapframe *tf, uint32_t eclass, const char *trapname)
 #undef DEBUG_DUMP_ON_USERFAULT		/* DEBUG */
 #undef DEBUG_DDB_ON_USERFAULT		/* DEBUG */
 
-#if defined(DEBUG_DUMP_ON_USERFAULT) || (defined(DDB) && defined(DEBUG_DDB_ON_USERFAULT))
+#if defined(DEBUG_DUMP_ON_USERFAULT) || \
+    (defined(DDB) && defined(DEBUG_DDB_ON_USERFAULT))
 		__nothing;
 #else
 		return;

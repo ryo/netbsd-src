@@ -51,7 +51,7 @@ const pcu_ops_t pcu_fpu_ops = {
 	.pcu_id = PCU_FPU,
 	.pcu_state_load = fpu_state_load,
 	.pcu_state_save = fpu_state_save,
-	.pcu_state_release = fpu_state_release,
+	.pcu_state_release = fpu_state_release
 };
 
 void

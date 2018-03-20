@@ -100,15 +100,18 @@ pr_traceaddr(const char *prefix, uint64_t frame, uint64_t pc, int flags,
 		db_symbol_values(sym, &name, NULL);
 
 		if (flags & TRACEFLAG_LOOKUPLWP) {
-			(*pr)("%s %016llx %s %s() at %016llx ", prefix, frame, getlwpnamebysp(frame), name, pc);
+			(*pr)("%s %016llx %s %s() at %016llx ",
+			    prefix, frame, getlwpnamebysp(frame), name, pc);
 		} else {
-			(*pr)("%s %016llx %s() at %016llx ", prefix, frame, name, pc);
+			(*pr)("%s %016llx %s() at %016llx ",
+			    prefix, frame, name, pc);
 		}
 		db_printsym(pc, DB_STGY_PROC, pr);
 		(*pr)("\n");
 	} else {
 		if (flags & TRACEFLAG_LOOKUPLWP) {
-			(*pr)("%s %016llx %s ?() at %016llx\n", prefix, frame, getlwpnamebysp(frame), pc);
+			(*pr)("%s %016llx %s ?() at %016llx\n",
+			    prefix, frame, getlwpnamebysp(frame), pc);
 		} else {
 			(*pr)("%s %016llx ?() at %016llx\n", prefix, frame, pc);
 		}
@@ -212,9 +215,10 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		count = MAXBACKTRACE;
 
 	if (tf != NULL) {
-		(*pr)("--- trapframe %016llx (%d bytes) ---\n", tf, sizeof(*tf));
+		(*pr)("--- trapframe %016llx (%d bytes) ---\n",
+		    tf, sizeof(*tf));
 		dump_trapframe(tf, pr);
-		(*pr)("----------------------------------------------\n");
+		(*pr)("----------------------------------------\n");
 
 		lastfp = lastlr = lr = fp = 0;
 		db_read_bytes(&tf->tf_pc, sizeof(lr), (char *)&lr);
@@ -251,8 +255,12 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 			db_read_bytes(&tf->tf_pc, sizeof(lr), (char *)&lr);
 			db_read_bytes(&tf->tf_reg[29], sizeof(fp), (char *)&fp);
 
-			/* no need to display the frame of el0_trap of kernel thread */
-			if (((char *)(lastlr - 4) == (char *)el0_trap) && (lr == 0))
+			/*
+			 * no need to display the frame of el0_trap
+			 * of kernel thread
+			 */
+			if (((char *)(lastlr - 4) == (char *)el0_trap) &&
+			    (lr == 0))
 				break;
 
 
@@ -261,9 +269,10 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 			if (lr == 0)
 				break;
 
-			(*pr)("--- trapframe %016llx (%d bytes) ---\n", tf, sizeof(*tf));
+			(*pr)("--- trapframe %016llx (%d bytes) ---\n",
+			    tf, sizeof(*tf));
 			dump_trapframe(tf, pr);
-			(*pr)("----------------------------------------------\n");
+			(*pr)("----------------------------------------\n");
 			tf = NULL;
 
 			if (!trace_user && IN_USER_VM_ADDRESS(lr))

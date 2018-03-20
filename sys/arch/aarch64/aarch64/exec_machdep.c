@@ -71,8 +71,8 @@ setregs(struct lwp *l, struct exec_package *pack, vaddr_t stack)
 	memset(tf, 0, sizeof(*tf));
 
 	/*
-	 * void __start(void (*cleanup)(void), const Obj_Entry *obj,  
-	 *	struct ps_strings *ps_strings);
+	 * void __start(void (*cleanup)(void), const Obj_Entry *obj,
+	 *    struct ps_strings *ps_strings);
 	 */
 
 	tf->tf_reg[2] = p->p_psstrp;

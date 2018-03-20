@@ -175,7 +175,7 @@ const struct db_variable db_regs[] = {
 	{ "x30",   (long *) &ddb_regs.tf_reg[30], FCN_NULL, NULL },
 	{ "sp",    (long *) &ddb_regs.tf_sp,      FCN_NULL, NULL },
 	{ "pc",    (long *) &ddb_regs.tf_pc,      FCN_NULL, NULL },
-	{ "spsr",  (long *) &ddb_regs.tf_spsr,    FCN_NULL, NULL },
+	{ "spsr",  (long *) &ddb_regs.tf_spsr,    FCN_NULL, NULL }
 };
 
 const struct db_variable * const db_eregs = db_regs + __arraycount(db_regs);
@@ -235,7 +235,8 @@ dump_trapframe(struct trapframe *tf, void (*pr)(const char *, ...))
 }
 
 void
-db_md_cpuinfo_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+db_md_cpuinfo_cmd(db_expr_t addr, bool have_addr, db_expr_t count,
+    const char *modif)
 {
 	struct cpu_info *ci, cpuinfobuf;
 	cpuid_t cpuid;
@@ -269,7 +270,8 @@ db_md_cpuinfo_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *m
 }
 
 void
-db_md_frame_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+db_md_frame_cmd(db_expr_t addr, bool have_addr, db_expr_t count,
+    const char *modif)
 {
 	struct trapframe *tf;
 
@@ -283,7 +285,8 @@ db_md_frame_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *mod
 }
 
 void
-db_md_lwp_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+db_md_lwp_cmd(db_expr_t addr, bool have_addr, db_expr_t count,
+    const char *modif)
 {
 	lwp_t *l;
 
@@ -319,7 +322,8 @@ db_md_lwp_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif
 
 /* XXX: should be implement to kern_history.c */
 static void
-kernhist_entry_snprintf(char *buf, size_t buflen, const struct kern_history_ent *e)
+kernhist_entry_snprintf(char *buf, size_t buflen,
+    const struct kern_history_ent *e)
 {
 	struct timeval tv;
 	int len, maxlen;
@@ -330,13 +334,15 @@ kernhist_entry_snprintf(char *buf, size_t buflen, const struct kern_history_ent 
 	maxlen = buflen;
 	p = buf;
 
-	len = snprintf(p, maxlen, "%06" PRIu64 ".%06d ", tv.tv_sec, tv.tv_usec);
+	len = snprintf(p, maxlen, "%06" PRIu64 ".%06d ",
+	    tv.tv_sec, tv.tv_usec);
 	p += len;
 	maxlen -= len;
 	if (maxlen <= 0)
 		return;
 
-	len = snprintf(p, maxlen, "%s#%" PRIu32 "@%" PRIu32 ": ", e->fn, e->call, e->cpunum);
+	len = snprintf(p, maxlen, "%s#%" PRIu32 "@%" PRIu32 ": ",
+	    e->fn, e->call, e->cpunum);
 	p += len;
 	maxlen -= len;
 	if (maxlen <= 0)
@@ -378,7 +384,8 @@ print_pmaphist_func(const char *msg)
 }
 
 void
-db_md_pmaphist_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+db_md_pmaphist_cmd(db_expr_t addr, bool have_addr, db_expr_t count,
+    const char *modif)
 {
 	UVMHIST_DECL(pmaphist);
 
@@ -399,7 +406,8 @@ db_md_pmaphist_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *
 	if (have_addr && (addr == 0)) {
 		/* XXX */
 		pmaphist.f = 0;
-		memset(pmaphist.e, 0, sizeof(struct kern_history_ent) * pmaphist.n);
+		memset(pmaphist.e, 0,
+		    sizeof(struct kern_history_ent) * pmaphist.n);
 
 		db_printf("pmap history was cleared\n");
 	}
@@ -409,7 +417,8 @@ db_md_pmaphist_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *
 #endif
 
 void
-db_md_pte_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+db_md_pte_cmd(db_expr_t addr, bool have_addr, db_expr_t count,
+    const char *modif)
 {
 	if (!have_addr) {
 		db_printf("pte: <address>\n");
@@ -419,13 +428,15 @@ db_md_pte_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif
 }
 
 void
-db_md_tlbi_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+db_md_tlbi_cmd(db_expr_t addr, bool have_addr, db_expr_t count,
+    const char *modif)
 {
 	aarch64_tlbi_all();
 }
 
 void
-db_md_sysreg_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+db_md_sysreg_cmd(db_expr_t addr, bool have_addr, db_expr_t count,
+    const char *modif)
 {
 #define SHOW_ARMREG(x)	\
 	db_printf("%-16s = %016llx\n", #x, reg_ ## x ## _read())
@@ -737,7 +748,8 @@ show_watchpoints(void)
 }
 
 void
-db_md_watch_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *modif)
+db_md_watch_cmd(db_expr_t addr, bool have_addr, db_expr_t count,
+    const char *modif)
 {
 	int i;
 	int added, cleared;
@@ -801,7 +813,8 @@ db_md_watch_cmd(db_expr_t addr, bool have_addr, db_expr_t count, const char *mod
 			for (i = 0; i <= max_watchpoint; i++) {
 				if (!(aarch64_get_dbgwcr(i) & DBGWCR_E)) {
 					/* add watch */
-					aarch64_watchpoint_set(i, addr, watchsize, accesstype);
+					aarch64_watchpoint_set(i, addr,
+					    watchsize, accesstype);
 					added = i;
 					break;
 				}
