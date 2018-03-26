@@ -1,4 +1,4 @@
-/*	$NetBSD$	*/
+/*	$NetBSD: cputypes.h,v 1.1 2018/03/20 10:14:29 ryo Exp $	*/
 
 /*
  * Copyright (c) 1998, 2001 Ben Harris
