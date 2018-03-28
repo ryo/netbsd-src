@@ -205,8 +205,7 @@ SUBDIR+=	hp300-mkboot
 SUBDIR+=	elftosb
 .endif
 
-.if ${MACHINE} == "evbarm" || \
-    ${MACHINE} == "evbmips" || \
+.if ${MACHINE} == "evbarm" || ${MACHINE} == "evbmips" || \
     ${MACHINE} == "evbppc" || ${MACHINE} == "sandpoint"
 SUBDIR+=	mkubootimage
 SUBDIR+=	libfdt .WAIT
