@@ -269,14 +269,14 @@ trap_el0_sync(struct trapframe *tf)
 	case ESR_EC_SW_STEP_EL0:
 	case ESR_EC_WTCHPNT_EL0:
 		/* XXX notyet */
-		printf("%s: %s\n", __func__, trapname);
 		do_trapsignal(l, SIGTRAP, TRAP_BRKPT, tf->tf_pc, esr);
 		userret(l);
 		break;
 
 	default:
 		/* XXX notyet */
-		printf("%s:%d: %s\n", __func__, __LINE__, trapname);
+	case ESR_EC_UNKNOWN:
+		/* illegal or not implemented instruction */
 		do_trapsignal(l, SIGILL, ILL_ILLTRP, tf->tf_pc, esr);
 		userret(l);
 		break;
