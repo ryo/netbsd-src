@@ -55,7 +55,7 @@ extract_cacheunit(int level, bool insn, int cachetype)
 	/* select and extract level N data cache */
 	reg_csselr_el1_write(__SHIFTIN(level, CSSELR_LEVEL) |
 	    __SHIFTIN(insn ? 1 : 0, CSSELR_IND));
-	asm("isb");
+	__asm __volatile ("isb");
 
 	ccsidr = reg_ccsidr_el1_read();
 
