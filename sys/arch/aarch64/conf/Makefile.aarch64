@@ -38,7 +38,6 @@ CFLAGS+=	-march=armv8-a+nofp+nosimd
 CFLAGS+=	-fno-omit-frame-pointer
 CFLAGS+=	-mno-omit-leaf-frame-pointer
 #CFLAGS+=	-mno-unaligned-access
-#CFLAGS+=	-ffixed-x18
 
 
 ##
