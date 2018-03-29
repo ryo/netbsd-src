@@ -1201,8 +1201,8 @@ MKXORG_SERVER=yes
 MKRADEONFIRMWARE=		yes
 .endif
 
-# Only install the tegra firmware on evbarm and evbarm64.
-.if ${MACHINE} == "evbarm" || ${MACHINE} == "evbarm64"
+# Only install the tegra firmware on evbarm.
+.if ${MACHINE} == "evbarm"
 MKTEGRAFIRMWARE=		yes
 .endif
 

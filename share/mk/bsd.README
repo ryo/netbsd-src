@@ -417,7 +417,7 @@ MKSTRIPSYM	If "yes", strip all local symbols from shared libraries;
 
 MKTEGRAFIRMWARE	If "no", install the /libdata/firmware/nvidia directory,
 		which is necessary for the NVIDIA Tegra XHCI driver.
-		Default: yes on evbarm and evbarm64, no elsewhere.
+		Default: yes on evbarm, no elsewhere.
 
 MKTOOLSDEBUG	If "yes" build the tools with debugging symbols.
 		Default: no
