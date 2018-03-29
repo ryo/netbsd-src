@@ -71,13 +71,12 @@ void db_md_watch_cmd(db_expr_t, bool, db_expr_t, const char *);
 
 const struct db_command db_machine_command_table[] = {
 #if defined(_KERNEL) && defined(MULTIPROCESSOR)
-//XXXAARCH64
-//	{
-//		DDB_ADD_CMD(
-//		    "cpu", db_md_switch_cpu_cmd, 0,
-//		    "switch to a different cpu",
-//		    NULL, NULL)
-//	},
+	{
+		DDB_ADD_CMD(
+		    "cpu", db_md_switch_cpu_cmd, 0,
+		    "switch to a different cpu",
+		    NULL, NULL)
+	},
 #endif
 	{
 		DDB_ADD_CMD(
