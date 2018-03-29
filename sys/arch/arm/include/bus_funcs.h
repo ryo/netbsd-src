@@ -99,6 +99,13 @@
 	(*(t)->__bs_opname_s(c,sz))((t)->bs_cookie, h1, o1, h2, o2, cnt)
 #endif
 
+#ifdef __BUS_SPACE_HAS_PROBING_METHODS
+#define	__bs_pe(sz, t, h, o, v)						\
+	(*(t)->__bs_opname(pe,sz))((t)->bs_cookie, h, o, v)
+#define	__bs_po(sz, t, h, o, v)						\
+	(*(t)->__bs_opname(po,sz))((t)->bs_cookie, h, o, v)
+#endif
+
 /*
  * Mapping and unmapping operations.
  */
@@ -299,15 +306,15 @@
  * Probing operations.
  */
 #ifdef __BUS_SPACE_HAS_PROBING_METHODS
-#define	bus_space_peek_1(t, h, o, p)	__bs_ws(1,(t),(h),(o),(p))
-#define	bus_space_peek_2(t, h, o, p)	__bs_ws(2,(t),(h),(o),(p))
-#define	bus_space_peek_4(t, h, o, p)	__bs_ws(4,(t),(h),(o),(p))
-#define	bus_space_peek_8(t, h, o, p)	__bs_ws(8,(t),(h),(o),(p))
+#define	bus_space_peek_1(t, h, o, p)	__bs_pe(1,(t),(h),(o),(p))
+#define	bus_space_peek_2(t, h, o, p)	__bs_pe(2,(t),(h),(o),(p))
+#define	bus_space_peek_4(t, h, o, p)	__bs_pe(4,(t),(h),(o),(p))
+#define	bus_space_peek_8(t, h, o, p)	__bs_pe(8,(t),(h),(o),(p))
 
-#define	bus_space_poke_1(t, h, o, v)	__bs_ws(1,(t),(h),(o),(v))
-#define	bus_space_poke_2(t, h, o, v)	__bs_ws(2,(t),(h),(o),(v))
-#define	bus_space_poke_4(t, h, o, v)	__bs_ws(4,(t),(h),(o),(v))
-#define	bus_space_poke_8(t, h, o, v)	__bs_ws(8,(t),(h),(o),(v))
+#define	bus_space_poke_1(t, h, o, v)	__bs_po(1,(t),(h),(o),(v))
+#define	bus_space_poke_2(t, h, o, v)	__bs_po(2,(t),(h),(o),(v))
+#define	bus_space_poke_4(t, h, o, v)	__bs_po(4,(t),(h),(o),(v))
+#define	bus_space_poke_8(t, h, o, v)	__bs_po(8,(t),(h),(o),(v))
 #endif
 
 /*
