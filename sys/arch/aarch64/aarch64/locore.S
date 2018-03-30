@@ -38,9 +38,10 @@
 
 RCSID("$NetBSD$")
 
+/* #define DEBUG_LOCORE */
+/* #define DEBUG_MMU */
+
 #if defined(VERBOSE_INIT_ARM) && defined(EARLYCONS)
-#define DEBUG_LOCORE
-#define DEBUG_MMU
 #define VERBOSE_LOCORE
 #endif
 
@@ -67,6 +68,7 @@ ENTRY_NP(aarch64_start)
 	sub	x0, x0, #TF_SIZE	/* lwp0space + USPACE - TF_SIZE */
 	mov	sp, x0			/* define lwp0 ksp bottom */
 
+#ifdef DEBUG_LOCORE
 	PRINT("SP               = ")
 	mov	x0, sp
 	bl	print_x0
@@ -76,7 +78,6 @@ ENTRY_NP(aarch64_start)
 1:	mov	x0, lr
 	bl	print_x0
 
-#ifdef DEBUG_LOCORE
 	PRINT("CurrentEL        = ")
 	mrs	x0, CurrentEL
 	lsr	x0, x0, #2
@@ -720,10 +721,6 @@ sctlr_clear:
 
 
 	/*
-	 * Kernel stack overflow, if ever, will destroy lower section
-	 * beyond here until writing "start" ends up with kernel
-	 * segfault, hopefully.
-	 *
 	 * XXXAARCH64: kernel segment is writable
 	 */
 	.align PGSHIFT
