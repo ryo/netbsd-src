@@ -9,7 +9,7 @@ TODO list for NetBSD/aarch64
 - not yet
   - SMP
   - kernel text/rodata segments are mapped writable. it should be mapped as RX.
-  - ucas_ras_check() is not implemented yet
+  - ucas(9), and ucas_ras_check() is not implemented yet
   - crash(8), savecore(8) and libkvm (cpu_kcore_hdr_t)
   - pmap should be work even if PID_MAX >= 65536
   - TLB ASID in pmap should be randomized
