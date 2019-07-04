@@ -1,0 +1,15 @@
+#	$NetBSD$
+#
+# Configuration info for Qualcomm Snapdragon family SoCs
+#
+
+file	arch/arm/snapdragon/snapdragon_platform.c	soc_snapdragon
+
+# SOC parameters
+defflag	opt_soc.h			SOC_SNAPDRAGON
+defflag	opt_soc.h			SOC_APQ8016: SOC_SNAPDRAGON
+
+# UART
+device	msmuart
+attach	msmuart at fdt with msmuart
+file	arch/arm/snapdragon/msmuart.c		msmuart

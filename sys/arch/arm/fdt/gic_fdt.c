@@ -114,6 +114,7 @@ static const struct device_compatible_entry compat_data[] = {
 	{ .compat = "arm,cortex-a15-gic" },
 	{ .compat = "arm,cortex-a9-gic" },
 	{ .compat = "arm,cortex-a7-gic" },
+	{ .compat = "qcom,msm-qgic2" },
 	DEVICE_COMPAT_EOL
 };
 
