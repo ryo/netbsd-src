@@ -51,6 +51,13 @@ __KERNEL_RCSID(0, "$NetBSD$");
 
 void snapdragon_platform_early_putchar(char);
 
+extern struct arm32_bus_dma_tag arm_generic_dma_tag;
+extern struct bus_space arm_generic_bs_tag;
+extern struct bus_space arm_generic_a4x_bs_tag;
+#define snapdragon_dma_tag	arm_generic_dma_tag
+#define snapdragon_bs_tag	arm_generic_bs_tag
+#define snapdragon_a4x_bs_tag	arm_generic_a4x_bs_tag
+
 static const struct pmap_devmap *
 snapdragon_platform_devmap(void)
 {
@@ -92,13 +99,8 @@ snapdragon_platform_bootstrap(void)
 static void
 snapdragon_platform_init_attach_args(struct fdt_attach_args *faa)
 {
-	extern struct arm32_bus_dma_tag arm_generic_dma_tag;
-	extern struct bus_space arm_generic_bs_tag;
-	extern struct bus_space arm_generic_a4x_bs_tag;
-
-	faa->faa_bst = &arm_generic_bs_tag;
-	faa->faa_a4x_bst = &arm_generic_a4x_bs_tag;
-	faa->faa_dmat = &arm_generic_dma_tag;
+	faa->faa_bst = &snapdragon_bs_tag;
+	faa->faa_dmat = &snapdragon_dma_tag;
 }
 
 static void
@@ -109,12 +111,23 @@ snapdragon_platform_device_register(device_t dev, void *aux)
 static void
 snapdragon_platform_system_reset(void)
 {
+	bus_space_tag_t bst = &snapdragon_bs_tag;
+	bus_space_handle_t bsh;
+
+#define QCOM_PSHOLD	0x0004ab000	/* XXX: "qcom,pshold" */
+	bus_space_map(bst, QCOM_PSHOLD, 0x1000, 0, &bsh);
+	bus_space_write_4(bst, bsh, 0, 0);
+
+	for (;;) {
+		__asm("wfi");
+	}
+
 }
 
 static u_int
 snapdragon_platform_uart_freq(void)
 {
-	return 0x12345678;	// XXX
+	return 0;
 }
 
 void
@@ -133,7 +146,7 @@ snapdragon_platform_early_putchar(char c)
 	    (volatile uint32_t *)CONSADDR;
 
 	/*
-	 * XXX: this works on only UART_DM. non DM UART is not considered.
+	 * XXX: suppoted only UART_DM. non DM UART is not considered.
 	 */
 
 	while (((REGREAD(uart, UART_DM_SR) & UART_DM_SR_TXEMT) == 0) &&
