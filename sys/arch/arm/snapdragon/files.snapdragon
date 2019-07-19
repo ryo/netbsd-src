@@ -13,3 +13,14 @@ defflag	opt_soc.h			SOC_APQ8016: SOC_SNAPDRAGON
 device	msmuart
 attach	msmuart at fdt with msmuart
 file	arch/arm/snapdragon/msmuart.c		msmuart
+
+
+# EHCI (ChipIdea Highspeed Dual Role Controller)
+attach	ehci at fdt with chipidea_fdt
+file	arch/arm/snapdragon/chipidea_ehci.c	chipidea_fdt
+
+# USB PHY
+device	msm8916usbphy
+attach	msm8916usbphy at fdt with msm8916_usbphy
+file	arch/arm/snapdragon/msm8916_usbphy.c	msm8916_usbphy
+

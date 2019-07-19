@@ -1,0 +1,59 @@
+#ifndef _ARM_SNAPDRAGON_CHIPIDEAREG_H_
+#define _ARM_SNAPDRAGON_CHIPIDEAREG_H_
+/*
+ * Copyright (c) 2019 Ryo Shimizu <ryo@nerv.org>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ * ChipIdea Highspeed Dual Role USB Controller
+ */
+
+/* USB2_HSIC_USB_OTG_HS_BASE_USB_OTG_HS @ 0x078d9000 */
+#define CHIPIDEA_REG_ID			0x0000
+#define  CHIPIDEA_ID_VER		__BITS(29,25)
+#define  CHIPIDEA_ID_REV		__BITS(24,21)
+#define CHIPIDEA_REG_HWGENERAL		0x0004
+#define CHIPIDEA_REG_HWHOST		0x0008
+#define CHIPIDEA_REG_HWDEVICE		0x000c
+#define CHIPIDEA_REG_HWTXBUF		0x0010
+#define CHIPIDEA_REG_HWRXBUF		0x0014
+#define CHIPIDEA_REG_SCRATCH_RAM(n)	(0x0040 + (n) * 4)
+#define CHIPIDEA_REG_GPTIMER0LD		0x0080
+#define CHIPIDEA_REG_GPTIMER0CTRL	0x0084
+#define CHIPIDEA_REG_GPTIMER1LD		0x0088
+#define CHIPIDEA_REG_GPTIMER1CTRL	0x008c
+#define CHIPIDEA_REG_AHB_BURST		0x0090
+#define CHIPIDEA_REG_XTOR_STS		0x0094
+#define CHIPIDEA_REG_AHB_MODE		0x0098
+#define CHIPIDEA_REG_GEN_CONFIG		0x009c
+#define CHIPIDEA_REG_GEN_CONFIG_2	0x00a0
+
+#define CHIPIDEA_REG_CAPLENGTH		0x0100
+#define CHIPIDEA_REG_HCSPARAMS		0x0104
+#define CHIPIDEA_REG_HCCPARAMS		0x0108
+#define CHIPIDEA_REG_DCIVERSION		0x0120
+#define CHIPIDEA_REG_DCCPARAMS		0x0124
+
+#endif /* _ARM_SNAPDRAGON_CHIPIDEAREG_H_ */
