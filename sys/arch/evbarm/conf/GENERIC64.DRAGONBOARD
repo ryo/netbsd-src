@@ -1,0 +1,13 @@
+include	"arch/evbarm/conf/GENERIC64"
+
+options 	DB_MAX_WIDTH=0
+options 	DB_MAX_LINE=128
+
+#options 	UVMHIST,PMAPHIST
+
+options 	EARLYCONS=snapdragon, CONSADDR=0x078b0000
+options 	VERBOSE_INIT_ARM # verbose bootstrapping messages
+
+
+# XXX: WIP
+msm8916usbphy* at fdt? pass 9		# Qualcomm snapdragon MSM8916 USB2 PHY
