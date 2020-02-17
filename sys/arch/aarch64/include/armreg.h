@@ -644,8 +644,23 @@ AARCH64REG_WRITE_INLINE(esr_el1)
 AARCH64REG_READ_INLINE(far_el1)		// Fault Address Register
 AARCH64REG_WRITE_INLINE(far_el1)
 
+AARCH64REG_READ_INLINE2(il1data0_el1, s3_0_c15_c0_0)	// Cortex-A72
+AARCH64REG_READ_INLINE2(il1data1_el1, s3_0_c15_c0_1)	// Cortex-A72
+AARCH64REG_READ_INLINE2(il1data2_el1, s3_0_c15_c0_2)	// Cortex-A72
+AARCH64REG_READ_INLINE2(il1data3_el1, s3_0_c15_c0_3)	// Cortex-A72
+AARCH64REG_READ_INLINE2(dl1data0_el1, s3_0_c15_c1_0)	// Cortex-A72
+AARCH64REG_READ_INLINE2(dl1data1_el1, s3_0_c15_c1_1)	// Cortex-A72
+AARCH64REG_READ_INLINE2(dl1data2_el1, s3_0_c15_c1_2)	// Cortex-A72
+AARCH64REG_READ_INLINE2(dl1data3_el1, s3_0_c15_c1_3)	// Cortex-A72
+
 AARCH64REG_READ_INLINE2(l2ctlr_el1, s3_1_c11_c0_2)  // Cortex-A53,57,72,73
 AARCH64REG_WRITE_INLINE2(l2ctlr_el1, s3_1_c11_c0_2) // Cortex-A53,57,72,73
+AARCH64REG_READ_INLINE2(l2actlr_el1, s3_1_c15_c0_0)  // Cortex-A53,57,72,73
+AARCH64REG_WRITE_INLINE2(la2ctlr_el1, s3_1_c15_c0_0) // Cortex-A53,57,72,73
+AARCH64REG_READ_INLINE2(cpuactlr_el1, s3_1_c15_c2_0)  // Cortex-A53,57,72,73
+AARCH64REG_WRITE_INLINE2(cpuactlr_el1, s3_1_c15_c2_0) // Cortex-A53,57,72,73
+AARCH64REG_READ_INLINE2(cpuectlr_el1, s3_1_c15_c2_1)  // Cortex-A53,57,72,73
+AARCH64REG_WRITE_INLINE2(cpuectlr_el1, s3_1_c15_c2_1) // Cortex-A53,57,72,73
 
 #define	L2CTLR_NUMOFCORE	__BITS(25,24)	// Number of cores
 #define	L2CTLR_CPUCACHEPROT	__BIT(22)	// CPU Cache Protection

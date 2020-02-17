@@ -34,6 +34,7 @@ __KERNEL_RCSID(0, "$NetBSD: db_machdep.c,v 1.19 2019/09/07 09:27:25 ryo Exp $");
 
 #ifdef _KERNEL_OPT
 #include "opt_compat_netbsd32.h"
+#include "opt_cputypes.h"
 #endif
 
 #include <sys/param.h>
@@ -68,6 +69,7 @@ void db_md_cpuinfo_cmd(db_expr_t, bool, db_expr_t, const char *);
 void db_md_frame_cmd(db_expr_t, bool, db_expr_t, const char *);
 void db_md_lwp_cmd(db_expr_t, bool, db_expr_t, const char *);
 void db_md_pte_cmd(db_expr_t, bool, db_expr_t, const char *);
+void db_md_cache_cmd(db_expr_t, bool, db_expr_t, const char *);
 void db_md_tlbi_cmd(db_expr_t, bool, db_expr_t, const char *);
 void db_md_ttbr_cmd(db_expr_t, bool, db_expr_t, const char *);
 void db_md_sysreg_cmd(db_expr_t, bool, db_expr_t, const char *);
@@ -75,6 +77,11 @@ void db_md_watch_cmd(db_expr_t, bool, db_expr_t, const char *);
 #if defined(_KERNEL) && defined(MULTIPROCESSOR)
 void db_md_switch_cpu_cmd(db_expr_t, bool, db_expr_t, const char *);
 #endif
+
+#ifdef CPU_CORTEX
+void db_md_ramindex_cmd(db_expr_t, bool, db_expr_t, const char *);
+#endif
+
 
 const struct db_command db_machine_command_table[] = {
 #if defined(_KERNEL) && defined(MULTIPROCESSOR)
@@ -121,6 +128,12 @@ const struct db_command db_machine_command_table[] = {
 	},
 	{
 		DDB_ADD_CMD(
+		    "cache", db_md_cache_cmd, 0,
+		    "flush cache",
+		    NULL, NULL)
+	},
+	{
+		DDB_ADD_CMD(
 		    "tlbi", db_md_tlbi_cmd, 0,
 		    "flush tlb",
 		    NULL, NULL)
@@ -142,6 +155,14 @@ const struct db_command db_machine_command_table[] = {
 		    "\t#: watchpoint number to remove"
 		    "\t/1..8: size of data\n")
 	},
+#ifdef CPU_CORTEX
+	{
+		DDB_ADD_CMD(
+		    "ramindex", db_md_ramindex_cmd, 0,
+		    "cache dump",
+		    NULL, NULL)
+	},
+#endif /* CPU_CORTEX */
 #endif
 	{
 		DDB_ADD_CMD(NULL, NULL, 0,
@@ -422,6 +443,291 @@ db_md_tlbi_cmd(db_expr_t addr, bool have_addr, db_expr_t count,
 {
 	aarch64_tlbi_all();
 }
+
+void
+db_md_cache_cmd(db_expr_t addr, bool have_addr, db_expr_t count,
+    const char *modif)
+{
+	bool icache = false;
+
+	if (modif != NULL) {
+		for (; *modif != '\0'; modif++) {
+			switch (*modif) {
+			case 'i':
+				icache = true;
+				break;
+			}
+		}
+	}
+
+	db_printf("dsb ishst\n");
+	delay(10000);
+	__asm __volatile ("dsb ishst");
+	db_printf("isb\n");
+	delay(10000);
+	__asm __volatile ("isb");
+	if (icache) {
+		db_printf("aarch64_icache_inv_all()\n");
+		delay(10000);
+		aarch64_icache_inv_all();
+	} else {
+		db_printf("aarch64_dcache_wbinv_all()\n");
+		delay(10000);
+		aarch64_dcache_wbinv_all();
+	}
+	db_printf("dsb ish\n");
+	delay(10000);
+	__asm __volatile ("dsb ish");
+	db_printf("isb\n");
+	delay(10000);
+	__asm __volatile ("isb");
+}
+
+#ifdef CPU_CORTEX
+static inline void
+aarch64_ramindex_write(uint32_t reg)
+{
+	__asm __volatile(
+	    "sys #0, c15, c4, #0, %0\n"
+	    "dsb sy\n"
+	    "isb\n" :: "r"(reg));
+}
+
+static void
+cortex_ramindex_l1_i_tag(void)
+{
+	uint32_t ramindex;
+	uint64_t il1data0, il1data1;
+	uint32_t cacheaddr;
+	int way, nway;
+
+	nway = curcpu()->ci_cacheinfo[0].icache.cache_ways;
+
+	for (cacheaddr = 0;
+	    cacheaddr < curcpu()->ci_cacheinfo[0].icache.cache_size / nway;
+	    cacheaddr += curcpu()->ci_cacheinfo[0].icache.cache_line_size) {
+
+		db_printf("L1-I TAG[%08x] =", cacheaddr);
+
+		for (way = 0; way < nway; way++) {
+			ramindex = (0 << 24) | (way << 18) | cacheaddr;
+			aarch64_ramindex_write(ramindex);
+			il1data0 = reg_il1data0_el1_read();
+			il1data1 = reg_il1data1_el1_read();
+
+			if (il1data1 & 2) { /* valid? */
+				db_printf(" %016lx", ((uint64_t)il1data0 << 12) + cacheaddr);
+			} else {
+				db_printf(" -               ");
+			}
+		}
+		db_printf("\n");
+	}
+}
+
+static void
+cortex_ramindex_l1_i_tlb(void)
+{
+	uint32_t ramindex;
+	uint64_t il1data0, il1data1, il1data2, il1data3;
+	uint64_t vaddr, paddr;
+	uint32_t tlb;
+	int sh, vaid, vmid, asid, mair, sz, domain, nosec, valid;
+#define ITLBNUM	48
+
+	for (tlb = 0; tlb < ITLBNUM; tlb++) {
+		ramindex = (4 << 24) | tlb;
+		aarch64_ramindex_write(ramindex);
+
+		il1data0 = reg_il1data0_el1_read();
+		il1data1 = reg_il1data1_el1_read();
+		il1data2 = reg_il1data2_el1_read();
+		il1data3 = reg_il1data3_el1_read();
+
+		valid = __SHIFTOUT(il1data3, __BIT(27));
+		sh = __SHIFTOUT(il1data3, __BITS(26,25));
+		vaid = __SHIFTOUT(il1data3, __BITS(15,14));
+		vmid = __SHIFTOUT(il1data3, __BITS(13,6));
+		asid = (__SHIFTOUT(il1data3, __BITS(5,0)) << 10) | __SHIFTOUT(il1data2, __BITS(31,22));
+		mair = __SHIFTOUT(il1data2, __BITS(21,14));
+		sz = __SHIFTOUT(il1data2, __BITS(11,10));
+		domain = __SHIFTOUT(il1data2, __BITS(9,6));
+		nosec = __SHIFTOUT(il1data2, __BIT(5));
+		paddr = ((__SHIFTOUT(il1data2, __BITS(4,0)) << 27) | __SHIFTOUT(il1data1, __BITS(31,5))) << 12;
+		vaddr = ((__SHIFTOUT(il1data1, __BITS(4,0)) << 32) | __SHIFTOUT(il1data0, __BITS(31,0))) << 12;
+
+		if (!valid)
+			continue;
+
+		switch (sz) {
+		case 0:
+			vaddr += paddr & 0xfff;
+			break;
+		case 1:
+			vaddr += paddr & 0xffff;
+			break;
+		case 2:
+			vaddr += paddr & 0xfffff;
+			break;
+		}
+
+		db_printf("L1-I TLB[%02u] = valid=%d, share=%d, vaid=%d,  vmid=%d, asid=%5d, mair=%02x, size=%d, domain=%d, nosec=%d, paddr=%08lx, vaddr=%016lx\n",
+		    tlb, valid, sh, vaid, vmid, asid, mair, sz, domain, nosec, paddr, vaddr);
+	}
+}
+
+static void
+cortex_ramindex_l1_d_tlb(void)
+{
+	uint32_t ramindex;
+	uint64_t dl1data0, dl1data1, dl1data2, dl1data3;
+	uint64_t vaddr, paddr;
+	uint32_t tlb;
+	int sh, vaid, mair, sz, domain, nosec, valid;
+
+#define DTLBNUM	32
+	for (tlb = 0; tlb < DTLBNUM; tlb++) {
+		ramindex = (0x0a << 24) | tlb;
+		aarch64_ramindex_write(ramindex);
+
+		dl1data0 = reg_dl1data0_el1_read();
+		dl1data1 = reg_dl1data1_el1_read();
+		dl1data2 = reg_dl1data2_el1_read();
+		dl1data3 = reg_dl1data3_el1_read();
+
+		valid = __SHIFTOUT(dl1data3, __BIT(12));
+		vaid = __SHIFTOUT(dl1data3, __BITS(11,10));
+		sh = __SHIFTOUT(dl1data3, __BITS(1,0));
+		mair = __SHIFTOUT(dl1data2, __BITS(31,24));
+		sz = __SHIFTOUT(dl1data2, __BITS(23,22));
+		domain = __SHIFTOUT(dl1data2, __BITS(21,18));
+		nosec = __SHIFTOUT(dl1data2, __BIT(5));
+
+		paddr = ((__SHIFTOUT(dl1data2, __BITS(4,0)) << 27) | __SHIFTOUT(dl1data1, __BITS(31,5))) << 12;
+		vaddr = ((__SHIFTOUT(dl1data1, __BITS(4,0)) << 32) | __SHIFTOUT(dl1data0, __BITS(31,0))) << 12;
+
+		if (!valid)
+			continue;
+
+		switch (sz) {
+		case 0:
+			vaddr += paddr & 0xfff;
+			break;
+		case 1:
+			vaddr += paddr & 0xffff;
+			break;
+		case 2:
+			vaddr += paddr & 0xfffff;
+			break;
+		}
+
+		db_printf("L1-D TLB[%02u] = valid=%d, share=%d, vaid=%d,                      mair=%02x, size=%d, domain=%d, nosec=%d, paddr=%08lx, vaddr=%016lx\n",
+		    tlb, valid, sh, vaid, mair, sz, domain, nosec, paddr, vaddr);
+	}
+}
+
+static void
+cortex_ramindex_l2_d_tlb(void)
+{
+	uint32_t ramindex;
+	uint64_t dl1data0, dl1data1, dl1data2, dl1data3;
+	uint64_t vaddr, paddr;
+	uint32_t tlb, way;
+	int sh, vmid, asid, mair, sz, domain, nosec, valid3, valid2, valid1s, valid1;
+
+#define L2DTLBNUM	256
+#define L2DWAYNUM	4
+	for (tlb = 0; tlb < L2DTLBNUM; tlb++) {
+		for (way = 0; way < L2DWAYNUM; way++) {
+			ramindex = (0x18 << 24) | (way << 18) | tlb;
+			aarch64_ramindex_write(ramindex);
+
+			dl1data0 = reg_dl1data0_el1_read();
+			dl1data1 = reg_dl1data1_el1_read();
+			dl1data2 = reg_dl1data2_el1_read();
+			dl1data3 = reg_dl1data3_el1_read();
+
+			valid3  = __SHIFTOUT(dl1data3, __BIT(31));
+			valid2  = __SHIFTOUT(dl1data3, __BIT(30));
+			valid1s = __SHIFTOUT(dl1data3, __BIT(29));
+			valid1  = __SHIFTOUT(dl1data3, __BIT(28));
+
+			vmid = __SHIFTOUT(dl1data3, __BITS(27,20));
+			asid = __SHIFTOUT(dl1data3, __BITS(19,4));
+			vaddr = ((__SHIFTOUT(dl1data3, __BITS(3,0)) << 25) | __SHIFTOUT(dl1data2, __BITS(31,6))) << 19;
+			nosec = __SHIFTOUT(dl1data2, __BIT(5));
+			paddr = ((__SHIFTOUT(dl1data2, __BITS(4,0)) << 27) | __SHIFTOUT(dl1data1, __BITS(31,5))) << 12;
+			sz = (__SHIFTOUT(dl1data1, __BITS(1,0)) << 1) | __SHIFTOUT(dl1data0, __BIT(31));
+			domain = __SHIFTOUT(dl1data0, __BITS(13,10));
+			sh = __SHIFTOUT(dl1data0, __BITS(9,8));
+			mair = __SHIFTOUT(dl1data0, __BITS(7,0));
+
+			if (!(valid3 | valid2 | valid1s | valid1))
+				continue;
+
+			switch (sz) {
+			case 0:
+				vaddr += paddr & 0xfff;
+				break;
+			case 1:
+				vaddr += paddr & 0xffff;
+				break;
+			case 2:
+				vaddr += paddr & 0xfffff;
+				break;
+			case 3:
+				vaddr += paddr & 0x1fffff;
+				break;
+			case 4:
+				vaddr += paddr & 0xffffff;
+				break;
+			case 5:
+				vaddr += paddr & 0x1fffffff;
+				break;
+			case 6:
+				vaddr += paddr & 0x3fffffff;
+				break;
+			}
+
+			db_printf("L2-D TLB[%03u:%u] = valid=%d.%d.%d.%d, share=%d, vmid=%d, asid=%5d, mair=%02x, size=%d, domain=%d, nosec=%d, paddr=%08lx, vaddr=%016lx\n",
+			    tlb, way, valid3, valid2, valid1s, valid1, sh, vmid, asid, mair, sz, domain, nosec, paddr, vaddr);
+		}
+	}
+}
+
+void
+db_md_ramindex_cmd(db_expr_t addr, bool have_addr, db_expr_t count,
+    const char *modif)
+{
+	bool force = false;
+
+	if (modif != NULL) {
+		for (; *modif != '\0'; modif++) {
+			switch (*modif) {
+			case 'f':
+				force = true;
+				break;
+			}
+		}
+	}
+
+	/*
+	 * ramindex is aarch64 implementation defined registers.
+	 * the implementation should be checked by hooking illegal insn trap?
+	 */
+	if (!force &&
+	    !CPU_ID_CORTEX_A57_P(reg_midr_el1_read()) &&
+	    !CPU_ID_CORTEX_A72_P(reg_midr_el1_read())) {
+		db_printf("not supported on this cpu\n");
+		return;
+	}
+
+	cortex_ramindex_l1_i_tag();
+	cortex_ramindex_l1_i_tlb();
+	cortex_ramindex_l1_d_tlb();
+	cortex_ramindex_l2_d_tlb();
+}
+#endif /* CPU_CORTEX */
 
 void
 db_md_ttbr_cmd(db_expr_t addr, bool have_addr, db_expr_t count,
