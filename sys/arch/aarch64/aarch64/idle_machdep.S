@@ -81,7 +81,16 @@ ENTRY(cpu_idle)
 	mov	x0, sp				/* get pointer to trapframe */
 
 	DISABLE_INTERRUPT
+
+#ifdef JTAG_DEBUGGING
+	/* use busyloop instead of WFI to avoid entering low-power mode */
+wait_for_interrupt:
+	mrs	x3, isr_el1
+	tst	x3, #DAIF_I
+	beq	wait_for_interrupt
+#else
 	wfi
+#endif
 
 	str	w2, [x1, #CI_INTR_DEPTH]	/* ci->ci_intr_depth++ */
 	bl	ARM_IRQ_HANDLER			/* irqhandler(trapframe) */
