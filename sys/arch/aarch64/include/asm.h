@@ -38,7 +38,7 @@
  */
 #ifdef ARMV83_PAC
 #define ARMV8_DEFINE_OPTIONS	\
-	.arch armv8.3-a+pac
+	.arch armv8.3-a
 #else
 #define ARMV8_DEFINE_OPTIONS	/* nothing */
 #endif

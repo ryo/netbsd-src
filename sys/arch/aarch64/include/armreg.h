@@ -554,6 +554,15 @@ AARCH64REG_READ_INLINE(revidr_el1)
 /*
  * These are read/write registers
  */
+AARCH64REG_READ_INLINE3(APIAKeyLo_EL1, apiakeylo_el1,
+    ATTRIBUTE_TARGET("arch=armv8.3-a"))
+AARCH64REG_WRITE_INLINE3(APIAKeyLo_EL1, apiakeylo_el1,
+    ATTRIBUTE_TARGET("arch=armv8.3-a"))
+AARCH64REG_READ_INLINE3(APIAKeyHi_EL1, apiakeyhi_el1,
+    ATTRIBUTE_TARGET("arch=armv8.3-a"))
+AARCH64REG_WRITE_INLINE3(APIAKeyHi_EL1, apiakeyhi_el1,
+    ATTRIBUTE_TARGET("arch=armv8.3-a"))
+
 AARCH64REG_READ_INLINE(cpacr_el1)	// Coprocessor Access Control Regiser
 AARCH64REG_WRITE_INLINE(cpacr_el1)
 
@@ -791,20 +800,6 @@ AARCH64REG_WRITE_INLINE(sctlr_el1)
 #define	SCTLR_ATA0		__BIT(42)
 #define	SCTLR_ATA		__BIT(43)
 #define	SCTLR_DSSBS		__BIT(44)
-
-static __inline void
-reg_APIAKeyLo_EL1_write(uint64_t __val)
-{
-	__asm __volatile(".arch armv8.3-a+pac\n"
-	    "msr APIAKeyLo_EL1, %0" :: "r"(__val));
-}
-
-static __inline void
-reg_APIAKeyHi_EL1_write(uint64_t __val)
-{
-	__asm __volatile(".arch armv8.3-a+pac\n"
-	    "msr APIAKeyHi_EL1, %0" :: "r"(__val));
-}
 
 #define	PTR_VA_RANGE_SELECT	__BIT(55)
 #define	PTR_PAC_MASK		(__BITS(63,56) | __BITS(54, 48))
