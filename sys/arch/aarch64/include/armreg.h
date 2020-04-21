@@ -35,6 +35,12 @@
 #include <arm/cputypes.h>
 #include <sys/types.h>
 
+#ifdef __clang__
+#define ATTRIBUTE_TARGET(arch)
+#else
+#define ATTRIBUTE_TARGET(arch)	__attribute__((target(arch)))
+#endif
+
 #define AARCH64REG_READ_INLINE3(regname, regdesc, fnattrs)	\
 static __inline uint64_t fnattrs				\
 reg_##regname##_read(void)					\
@@ -380,7 +386,7 @@ AARCH64REG_READ_INLINE(id_aa64mmfr1_el1)
 #define	 ID_AA64MMFR1_EL1_HAFDBS_AD	 2
 
 AARCH64REG_READ_INLINE3(id_aa64mmfr2_el1, id_aa64mmfr2_el1,
-    __attribute__((target("arch=armv8.2-a"))))
+    ATTRIBUTE_TARGET("arch=armv8.2-a"))
 
 #define	ID_AA64MMFR2_EL1_E0PD		__BITS(63,60)
 #define	 ID_AA64MMFR2_EL1_E0PD_NONE	 0
