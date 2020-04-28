@@ -103,6 +103,77 @@ void aarch64_tlbi_by_va_ll(vaddr_t);		/* all ASID, a VA, lastlevel */
 void aarch64_tlbi_by_asid_va(int, vaddr_t);	/*  an ASID, a VA */
 void aarch64_tlbi_by_asid_va_ll(int, vaddr_t);	/*  an ASID, a VA, lastlevel */
 
+/*
+ * Which is the address space of this VA?
+ * return the space considering TBI. (XXX: TBID is not yet)
+ *
+ * return value: AARCH64_ADDRSPACE_{LOWER,UPPER}{_OUTOFRANGE}?
+ */
+#define AARCH64_ADDRSPACE_LOWER			0	/* -> TTBR0 */
+#define AARCH64_ADDRSPACE_UPPER			1	/* -> TTBR1 */
+#define AARCH64_ADDRSPACE_LOWER_OUTOFRANGE	-1	/* certainly fault */
+#define AARCH64_ADDRSPACE_UPPER_OUTOFRANGE	-2	/* certainly fault */
+static inline int
+aarch64_addressspace(vaddr_t va)
+{
+	uint64_t addrtop, tbi;
+
+	addrtop = (uint64_t)va & AARCH64_ADDRTOP_TAG;
+	tbi = addrtop ? TCR_TBI1 : TCR_TBI0;
+	if (reg_tcr_el1_read() & tbi) {
+		if (addrtop == 0) {
+			/* lower address, and TBI0 enabled */
+			if ((va & AARCH64_ADDRESS_PAC_MASK) != 0)
+				return AARCH64_ADDRSPACE_LOWER_OUTOFRANGE;
+			return AARCH64_ADDRSPACE_LOWER;
+		}
+		/* upper address, and TBI1 enabled */
+		if ((va & AARCH64_ADDRESS_PAC_MASK) != AARCH64_ADDRESS_PAC_MASK)
+			return AARCH64_ADDRSPACE_UPPER_OUTOFRANGE;
+		return AARCH64_ADDRSPACE_UPPER;
+	}
+
+	addrtop = (uint64_t)va & AARCH64_ADDRTOP_MSB;
+	if (addrtop == 0) {
+		/* lower address, and TBI0 disabled */
+		if ((va & AARCH64_ADDRESS_TAGPAC_MASK) != 0)
+			return AARCH64_ADDRSPACE_LOWER_OUTOFRANGE;
+		return AARCH64_ADDRSPACE_LOWER;
+	}
+	/* upper address, and TBI1 disabled */
+	if ((va & AARCH64_ADDRESS_TAGPAC_MASK) != AARCH64_ADDRESS_TAGPAC_MASK)
+		return AARCH64_ADDRSPACE_UPPER_OUTOFRANGE;
+	return AARCH64_ADDRSPACE_UPPER;
+}
+
+static inline vaddr_t
+aarch64_untag_address(vaddr_t va)
+{
+	uint64_t addrtop, tbi;
+
+	addrtop = (uint64_t)va & AARCH64_ADDRTOP_TAG;
+	tbi = addrtop ? TCR_TBI1 : TCR_TBI0;
+	if (reg_tcr_el1_read() & tbi) {
+		if (addrtop == 0) {
+			/* lower address, and TBI0 enabled */
+			return (uint64_t)va & ~AARCH64_ADDRESS_TAG_MASK;
+		}
+		/* upper address, and TBI1 enabled */
+		return (uint64_t)va | AARCH64_ADDRESS_TAG_MASK;
+	}
+
+	/* TBI[01] is disabled, nothing to do */
+	return va;
+}
+
+static __inline uint64_t __attribute__((target("arch=armv8.3-a")))
+aarch64_strip_pac(uint64_t ptr)
+{
+	if (aarch64_pac_enabled) {
+		__asm __volatile ("xpaci %0" : "=r"(ptr) : "0"(ptr));
+	}
+	return ptr;
+}
 
 /* misc */
 #define cpu_idnum()			aarch64_cpuid()

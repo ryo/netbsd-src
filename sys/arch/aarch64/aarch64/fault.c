@@ -40,6 +40,7 @@ __KERNEL_RCSID(0, "$NetBSD: fault.c,v 1.12 2020/02/29 21:34:37 ryo Exp $");
 
 #include <uvm/uvm.h>
 
+#include <aarch64/cpufunc.h>
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
 #include <aarch64/armreg.h>

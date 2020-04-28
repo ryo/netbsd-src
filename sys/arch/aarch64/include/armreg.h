@@ -1366,6 +1366,14 @@ AARCH64REG_READ_INLINE2(icc_iar1_el1, s3_0_c12_c12_0)
 #define	icc_iar1_read		reg_icc_iar1_el1_read
 #define	icc_eoi1r_write		reg_icc_eoir1_el1_write
 
+/* definitions of TAG and PAC in pointers */
+#define AARCH64_ADDRTOP_TAG		__BIT(55)	/* ECR_EL1.TBI[01]=1 */
+#define AARCH64_ADDRTOP_MSB		__BIT(63)	/* ECR_EL1.TBI[01]=0 */
+#define AARCH64_ADDRESS_TAG_MASK	__BITS(63,56)	/* if TCR.TBI[01]=1 */
+#define AARCH64_ADDRESS_PAC_MASK	__BITS(54,48)	/* depend on VIRT_BIT */
+#define AARCH64_ADDRESS_TAGPAC_MASK	\
+			(AARCH64_ADDRESS_TAG_MASK|AARCH64_ADDRESS_PAC_MASK)
+
 #if defined(_KERNEL)
 
 /*
