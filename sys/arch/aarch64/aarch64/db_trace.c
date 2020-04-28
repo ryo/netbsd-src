@@ -33,9 +33,10 @@ __KERNEL_RCSID(0, "$NetBSD: db_trace.c,v 1.9 2020/04/12 07:49:58 maxv Exp $");
 #include <sys/param.h>
 #include <sys/proc.h>
 
+#include <aarch64/armreg.h>
+#include <aarch64/cpufunc.h>
 #include <aarch64/db_machdep.h>
 #include <aarch64/machdep.h>
-#include <aarch64/armreg.h>
 #include <aarch64/vmparam.h>
 
 #include <uvm/uvm_extern.h>
@@ -58,6 +59,19 @@ __CTASSERT(VM_MIN_ADDRESS == 0);
 	((addr) < VM_MAX_ADDRESS)
 #define IN_KERNEL_VM_ADDRESS(addr)	\
 	((VM_MIN_KERNEL_ADDRESS <= (addr)) && ((addr) < VM_MAX_KERNEL_ADDRESS))
+
+#if defined(_KERNEL)
+/* In kernel, mask TAG & PAC according to TCR_EL1 and SCTLR_EL1 settings */
+#define AARCH64_UNPACK_ADDRESS(ptr)	\
+	(uint64_t)aarch64_untag_address((vaddr_t)aarch64_strip_pac(lr))
+#else
+/*
+ * In crash(8), TBI and PAC settings are not known, so always mask TAG & PAC.
+ * XXX: should use sysctl to get the TCR/SCTLR and process them appropriately.
+ */
+#define AARCH64_UNPACK_ADDRESS(ptr)	\
+	(uint64_t)((ptr) & ~AARCH64_ADDRESS_TAGPAC_MASK)
+#endif
 
 
 static bool __unused
@@ -236,7 +250,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		lastfp = lastlr = lr = fp = 0;
 		db_read_bytes((db_addr_t)&tf->tf_pc, sizeof(lr), (char *)&lr);
 		db_read_bytes((db_addr_t)&tf->tf_reg[29], sizeof(fp), (char *)&fp);
-		lr = ptr_strip_pac(lr);
+		lr = AARCH64_UNPACK_ADDRESS(lr);
 
 		pr_traceaddr("fp", fp, lr - 4, flags, pr);
 	}
@@ -252,7 +266,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 		 */
 		db_read_bytes(lastfp + 0, sizeof(fp), (char *)&fp);
 		db_read_bytes(lastfp + 8, sizeof(lr), (char *)&lr);
-		lr = ptr_strip_pac(lr);
+		lr = AARCH64_UNPACK_ADDRESS(lr);
 
 		if (!trace_user && IN_USER_VM_ADDRESS(lr))
 			break;
@@ -270,7 +284,7 @@ db_stack_trace_print(db_expr_t addr, bool have_addr, db_expr_t count,
 			lr = fp = 0;
 			db_read_bytes((db_addr_t)&tf->tf_pc, sizeof(lr), (char *)&lr);
 			db_read_bytes((db_addr_t)&tf->tf_reg[29], sizeof(fp), (char *)&fp);
-			lr = ptr_strip_pac(lr);
+			lr = AARCH64_UNPACK_ADDRESS(lr);
 
 			/*
 			 * no need to display the frame of el0_trap

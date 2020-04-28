@@ -801,17 +801,6 @@ AARCH64REG_WRITE_INLINE(sctlr_el1)
 #define	SCTLR_ATA		__BIT(43)
 #define	SCTLR_DSSBS		__BIT(44)
 
-#define	PTR_VA_RANGE_SELECT	__BIT(55)
-#define	PTR_PAC_MASK		(__BITS(63,56) | __BITS(54, 48))
-
-static __inline uint64_t
-ptr_strip_pac(uint64_t __val)
-{
-	if (__val & PTR_VA_RANGE_SELECT)
-		return __val | PTR_PAC_MASK;
-	return __val & ~PTR_PAC_MASK;
-}
-
 // current EL stack pointer
 static __inline uint64_t
 reg_sp_read(void)
