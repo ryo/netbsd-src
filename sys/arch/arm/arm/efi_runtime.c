@@ -47,7 +47,6 @@ static struct efi_rt *RT = NULL;
 int
 arm_efirt_init(paddr_t efi_system_table)
 {
-#if BYTE_ORDER == LITTLE_ENDIAN
 	struct efi_systbl *ST;
 	const size_t sz = PAGE_SIZE * 2;
 	vaddr_t va, cva;
@@ -66,37 +65,53 @@ arm_efirt_init(paddr_t efi_system_table)
 	pmap_update(pmap_kernel());
 
 	ST = (void *)(va + (efi_system_table - trunc_page(efi_system_table)));
-	if (ST->st_hdr.th_sig != EFI_SYSTBL_SIG) {
+	if (htole64(ST->st_hdr.th_sig) != EFI_SYSTBL_SIG) {
 		aprint_error("EFI: signature mismatch (%#lx != %#lx)\n",
 		    ST->st_hdr.th_sig, EFI_SYSTBL_SIG);
 		return EINVAL;
 	}
 
-	RT = ST->st_rt;
+	RT = (struct efi_rt *)le64toh((uintptr_t)(ST->st_rt));
 	mutex_init(&efi_lock, MUTEX_DEFAULT, IPL_HIGH);
 
 	return 0;
-#else
-	/* EFI runtime not supported in big endian mode */
-	return ENXIO;
-#endif
 }
+
+uint64_t little_call(void *, void *, void *, void *);
 
 int
 arm_efirt_gettime(struct efi_tm *tm)
 {
 	int error;
 
+	printf("RT=%p\n", RT);
+
 	if (RT == NULL || RT->rt_gettime == NULL)
 		return ENXIO;
 
+	printf("rt_gettime=%p\n", RT->rt_gettime);
+
 	mutex_enter(&efi_lock);
 	if ((error = arm_efirt_md_enter()) == 0) {
-		if (RT->rt_gettime(tm, NULL) != 0)
+
+#if BYTE_ORDER == LITTLE_ENDIAN
+		unsigned long x = RT->rt_gettime(tm, NULL);
+#else
+		//XXX ...
+		printf("CALL rt_gettime!\n");
+
+		unsigned long x = little_call((void *)le64toh(RT->rt_gettime), tm, NULL, NULL);
+//		unsigned long x = 0x123;
+#endif
+		printf("---> rt_gettime => %lx\n", x);
+
+		if (x != 0)
 			error = EIO;
 	}
 	arm_efirt_md_exit();
 	mutex_exit(&efi_lock);
+
+//	Debugger();
 
 	return error;
 }

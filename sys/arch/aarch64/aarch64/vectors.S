@@ -1,5 +1,7 @@
 /*	$NetBSD: vectors.S,v 1.21 2020/10/15 08:37:20 ryo Exp $	*/
 
+#include <sys/endian.h>
+
 #include <aarch64/asm.h>
 #include <aarch64/locore.h>
 
@@ -323,3 +325,75 @@ END(el0_trap_exit)
 #ifdef DDB
 END(el0_trap)
 #endif
+
+
+
+#if _BYTE_ORDER == _BIG_ENDIAN
+
+//XXX
+ENTRY_NP(little_call)
+	stp	fp, lr, [sp, #-16]!	/* save */
+
+#if 0 /* EE test */
+	mrs	x8, sctlr_el1
+	bic	x8, x8, #(SCTLR_EE | SCTLR_E0E) /* Little Endian */
+	msr	sctlr_el1, x8
+	isb
+
+	mrs	x8, sctlr_el1
+	orr	x8, x8, #(SCTLR_EE | SCTLR_E0E)	/* Big Endian */
+	msr	sctlr_el1, x8
+	isb
+
+	mov	x0, #0x999
+	ldp	fp, lr, [sp], #16
+	ret
+#endif
+
+
+#if 1
+	DISABLE_INTERRUPT
+
+//	/* set exception vector */
+//	adrl	x8, _C_LABEL(el1_vectors_le)
+//	msr	vbar_el1, x8
+
+	mrs	x8, sctlr_el1
+	bic	x8, x8, #(SCTLR_EE | SCTLR_E0E) /* Little Endian */
+	msr	sctlr_el1, x8
+	isb
+
+	ENABLE_INTERRUPT
+#endif
+
+	mov	x8, x0
+	mov	x0, x1
+	mov	x1, x2
+	mov	x2, x3
+	mov	x3, x4
+	mov	x4, x5
+	mov	x5, x6
+	mov	x6, x7
+
+	blr	x8
+
+#if 1
+	DISABLE_INTERRUPT
+
+	mrs	x8, sctlr_el1
+	orr	x8, x8, #(SCTLR_EE | SCTLR_E0E)	/* Big Endian */
+	msr	sctlr_el1, x8
+	isb
+
+//	/* set exception vector */
+//	adrl	x8, _C_LABEL(el1_vectors)
+//	msr	vbar_el1, x8
+
+	ENABLE_INTERRUPT
+#endif
+
+	ldp	fp, lr, [sp], #16
+	ret
+END(little_call)
+
+#endif /* _BYTE_ORDER == _BIG_ENDIAN */
