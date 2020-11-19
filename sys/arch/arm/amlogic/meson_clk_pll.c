@@ -36,7 +36,7 @@ __KERNEL_RCSID(0, "$NetBSD: meson_clk_pll.c,v 1.2 2019/02/25 19:30:17 jmcneill E
 
 #include <arm/amlogic/meson_clk.h>
 
-u_int
+clkrate_t
 meson_clk_pll_get_rate(struct meson_clk_softc *sc,
     struct meson_clk_clk *clk)
 {
@@ -80,7 +80,7 @@ meson_clk_pll_get_rate(struct meson_clk_softc *sc,
 		rate += howmany(frac_rate, __SHIFTOUT_MASK(pll->frac.mask) + 1);
 	}
 
-	return (u_int)howmany(rate, n);
+	return (clkrate_t)howmany(rate, n);
 }
 
 const char *

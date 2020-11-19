@@ -157,13 +157,13 @@ static const struct rk_cru_pll_rate pll_rates[] = {
 
 #define	PLL_WRITE_MASK	0xffff0000
 
-static u_int
+static clkrate_t
 rk3399_pmucru_pll_get_rate(struct rk_cru_softc *sc,
     struct rk_cru_clk *clk)
 {
 	struct rk_cru_pll *pll = &clk->u.pll;
 	struct clk *clkp, *clkp_parent;
-	u_int foutvco, foutpostdiv;
+	clkrate_t foutvco, foutpostdiv;
 
 	KASSERT(clk->type == RK_CRU_PLL);
 
@@ -172,7 +172,7 @@ rk3399_pmucru_pll_get_rate(struct rk_cru_softc *sc,
 	if (clkp_parent == NULL)
 		return 0;
 
-	const u_int fref = clk_get_rate(clkp_parent);
+	const clkrate_t fref = clk_get_rate(clkp_parent);
 	if (fref == 0)
 		return 0;
 
@@ -202,7 +202,7 @@ rk3399_pmucru_pll_get_rate(struct rk_cru_softc *sc,
 
 static int
 rk3399_pmucru_pll_set_rate(struct rk_cru_softc *sc,
-    struct rk_cru_clk *clk, u_int rate)
+    struct rk_cru_clk *clk, clkrate_t rate)
 {
 	struct rk_cru_pll *pll = &clk->u.pll;
 	const struct rk_cru_pll_rate *pll_rate = NULL;

@@ -103,7 +103,7 @@ arasan_sdhc_clk_get(void *priv, const char *name)
 	return &sc->sc_clk_card;
 }
 
-static u_int
+static clkrate_t
 arasan_sdhc_clk_get_rate(void *priv, struct clk *clk)
 {
 	struct arasan_sdhc_softc * const sc = priv;
@@ -171,7 +171,7 @@ arasan_sdhc_init_rk3399(struct arasan_sdhc_softc *sc)
 	syscon_write_4(sc->sc_syscon, RK3399_GRF_EMMCCORE_CON11, (mask << 16) | val);
 
 	/* Set base clock frequency */
-	const u_int xin_rate = clk_get_rate(sc->sc_clk_xin);
+	const clkrate_t xin_rate = clk_get_rate(sc->sc_clk_xin);
 	mask = RK3399_CORECFG_BASECLKFREQ;
 	val = __SHIFTIN((xin_rate + (1000000 / 2)) / 1000000, RK3399_CORECFG_BASECLKFREQ);
 	syscon_write_4(sc->sc_syscon, RK3399_GRF_EMMCCORE_CON0, (mask << 16) | val);

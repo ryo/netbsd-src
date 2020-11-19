@@ -61,7 +61,7 @@ ti_prcm_clock_put(void *priv, struct clk *clk)
 {
 }
 
-static u_int
+static clkrate_t
 ti_prcm_clock_get_rate(void *priv, struct clk *clkp)
 {
 	struct ti_prcm_softc * const sc = priv;
@@ -81,7 +81,7 @@ ti_prcm_clock_get_rate(void *priv, struct clk *clkp)
 }
 
 static int
-ti_prcm_clock_set_rate(void *priv, struct clk *clkp, u_int rate)
+ti_prcm_clock_set_rate(void *priv, struct clk *clkp, clkrate_t rate)
 {
 	struct ti_prcm_softc * const sc = priv;
 	struct ti_prcm_clk *clk = (struct ti_prcm_clk *)clkp;

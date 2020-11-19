@@ -641,7 +641,7 @@ tegra_crtc_mode_set(struct drm_crtc *crtc, struct drm_display_mode *mode,
 	    __SHIFTIN(pulse_start + 8, DC_DISP_H_PULSE2_POSITION_A_END));
 
 	/* Pixel clock */
-	const u_int parent_rate = clk_get_rate(tegra_crtc->clk_parent);
+	const clkrate_t parent_rate = clk_get_rate(tegra_crtc->clk_parent);
 	const u_int div = (parent_rate * 2) / (mode->crtc_clock * 1000) - 2;
 	DC_WRITE(tegra_crtc, DC_DISP_DISP_CLOCK_CONTROL_REG,
 	    __SHIFTIN(0, DC_DISP_DISP_CLOCK_CONTROL_PIXEL_CLK_DIVIDER) |

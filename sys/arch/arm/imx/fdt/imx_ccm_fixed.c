@@ -36,7 +36,7 @@ __KERNEL_RCSID(0, "$NetBSD: imx_ccm_fixed.c,v 1.1 2020/01/15 01:09:56 jmcneill E
 
 #include <arm/imx/fdt/imx_ccm.h>
 
-u_int
+clkrate_t
 imx_ccm_fixed_get_rate(struct imx_ccm_softc *sc,
     struct imx_ccm_clk *clk)
 {

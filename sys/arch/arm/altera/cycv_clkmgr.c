@@ -35,8 +35,8 @@ static const struct fdtbus_clock_controller_func cycv_clkmgr_fdtclock_funcs = {
 
 static struct clk *cycv_clkmgr_clock_get(void *, const char *);
 static void cycv_clkmgr_clock_put(void *, struct clk *);
-static u_int cycv_clkmgr_clock_get_rate(void *, struct clk *);
-static int cycv_clkmgr_clock_set_rate(void *, struct clk *, u_int);
+static clkrate_t cycv_clkmgr_clock_get_rate(void *, struct clk *);
+static int cycv_clkmgr_clock_set_rate(void *, struct clk *, clkrate_t);
 static int cycv_clkmgr_clock_enable(void *, struct clk *);
 static int cycv_clkmgr_clock_disable(void *, struct clk *);
 static int cycv_clkmgr_clock_set_parent(void *, struct clk *, struct clk *);
@@ -364,7 +364,7 @@ cycv_clkmgr_clock_print(struct cycv_clkmgr_softc *sc, struct cycv_clk *clk)
 	uint32_t denom;
 	uint32_t tmp;
 
-	aprint_debug("clock %s, id %d, frequency %uHz:\n", clk->base.name,
+	aprint_debug("clock %s, id %d, frequency %"PRIu64"Hz:\n", clk->base.name,
 		     clk->id, cycv_clkmgr_clock_get_rate(sc, &clk->base));
 	if (clk->parent != NULL)
 		aprint_debug("parent: %s", clk->parent->base.name);
@@ -440,13 +440,13 @@ cycv_clkmgr_clock_put(void *priv, struct clk *clk)
 	aprint_debug("%s: called and not implemented\n", __func__);
 }
 
-static u_int
+static clkrate_t
 cycv_clkmgr_clock_get_rate(void *priv, struct clk *base_clk)
 {
 	struct cycv_clkmgr_softc *sc = priv;
 	struct cycv_clk *clk = (struct cycv_clk *) base_clk;
 	struct cycv_clk *parent;
-	uint32_t parent_rate = 0;
+	clkrate_t parent_rate = 0;
 	uint32_t divisor = 0;
 	uint32_t numer;
 	uint32_t tmp;
@@ -499,7 +499,7 @@ cycv_clkmgr_clock_get_rate(void *priv, struct clk *base_clk)
 }
 
 static int
-cycv_clkmgr_clock_set_rate(void *priv, struct clk *clk, u_int rate)
+cycv_clkmgr_clock_set_rate(void *priv, struct clk *clk, clkrate_t rate)
 {
 	aprint_debug("%s: called and not implemented\n", __func__);
 	return EINVAL;

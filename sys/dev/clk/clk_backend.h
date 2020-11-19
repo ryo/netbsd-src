@@ -51,9 +51,9 @@ struct clk_funcs {
 	struct clk *(*get)(void *, const char *);
 	void (*put)(void *, struct clk *);
 
-	u_int (*get_rate)(void *, struct clk *);
-	int (*set_rate)(void *, struct clk *, u_int);
-	u_int (*round_rate)(void *, struct clk *, u_int);
+	clkrate_t (*get_rate)(void *, struct clk *);
+	int (*set_rate)(void *, struct clk *, clkrate_t);
+	clkrate_t (*round_rate)(void *, struct clk *, clkrate_t);
 	int (*enable)(void *, struct clk *);
 	int (*disable)(void *, struct clk *);
 	int (*set_parent)(void *, struct clk *, struct clk *);

@@ -38,7 +38,7 @@ __KERNEL_RCSID(0, "$NetBSD: imx_ccm_div.c,v 1.2 2020/11/25 05:18:39 ryo Exp $");
 
 #include <dev/fdt/fdtvar.h>
 
-u_int
+clkrate_t
 imx_ccm_div_get_rate(struct imx_ccm_softc *sc,
     struct imx_ccm_clk *clk)
 {
@@ -52,7 +52,7 @@ imx_ccm_div_get_rate(struct imx_ccm_softc *sc,
 	if (clkp_parent == NULL)
 		return 0;
 
-	const u_int prate = clk_get_rate(clkp_parent);
+	const clkrate_t prate = clk_get_rate(clkp_parent);
 	if (prate == 0)
 		return 0;
 
@@ -64,11 +64,11 @@ imx_ccm_div_get_rate(struct imx_ccm_softc *sc,
 
 int
 imx_ccm_div_set_rate(struct imx_ccm_softc *sc,
-    struct imx_ccm_clk *clk, u_int rate)
+    struct imx_ccm_clk *clk, clkrate_t rate)
 {
 	struct imx_ccm_div *div = &clk->u.div;
 	struct clk *clkp, *clkp_parent;
-	int best_diff = INT_MAX;
+	long long best_diff = LLONG_MAX;
 	u_int n, best_n;
 	uint32_t val;
 
@@ -82,26 +82,26 @@ imx_ccm_div_set_rate(struct imx_ccm_softc *sc,
 	if ((div->flags & IMX_DIV_SET_RATE_PARENT) != 0)
 		return clk_set_rate(clkp, rate);
 
-	const u_int prate = clk_get_rate(clkp_parent);
+	const clkrate_t prate = clk_get_rate(clkp_parent);
 	if (prate == 0)
 		return EIO;
 
 	for (n = 0; n < __SHIFTOUT_MASK(div->mask); n++) {
-		const u_int tmp_rate = prate / (n + 1);
-		const int diff = (int)rate - (int)tmp_rate;
+		const clkrate_t tmp_rate = prate / (n + 1);
+		const long long diff = rate - tmp_rate;
 		if ((div->flags & IMX_DIV_ROUND_DOWN) != 0) {
 			if (diff >= 0 && diff < best_diff) {
 				best_n = n;
 				best_diff = diff;
 			}
 		} else {
-			if (abs(diff) < abs(best_diff)) {
+			if (llabs(diff) < llabs(best_diff)) {
 				best_n = n;
-				best_diff = abs(diff);
+				best_diff = llabs(diff);
 			}
 		}
 	}
-	if (best_diff == INT_MAX)
+	if (best_diff == LLONG_MAX)
 		return EIO;
 
 	val = CCM_READ(sc, clk->regidx, div->reg);

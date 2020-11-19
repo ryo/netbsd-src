@@ -58,13 +58,14 @@ sunxi_ccu_fractional_enable(struct sunxi_ccu_softc *sc,
 	return 0;
 }
 
-u_int
+clkrate_t
 sunxi_ccu_fractional_get_rate(struct sunxi_ccu_softc *sc,
     struct sunxi_ccu_clk *clk)
 {
 	struct sunxi_ccu_fractional *fractional = &clk->u.fractional;
 	struct clk *clkp, *clkp_parent;
-	u_int rate, m;
+	clkrate_t rate;
+	u_int m;
 	uint32_t val;
 
 	KASSERT(clk->type == SUNXI_CCU_FRACTIONAL);
@@ -103,13 +104,13 @@ sunxi_ccu_fractional_get_rate(struct sunxi_ccu_softc *sc,
 
 int
 sunxi_ccu_fractional_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk *clk, u_int new_rate)
+    struct sunxi_ccu_clk *clk, clkrate_t new_rate)
 {
 	struct sunxi_ccu_fractional *fractional = &clk->u.fractional;
 	struct clk *clkp, *clkp_parent;
-	u_int parent_rate, best_rate, best_m;
-	u_int m, rate;
-	int best_diff;
+	clkrate_t parent_rate, best_rate, rate;
+	u_int best_m, m;
+	long long best_diff;
 	uint32_t val;
 	int i;
 
@@ -150,11 +151,11 @@ sunxi_ccu_fractional_set_rate(struct sunxi_ccu_softc *sc,
 	val |= fractional->div_en;
 
 	best_rate = 0;
-	best_diff = INT_MAX;
+	best_diff = LLONG_MAX;
 
 	for (m = fractional->m_min; m <= fractional->m_max; m++) {
 		rate = parent_rate * m;
-		const int diff = abs(new_rate - rate);
+		const long long diff = llabs(new_rate - rate);
 		if (diff < best_diff) {
 			best_diff = diff;
 			best_rate = rate;
@@ -180,15 +181,15 @@ sunxi_ccu_fractional_set_rate(struct sunxi_ccu_softc *sc,
 	return 0;
 }
 
-u_int
+clkrate_t
 sunxi_ccu_fractional_round_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk *clk, u_int try_rate)
+    struct sunxi_ccu_clk *clk, clkrate_t try_rate)
 {
 	struct sunxi_ccu_fractional *fractional = &clk->u.fractional;
 	struct clk *clkp, *clkp_parent;
-	u_int parent_rate, best_rate;
-	u_int m, rate;
-	int best_diff;
+	clkrate_t parent_rate, best_rate, rate;
+	u_int m;
+	long long best_diff;
 	uint32_t val;
 	int i;
 
@@ -217,11 +218,11 @@ sunxi_ccu_fractional_round_rate(struct sunxi_ccu_softc *sc,
 	}
 
 	best_rate = 0;
-	best_diff = INT_MAX;
+	best_diff = LLONG_MAX;
 
 	for (m = fractional->m_min; m <= fractional->m_max; m++) {
 		rate = parent_rate * m;
-		const int diff = abs(try_rate - rate);
+		const long long diff = llabs(try_rate - rate);
 		if (diff < best_diff) {
 			best_diff = diff;
 			best_rate = rate;

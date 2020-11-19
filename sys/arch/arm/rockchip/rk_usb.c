@@ -108,7 +108,7 @@ rk_usb_clk_put(void *priv, struct clk *clk)
 {
 }
 
-static u_int
+static clkrate_t
 rk_usb_clk_get_rate(void *priv, struct clk *clk)
 {
 	return 480000000;

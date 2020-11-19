@@ -409,7 +409,7 @@ sun8i_crypto_attach(device_t parent, device_t self, void *aux)
 
 	aprint_naive("\n");
 	aprint_normal(": Crypto Engine\n");
-	aprint_debug_dev(self, ": clock freq %d\n", clk_get_rate(clk));
+	aprint_debug_dev(self, ": clock freq %"PRIu64"\n", clk_get_rate(clk));
 
 	/* Disable and clear interrupts.  */
 	sun8i_crypto_write(sc, SUN8I_CRYPTO_ICR, 0);

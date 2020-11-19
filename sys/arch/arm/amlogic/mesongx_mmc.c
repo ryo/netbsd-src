@@ -453,24 +453,25 @@ free:
 static int
 mesongx_mmc_set_clock(struct mesongx_mmc_softc *sc, u_int freq, bool ddr)
 {
-	int best_diff, best_sel, best_div, sel, div;
+	long long best_diff;
+	int best_sel, best_div, sel, div;
 	uint32_t val;
 
 	if (freq == 0)
 		freq = SDMMC_SDCLK_400K;
 
-	best_diff = INT_MAX;
+	best_diff = LLONG_MAX;
 	best_sel = 0;
 	best_div = 0;
 
-	const u_int target_rate = (freq * 1000) << ddr;
+	const clkrate_t target_rate = (freq * 1000) << ddr;
 	for (sel = 0; sel <= 1; sel++) {
-		const u_int parent_rate = clk_get_rate(sc->sc_clk_clkin[sel]);
+		const clkrate_t parent_rate = clk_get_rate(sc->sc_clk_clkin[sel]);
 		for (div = 1; div <= 63; div++) {
-			const u_int rate = parent_rate / div;
+			const clkrate_t rate = parent_rate / div;
 			if (rate > target_rate)
 				continue;
-			const int diff = target_rate - rate;
+			const long long diff = target_rate - rate;
 			if (diff < best_diff) {
 				best_diff = diff;
 				best_sel = sel;
@@ -479,7 +480,7 @@ mesongx_mmc_set_clock(struct mesongx_mmc_softc *sc, u_int freq, bool ddr)
 		}
 	}
 
-	if (best_diff == INT_MAX)
+	if (best_diff == LLONG_MAX)
 		return ERANGE;
 
 	val = MMC_READ(sc, SD_EMMC_CLOCK);

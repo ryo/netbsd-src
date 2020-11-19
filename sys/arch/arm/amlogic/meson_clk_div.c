@@ -36,13 +36,14 @@ __KERNEL_RCSID(0, "$NetBSD: meson_clk_div.c,v 1.3 2019/02/25 19:30:17 jmcneill E
 
 #include <arm/amlogic/meson_clk.h>
 
-u_int
+clkrate_t
 meson_clk_div_get_rate(struct meson_clk_softc *sc,
     struct meson_clk_clk *clk)
 {
 	struct meson_clk_div *div = &clk->u.div;
 	struct clk *clkp, *clkp_parent;
-	u_int rate, ratio;
+	clkrate_t rate;
+	u_int ratio;
 	uint32_t val;
 
 	KASSERT(clk->type == MESON_CLK_DIV);
@@ -78,11 +79,11 @@ meson_clk_div_get_rate(struct meson_clk_softc *sc,
 
 int
 meson_clk_div_set_rate(struct meson_clk_softc *sc,
-    struct meson_clk_clk *clk, u_int new_rate)
+    struct meson_clk_clk *clk, clkrate_t new_rate)
 {
 	struct meson_clk_div *div = &clk->u.div;
 	struct clk *clkp, *clkp_parent;
-	int parent_rate;
+	clkrate_t parent_rate;
 	uint32_t val, raw_div;
 	int ratio, error;
 

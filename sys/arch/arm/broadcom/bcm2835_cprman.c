@@ -121,7 +121,7 @@ cprman_put(void *priv, struct clk *clk)
 {
 }
 
-static u_int
+static clkrate_t
 cprman_get_rate(void *priv, struct clk *baseclk)
 {
 	//struct cprman_softc * const sc = priv;

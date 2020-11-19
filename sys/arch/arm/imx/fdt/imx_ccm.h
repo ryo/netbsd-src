@@ -54,8 +54,8 @@ enum imx_ccm_clktype {
 /* External clocks */
 
 int	imx_ccm_extclk_enable(struct imx_ccm_softc *, struct imx_ccm_clk *, int);
-u_int	imx_ccm_extclk_get_rate(struct imx_ccm_softc *, struct imx_ccm_clk *);
-int	imx_ccm_extclk_set_rate(struct imx_ccm_softc *, struct imx_ccm_clk *, u_int);
+clkrate_t imx_ccm_extclk_get_rate(struct imx_ccm_softc *, struct imx_ccm_clk *);
+int	imx_ccm_extclk_set_rate(struct imx_ccm_softc *, struct imx_ccm_clk *, clkrate_t);
 const char *imx_ccm_extclk_get_parent(struct imx_ccm_softc *, struct imx_ccm_clk *);
 
 #define	IMX_EXTCLK(_id, _name)					\
@@ -116,8 +116,8 @@ struct imx_ccm_composite {
 };
 
 int	imx_ccm_composite_enable(struct imx_ccm_softc *, struct imx_ccm_clk *, int);
-u_int	imx_ccm_composite_get_rate(struct imx_ccm_softc *, struct imx_ccm_clk *);
-int	imx_ccm_composite_set_rate(struct imx_ccm_softc *, struct imx_ccm_clk *, u_int);
+clkrate_t imx_ccm_composite_get_rate(struct imx_ccm_softc *, struct imx_ccm_clk *);
+int	imx_ccm_composite_set_rate(struct imx_ccm_softc *, struct imx_ccm_clk *, clkrate_t);
 const char *imx_ccm_composite_get_parent(struct imx_ccm_softc *, struct imx_ccm_clk *);
 int	imx_ccm_composite_set_parent(struct imx_ccm_softc *, struct imx_ccm_clk *, const char *);
 
@@ -155,7 +155,7 @@ struct imx_ccm_pll {
 };
 
 int	imx_ccm_pll_enable(struct imx_ccm_softc *, struct imx_ccm_clk *, int);
-u_int	imx_ccm_pll_get_rate(struct imx_ccm_softc *, struct imx_ccm_clk *);
+clkrate_t imx_ccm_pll_get_rate(struct imx_ccm_softc *, struct imx_ccm_clk *);
 const char *imx_ccm_pll_get_parent(struct imx_ccm_softc *, struct imx_ccm_clk *);
 
 #define	IMX_PLL(_id, _name, _parent, _reg, _div_mask, _flags)	\
@@ -182,7 +182,7 @@ struct imx_ccm_fixed {
 	u_int		rate;
 };
 
-u_int	imx_ccm_fixed_get_rate(struct imx_ccm_softc *, struct imx_ccm_clk *);
+clkrate_t imx_ccm_fixed_get_rate(struct imx_ccm_softc *, struct imx_ccm_clk *);
 
 #define	IMX_FIXED(_id, _name, _rate)				\
 	{							\
@@ -202,8 +202,8 @@ struct imx_ccm_fixed_factor {
 	u_int		div;
 };
 
-u_int	imx_ccm_fixed_factor_get_rate(struct imx_ccm_softc *, struct imx_ccm_clk *);
-int	imx_ccm_fixed_factor_set_rate(struct imx_ccm_softc *, struct imx_ccm_clk *, u_int);
+clkrate_t imx_ccm_fixed_factor_get_rate(struct imx_ccm_softc *, struct imx_ccm_clk *);
+int	imx_ccm_fixed_factor_set_rate(struct imx_ccm_softc *, struct imx_ccm_clk *, clkrate_t);
 const char *imx_ccm_fixed_factor_get_parent(struct imx_ccm_softc *, struct imx_ccm_clk *);
 
 #define	IMX_FIXED_FACTOR(_id, _name, _parent, _mult, _div)	\
@@ -261,8 +261,8 @@ struct imx_ccm_div {
 #define	IMX_DIV_ROUND_DOWN		__BIT(1)
 };
 
-u_int	imx_ccm_div_get_rate(struct imx_ccm_softc *, struct imx_ccm_clk *);
-int	imx_ccm_div_set_rate(struct imx_ccm_softc *, struct imx_ccm_clk *, u_int);
+clkrate_t imx_ccm_div_get_rate(struct imx_ccm_softc *, struct imx_ccm_clk *);
+int	imx_ccm_div_set_rate(struct imx_ccm_softc *, struct imx_ccm_clk *, clkrate_t);
 const char *imx_ccm_div_get_parent(struct imx_ccm_softc *, struct imx_ccm_clk *);
 
 #define	IMX_DIV(_id, _name, _parent, _reg, _mask, _flags)		\
@@ -305,12 +305,12 @@ struct imx_ccm_clk {
 
 	int		(*enable)(struct imx_ccm_softc *,
 				  struct imx_ccm_clk *, int);
-	u_int		(*get_rate)(struct imx_ccm_softc *,
+	clkrate_t	(*get_rate)(struct imx_ccm_softc *,
 				    struct imx_ccm_clk *);
 	int		(*set_rate)(struct imx_ccm_softc *,
-				    struct imx_ccm_clk *, u_int);
-	u_int		(*round_rate)(struct imx_ccm_softc *,
-				    struct imx_ccm_clk *, u_int);
+				    struct imx_ccm_clk *, clkrate_t);
+	clkrate_t	(*round_rate)(struct imx_ccm_softc *,
+				      struct imx_ccm_clk *, clkrate_t);
 	const char *	(*get_parent)(struct imx_ccm_softc *,
 				      struct imx_ccm_clk *);
 	int		(*set_parent)(struct imx_ccm_softc *,

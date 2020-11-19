@@ -58,8 +58,8 @@ static const struct fdtbus_clock_controller_func sunxi_gmacclk_fdt_funcs = {
 
 static struct clk *sunxi_gmacclk_get(void *, const char *);
 static void	sunxi_gmacclk_put(void *, struct clk *);
-static int	sunxi_gmacclk_set_rate(void *, struct clk *, u_int);
-static u_int	sunxi_gmacclk_get_rate(void *, struct clk *);
+static int	sunxi_gmacclk_set_rate(void *, struct clk *, clkrate_t);
+static clkrate_t	sunxi_gmacclk_get_rate(void *, struct clk *);
 static struct clk *sunxi_gmacclk_get_parent(void *, struct clk *);
 
 static const struct clk_funcs sunxi_gmacclk_clk_funcs = {
@@ -167,7 +167,7 @@ sunxi_gmacclk_put(void *priv, struct clk *clk)
 }
 
 static int
-sunxi_gmacclk_set_rate(void *priv, struct clk *clk, u_int rate)
+sunxi_gmacclk_set_rate(void *priv, struct clk *clk, clkrate_t rate)
 {
 	struct sunxi_gmacclk_softc * const sc = priv;
 	uint32_t val;
@@ -190,7 +190,7 @@ sunxi_gmacclk_set_rate(void *priv, struct clk *clk, u_int rate)
 	return 0;
 }
 
-static u_int
+static clkrate_t
 sunxi_gmacclk_get_rate(void *priv, struct clk *clk)
 {
 	struct clk *clk_parent = clk_get_parent(clk);

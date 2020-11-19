@@ -132,7 +132,7 @@ rk_cru_clock_put(void *priv, struct clk *clk)
 {
 }
 
-static u_int
+static clkrate_t
 rk_cru_clock_get_rate(void *priv, struct clk *clkp)
 {
 	struct rk_cru_softc * const sc = priv;
@@ -152,7 +152,7 @@ rk_cru_clock_get_rate(void *priv, struct clk *clkp)
 }
 
 static int
-rk_cru_clock_set_rate(void *priv, struct clk *clkp, u_int rate)
+rk_cru_clock_set_rate(void *priv, struct clk *clkp, clkrate_t rate)
 {
 	struct rk_cru_softc * const sc = priv;
 	struct rk_cru_clk *clk = (struct rk_cru_clk *)clkp;
@@ -173,8 +173,8 @@ rk_cru_clock_set_rate(void *priv, struct clk *clkp, u_int rate)
 	return ENXIO;
 }
 
-static u_int
-rk_cru_clock_round_rate(void *priv, struct clk *clkp, u_int rate)
+static clkrate_t
+rk_cru_clock_round_rate(void *priv, struct clk *clkp, clkrate_t rate)
 {
 	struct rk_cru_softc * const sc = priv;
 	struct rk_cru_clk *clk = (struct rk_cru_clk *)clkp;
@@ -362,6 +362,6 @@ rk_cru_print(struct rk_cru_softc *sc)
         	    clkp_parent ? "<-" : "",
         	    clkp_parent ? clkp_parent->name : "",
         	    type);
-		aprint_debug("%10d Hz\n", clk_get_rate(&clk->base));
+		aprint_debug("%10"PRIu64" Hz\n", clk_get_rate(&clk->base));
 	}
 }

@@ -42,19 +42,19 @@ __KERNEL_RCSID(0, "$NetBSD: sunxi_ccu_display.c,v 1.2 2018/04/02 20:55:49 bouyer
 int
 sunxi_ccu_lcdxch0_set_rate(struct sunxi_ccu_softc *sc,
     struct sunxi_ccu_clk *clk, struct sunxi_ccu_clk *pllclk,
-    struct sunxi_ccu_clk *pllclk_x2, u_int new_rate)
+    struct sunxi_ccu_clk *pllclk_x2, clkrate_t new_rate)
 {
 	struct clk *clkp;
 	int error;
-	int diff, diff_x2;
-	int rate, rate_x2;
+	long long diff, diff_x2;
+	clkrate_t rate, rate_x2;
 
 	clkp = &pllclk->base;
 	rate = clk_round_rate(clkp, new_rate);
-	diff = abs(new_rate - rate);
+	diff = llabs(new_rate - rate);
 
 	rate_x2 = (clk_round_rate(clkp, new_rate / 2) * 2);
-	diff_x2 = abs(new_rate - rate_x2);
+	diff_x2 = llabs(new_rate - rate_x2);
 
 	if (rate == 0 && rate_x2 == 0)
 		return ERANGE;
@@ -74,21 +74,21 @@ sunxi_ccu_lcdxch0_set_rate(struct sunxi_ccu_softc *sc,
 	return 0;
 }
 
-u_int
+clkrate_t
 sunxi_ccu_lcdxch0_round_rate(struct sunxi_ccu_softc *sc,
     struct sunxi_ccu_clk * clk, struct sunxi_ccu_clk *pllclk,
-    struct sunxi_ccu_clk *pllclk_x2, u_int try_rate)
+    struct sunxi_ccu_clk *pllclk_x2, clkrate_t try_rate)
 {
 	struct clk *clkp;
-	int diff, diff_x2;
-	int rate, rate_x2;
+	long long diff, diff_x2;
+	clkrate_t rate, rate_x2;
 
 	clkp = &pllclk->base;
 	rate = clk_round_rate(clkp, try_rate);
-	diff = abs(try_rate - rate);
+	diff = llabs(try_rate - rate);
 
 	rate_x2 = (clk_round_rate(clkp, try_rate / 2) * 2);
-	diff_x2 = abs(try_rate - rate_x2);
+	diff_x2 = llabs(try_rate - rate_x2);
 
 	if (diff_x2 < diff)
 		return rate_x2;
@@ -98,26 +98,27 @@ sunxi_ccu_lcdxch0_round_rate(struct sunxi_ccu_softc *sc,
 int
 sunxi_ccu_lcdxch1_set_rate(struct sunxi_ccu_softc *sc,
     struct sunxi_ccu_clk * clk, struct sunxi_ccu_clk *pllclk,
-    struct sunxi_ccu_clk *pllclk_x2, u_int new_rate)
+    struct sunxi_ccu_clk *pllclk_x2, clkrate_t new_rate)
 {
 	struct clk *clkp, *pllclkp;
-	int best_diff;
-	int parent_rate, best_parent_rate;
+	long long best_diff;
+	clkrate_t parent_rate, best_parent_rate;
 	uint32_t best_m, best_d;
 	int error;
 
 	pllclkp = clkp = &pllclk->base;
-	best_diff = INT_MAX;
+	best_diff = LLONG_MAX;
 	best_m = best_d = 0;
 	for (uint32_t d = 1; d <= 2 && best_diff != 0; d++) {
 		for (uint32_t m = 1; m <= 16 && best_diff != 0; m++) {
-			int rate, diff;
+			clkrate_t rate;
+			long long diff;
 			parent_rate = clk_round_rate(pllclkp, 
 			    new_rate * m / d);
 			if (parent_rate == 0)
 				continue;
 			rate = parent_rate * d / m;
-			diff = abs(rate - new_rate);
+			diff = llabs(rate - new_rate);
 			if (diff < best_diff) {
 				best_diff = diff;
 				best_m = m;

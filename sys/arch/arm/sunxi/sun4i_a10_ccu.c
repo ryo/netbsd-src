@@ -152,17 +152,17 @@ static const struct sunxi_ccu_nkmp_tbl sun4i_a10_ac_dig_table[] = {
  */
 
 static int sun4i_a10_ccu_lcd0ch0_set_rate(struct sunxi_ccu_softc *,
-    struct sunxi_ccu_clk *, u_int);
+    struct sunxi_ccu_clk *, clkrate_t);
 static int sun4i_a10_ccu_lcd1ch0_set_rate(struct sunxi_ccu_softc *,
-    struct sunxi_ccu_clk *, u_int);
-static u_int sun4i_a10_ccu_lcd0ch0_round_rate(struct sunxi_ccu_softc *,
-    struct sunxi_ccu_clk *, u_int);
-static u_int sun4i_a10_ccu_lcd1ch0_round_rate(struct sunxi_ccu_softc *,
-    struct sunxi_ccu_clk *, u_int);
+    struct sunxi_ccu_clk *, clkrate_t);
+static clkrate_t sun4i_a10_ccu_lcd0ch0_round_rate(struct sunxi_ccu_softc *,
+    struct sunxi_ccu_clk *, clkrate_t);
+static clkrate_t sun4i_a10_ccu_lcd1ch0_round_rate(struct sunxi_ccu_softc *,
+    struct sunxi_ccu_clk *, clkrate_t);
 static int sun4i_a10_ccu_lcd0ch1_set_rate(struct sunxi_ccu_softc *,
-    struct sunxi_ccu_clk *, u_int);
+    struct sunxi_ccu_clk *, clkrate_t);
 static int sun4i_a10_ccu_lcd1ch1_set_rate(struct sunxi_ccu_softc *,
-    struct sunxi_ccu_clk *, u_int);
+    struct sunxi_ccu_clk *, clkrate_t);
 
 static struct sunxi_ccu_clk sun4i_a10_ccu_clks[] = {
 	SUNXI_CCU_GATE(A10_CLK_HOSC, "osc24m", "hosc",
@@ -679,7 +679,7 @@ static struct sunxi_ccu_clk sun4i_a10_ccu_clks[] = {
 
 static int
 sun4i_a10_ccu_lcd0ch0_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk * clk, u_int rate)
+    struct sunxi_ccu_clk * clk, clkrate_t rate)
 {
 	int error;
 	error = sunxi_ccu_lcdxch0_set_rate(sc, clk,
@@ -691,7 +691,7 @@ sun4i_a10_ccu_lcd0ch0_set_rate(struct sunxi_ccu_softc *sc,
 
 static int
 sun4i_a10_ccu_lcd1ch0_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk * clk, u_int rate)
+    struct sunxi_ccu_clk * clk, clkrate_t rate)
 {
 	return sunxi_ccu_lcdxch0_set_rate(sc, clk,
 	    &sun4i_a10_ccu_clks[A10_CLK_PLL_VIDEO1],
@@ -699,9 +699,9 @@ sun4i_a10_ccu_lcd1ch0_set_rate(struct sunxi_ccu_softc *sc,
 	    rate);
 }
 
-static u_int
+static clkrate_t
 sun4i_a10_ccu_lcd0ch0_round_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk * clk, u_int rate)
+    struct sunxi_ccu_clk * clk, clkrate_t rate)
 {
 	return sunxi_ccu_lcdxch0_round_rate(sc, clk,
 	    &sun4i_a10_ccu_clks[A10_CLK_PLL_VIDEO0],
@@ -709,9 +709,9 @@ sun4i_a10_ccu_lcd0ch0_round_rate(struct sunxi_ccu_softc *sc,
 	    rate);
 }
 
-static u_int
+static clkrate_t
 sun4i_a10_ccu_lcd1ch0_round_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk * clk, u_int rate)
+    struct sunxi_ccu_clk * clk, clkrate_t rate)
 {
 	return sunxi_ccu_lcdxch0_round_rate(sc, clk,
 	    &sun4i_a10_ccu_clks[A10_CLK_PLL_VIDEO1],
@@ -721,7 +721,7 @@ sun4i_a10_ccu_lcd1ch0_round_rate(struct sunxi_ccu_softc *sc,
 
 static int
 sun4i_a10_ccu_lcd0ch1_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk * clk, u_int rate)
+    struct sunxi_ccu_clk * clk, clkrate_t rate)
 {
 	return sunxi_ccu_lcdxch1_set_rate(sc, clk,
 	    &sun4i_a10_ccu_clks[A10_CLK_PLL_VIDEO0],
@@ -731,7 +731,7 @@ sun4i_a10_ccu_lcd0ch1_set_rate(struct sunxi_ccu_softc *sc,
 
 static int
 sun4i_a10_ccu_lcd1ch1_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk * clk, u_int rate)
+    struct sunxi_ccu_clk * clk, clkrate_t rate)
 {
 	return sunxi_ccu_lcdxch1_set_rate(sc, clk,
 	    &sun4i_a10_ccu_clks[A10_CLK_PLL_VIDEO1],
@@ -742,7 +742,7 @@ sun4i_a10_ccu_lcd1ch1_set_rate(struct sunxi_ccu_softc *sc,
 #if 0
 static int
 sun4i_a10_ccu_lcdxch0_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk * clk, u_int rate, int unit)
+    struct sunxi_ccu_clk * clk, clkrate_t rate, int unit)
 {
 	int parent_index;
 	struct clk *clkp;
@@ -764,22 +764,22 @@ sun4i_a10_ccu_lcdxch0_set_rate(struct sunxi_ccu_softc *sc,
 	return error;
 }
 
-static u_int
+static clkrate_t
 sun4i_a10_ccu_lcdxch0_round_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk * clk, u_int try_rate, int unit)
+    struct sunxi_ccu_clk * clk, clkrate_t try_rate, int unit)
 {
 	int parent_index;
 	struct clk *clkp;
-	int diff, diff_x2;
-	int rate, rate_x2;
+	long long diff, diff_x2;
+	clkrate_t rate, rate_x2;
 
 	parent_index = (unit == 0) ? A10_CLK_PLL_VIDEO0 : A10_CLK_PLL_VIDEO1;
 	clkp = &sun4i_a10_ccu_clks[parent_index].base;
 	rate = clk_round_rate(clkp, try_rate);
-	diff = abs(try_rate - rate);
+	diff = llabs(try_rate - rate);
 
 	rate_x2 = (clk_round_rate(clkp, try_rate / 2) * 2);
-	diff_x2 = abs(try_rate - rate_x2);
+	diff_x2 = llabs(try_rate - rate_x2);
 	
 	if (diff_x2 < diff)
 		return rate_x2;
@@ -787,14 +787,14 @@ sun4i_a10_ccu_lcdxch0_round_rate(struct sunxi_ccu_softc *sc,
 }
 
 static void
-sun4i_a10_tcon_calc_pll(int f_ref, int f_out, int *pm, int *pn, int *pd)
+sun4i_a10_tcon_calc_pll(clkrate_t f_ref, clkrate_t f_out, int *pm, int *pn, int *pd)
 {
-	int best = INT_MAX;
+	long long best = LLONG_MAX;
 	for (int d = 1; d <= 2 && best != 0; d++) {
 		for (int m = 1; m <= 16 && best != 0; m++) {
 			for (int n = 9; n <= 127 && best != 0; n++) {
-				int f_cur = (n * f_ref * d) / m;
-				int diff = abs(f_out - f_cur);
+				clkrate_t f_cur = (n * f_ref * d) / m;
+				long long diff = llabs(f_out - f_cur);
 				if (diff < best) {
 					best = diff;
 					*pm = m;
@@ -810,7 +810,7 @@ sun4i_a10_tcon_calc_pll(int f_ref, int f_out, int *pm, int *pn, int *pd)
 
 static int
 sun4i_a10_ccu_lcdxch1_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk *clk, u_int rate, int unit)
+    struct sunxi_ccu_clk *clk, clkrate_t rate, int unit)
 {
 	int parent_index;
 	struct clk *clkp, *pllclk;

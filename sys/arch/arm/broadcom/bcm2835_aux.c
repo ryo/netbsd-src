@@ -60,7 +60,7 @@ static const struct fdtbus_clock_controller_func bcmaux_fdt_funcs = {
 
 static struct clk *bcmaux_get(void *, const char *);
 static void	bcmaux_put(void *, struct clk *);
-static u_int	bcmaux_get_rate(void *, struct clk *);
+static clkrate_t bcmaux_get_rate(void *, struct clk *);
 static int	bcmaux_enable(void *, struct clk *);
 static int	bcmaux_disable(void *, struct clk *);
 
@@ -187,7 +187,7 @@ bcmaux_put(void *priv, struct clk *clk)
 {
 }
 
-static u_int
+static clkrate_t
 bcmaux_get_rate(void *priv, struct clk *clk)
 {
 	struct bcmaux_softc * const sc = priv;

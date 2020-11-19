@@ -36,7 +36,7 @@ __KERNEL_RCSID(0, "$NetBSD: meson_clk_fixed.c,v 1.1 2019/01/19 20:56:03 jmcneill
 
 #include <arm/amlogic/meson_clk.h>
 
-u_int
+clkrate_t
 meson_clk_fixed_get_rate(struct meson_clk_softc *sc, struct meson_clk_clk *clk)
 {
 	struct meson_clk_fixed *fixed = &clk->u.fixed;

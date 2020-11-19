@@ -82,7 +82,7 @@ imx_ccm_clock_put(void *priv, struct clk *clk)
 {
 }
 
-static u_int
+static clkrate_t
 imx_ccm_clock_get_rate(void *priv, struct clk *clkp)
 {
 	struct imx_ccm_softc * const sc = priv;
@@ -102,7 +102,7 @@ imx_ccm_clock_get_rate(void *priv, struct clk *clkp)
 }
 
 static int
-imx_ccm_clock_set_rate(void *priv, struct clk *clkp, u_int rate)
+imx_ccm_clock_set_rate(void *priv, struct clk *clkp, clkrate_t rate)
 {
 	struct imx_ccm_softc * const sc = priv;
 	struct imx_ccm_clk *clk = (struct imx_ccm_clk *)clkp;
@@ -123,8 +123,8 @@ imx_ccm_clock_set_rate(void *priv, struct clk *clkp, u_int rate)
 	return ENXIO;
 }
 
-static u_int
-imx_ccm_clock_round_rate(void *priv, struct clk *clkp, u_int rate)
+static clkrate_t
+imx_ccm_clock_round_rate(void *priv, struct clk *clkp, clkrate_t rate)
 {
 	struct imx_ccm_softc * const sc = priv;
 	struct imx_ccm_clk *clk = (struct imx_ccm_clk *)clkp;
@@ -304,6 +304,6 @@ imx_ccm_print(struct imx_ccm_softc *sc)
         	    clkp_parent ? "<-" : "",
         	    clkp_parent ? clkp_parent->name : "",
         	    type);
-		aprint_debug("%10d Hz\n", clk_get_rate(&clk->base));
+		aprint_debug("%10"PRIu64" Hz\n", clk_get_rate(&clk->base));
 	}
 }

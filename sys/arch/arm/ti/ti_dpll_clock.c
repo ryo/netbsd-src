@@ -70,10 +70,10 @@ static const struct fdtbus_clock_controller_func ti_dpll_clock_fdt_funcs = {
 
 static struct clk *ti_dpll_clock_get(void *, const char *);
 static void	ti_dpll_clock_put(void *, struct clk *);
-static u_int	ti_dpll_clock_get_rate(void *, struct clk *);
+static clkrate_t ti_dpll_clock_get_rate(void *, struct clk *);
 static struct clk *ti_dpll_clock_get_parent(void *, struct clk *);
 
-static int	am3_dpll_clock_set_rate(void *, struct clk *, u_int);
+static int	am3_dpll_clock_set_rate(void *, struct clk *, clkrate_t);
 
 static const struct clk_funcs am3_dpll_clock_clk_funcs = {
 	.get = ti_dpll_clock_get,
@@ -83,7 +83,7 @@ static const struct clk_funcs am3_dpll_clock_clk_funcs = {
 	.get_parent = ti_dpll_clock_get_parent,
 };
 
-static int	omap3_dpll_clock_set_rate(void *, struct clk *, u_int);
+static int	omap3_dpll_clock_set_rate(void *, struct clk *, clkrate_t);
 
 static const struct clk_funcs omap3_dpll_clock_clk_funcs = {
 	.get = ti_dpll_clock_get,
@@ -93,7 +93,7 @@ static const struct clk_funcs omap3_dpll_clock_clk_funcs = {
 	.get_parent = ti_dpll_clock_get_parent,
 };
 
-static u_int	omap3_dpll_core_clock_get_rate(void *, struct clk *);
+static clkrate_t omap3_dpll_core_clock_get_rate(void *, struct clk *);
 
 static const struct clk_funcs omap3_dpll_core_clock_clk_funcs = {
 	.get = ti_dpll_clock_get,
@@ -213,7 +213,7 @@ ti_dpll_clock_put(void *priv, struct clk *clk)
 {
 }
 
-static u_int
+static clkrate_t
 ti_dpll_clock_get_rate(void *priv, struct clk *clk)
 {
 	struct ti_dpll_clock_softc * const sc = priv;
@@ -230,7 +230,7 @@ ti_dpll_clock_get_rate(void *priv, struct clk *clk)
 
 	parent_rate = clk_get_rate(clk_parent);
 
-	return (u_int)((mult * parent_rate) / div);
+	return (clkrate_t)((mult * parent_rate) / div);
 }
 
 static struct clk *
@@ -243,7 +243,7 @@ ti_dpll_clock_get_parent(void *priv, struct clk *clk)
 }
 
 static int
-am3_dpll_clock_set_rate(void *priv, struct clk *clk, u_int rate)
+am3_dpll_clock_set_rate(void *priv, struct clk *clk, clkrate_t rate)
 {
 	struct ti_dpll_clock_softc * const sc = priv;
 	struct clk *clk_parent = clk_get_parent(clk);
@@ -285,7 +285,7 @@ am3_dpll_clock_set_rate(void *priv, struct clk *clk, u_int rate)
 }
 
 static int
-omap3_dpll_clock_set_rate(void *priv, struct clk *clk, u_int rate)
+omap3_dpll_clock_set_rate(void *priv, struct clk *clk, clkrate_t rate)
 {
 	struct ti_dpll_clock_softc * const sc = priv;
 	struct clk *clk_parent = clk_get_parent(clk);
@@ -323,7 +323,7 @@ omap3_dpll_clock_set_rate(void *priv, struct clk *clk, u_int rate)
 	return 0;
 }
 
-static u_int
+static clkrate_t
 omap3_dpll_core_clock_get_rate(void *priv, struct clk *clk)
 {
 	struct ti_dpll_clock_softc * const sc = priv;
@@ -341,5 +341,5 @@ omap3_dpll_core_clock_get_rate(void *priv, struct clk *clk)
 
 	parent_rate = clk_get_rate(clk_parent);
 
-	return (u_int)((mult * parent_rate) / div) / postdiv;
+	return (clkrate_t)((mult * parent_rate) / div) / postdiv;
 }

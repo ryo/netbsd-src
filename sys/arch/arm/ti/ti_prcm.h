@@ -73,10 +73,10 @@ struct ti_prcm_clk {
 
 	int		(*enable)(struct ti_prcm_softc *,
 				  struct ti_prcm_clk *, int);
-	u_int		(*get_rate)(struct ti_prcm_softc *,
+	clkrate_t	(*get_rate)(struct ti_prcm_softc *,
 				    struct ti_prcm_clk *);
 	int		(*set_rate)(struct ti_prcm_softc *,
-				    struct ti_prcm_clk *, u_int);
+				    struct ti_prcm_clk *, clkrate_t);
 	const char *	(*get_parent)(struct ti_prcm_softc *,
 				      struct ti_prcm_clk *);
 	int		(*set_parent)(struct ti_prcm_softc *,
@@ -87,7 +87,7 @@ struct ti_prcm_clk {
 int	ti_prcm_attach(struct ti_prcm_softc *);
 struct ti_prcm_clk *ti_prcm_clock_find(struct ti_prcm_softc *, const char *);
 
-static inline u_int
+static inline clkrate_t
 ti_prcm_fixed_get_rate(struct ti_prcm_softc *sc, struct ti_prcm_clk *tc)
 {
 	KASSERT(tc->type == TI_PRCM_FIXED);
@@ -101,7 +101,7 @@ ti_prcm_fixed_get_rate(struct ti_prcm_softc *sc, struct ti_prcm_clk *tc)
 		.get_rate = ti_prcm_fixed_get_rate,			\
 	}
 
-static inline u_int
+static inline clkrate_t
 ti_prcm_fixed_factor_get_rate(struct ti_prcm_softc *sc, struct ti_prcm_clk *tc)
 {
 	KASSERT(tc->type == TI_PRCM_FIXED_FACTOR);

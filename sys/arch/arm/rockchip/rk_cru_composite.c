@@ -57,7 +57,7 @@ rk_cru_composite_enable(struct rk_cru_softc *sc, struct rk_cru_clk *clk,
 	return 0;
 }
 
-u_int
+clkrate_t
 rk_cru_composite_get_rate(struct rk_cru_softc *sc,
     struct rk_cru_clk *clk)
 {
@@ -71,7 +71,7 @@ rk_cru_composite_get_rate(struct rk_cru_softc *sc,
 	if (clkp_parent == NULL)
 		return 0;
 
-	const u_int prate = clk_get_rate(clkp_parent);
+	const clkrate_t prate = clk_get_rate(clkp_parent);
 	if (prate == 0)
 		return 0;
 
@@ -80,7 +80,7 @@ rk_cru_composite_get_rate(struct rk_cru_softc *sc,
 		const u_int num = (val >> 16) & 0xffff;
 		const u_int den = val & 0xffff;
 
-		return (u_int)((uint64_t)prate * num / den);
+		return (clkrate_t)((uint64_t)prate * num / den);
 	} else {
 		const uint32_t val = CRU_READ(sc, composite->muxdiv_reg);
 		const u_int div = __SHIFTOUT(val, composite->div_mask) + 1;
@@ -89,8 +89,8 @@ rk_cru_composite_get_rate(struct rk_cru_softc *sc,
 	}
 }
 
-static u_int
-rk_cru_composite_get_frac_div(u_int n, u_int d)
+static clkrate_t
+rk_cru_composite_get_frac_div(clkrate_t n, clkrate_t d)
 {
 	u_int tmp;
 
@@ -105,7 +105,7 @@ rk_cru_composite_get_frac_div(u_int n, u_int d)
 
 static int
 rk_cru_composite_set_rate_frac(struct rk_cru_softc *sc,
-    struct rk_cru_clk *clk, u_int rate)
+    struct rk_cru_clk *clk, clkrate_t rate)
 {
 	struct rk_cru_composite *composite = &clk->u.composite;
 	struct clk *clk_parent;
@@ -114,8 +114,8 @@ rk_cru_composite_set_rate_frac(struct rk_cru_softc *sc,
 	if (clk_parent == NULL)
 		return ENXIO;
 
-	const u_int prate = clk_get_rate(clk_parent);
-	const u_int v = rk_cru_composite_get_frac_div(prate, rate);
+	const clkrate_t prate = clk_get_rate(clk_parent);
+	const clkrate_t v = rk_cru_composite_get_frac_div(prate, rate);
 	const u_int num = (prate / v) & 0xffff;
 	const u_int den = (rate / v) & 0xffff;
 	if (prate / num * den != rate)
@@ -128,10 +128,11 @@ rk_cru_composite_set_rate_frac(struct rk_cru_softc *sc,
 
 int
 rk_cru_composite_set_rate(struct rk_cru_softc *sc,
-    struct rk_cru_clk *clk, u_int rate)
+    struct rk_cru_clk *clk, clkrate_t rate)
 {
 	struct rk_cru_composite *composite = &clk->u.composite;
-	u_int best_div, best_mux, best_diff;
+	long long best_diff;
+	u_int best_div, best_mux;
 	struct rk_cru_clk *rclk_parent;
 	struct clk *clk_parent;
 
@@ -150,7 +151,7 @@ rk_cru_composite_set_rate(struct rk_cru_softc *sc,
 
 	best_div = 0;
 	best_mux = 0;
-	best_diff = INT_MAX;
+	best_diff = LLONG_MAX;
 	for (u_int mux = 0; mux < composite->nparents; mux++) {
 		rclk_parent = rk_cru_clock_find(sc, composite->parents[mux]);
 		if (rclk_parent != NULL)
@@ -160,13 +161,13 @@ rk_cru_composite_set_rate(struct rk_cru_softc *sc,
 		if (clk_parent == NULL)
 			continue;
 
-		const u_int prate = clk_get_rate(clk_parent);
+		const clkrate_t prate = clk_get_rate(clk_parent);
 		if (prate == 0)
 			continue;
 
 		for (u_int div = 1; div <= __SHIFTOUT_MASK(composite->div_mask) + 1; div++) {
-			const u_int cur_rate = prate / div;
-			const int diff = (int)rate - (int)cur_rate;
+			const long long cur_rate = prate / div;
+			const long long diff = rate - cur_rate;
 			if (composite->flags & RK_COMPOSITE_ROUND_DOWN) {
 				if (diff >= 0 && diff < best_diff) {
 					best_diff = diff;
@@ -174,15 +175,15 @@ rk_cru_composite_set_rate(struct rk_cru_softc *sc,
 					best_div = div;
 				}
 			} else {
-				if (abs(diff) < best_diff) {
-					best_diff = abs(diff);
+				if (llabs(diff) < best_diff) {
+					best_diff = llabs(diff);
 					best_mux = mux;
 					best_div = div;
 				}
 			}
 		}
 	}
-	if (best_diff == INT_MAX)
+	if (best_diff == LLONG_MAX)
 		return ERANGE;
 
 	uint32_t write_mask = composite->div_mask << 16;

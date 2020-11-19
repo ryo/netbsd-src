@@ -52,8 +52,8 @@ static const struct fdtbus_clock_controller_func sun8i_a23_apbclk_fdt_funcs = {
 
 static struct clk *sun8i_a23_apbclk_get(void *, const char *);
 static void	sun8i_a23_apbclk_put(void *, struct clk *);
-static int	sun8i_a23_apbclk_set_rate(void *, struct clk *, u_int);
-static u_int	sun8i_a23_apbclk_get_rate(void *, struct clk *);
+static int	sun8i_a23_apbclk_set_rate(void *, struct clk *, clkrate_t);
+static clkrate_t sun8i_a23_apbclk_get_rate(void *, struct clk *);
 static struct clk *sun8i_a23_apbclk_get_parent(void *, struct clk *);
 
 static const struct clk_funcs sun8i_a23_apbclk_clk_funcs = {
@@ -156,12 +156,12 @@ sun8i_a23_apbclk_put(void *priv, struct clk *clk)
 }
 
 static int
-sun8i_a23_apbclk_set_rate(void *priv, struct clk *clk, u_int rate)
+sun8i_a23_apbclk_set_rate(void *priv, struct clk *clk, clkrate_t rate)
 {
 	return ENXIO;
 }
 
-static u_int
+static clkrate_t
 sun8i_a23_apbclk_get_rate(void *priv, struct clk *clk)
 {
 	struct sun8i_a23_apbclk_softc * const sc = priv;

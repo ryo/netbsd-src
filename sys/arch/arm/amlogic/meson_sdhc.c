@@ -255,7 +255,7 @@ meson_sdhc_attach(device_t parent, device_t self, void *aux)
 
 	sc->sc_bus_freq = clk_get_rate(clk_clkin);
 
-	aprint_normal_dev(self, "core %u Hz, clkin %u Hz\n", clk_get_rate(clk_core), clk_get_rate(clk_clkin));
+	aprint_normal_dev(self, "core %"PRIu64" Hz, clkin %"PRIu64" Hz\n", clk_get_rate(clk_core), clk_get_rate(clk_clkin));
 
 	meson_sdhc_dmainit(sc);
 

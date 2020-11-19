@@ -376,7 +376,7 @@ rkpmic_clk_get(void *priv, const char *name)
 	return NULL;
 }
 
-static u_int
+static clkrate_t
 rkpmic_clk_get_rate(void *priv, struct clk *clk)
 {
 	return 32768;

@@ -36,7 +36,7 @@ __KERNEL_RCSID(0, "$NetBSD: sunxi_ccu_fixed_factor.c,v 1.2 2018/05/08 22:05:25 j
 
 #include <arm/sunxi/sunxi_ccu.h>
 
-static u_int
+static clkrate_t
 sunxi_ccu_fixed_factor_get_parent_rate(struct clk *clkp)
 {
 	struct clk *clkp_parent;
@@ -48,7 +48,7 @@ sunxi_ccu_fixed_factor_get_parent_rate(struct clk *clkp)
 	return clk_get_rate(clkp_parent);
 }
 
-u_int
+clkrate_t
 sunxi_ccu_fixed_factor_get_rate(struct sunxi_ccu_softc *sc,
     struct sunxi_ccu_clk *clk)
 {
@@ -57,15 +57,15 @@ sunxi_ccu_fixed_factor_get_rate(struct sunxi_ccu_softc *sc,
 
 	KASSERT(clk->type == SUNXI_CCU_FIXED_FACTOR);
 
-	const u_int p_rate = sunxi_ccu_fixed_factor_get_parent_rate(clkp);
+	const clkrate_t p_rate = sunxi_ccu_fixed_factor_get_parent_rate(clkp);
 	if (p_rate == 0)
 		return 0;
 
-	return (u_int)(((uint64_t)p_rate * fixed_factor->mult) / fixed_factor->div);
+	return (clkrate_t)(((uint64_t)p_rate * fixed_factor->mult) / fixed_factor->div);
 }
 
 static int
-sunxi_ccu_fixed_factor_set_parent_rate(struct clk *clkp, u_int rate)
+sunxi_ccu_fixed_factor_set_parent_rate(struct clk *clkp, clkrate_t rate)
 {
 	struct clk *clkp_parent;
 
@@ -78,7 +78,7 @@ sunxi_ccu_fixed_factor_set_parent_rate(struct clk *clkp, u_int rate)
 
 int
 sunxi_ccu_fixed_factor_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk *clk, u_int rate)
+    struct sunxi_ccu_clk *clk, clkrate_t rate)
 {
 	struct sunxi_ccu_fixed_factor *fixed_factor = &clk->u.fixed_factor;
 	struct clk *clkp = &clk->base;

@@ -93,7 +93,8 @@ static int
 cpufreq_dt_set_rate(struct cpufreq_dt_softc *sc, u_int freq_khz)
 {
 	struct cpufreq_dt_opp *opp = NULL;
-	u_int old_rate, new_rate, old_uv, new_uv;
+	clkrate_t old_rate, new_rate;
+	u_int old_uv, new_uv;
 	uint64_t xc;
 	int error;
 	ssize_t n;

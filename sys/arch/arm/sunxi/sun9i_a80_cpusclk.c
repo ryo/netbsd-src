@@ -55,8 +55,8 @@ static const struct fdtbus_clock_controller_func sun9i_a80_cpusclk_fdt_funcs = {
 
 static struct clk *sun9i_a80_cpusclk_get(void *, const char *);
 static void	sun9i_a80_cpusclk_put(void *, struct clk *);
-static int	sun9i_a80_cpusclk_set_rate(void *, struct clk *, u_int);
-static u_int	sun9i_a80_cpusclk_get_rate(void *, struct clk *);
+static int	sun9i_a80_cpusclk_set_rate(void *, struct clk *, clkrate_t);
+static clkrate_t sun9i_a80_cpusclk_get_rate(void *, struct clk *);
 static struct clk *sun9i_a80_cpusclk_get_parent(void *, struct clk *);
 
 static const struct clk_funcs sun9i_a80_cpusclk_clk_funcs = {
@@ -157,17 +157,17 @@ sun9i_a80_cpusclk_put(void *priv, struct clk *clk)
 }
 
 static int
-sun9i_a80_cpusclk_set_rate(void *priv, struct clk *clk, u_int rate)
+sun9i_a80_cpusclk_set_rate(void *priv, struct clk *clk, clkrate_t rate)
 {
 	return ENXIO;
 }
 
-static u_int
+static clkrate_t
 sun9i_a80_cpusclk_get_rate(void *priv, struct clk *clk)
 {
 	struct sun9i_a80_cpusclk_softc * const sc = priv;
 	struct clk *clk_parent = clk_get_parent(clk);
-	u_int rate;
+	clkrate_t rate;
 
 	const uint32_t val = RD4(sc, 0);
 	const u_int sel = __SHIFTOUT(val, CPUS_CLK_SRC_SEL);

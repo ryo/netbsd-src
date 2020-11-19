@@ -133,7 +133,7 @@ static kmutex_t cpux_axi_cfg_lock;
 
 static int
 sun8i_a83t_ccu_cpux_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk *clk, u_int rate)
+    struct sunxi_ccu_clk *clk, clkrate_t rate)
 {
 	const int cluster = clk->u.nkmp.reg == PLL_C0CPUX_CTRL_REG ? 0 : 1;
 	struct sunxi_ccu_nkmp *nkmp = &clk->u.nkmp;

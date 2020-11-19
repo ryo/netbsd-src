@@ -118,10 +118,10 @@ struct sunxi_ccu_nkmp {
 
 int	sunxi_ccu_nkmp_enable(struct sunxi_ccu_softc *,
 			      struct sunxi_ccu_clk *, int);
-u_int	sunxi_ccu_nkmp_get_rate(struct sunxi_ccu_softc *,
-				struct sunxi_ccu_clk *);
+clkrate_t sunxi_ccu_nkmp_get_rate(struct sunxi_ccu_softc *,
+				  struct sunxi_ccu_clk *);
 int	sunxi_ccu_nkmp_set_rate(struct sunxi_ccu_softc *,
-				struct sunxi_ccu_clk *, u_int);
+				struct sunxi_ccu_clk *, clkrate_t);
 const char *sunxi_ccu_nkmp_get_parent(struct sunxi_ccu_softc *,
 				      struct sunxi_ccu_clk *);
 
@@ -168,10 +168,10 @@ struct sunxi_ccu_nm {
 
 int	sunxi_ccu_nm_enable(struct sunxi_ccu_softc *,
 			    struct sunxi_ccu_clk *, int);
-u_int	sunxi_ccu_nm_get_rate(struct sunxi_ccu_softc *,
-			      struct sunxi_ccu_clk *);
+clkrate_t sunxi_ccu_nm_get_rate(struct sunxi_ccu_softc *,
+				struct sunxi_ccu_clk *);
 int	sunxi_ccu_nm_set_rate(struct sunxi_ccu_softc *,
-			      struct sunxi_ccu_clk *, u_int);
+			      struct sunxi_ccu_clk *, clkrate_t);
 int	sunxi_ccu_nm_set_parent(struct sunxi_ccu_softc *,
 				struct sunxi_ccu_clk *,
 				const char *);
@@ -214,10 +214,10 @@ struct sunxi_ccu_div {
 
 int	sunxi_ccu_div_enable(struct sunxi_ccu_softc *,
 			     struct sunxi_ccu_clk *, int);
-u_int	sunxi_ccu_div_get_rate(struct sunxi_ccu_softc *,
-			       struct sunxi_ccu_clk *);
+clkrate_t sunxi_ccu_div_get_rate(struct sunxi_ccu_softc *,
+				 struct sunxi_ccu_clk *);
 int	sunxi_ccu_div_set_rate(struct sunxi_ccu_softc *,
-			       struct sunxi_ccu_clk *, u_int);
+			       struct sunxi_ccu_clk *, clkrate_t);
 int	sunxi_ccu_div_set_parent(struct sunxi_ccu_softc *,
 			         struct sunxi_ccu_clk *,
 			         const char *);
@@ -251,14 +251,14 @@ const char *sunxi_ccu_div_get_parent(struct sunxi_ccu_softc *,
 /* special case of the div model for display clocks */
 int sunxi_ccu_lcdxch0_set_rate(struct sunxi_ccu_softc *,
     struct sunxi_ccu_clk *, struct sunxi_ccu_clk *,
-    struct sunxi_ccu_clk *, u_int);
-u_int sunxi_ccu_lcdxch0_round_rate(struct sunxi_ccu_softc *,
+    struct sunxi_ccu_clk *, clkrate_t);
+clkrate_t sunxi_ccu_lcdxch0_round_rate(struct sunxi_ccu_softc *,
     struct sunxi_ccu_clk *, struct sunxi_ccu_clk *,
-    struct sunxi_ccu_clk *, u_int);
+    struct sunxi_ccu_clk *, clkrate_t);
 
 int sunxi_ccu_lcdxch1_set_rate(struct sunxi_ccu_softc *sc,
     struct sunxi_ccu_clk *clk, struct sunxi_ccu_clk *pclk,
-    struct sunxi_ccu_clk *pclk_x2, u_int);
+    struct sunxi_ccu_clk *pclk_x2, clkrate_t);
 
 struct sunxi_ccu_prediv {
 	bus_size_t	reg;
@@ -274,10 +274,10 @@ struct sunxi_ccu_prediv {
 #define	SUNXI_CCU_PREDIV_DIVIDE_BY_TWO	__BIT(1)
 };
 
-u_int	sunxi_ccu_prediv_get_rate(struct sunxi_ccu_softc *,
-				  struct sunxi_ccu_clk *);
+clkrate_t sunxi_ccu_prediv_get_rate(struct sunxi_ccu_softc *,
+				    struct sunxi_ccu_clk *);
 int	sunxi_ccu_prediv_set_rate(struct sunxi_ccu_softc *,
-				  struct sunxi_ccu_clk *, u_int);
+				  struct sunxi_ccu_clk *, clkrate_t);
 int	sunxi_ccu_prediv_set_parent(struct sunxi_ccu_softc *,
 				    struct sunxi_ccu_clk *,
 				    const char *);
@@ -315,10 +315,10 @@ struct sunxi_ccu_phase {
 	uint32_t	mask;
 };
 
-u_int	sunxi_ccu_phase_get_rate(struct sunxi_ccu_softc *,
-				 struct sunxi_ccu_clk *);
+clkrate_t sunxi_ccu_phase_get_rate(struct sunxi_ccu_softc *,
+				   struct sunxi_ccu_clk *);
 int	sunxi_ccu_phase_set_rate(struct sunxi_ccu_softc *,
-				 struct sunxi_ccu_clk *, u_int);
+				 struct sunxi_ccu_clk *, clkrate_t);
 const char *sunxi_ccu_phase_get_parent(struct sunxi_ccu_softc *,
 				       struct sunxi_ccu_clk *);
 
@@ -340,10 +340,10 @@ struct sunxi_ccu_fixed_factor {
 	u_int		mult;
 };
 
-u_int	sunxi_ccu_fixed_factor_get_rate(struct sunxi_ccu_softc *,
-					struct sunxi_ccu_clk *);
+clkrate_t sunxi_ccu_fixed_factor_get_rate(struct sunxi_ccu_softc *,
+					  struct sunxi_ccu_clk *);
 int	sunxi_ccu_fixed_factor_set_rate(struct sunxi_ccu_softc *,
-					struct sunxi_ccu_clk *, u_int);
+					struct sunxi_ccu_clk *, clkrate_t);
 const char *sunxi_ccu_fixed_factor_get_parent(struct sunxi_ccu_softc *,
 					      struct sunxi_ccu_clk *);
 
@@ -378,12 +378,12 @@ struct sunxi_ccu_fractional {
 
 int	sunxi_ccu_fractional_enable(struct sunxi_ccu_softc *,
 			    struct sunxi_ccu_clk *, int);
-u_int	sunxi_ccu_fractional_get_rate(struct sunxi_ccu_softc *,
-			      struct sunxi_ccu_clk *);
+clkrate_t sunxi_ccu_fractional_get_rate(struct sunxi_ccu_softc *,
+				        struct sunxi_ccu_clk *);
 int	sunxi_ccu_fractional_set_rate(struct sunxi_ccu_softc *,
-			      struct sunxi_ccu_clk *, u_int);
-u_int	sunxi_ccu_fractional_round_rate(struct sunxi_ccu_softc *,
-			      struct sunxi_ccu_clk *, u_int);
+				      struct sunxi_ccu_clk *, clkrate_t);
+clkrate_t sunxi_ccu_fractional_round_rate(struct sunxi_ccu_softc *,
+				          struct sunxi_ccu_clk *, clkrate_t);
 const char *sunxi_ccu_fractional_get_parent(struct sunxi_ccu_softc *,
 				    struct sunxi_ccu_clk *);
 
@@ -429,12 +429,12 @@ struct sunxi_ccu_clk {
 
 	int		(*enable)(struct sunxi_ccu_softc *,
 				  struct sunxi_ccu_clk *, int);
-	u_int		(*get_rate)(struct sunxi_ccu_softc *,
+	clkrate_t	(*get_rate)(struct sunxi_ccu_softc *,
 				    struct sunxi_ccu_clk *);
 	int		(*set_rate)(struct sunxi_ccu_softc *,
-				    struct sunxi_ccu_clk *, u_int);
-	u_int		(*round_rate)(struct sunxi_ccu_softc *,
-				    struct sunxi_ccu_clk *, u_int);
+				    struct sunxi_ccu_clk *, clkrate_t);
+	clkrate_t	(*round_rate)(struct sunxi_ccu_softc *,
+				    struct sunxi_ccu_clk *, clkrate_t);
 	const char *	(*get_parent)(struct sunxi_ccu_softc *,
 				      struct sunxi_ccu_clk *);
 	int		(*set_parent)(struct sunxi_ccu_softc *,

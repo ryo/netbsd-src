@@ -92,7 +92,7 @@ struct dwcwdt_softc {
 	bus_space_tag_t sc_bst;
 	bus_space_handle_t sc_bsh;
 	struct sysmon_wdog sc_smw;
-	u_int sc_clkrate;
+	clkrate_t sc_clkrate;
 };
 
 #define RD4(sc, reg) \

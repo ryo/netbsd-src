@@ -58,13 +58,14 @@ sunxi_ccu_div_enable(struct sunxi_ccu_softc *sc, struct sunxi_ccu_clk *clk,
 	return 0;
 }
 
-u_int
+clkrate_t
 sunxi_ccu_div_get_rate(struct sunxi_ccu_softc *sc,
     struct sunxi_ccu_clk *clk)
 {
 	struct sunxi_ccu_div *div = &clk->u.div;
 	struct clk *clkp, *clkp_parent;
-	u_int rate, ratio;
+	clkrate_t rate;
+	u_int ratio;
 	uint32_t val;
 
 	KASSERT(clk->type == SUNXI_CCU_DIV);
@@ -100,16 +101,17 @@ sunxi_ccu_div_get_rate(struct sunxi_ccu_softc *sc,
 
 static int
 sunxi_ccu_div_select_parent(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk *clk, u_int new_rate)
+    struct sunxi_ccu_clk *clk, clkrate_t new_rate)
 {
 	struct sunxi_ccu_div *div = &clk->u.div;
 	struct sunxi_ccu_clk *clk_parent;
 	struct clk *best_parent;
-	u_int index, best_diff;
+	long long best_diff;
+	u_int index;
 	const char *pname;
 
 	best_parent = NULL;
-	best_diff = ~0u;
+	best_diff = LLONG_MAX;
 	for (index = 0; index < div->nparents; index++) {
 		pname = div->parents[index];
 		if (pname == NULL)
@@ -117,14 +119,14 @@ sunxi_ccu_div_select_parent(struct sunxi_ccu_softc *sc,
 		clk_parent = sunxi_ccu_clock_find(sc, pname);
 		if (clk_parent == NULL)
 			continue;
-		const u_int rate = clk_get_rate(&clk_parent->base);
-		const u_int diff = abs((int)rate - (int)new_rate);
+		const clkrate_t rate = clk_get_rate(&clk_parent->base);
+		const long long diff = llabs(rate - new_rate);
 		if (diff < best_diff) {
 			best_diff = diff;
 			best_parent = &clk_parent->base;
 		}
 	}
-	if (best_diff == ~0u)
+	if (best_diff == LLONG_MAX)
 		return EINVAL;
 
 	return clk_set_parent(&clk->base, best_parent);
@@ -132,11 +134,11 @@ sunxi_ccu_div_select_parent(struct sunxi_ccu_softc *sc,
 
 int
 sunxi_ccu_div_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk *clk, u_int new_rate)
+    struct sunxi_ccu_clk *clk, clkrate_t new_rate)
 {
 	struct sunxi_ccu_div *div = &clk->u.div;
 	struct clk *clkp, *clkp_parent;
-	int parent_rate;
+	clkrate_t parent_rate;
 	uint32_t val, raw_div;
 	int ratio;
 

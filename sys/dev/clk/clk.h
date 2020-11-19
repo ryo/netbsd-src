@@ -32,11 +32,13 @@
 struct clk_domain;
 struct clk;
 
+typedef uint64_t clkrate_t;
+
 struct clk *	clk_get(struct clk_domain *, const char *);
 void		clk_put(struct clk *);
-u_int		clk_get_rate(struct clk *);
-int		clk_set_rate(struct clk *, u_int);
-u_int		clk_round_rate(struct clk *, u_int);
+clkrate_t	clk_get_rate(struct clk *);
+int		clk_set_rate(struct clk *, clkrate_t);
+clkrate_t	clk_round_rate(struct clk *, clkrate_t);
 int		clk_enable(struct clk *);
 int		clk_disable(struct clk *);
 int		clk_set_parent(struct clk *, struct clk *);

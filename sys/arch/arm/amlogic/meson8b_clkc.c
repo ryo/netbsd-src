@@ -97,7 +97,7 @@ static const char *periph_clk_sel_parents[] = { "cpu_clk_div2", "cpu_clk_div3", 
 
 static int
 meson8b_clkc_pll_sys_set_rate(struct meson_clk_softc *sc,
-    struct meson_clk_clk *clk, u_int rate)
+    struct meson_clk_clk *clk, clkrate_t rate)
 {
 	struct clk *clkp, *clkp_parent;
 	int error;
@@ -109,11 +109,11 @@ meson8b_clkc_pll_sys_set_rate(struct meson_clk_softc *sc,
 	if (clkp_parent == NULL)
 		return ENXIO;
 
-	const u_int old_rate = clk_get_rate(clkp);
+	const clkrate_t old_rate = clk_get_rate(clkp);
 	if (old_rate == rate)
 		return 0;
 
-	const u_int parent_rate = clk_get_rate(clkp_parent);
+	const clkrate_t parent_rate = clk_get_rate(clkp_parent);
 	if (parent_rate == 0)
 		return EIO;
 

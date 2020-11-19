@@ -52,7 +52,7 @@ imx_ccm_extclk_enable(struct imx_ccm_softc *sc, struct imx_ccm_clk *clk,
 	return clk_enable(extclk);
 }
 
-u_int
+clkrate_t
 imx_ccm_extclk_get_rate(struct imx_ccm_softc *sc,
     struct imx_ccm_clk *clk)
 {
@@ -68,7 +68,7 @@ imx_ccm_extclk_get_rate(struct imx_ccm_softc *sc,
 
 int
 imx_ccm_extclk_set_rate(struct imx_ccm_softc *sc,
-    struct imx_ccm_clk *clk, u_int rate)
+    struct imx_ccm_clk *clk, clkrate_t rate)
 {
 	struct clk *extclk;
 

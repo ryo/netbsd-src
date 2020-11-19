@@ -36,13 +36,14 @@ __KERNEL_RCSID(0, "$NetBSD: sunxi_ccu_prediv.c,v 1.3 2017/08/25 00:07:03 jmcneil
 
 #include <arm/sunxi/sunxi_ccu.h>
 
-u_int
+clkrate_t
 sunxi_ccu_prediv_get_rate(struct sunxi_ccu_softc *sc,
     struct sunxi_ccu_clk *clk)
 {
 	struct sunxi_ccu_prediv *prediv = &clk->u.prediv;
 	struct clk *clkp, *clkp_parent;
-	u_int rate, pre, div, sel;
+	clkrate_t rate;
+	u_int pre, div, sel;
 	uint32_t val;
 
 	KASSERT(clk->type == SUNXI_CCU_PREDIV);
@@ -88,7 +89,7 @@ sunxi_ccu_prediv_get_rate(struct sunxi_ccu_softc *sc,
 
 int
 sunxi_ccu_prediv_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk *clk, u_int new_rate)
+    struct sunxi_ccu_clk *clk, clkrate_t new_rate)
 {
 	return EINVAL;
 }

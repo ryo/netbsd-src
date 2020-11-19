@@ -70,7 +70,7 @@ sunxi_ccu_nkmp_enable(struct sunxi_ccu_softc *sc, struct sunxi_ccu_clk *clk,
 	return 0;
 }
 
-u_int
+clkrate_t
 sunxi_ccu_nkmp_get_rate(struct sunxi_ccu_softc *sc,
     struct sunxi_ccu_clk *clk)
 {
@@ -135,7 +135,7 @@ sunxi_ccu_nkmp_get_rate(struct sunxi_ccu_softc *sc,
 
 int
 sunxi_ccu_nkmp_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk *clk, u_int rate)
+    struct sunxi_ccu_clk *clk, clkrate_t rate)
 {
 	struct sunxi_ccu_nkmp *nkmp = &clk->u.nkmp;
 	const struct sunxi_ccu_nkmp_tbl *tab;

@@ -111,7 +111,7 @@ sunxi_gates_clock_put(void *priv, struct clk *clk)
 {
 }
 
-static u_int
+static clkrate_t
 sunxi_gates_clock_get_rate(void *priv, struct clk *clkp)
 {
 	struct sunxi_gates_softc * const sc = priv;
@@ -198,7 +198,7 @@ sunxi_gates_print(struct sunxi_gates_softc *sc)
         	    clkp_parent ? "<-" : "",
         	    clkp_parent ? clkp_parent->name : "",
         	    "gate");
-		aprint_debug("%10d Hz\n", clk_get_rate(&gate->base));
+		aprint_debug("%10"PRIu64" Hz\n", clk_get_rate(&gate->base));
 	}
 }
 

@@ -101,7 +101,7 @@ imx6_com_attach(device_t parent, device_t self, void *aux)
 	regsp->ur_ioh = bsh;
 
 	if (per != NULL) {
-		aprint_normal(", %u Hz", clk_get_rate(per));
+		aprint_normal(", %"PRIu64" Hz", clk_get_rate(per));
 		/* XXX */
 		imxuart_set_frequency(clk_get_rate(per), 2);
 	}

@@ -304,7 +304,7 @@ static int	sunxi_rtc_settime(todr_chip_handle_t, struct clock_ymdhms *);
 
 static struct clk *
 		sunxi_rtc_clk_get(void *, const char *);
-static u_int	sunxi_rtc_clk_get_rate(void *, struct clk *);
+static clkrate_t sunxi_rtc_clk_get_rate(void *, struct clk *);
 static int	sunxi_rtc_clk_enable(void *, struct clk *);
 static int	sunxi_rtc_clk_disable(void *, struct clk *);
 static int	sunxi_rtc_clk_set_parent(void *, struct clk *, struct clk *);
@@ -500,7 +500,7 @@ sunxi_rtc_clk_get(void *priv, const char *name)
 	return NULL;
 }
 
-static u_int
+static clkrate_t
 sunxi_rtc_clk_get_rate(void *priv, struct clk *clk)
 {
 	struct sunxi_rtc_softc * const sc = priv;
@@ -512,7 +512,7 @@ sunxi_rtc_clk_get_rate(void *priv, struct clk *clk)
 	}
 
 	KASSERT(sc->sc_parent_clk != NULL);
-	u_int parent_rate = clk_get_rate(sc->sc_parent_clk);
+	clkrate_t parent_rate = clk_get_rate(sc->sc_parent_clk);
 	uint32_t prescaler = 0;
 
 	if (RTC_READ(sc, SUN6I_LOSC_CTRL_REG) & SUN6I_LOSC_CTRL_EXT_OSC)

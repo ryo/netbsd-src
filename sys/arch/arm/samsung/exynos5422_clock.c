@@ -254,8 +254,8 @@ static struct exynos5422_clock_id {
 
 static struct clk *exynos5422_clock_get(void *, const char *);
 static void	exynos5422_clock_put(void *, struct clk *);
-static u_int	exynos5422_clock_get_rate(void *, struct clk *);
-static int	exynos5422_clock_set_rate(void *, struct clk *, u_int);
+static clkrate_t exynos5422_clock_get_rate(void *, struct clk *);
+static int	exynos5422_clock_set_rate(void *, struct clk *, clkrate_t);
 static int	exynos5422_clock_enable(void *, struct clk *);
 static int	exynos5422_clock_disable(void *, struct clk *);
 static int	exynos5422_clock_set_parent(void *, struct clk *, struct clk *);
@@ -718,7 +718,7 @@ exynos5422_clock_print(struct exynos5422_clock_softc *sc,
 	clk_parent = exynos5422_clock_get_parent(sc, &eclk->base);
 	eclk_parent = (struct exynos_clk *)clk_parent;
 
-	aprint_debug("  %-10s %2s %-10s %-5s %10d Hz\n",
+	aprint_debug("  %-10s %2s %-10s %-5s %10"PRIu64" Hz\n",
 	    eclk->base.name,
 	    eclk_parent ? "<-" : "",
 	    eclk_parent ? eclk_parent->base.name : "",
@@ -745,7 +745,7 @@ exynos5422_clock_decode(device_t dev, int cc_phandle, const void *data,
 	return NULL;
 }
 
-static u_int
+static clkrate_t
 exynos5422_clock_get_rate_pll(struct exynos5422_clock_softc *sc,
     struct exynos_clk *eclk)
 {
@@ -756,7 +756,7 @@ exynos5422_clock_get_rate_pll(struct exynos5422_clock_softc *sc,
 
 	clk_parent = exynos5422_clock_find(eclk->parent);
 	KASSERT(clk_parent != NULL);
-	const u_int rate_parent = exynos5422_clock_get_rate(sc,
+	const clkrate_t rate_parent = exynos5422_clock_get_rate(sc,
 	    &clk_parent->base);
 
 	const uint32_t v = CLOCK_READ(sc, epll->con0_reg);
@@ -766,7 +766,7 @@ exynos5422_clock_get_rate_pll(struct exynos5422_clock_softc *sc,
 
 static int
 exynos5422_clock_set_rate_pll(struct exynos5422_clock_softc *sc,
-    struct exynos_clk *eclk, u_int rate)
+    struct exynos_clk *eclk, clkrate_t rate)
 {
 	/* TODO */
 	return EOPNOTSUPP;
@@ -815,7 +815,7 @@ exynos5422_clock_get_parent_mux(struct exynos5422_clock_softc *sc,
 	return exynos5422_clock_find(emux->parents[sel]);
 }
 
-static u_int
+static clkrate_t
 exynos5422_clock_get_rate_div(struct exynos5422_clock_softc *sc,
     struct exynos_clk *eclk)
 {
@@ -825,7 +825,7 @@ exynos5422_clock_get_rate_div(struct exynos5422_clock_softc *sc,
 	KASSERT(eclk->type == EXYNOS_CLK_DIV);
 
 	clk_parent = exynos5422_clock_get_parent(sc, &eclk->base);
-	const u_int parent_rate = exynos5422_clock_get_rate(sc, clk_parent);
+	const clkrate_t parent_rate = exynos5422_clock_get_rate(sc, clk_parent);
 
 	const uint32_t v = CLOCK_READ(sc, ediv->reg);
 	const u_int div = __SHIFTOUT(v, ediv->bits);
@@ -835,17 +835,17 @@ exynos5422_clock_get_rate_div(struct exynos5422_clock_softc *sc,
 
 static int
 exynos5422_clock_set_rate_div(struct exynos5422_clock_softc *sc,
-    struct exynos_clk *eclk, u_int rate)
+    struct exynos_clk *eclk, clkrate_t rate)
 {
 	struct exynos_div_clk *ediv = &eclk->u.div;
 	struct clk *clk_parent;
 	int tmp_div, new_div = -1;
-	u_int tmp_rate;
+	clkrate_t tmp_rate;
 
 	KASSERT(eclk->type == EXYNOS_CLK_DIV);
 
 	clk_parent = exynos5422_clock_get_parent(sc, &eclk->base);
-	const u_int parent_rate = exynos5422_clock_get_rate(sc, clk_parent);
+	const clkrate_t parent_rate = exynos5422_clock_get_rate(sc, clk_parent);
 
 	for (tmp_div = 0; tmp_div < __SHIFTOUT_MASK(ediv->bits); tmp_div++) {
 		tmp_rate = parent_rate / (tmp_div + 1);
@@ -912,7 +912,7 @@ exynos5422_clock_put(void *priv, struct clk *clk)
 	atomic_dec_uint(&eclk->refcnt);
 }
 
-static u_int
+static clkrate_t
 exynos5422_clock_get_rate(void *priv, struct clk *clk)
 {
 	struct exynos_clk *eclk = (struct exynos_clk *)clk;
@@ -935,7 +935,7 @@ exynos5422_clock_get_rate(void *priv, struct clk *clk)
 }
 
 static int
-exynos5422_clock_set_rate(void *priv, struct clk *clk, u_int rate)
+exynos5422_clock_set_rate(void *priv, struct clk *clk, clkrate_t rate)
 {
 	struct exynos_clk *eclk = (struct exynos_clk *)clk;
 

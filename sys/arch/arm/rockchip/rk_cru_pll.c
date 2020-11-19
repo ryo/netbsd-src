@@ -61,13 +61,13 @@ __KERNEL_RCSID(0, "$NetBSD: rk_cru_pll.c,v 1.4 2018/08/12 16:48:05 jmcneill Exp 
 
 #define	GRF_SOC_STATUS0		0x0480
 
-u_int
+clkrate_t
 rk_cru_pll_get_rate(struct rk_cru_softc *sc,
     struct rk_cru_clk *clk)
 {
 	struct rk_cru_pll *pll = &clk->u.pll;
 	struct clk *clkp, *clkp_parent;
-	u_int foutvco, foutpostdiv;
+	clkrate_t foutvco, foutpostdiv;
 
 	KASSERT(clk->type == RK_CRU_PLL);
 
@@ -76,7 +76,7 @@ rk_cru_pll_get_rate(struct rk_cru_softc *sc,
 	if (clkp_parent == NULL)
 		return 0;
 
-	const u_int fref = clk_get_rate(clkp_parent);
+	const clkrate_t fref = clk_get_rate(clkp_parent);
 	if (fref == 0)
 		return 0;
 
@@ -105,7 +105,7 @@ rk_cru_pll_get_rate(struct rk_cru_softc *sc,
 
 int
 rk_cru_pll_set_rate(struct rk_cru_softc *sc,
-    struct rk_cru_clk *clk, u_int rate)
+    struct rk_cru_clk *clk, clkrate_t rate)
 {
 	struct rk_cru_pll *pll = &clk->u.pll;
 	const struct rk_cru_pll_rate *pll_rate = NULL;

@@ -74,7 +74,7 @@ struct meson_clk_fixed {
 	u_int		rate;
 };
 
-u_int	meson_clk_fixed_get_rate(struct meson_clk_softc *, struct meson_clk_clk *);
+clkrate_t meson_clk_fixed_get_rate(struct meson_clk_softc *, struct meson_clk_clk *);
 
 #define	MESON_CLK_FIXED(_id, _name, _rate)			\
 	[_id] = {						\
@@ -132,12 +132,12 @@ struct meson_clk_div {
 #define	MESON_CLK_DIV_CPU_SCALE_TABLE	__BIT(2)
 };
 
-u_int	meson_clk_div_get_rate(struct meson_clk_softc *,
-			       struct meson_clk_clk *);
-int	meson_clk_div_set_rate(struct meson_clk_softc *,
-			       struct meson_clk_clk *, u_int);
-const char *meson_clk_div_get_parent(struct meson_clk_softc *,
-				     struct meson_clk_clk *);
+clkrate_t	meson_clk_div_get_rate(struct meson_clk_softc *,
+				       struct meson_clk_clk *);
+int		meson_clk_div_set_rate(struct meson_clk_softc *,
+				       struct meson_clk_clk *, clkrate_t);
+const char *	meson_clk_div_get_parent(struct meson_clk_softc *,
+				       struct meson_clk_clk *);
 
 #define	MESON_CLK_DIV(_id, _name, _parent, _reg, _div, _flags)	\
 	[_id] = {						\
@@ -162,12 +162,12 @@ struct meson_clk_fixed_factor {
 	u_int		mult;
 };
 
-u_int	meson_clk_fixed_factor_get_rate(struct meson_clk_softc *,
-					struct meson_clk_clk *);
-int	meson_clk_fixed_factor_set_rate(struct meson_clk_softc *,
-					struct meson_clk_clk *, u_int);
+clkrate_t meson_clk_fixed_factor_get_rate(struct meson_clk_softc *,
+					  struct meson_clk_clk *);
+int meson_clk_fixed_factor_set_rate(struct meson_clk_softc *,
+				    struct meson_clk_clk *, clkrate_t);
 const char *meson_clk_fixed_factor_get_parent(struct meson_clk_softc *,
-					      struct meson_clk_clk *);
+		    struct meson_clk_clk *);
 
 #define	MESON_CLK_FIXED_FACTOR(_id, _name, _parent, _div, _mult)	\
 	[_id] = {							\
@@ -233,8 +233,8 @@ struct meson_clk_pll {
 	uint32_t			flags;
 };
 
-u_int	meson_clk_pll_get_rate(struct meson_clk_softc *,
-			       struct meson_clk_clk *);
+clkrate_t meson_clk_pll_get_rate(struct meson_clk_softc *,
+			         struct meson_clk_clk *);
 const char *meson_clk_pll_get_parent(struct meson_clk_softc *,
 				     struct meson_clk_clk *);
 
@@ -286,8 +286,8 @@ struct meson_clk_mpll {
 	uint32_t			flags;
 };
 
-u_int	meson_clk_mpll_get_rate(struct meson_clk_softc *,
-				struct meson_clk_clk *);
+clkrate_t meson_clk_mpll_get_rate(struct meson_clk_softc *,
+				  struct meson_clk_clk *);
 const char *meson_clk_mpll_get_parent(struct meson_clk_softc *,
 				      struct meson_clk_clk *);
 
@@ -323,12 +323,12 @@ struct meson_clk_clk {
 
 	int		(*enable)(struct meson_clk_softc *,
 				  struct meson_clk_clk *, int);
-	u_int		(*get_rate)(struct meson_clk_softc *,
+	clkrate_t	(*get_rate)(struct meson_clk_softc *,
 				    struct meson_clk_clk *);
 	int		(*set_rate)(struct meson_clk_softc *,
-				    struct meson_clk_clk *, u_int);
-	u_int		(*round_rate)(struct meson_clk_softc *,
-				    struct meson_clk_clk *, u_int);
+				    struct meson_clk_clk *, clkrate_t);
+	clkrate_t	(*round_rate)(struct meson_clk_softc *,
+				    struct meson_clk_clk *, clkrate_t);
 	const char *	(*get_parent)(struct meson_clk_softc *,
 				      struct meson_clk_clk *);
 	int		(*set_parent)(struct meson_clk_softc *,

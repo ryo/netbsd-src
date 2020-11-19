@@ -36,7 +36,7 @@ __KERNEL_RCSID(0, "$NetBSD: rk_cru_arm.c,v 1.2 2018/09/01 19:35:53 jmcneill Exp 
 
 #include <arm/rockchip/rk_cru.h>
 
-u_int
+clkrate_t
 rk_cru_arm_get_rate(struct rk_cru_softc *sc,
     struct rk_cru_clk *clk)
 {
@@ -50,7 +50,7 @@ rk_cru_arm_get_rate(struct rk_cru_softc *sc,
 	if (clkp_parent == NULL)
 		return 0;
 
-	const u_int fref = clk_get_rate(clkp_parent);
+	const clkrate_t fref = clk_get_rate(clkp_parent);
 	if (fref == 0)
 		return 0;
 
@@ -62,7 +62,7 @@ rk_cru_arm_get_rate(struct rk_cru_softc *sc,
 
 static int
 rk_cru_arm_set_rate_rates(struct rk_cru_softc *sc,
-    struct rk_cru_clk *clk, u_int rate)
+    struct rk_cru_clk *clk, clkrate_t rate)
 {
 	struct rk_cru_arm *arm = &clk->u.arm;
 	struct rk_cru_clk *main_parent, *alt_parent;
@@ -93,7 +93,7 @@ rk_cru_arm_set_rate_rates(struct rk_cru_softc *sc,
 	if (error != 0)
 		return error;
 
-	const u_int parent_rate = arm_rate->rate / arm_rate->div;
+	const clkrate_t parent_rate = arm_rate->rate / arm_rate->div;
 
 	error = clk_set_rate(&main_parent->base, parent_rate);
 	if (error != 0)
@@ -111,7 +111,7 @@ done:
 
 static int
 rk_cru_arm_set_rate_cpurates(struct rk_cru_softc *sc,
-    struct rk_cru_clk *clk, u_int rate)
+    struct rk_cru_clk *clk, clkrate_t rate)
 {
 	struct rk_cru_arm *arm = &clk->u.arm;
 	struct rk_cru_clk *main_parent, *alt_parent;
@@ -167,7 +167,7 @@ done:
 
 int
 rk_cru_arm_set_rate(struct rk_cru_softc *sc,
-    struct rk_cru_clk *clk, u_int rate)
+    struct rk_cru_clk *clk, clkrate_t rate)
 {
 	struct rk_cru_arm *arm = &clk->u.arm;
 

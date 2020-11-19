@@ -270,8 +270,8 @@ static struct tegra124_car_clock_id {
 
 static struct clk *tegra124_car_clock_get(void *, const char *);
 static void	tegra124_car_clock_put(void *, struct clk *);
-static u_int	tegra124_car_clock_get_rate(void *, struct clk *);
-static int	tegra124_car_clock_set_rate(void *, struct clk *, u_int);
+static clkrate_t tegra124_car_clock_get_rate(void *, struct clk *);
+static int	tegra124_car_clock_set_rate(void *, struct clk *, clkrate_t);
 static int	tegra124_car_clock_enable(void *, struct clk *);
 static int	tegra124_car_clock_disable(void *, struct clk *);
 static int	tegra124_car_clock_set_parent(void *, struct clk *,
@@ -1017,7 +1017,7 @@ tegra124_car_clock_put(void *priv, struct clk *clk)
 	atomic_dec_uint(&tclk->refcnt);
 }
 
-static u_int
+static clkrate_t
 tegra124_car_clock_get_rate_pll(struct tegra124_car_softc *sc,
     struct tegra_clk *tclk)
 {
@@ -1033,7 +1033,7 @@ tegra124_car_clock_get_rate_pll(struct tegra124_car_softc *sc,
 	tclk_parent = tegra124_car_clock_find(tclk->parent);
 	KASSERT(tclk_parent != NULL);
 
-	const u_int rate_parent = tegra124_car_clock_get_rate(sc,
+	const clkrate_t rate_parent = tegra124_car_clock_get_rate(sc,
 	    TEGRA_CLK_BASE(tclk_parent));
 
 	const uint32_t base = bus_space_read_4(bst, bsh, tpll->base_reg);
@@ -1051,7 +1051,7 @@ tegra124_car_clock_get_rate_pll(struct tegra124_car_softc *sc,
 
 static int
 tegra124_car_clock_set_rate_pll(struct tegra124_car_softc *sc,
-    struct tegra_clk *tclk, u_int rate)
+    struct tegra_clk *tclk, clkrate_t rate)
 {
 	struct tegra_pll_clk *tpll = &tclk->u.pll;
 	bus_space_tag_t bst = sc->sc_bst;
@@ -1062,7 +1062,7 @@ tegra124_car_clock_set_rate_pll(struct tegra124_car_softc *sc,
 	clk_parent = tegra124_car_clock_get_parent(sc, TEGRA_CLK_BASE(tclk));
 	if (clk_parent == NULL)
 		return EIO;
-	const u_int rate_parent = tegra124_car_clock_get_rate(sc, clk_parent);
+	const clkrate_t rate_parent = tegra124_car_clock_get_rate(sc, clk_parent);
 	if (rate_parent == 0)
 		return EIO;
 
@@ -1206,7 +1206,7 @@ tegra124_car_clock_get_parent_mux(struct tegra124_car_softc *sc,
 	return tegra124_car_clock_find(tmux->parents[src]);
 }
 
-static u_int
+static clkrate_t
 tegra124_car_clock_get_rate_fixed_div(struct tegra124_car_softc *sc,
     struct tegra_clk *tclk)
 {
@@ -1216,13 +1216,13 @@ tegra124_car_clock_get_rate_fixed_div(struct tegra124_car_softc *sc,
 	clk_parent = tegra124_car_clock_get_parent(sc, TEGRA_CLK_BASE(tclk));
 	if (clk_parent == NULL)
 		return 0;
-	const u_int parent_rate = tegra124_car_clock_get_rate(sc, clk_parent);
+	const clkrate_t parent_rate = tegra124_car_clock_get_rate(sc, clk_parent);
 
 	return parent_rate / tfixed_div->div;
 }
 
-static u_int
-tegra124_car_clock_calc_rate_frac_div(u_int rate, u_int raw_div)
+static clkrate_t
+tegra124_car_clock_calc_rate_frac_div(clkrate_t rate, u_int raw_div)
 {
 	raw_div += 2;
 	rate *= 2;
@@ -1231,7 +1231,7 @@ tegra124_car_clock_calc_rate_frac_div(u_int rate, u_int raw_div)
 	return rate;
 }
 
-static u_int
+static clkrate_t
 tegra124_car_clock_get_rate_div(struct tegra124_car_softc *sc,
     struct tegra_clk *tclk)
 {
@@ -1239,12 +1239,12 @@ tegra124_car_clock_get_rate_div(struct tegra124_car_softc *sc,
 	bus_space_tag_t bst = sc->sc_bst;
 	bus_space_handle_t bsh = sc->sc_bsh;
 	struct clk *clk_parent;
-	u_int rate;
+	clkrate_t rate;
 
 	KASSERT(tclk->type == TEGRA_CLK_DIV);
 
 	clk_parent = tegra124_car_clock_get_parent(sc, TEGRA_CLK_BASE(tclk));
-	const u_int parent_rate = tegra124_car_clock_get_rate(sc, clk_parent);
+	const clkrate_t parent_rate = tegra124_car_clock_get_rate(sc, clk_parent);
 
 	const uint32_t v = bus_space_read_4(bst, bsh, tdiv->reg);
 	const u_int raw_div = __SHIFTOUT(v, tdiv->bits);
@@ -1280,7 +1280,7 @@ tegra124_car_clock_get_rate_div(struct tegra124_car_softc *sc,
 
 static int
 tegra124_car_clock_set_rate_div(struct tegra124_car_softc *sc,
-    struct tegra_clk *tclk, u_int rate)
+    struct tegra_clk *tclk, clkrate_t rate)
 {
 	struct tegra_div_clk *tdiv = &tclk->u.div;
 	bus_space_tag_t bst = sc->sc_bst;
@@ -1294,7 +1294,7 @@ tegra124_car_clock_set_rate_div(struct tegra124_car_softc *sc,
 	clk_parent = tegra124_car_clock_get_parent(sc, TEGRA_CLK_BASE(tclk));
 	if (clk_parent == NULL)
 		return EINVAL;
-	const u_int parent_rate = tegra124_car_clock_get_rate(sc, clk_parent);
+	const clkrate_t parent_rate = tegra124_car_clock_get_rate(sc, clk_parent);
 
 	v = bus_space_read_4(bst, bsh, tdiv->reg);
 
@@ -1337,7 +1337,7 @@ tegra124_car_clock_set_rate_div(struct tegra124_car_softc *sc,
 	case CAR_CLKSRC_SDMMC4_REG:
 		if (rate) {
 			for (raw_div = 0x00; raw_div <= 0xff; raw_div++) {
-				u_int calc_rate =
+				clkrate_t calc_rate =
 				    tegra124_car_clock_calc_rate_frac_div(
 					parent_rate, raw_div);
 				if (calc_rate <= rate)
@@ -1400,7 +1400,7 @@ tegra124_car_clock_enable_gate(struct tegra124_car_softc *sc,
 	return 0;
 }
 
-static u_int
+static clkrate_t
 tegra124_car_clock_get_rate(void *priv, struct clk *clk)
 {
 	struct tegra_clk *tclk = TEGRA_CLK_PRIV(clk);
@@ -1427,7 +1427,7 @@ tegra124_car_clock_get_rate(void *priv, struct clk *clk)
 }
 
 static int
-tegra124_car_clock_set_rate(void *priv, struct clk *clk, u_int rate)
+tegra124_car_clock_set_rate(void *priv, struct clk *clk, clkrate_t rate)
 {
 	struct tegra_clk *tclk = TEGRA_CLK_PRIV(clk);
 	struct clk *clk_parent;

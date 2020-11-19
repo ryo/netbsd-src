@@ -50,7 +50,7 @@ static const struct fdtbus_clock_controller_func fixedclock_fdt_funcs = {
 
 static struct clk *fixedclock_get(void *, const char *);
 static void	fixedclock_put(void *, struct clk *);
-static u_int	fixedclock_get_rate(void *, struct clk *);
+static clkrate_t fixedclock_get_rate(void *, struct clk *);
 
 static const struct clk_funcs fixedclock_clk_funcs = {
 	.get = fixedclock_get,
@@ -143,7 +143,7 @@ fixedclock_put(void *priv, struct clk *clk)
 {
 }
 
-static u_int
+static clkrate_t
 fixedclock_get_rate(void *priv, struct clk *clk)
 {
 	struct fixedclock_clk *fclk = (struct fixedclock_clk *)clk;

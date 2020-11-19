@@ -82,8 +82,8 @@ struct rk_cru_pll {
 	u_int		nparents;
 };
 
-u_int	rk_cru_pll_get_rate(struct rk_cru_softc *, struct rk_cru_clk *);
-int	rk_cru_pll_set_rate(struct rk_cru_softc *, struct rk_cru_clk *, u_int);
+clkrate_t rk_cru_pll_get_rate(struct rk_cru_softc *, struct rk_cru_clk *);
+int	rk_cru_pll_set_rate(struct rk_cru_softc *, struct rk_cru_clk *, clkrate_t);
 const char *rk_cru_pll_get_parent(struct rk_cru_softc *, struct rk_cru_clk *);
 
 #define	RK_PLL(_id, _name, _parents, _con_base, _mode_reg, _mode_mask, _lock_mask, _rates) \
@@ -144,9 +144,9 @@ struct rk_cru_arm {
 	u_int		nrates;
 };
 
-u_int	rk_cru_arm_get_rate(struct rk_cru_softc *, struct rk_cru_clk *);
-int	rk_cru_arm_set_rate(struct rk_cru_softc *, struct rk_cru_clk *, u_int);
-int	rk_cru_arm_set_rate(struct rk_cru_softc *, struct rk_cru_clk *, u_int);
+clkrate_t rk_cru_arm_get_rate(struct rk_cru_softc *, struct rk_cru_clk *);
+int	rk_cru_arm_set_rate(struct rk_cru_softc *, struct rk_cru_clk *, clkrate_t);
+int	rk_cru_arm_set_rate(struct rk_cru_softc *, struct rk_cru_clk *, clkrate_t);
 const char *rk_cru_arm_get_parent(struct rk_cru_softc *, struct rk_cru_clk *);
 int	rk_cru_arm_set_parent(struct rk_cru_softc *, struct rk_cru_clk *, const char *);
 
@@ -210,8 +210,8 @@ struct rk_cru_composite {
 };
 
 int	rk_cru_composite_enable(struct rk_cru_softc *, struct rk_cru_clk *, int);
-u_int	rk_cru_composite_get_rate(struct rk_cru_softc *, struct rk_cru_clk *);
-int	rk_cru_composite_set_rate(struct rk_cru_softc *, struct rk_cru_clk *, u_int);
+clkrate_t rk_cru_composite_get_rate(struct rk_cru_softc *, struct rk_cru_clk *);
+int	rk_cru_composite_set_rate(struct rk_cru_softc *, struct rk_cru_clk *, clkrate_t);
 const char *rk_cru_composite_get_parent(struct rk_cru_softc *, struct rk_cru_clk *);
 int	rk_cru_composite_set_parent(struct rk_cru_softc *, struct rk_cru_clk *, const char *);
 
@@ -338,12 +338,12 @@ struct rk_cru_clk {
 
 	int		(*enable)(struct rk_cru_softc *,
 				  struct rk_cru_clk *, int);
-	u_int		(*get_rate)(struct rk_cru_softc *,
+	clkrate_t	(*get_rate)(struct rk_cru_softc *,
 				    struct rk_cru_clk *);
 	int		(*set_rate)(struct rk_cru_softc *,
-				    struct rk_cru_clk *, u_int);
-	u_int		(*round_rate)(struct rk_cru_softc *,
-				    struct rk_cru_clk *, u_int);
+				    struct rk_cru_clk *, clkrate_t);
+	clkrate_t	(*round_rate)(struct rk_cru_softc *,
+				      struct rk_cru_clk *, clkrate_t);
 	const char *	(*get_parent)(struct rk_cru_softc *,
 				      struct rk_cru_clk *);
 	int		(*set_parent)(struct rk_cru_softc *,

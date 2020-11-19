@@ -58,13 +58,14 @@ sunxi_ccu_nm_enable(struct sunxi_ccu_softc *sc, struct sunxi_ccu_clk *clk,
 	return 0;
 }
 
-u_int
+clkrate_t
 sunxi_ccu_nm_get_rate(struct sunxi_ccu_softc *sc,
     struct sunxi_ccu_clk *clk)
 {
 	struct sunxi_ccu_nm *nm = &clk->u.nm;
 	struct clk *clkp, *clkp_parent;
-	u_int rate, n, m;
+	clkrate_t rate;
+	u_int n, m;
 	uint32_t val;
 
 	KASSERT(clk->type == SUNXI_CCU_NM);
@@ -100,13 +101,14 @@ sunxi_ccu_nm_get_rate(struct sunxi_ccu_softc *sc,
 
 int
 sunxi_ccu_nm_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk *clk, u_int new_rate)
+    struct sunxi_ccu_clk *clk, clkrate_t new_rate)
 {
 	struct sunxi_ccu_nm *nm = &clk->u.nm;
 	struct clk *clkp, *clkp_parent;
-	u_int parent_rate, best_rate, best_n, best_m, best_parent;
+	clkrate_t parent_rate, best_rate;
+	u_int best_n, best_m, best_parent;
 	u_int n, m, pindex, rate;
-	int best_diff;
+	long long best_diff;
 	uint32_t val;
 
 	const u_int n_max = __SHIFTOUT(nm->n, nm->n);
@@ -122,7 +124,7 @@ sunxi_ccu_nm_set_rate(struct sunxi_ccu_softc *sc,
 		return 0;
 
 	best_rate = 0;
-	best_diff = INT_MAX;
+	best_diff = LLONG_MAX;
 	for (pindex = 0; pindex < nm->nparents; pindex++) {
 		/* XXX
 		 * Shouldn't have to set parent to get potential parent clock rate
@@ -149,7 +151,7 @@ sunxi_ccu_nm_set_rate(struct sunxi_ccu_softc *sc,
 					rate /= 2;
 
 				if (nm->flags & SUNXI_CCU_NM_ROUND_DOWN) {
-					const int diff = new_rate - rate;
+					const long long diff = new_rate - rate;
 					if (diff >= 0 && rate > best_rate) {
 						best_diff = diff;
 						best_rate = rate;
@@ -158,7 +160,7 @@ sunxi_ccu_nm_set_rate(struct sunxi_ccu_softc *sc,
 						best_parent = pindex;
 					}
 				} else {
-					const int diff = abs(new_rate - rate);
+					const int diff = llabs(new_rate - rate);
 					if (diff < best_diff) {
 						best_diff = diff;
 						best_rate = rate;

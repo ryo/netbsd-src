@@ -54,13 +54,14 @@ sunxi_ccu_phase_div(u_int n, u_int d)
 	return (n + (d/2)) / d;
 }
 
-u_int
+clkrate_t
 sunxi_ccu_phase_get_rate(struct sunxi_ccu_softc *sc,
     struct sunxi_ccu_clk *clk)
 {
 	struct sunxi_ccu_phase *phase = &clk->u.phase;
 	struct clk *clkp = &clk->base;
-	u_int p_rate, gp_rate, p_div, delay;
+	clkrate_t p_rate, gp_rate;
+	u_int p_div, delay;
 	uint32_t val;
 
 	KASSERT(clk->type == SUNXI_CCU_PHASE);
@@ -82,11 +83,12 @@ sunxi_ccu_phase_get_rate(struct sunxi_ccu_softc *sc,
 
 int
 sunxi_ccu_phase_set_rate(struct sunxi_ccu_softc *sc,
-    struct sunxi_ccu_clk *clk, u_int new_rate)
+    struct sunxi_ccu_clk *clk, clkrate_t new_rate)
 {
 	struct sunxi_ccu_phase *phase = &clk->u.phase;
 	struct clk *clkp = &clk->base;
-	u_int p_rate, gp_rate, p_div, delay;
+	clkrate_t p_rate, gp_rate;
+	u_int p_div, delay;
 	uint32_t val;
 
 	KASSERT(clk->type == SUNXI_CCU_PHASE);

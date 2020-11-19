@@ -36,7 +36,7 @@ __KERNEL_RCSID(0, "$NetBSD: meson_clk_fixed_factor.c,v 1.1 2019/01/19 20:56:03 j
 
 #include <arm/amlogic/meson_clk.h>
 
-static u_int
+static clkrate_t
 meson_clk_fixed_factor_get_parent_rate(struct clk *clkp)
 {
 	struct clk *clkp_parent;
@@ -48,7 +48,7 @@ meson_clk_fixed_factor_get_parent_rate(struct clk *clkp)
 	return clk_get_rate(clkp_parent);
 }
 
-u_int
+clkrate_t
 meson_clk_fixed_factor_get_rate(struct meson_clk_softc *sc,
     struct meson_clk_clk *clk)
 {
@@ -57,15 +57,15 @@ meson_clk_fixed_factor_get_rate(struct meson_clk_softc *sc,
 
 	KASSERT(clk->type == MESON_CLK_FIXED_FACTOR);
 
-	const u_int p_rate = meson_clk_fixed_factor_get_parent_rate(clkp);
+	const clkrate_t p_rate = meson_clk_fixed_factor_get_parent_rate(clkp);
 	if (p_rate == 0)
 		return 0;
 
-	return (u_int)(((uint64_t)p_rate * fixed_factor->mult) / fixed_factor->div);
+	return (clkrate_t)(((uint64_t)p_rate * fixed_factor->mult) / fixed_factor->div);
 }
 
 static int
-meson_clk_fixed_factor_set_parent_rate(struct clk *clkp, u_int rate)
+meson_clk_fixed_factor_set_parent_rate(struct clk *clkp, clkrate_t rate)
 {
 	struct clk *clkp_parent;
 
@@ -78,7 +78,7 @@ meson_clk_fixed_factor_set_parent_rate(struct clk *clkp, u_int rate)
 
 int
 meson_clk_fixed_factor_set_rate(struct meson_clk_softc *sc,
-    struct meson_clk_clk *clk, u_int rate)
+    struct meson_clk_clk *clk, clkrate_t rate)
 {
 	struct meson_clk_fixed_factor *fixed_factor = &clk->u.fixed_factor;
 	struct clk *clkp = &clk->base;

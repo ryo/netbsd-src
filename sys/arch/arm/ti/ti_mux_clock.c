@@ -50,7 +50,7 @@ static const struct fdtbus_clock_controller_func ti_mux_clock_fdt_funcs = {
 
 static struct clk *ti_mux_clock_get(void *, const char *);
 static void	ti_mux_clock_put(void *, struct clk *);
-static u_int	ti_mux_clock_get_rate(void *, struct clk *);
+static clkrate_t ti_mux_clock_get_rate(void *, struct clk *);
 static struct clk *ti_mux_clock_get_parent(void *, struct clk *);
 static int	ti_mux_clock_set_parent(void *, struct clk *, struct clk *);
 
@@ -164,7 +164,7 @@ ti_mux_clock_put(void *priv, struct clk *clk)
 {
 }
 
-static u_int
+static clkrate_t
 ti_mux_clock_get_rate(void *priv, struct clk *clk)
 {
 	struct clk *clk_parent = clk_get_parent(clk);

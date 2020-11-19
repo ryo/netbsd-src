@@ -38,7 +38,7 @@ __KERNEL_RCSID(0, "$NetBSD: meson_clk_mpll.c,v 1.2 2019/02/25 19:30:17 jmcneill 
 
 #define	SDM_DEN		0x4000
 
-u_int
+clkrate_t
 meson_clk_mpll_get_rate(struct meson_clk_softc *sc,
     struct meson_clk_clk *clk)
 {
@@ -72,7 +72,7 @@ meson_clk_mpll_get_rate(struct meson_clk_softc *sc,
 	if (div == 0)
 		return 0;
 
-	return (u_int)howmany(parent_rate * SDM_DEN, div);
+	return (clkrate_t)howmany(parent_rate * SDM_DEN, div);
 }
 
 const char *

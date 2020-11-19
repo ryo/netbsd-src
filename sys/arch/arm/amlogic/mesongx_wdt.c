@@ -65,7 +65,7 @@ struct mesongx_wdt_softc {
 	bus_space_handle_t	sc_bsh;
 
 	struct sysmon_wdog	sc_wdog;
-	u_int			sc_rate;
+	clkrate_t		sc_rate;
 };
 
 #define	WDT_READ(sc, reg)		\

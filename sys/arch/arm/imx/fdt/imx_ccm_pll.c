@@ -65,7 +65,7 @@ imx_ccm_pll_enable(struct imx_ccm_softc *sc, struct imx_ccm_clk *clk,
 	return 0;
 }
 
-u_int
+clkrate_t
 imx_ccm_pll_get_rate(struct imx_ccm_softc *sc,
     struct imx_ccm_clk *clk)
 {
@@ -79,7 +79,7 @@ imx_ccm_pll_get_rate(struct imx_ccm_softc *sc,
 	if (clkp_parent == NULL)
 		return 0;
 
-	const u_int prate = clk_get_rate(clkp_parent);
+	const clkrate_t prate = clk_get_rate(clkp_parent);
 	if (prate == 0)
 		return 0;
 

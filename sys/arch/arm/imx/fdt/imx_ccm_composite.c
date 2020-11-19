@@ -63,7 +63,7 @@ imx_ccm_composite_enable(struct imx_ccm_softc *sc, struct imx_ccm_clk *clk,
 	return 0;
 }
 
-u_int
+clkrate_t
 imx_ccm_composite_get_rate(struct imx_ccm_softc *sc,
     struct imx_ccm_clk *clk)
 {
@@ -77,7 +77,7 @@ imx_ccm_composite_get_rate(struct imx_ccm_softc *sc,
 	if (clkp_parent == NULL)
 		return 0;
 
-	const u_int prate = clk_get_rate(clkp_parent);
+	const clkrate_t prate = clk_get_rate(clkp_parent);
 	if (prate == 0)
 		return 0;
 
@@ -90,10 +90,11 @@ imx_ccm_composite_get_rate(struct imx_ccm_softc *sc,
 
 int
 imx_ccm_composite_set_rate(struct imx_ccm_softc *sc,
-    struct imx_ccm_clk *clk, u_int rate)
+    struct imx_ccm_clk *clk, clkrate_t rate)
 {
 	struct imx_ccm_composite *composite = &clk->u.composite;
-	u_int best_prediv, best_postdiv, best_diff;
+	long long best_diff;
+	u_int best_prediv, best_postdiv;
 	struct imx_ccm_clk *rclk_parent;
 	struct clk *clk_parent;
 	uint32_t val;
@@ -109,7 +110,7 @@ imx_ccm_composite_set_rate(struct imx_ccm_softc *sc,
 
 	best_prediv = 0;
 	best_postdiv = 0;
-	best_diff = INT_MAX;
+	best_diff = LLONG_MAX;
 
 	val = CCM_READ(sc, clk->regidx, composite->reg + CCM_TARGET_ROOT);
 	const u_int mux = __SHIFTOUT(val, TARGET_ROOT_MUX);
@@ -125,14 +126,14 @@ imx_ccm_composite_set_rate(struct imx_ccm_softc *sc,
 	if (clk_parent == NULL)
 		return EIO;
 
-	const u_int prate = clk_get_rate(clk_parent);
+	const clkrate_t prate = clk_get_rate(clk_parent);
 	if (prate == 0)
 		return ERANGE;
 
 	for (u_int prediv = 1; prediv <= __SHIFTOUT_MASK(TARGET_ROOT_PRE_PODF) + 1; prediv++) {
 		for (u_int postdiv = 1; postdiv <= __SHIFTOUT_MASK(TARGET_ROOT_POST_PODF) + 1; postdiv++) {
-			const u_int cur_rate = prate / prediv / postdiv;
-			const int diff = (int)rate - (int)cur_rate;
+			const clkrate_t cur_rate = prate / prediv / postdiv;
+			const long long diff = rate - cur_rate;
 			if (composite->flags & IMX_COMPOSITE_ROUND_DOWN) {
 				if (diff >= 0 && diff < best_diff) {
 					best_diff = diff;
@@ -140,15 +141,15 @@ imx_ccm_composite_set_rate(struct imx_ccm_softc *sc,
 					best_postdiv = postdiv;
 				}
 			} else {
-				if (abs(diff) < best_diff) {
-					best_diff = abs(diff);
+				if (llabs(diff) < best_diff) {
+					best_diff = llabs(diff);
 					best_prediv = prediv;
 					best_postdiv = postdiv;
 				}
 			}
 		}
 	}
-	if (best_diff == INT_MAX)
+	if (best_diff == LLONG_MAX)
 		return ERANGE;
 
 	val = CCM_READ(sc, clk->regidx, composite->reg + CCM_TARGET_ROOT);

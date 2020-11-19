@@ -36,7 +36,7 @@ __KERNEL_RCSID(0, "$NetBSD: imx_ccm_fixed_factor.c,v 1.1 2020/01/15 01:09:56 jmc
 
 #include <arm/imx/fdt/imx_ccm.h>
 
-static u_int
+static clkrate_t
 imx_ccm_fixed_factor_get_parent_rate(struct clk *clkp)
 {
 	struct clk *clkp_parent;
@@ -48,7 +48,7 @@ imx_ccm_fixed_factor_get_parent_rate(struct clk *clkp)
 	return clk_get_rate(clkp_parent);
 }
 
-u_int
+clkrate_t
 imx_ccm_fixed_factor_get_rate(struct imx_ccm_softc *sc,
     struct imx_ccm_clk *clk)
 {
@@ -57,15 +57,16 @@ imx_ccm_fixed_factor_get_rate(struct imx_ccm_softc *sc,
 
 	KASSERT(clk->type == IMX_CCM_FIXED_FACTOR);
 
-	const u_int p_rate = imx_ccm_fixed_factor_get_parent_rate(clkp);
+	const clkrate_t p_rate = imx_ccm_fixed_factor_get_parent_rate(clkp);
 	if (p_rate == 0)
 		return 0;
 
-	return (u_int)(((uint64_t)p_rate * fixed_factor->mult) / fixed_factor->div);
+	return (clkrate_t)(((uint64_t)p_rate * fixed_factor->mult) /
+	    fixed_factor->div);
 }
 
 static int
-imx_ccm_fixed_factor_set_parent_rate(struct clk *clkp, u_int rate)
+imx_ccm_fixed_factor_set_parent_rate(struct clk *clkp, clkrate_t rate)
 {
 	struct clk *clkp_parent;
 
@@ -78,7 +79,7 @@ imx_ccm_fixed_factor_set_parent_rate(struct clk *clkp, u_int rate)
 
 int
 imx_ccm_fixed_factor_set_rate(struct imx_ccm_softc *sc,
-    struct imx_ccm_clk *clk, u_int rate)
+    struct imx_ccm_clk *clk, clkrate_t rate)
 {
 	struct imx_ccm_fixed_factor *fixed_factor = &clk->u.fixed_factor;
 	struct clk *clkp = &clk->base;

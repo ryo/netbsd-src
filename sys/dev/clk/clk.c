@@ -220,14 +220,14 @@ clk_put(struct clk *clk)
 		clk->domain->funcs->put(clk->domain->priv, clk);
 }
 
-u_int
+clkrate_t
 clk_get_rate(struct clk *clk)
 {
 	return clk->domain->funcs->get_rate(clk->domain->priv, clk);
 }
 
 int
-clk_set_rate(struct clk *clk, u_int rate)
+clk_set_rate(struct clk *clk, clkrate_t rate)
 {
 	if (clk->flags & CLK_SET_RATE_PARENT)
 		return clk_set_rate(clk_get_parent(clk), rate);
@@ -242,8 +242,8 @@ clk_set_rate(struct clk *clk, u_int rate)
 	return EINVAL;
 }
 
-u_int
-clk_round_rate(struct clk *clk, u_int rate)
+clkrate_t
+clk_round_rate(struct clk *clk, clkrate_t rate)
 {
 	if (clk->domain->funcs->round_rate) {
 		return clk->domain->funcs->round_rate(clk->domain->priv,
