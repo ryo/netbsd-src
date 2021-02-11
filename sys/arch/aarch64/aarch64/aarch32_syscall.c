@@ -38,7 +38,6 @@ __KERNEL_RCSID(0, "$NetBSD: aarch32_syscall.c,v 1.3 2019/04/12 09:29:26 ryo Exp 
 #include <aarch64/armreg.h>
 #include <aarch64/frame.h>
 #include <aarch64/machdep.h>
-#include <aarch64/userret.h>
 
 #ifndef EMULNAME
 #error EMULNAME is not defined
@@ -181,7 +180,7 @@ EMULNAME(syscall)(struct trapframe *tf)
 		}
 	}
 
-	userret(l);
+	/* userret() is called at the end of trap_el0_32sync() */
 }
 
 void EMULNAME(syscall_intern)(struct proc *);

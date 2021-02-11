@@ -240,7 +240,7 @@ startlwp(void *arg)
 	KASSERT(error == 0);
 
 	kmem_free(uc, sizeof(*uc));
-	userret(l);
+	userret(l, NULL, 0);
 }
 
 void

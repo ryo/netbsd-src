@@ -160,9 +160,19 @@ eclass_trapname(uint32_t eclass)
 }
 
 void
-userret(struct lwp *l)
+userret(struct lwp *l, struct trapframe *tf, u_quad_t oticks)
 {
 	mi_userret(l);
+
+	/*
+	 * If profiling, charge system time to the trapped pc.
+	 */
+	struct proc *p = l->l_proc;
+	if (tf != NULL && oticks != 0 && p->p_stflag & PST_PROFIL) {
+		extern int psratio;
+		addupc_task(l, tf->tf_pc,
+		    (int)(p->p_sticks - oticks) * psratio);
+	}
 }
 
 void
@@ -191,7 +201,7 @@ trap_doast(struct trapframe *tf)
 		ADDUPROF(l);
 	}
 
-	userret(l);
+	userret(l, NULL, 0);
 }
 
 void
@@ -413,6 +423,7 @@ void
 trap_el0_sync(struct trapframe *tf)
 {
 	struct lwp * const l = curlwp;
+	u_quad_t sticks = l->l_proc->p_sticks;
 	const uint32_t esr = tf->tf_esr;
 	const uint32_t eclass = __SHIFTOUT(esr, ESR_EC); /* exception class */
 
@@ -425,7 +436,6 @@ trap_el0_sync(struct trapframe *tf)
 	case ESR_EC_INSN_ABT_EL0:
 	case ESR_EC_DATA_ABT_EL0:
 		data_abort_handler(tf, eclass);
-		userret(l);
 		break;
 
 	case ESR_EC_SVC_A64:
@@ -433,33 +443,27 @@ trap_el0_sync(struct trapframe *tf)
 		break;
 	case ESR_EC_FP_ACCESS:
 		fpu_load(l);
-		userret(l);
 		break;
 	case ESR_EC_FP_TRAP_A64:
 		do_trapsignal(l, SIGFPE, FPE_FLTUND, NULL, esr); /* XXX */
-		userret(l);
 		break;
 
 	case ESR_EC_PC_ALIGNMENT:
 		do_trapsignal(l, SIGBUS, BUS_ADRALN, (void *)tf->tf_pc, esr);
-		userret(l);
 		break;
 	case ESR_EC_SP_ALIGNMENT:
 		do_trapsignal(l, SIGBUS, BUS_ADRALN, (void *)tf->tf_sp, esr);
-		userret(l);
 		break;
 
 	case ESR_EC_BKPT_INSN_A64:
 	case ESR_EC_BRKPNT_EL0:
 	case ESR_EC_WTCHPNT_EL0:
 		do_trapsignal(l, SIGTRAP, TRAP_BRKPT, (void *)tf->tf_pc, esr);
-		userret(l);
 		break;
 	case ESR_EC_SW_STEP_EL0:
 		/* disable trace, and send trace trap */
 		tf->tf_spsr &= ~SPSR_SS;
 		do_trapsignal(l, SIGTRAP, TRAP_TRACE, (void *)tf->tf_pc, esr);
-		userret(l);
 		break;
 
 	case ESR_EC_SYS_REG:
@@ -473,7 +477,6 @@ trap_el0_sync(struct trapframe *tf)
 			    (void *)tf->tf_far, esr);
 			break;
 		}
-		userret(l);
 		break;
 
 	default:
@@ -492,9 +495,9 @@ trap_el0_sync(struct trapframe *tf)
 #endif
 		/* illegal or not implemented instruction */
 		do_trapsignal(l, SIGILL, ILL_ILLTRP, (void *)tf->tf_pc, esr);
-		userret(l);
 		break;
 	}
+	userret(l, tf, sticks);
 }
 
 void
@@ -758,6 +761,7 @@ void
 trap_el0_32sync(struct trapframe *tf)
 {
 	struct lwp * const l = curlwp;
+	u_quad_t sticks = l->l_proc->p_sticks;
 	const uint32_t esr = tf->tf_esr;
 	const uint32_t eclass = __SHIFTOUT(esr, ESR_EC); /* exception class */
 
@@ -771,7 +775,6 @@ trap_el0_32sync(struct trapframe *tf)
 	case ESR_EC_INSN_ABT_EL0:
 	case ESR_EC_DATA_ABT_EL0:
 		data_abort_handler(tf, eclass);
-		userret(l);
 		break;
 
 	case ESR_EC_SVC_A32:
@@ -780,28 +783,23 @@ trap_el0_32sync(struct trapframe *tf)
 
 	case ESR_EC_FP_ACCESS:
 		fpu_load(l);
-		userret(l);
 		break;
 
 	case ESR_EC_FP_TRAP_A32:
 		do_trapsignal(l, SIGFPE, FPE_FLTUND, NULL, esr); /* XXX */
-		userret(l);
 		break;
 
 	case ESR_EC_PC_ALIGNMENT:
 		do_trapsignal(l, SIGBUS, BUS_ADRALN, (void *)tf->tf_pc, esr);
-		userret(l);
 		break;
 
 	case ESR_EC_SP_ALIGNMENT:
 		do_trapsignal(l, SIGBUS, BUS_ADRALN,
 		    (void *)tf->tf_reg[13], esr); /* sp is r13 on AArch32 */
-		userret(l);
 		break;
 
 	case ESR_EC_BKPT_INSN_A32:
 		do_trapsignal(l, SIGTRAP, TRAP_BRKPT, (void *)tf->tf_pc, esr);
-		userret(l);
 		break;
 
 	case ESR_EC_UNKNOWN:
@@ -815,7 +813,6 @@ trap_el0_32sync(struct trapframe *tf)
 			    (void *)tf->tf_far, esr);
 			break;
 		}
-		userret(l);
 		break;
 
 	case ESR_EC_CP15_RT:
@@ -839,9 +836,9 @@ unknown:
 #endif
 		/* illegal or not implemented instruction */
 		do_trapsignal(l, SIGILL, ILL_ILLTRP, (void *)tf->tf_pc, esr);
-		userret(l);
 		break;
 	}
+	userret(l, tf, sticks);
 }
 
 #define bad_trap_panic(trapfunc)	\

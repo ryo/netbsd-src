@@ -397,7 +397,7 @@ startlwp32(void *arg)
 
 	/* Note: we are freeing ucontext_t, not ucontext32_t. */
 	kmem_free(uc, sizeof(ucontext_t));
-	userret(l);
+	userret(l, NULL, 0);
 }
 
 int

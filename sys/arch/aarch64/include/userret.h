@@ -2,4 +2,4 @@
 
 #include <sys/userret.h>
 
-void userret(struct lwp *);
+void userret(struct lwp *, struct trapframe *, u_quad_t);

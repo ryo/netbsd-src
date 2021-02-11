@@ -67,7 +67,7 @@ void
 cpu_spawn_return(struct lwp *l)
 {
 
-	userret(l);
+	userret(l, NULL, 0);
 }
 
 void
@@ -80,7 +80,7 @@ md_child_return(struct lwp *l)
 	tf->tf_spsr &= ~NZCV_C;
 	l->l_md.md_cpacr = CPACR_FPEN_NONE;
 
-	userret(l);
+	userret(l, NULL, 0);
 }
 #endif
 
@@ -216,7 +216,7 @@ EMULNAME(syscall)(struct trapframe *tf)
 		}
 	}
 
-	userret(l);
+	/* userret() is called at the end of trap_el0_sync() */
 }
 
 void EMULNAME(syscall_intern)(struct proc *);
