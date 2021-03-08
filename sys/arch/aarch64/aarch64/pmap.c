@@ -2632,8 +2632,6 @@ pmap_is_referenced(struct vm_page *pg)
 	return (pp->pp_pv.pv_va & VM_PROT_READ);
 }
 
-#ifdef DDB
-
 /* get pointer to kernel segment L2 or L3 table entry */
 pt_entry_t *
 kvtopte(vaddr_t va)
@@ -2642,6 +2640,8 @@ kvtopte(vaddr_t va)
 
 	return _pmap_pte_lookup_bs(pmap_kernel(), va, NULL);
 }
+
+#ifdef DDB
 
 /* change attribute of kernel segment */
 pt_entry_t
