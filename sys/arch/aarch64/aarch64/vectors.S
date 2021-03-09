@@ -313,6 +313,9 @@ ENTRY_NP(el0_trap_exit)
 	tbz	x1, #SPSR_SS_SHIFT, 1f
 	mrs	x0, mdscr_el1
 	orr	x0, x0, #MDSCR_SS
+#ifdef DDB
+	bic	x0, x0, #MDSCR_KDE
+#endif
 	msr	mdscr_el1, x0
 1:
 	unwind_x0_x2

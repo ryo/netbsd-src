@@ -310,7 +310,7 @@ END(lwp_trampoline)
 
 #ifdef DDB
 ENTRY_NP(cpu_Debugger)
-	brk	#0
+	brk	#0xffff
 	ret
 END(cpu_Debugger)
 #endif /* DDB */

@@ -31,6 +31,7 @@ __KERNEL_RCSID(1, "$NetBSD: cpu.c,v 1.58 2021/01/11 21:58:31 skrll Exp $");
 
 #include "locators.h"
 #include "opt_arm_debug.h"
+#include "opt_ddb.h"
 #include "opt_fdt.h"
 #include "opt_multiprocessor.h"
 
@@ -53,6 +54,9 @@ __KERNEL_RCSID(1, "$NetBSD: cpu.c,v 1.58 2021/01/11 21:58:31 skrll Exp $");
 #include <aarch64/armreg.h>
 #include <aarch64/cpu.h>
 #include <aarch64/cpu_counter.h>
+#ifdef DDB
+#include <aarch64/db_machdep.h>
+#endif
 #include <aarch64/machdep.h>
 
 #include <arm/cpufunc.h>
@@ -681,7 +685,9 @@ cpu_hatch(struct cpu_info *ci)
 	aarch64_getcacheinfo(device_unit(ci->ci_dev));
 	aarch64_printcacheinfo(ci->ci_dev);
 	cpu_identify2(ci->ci_dev, ci);
-
+#ifdef DDB
+	db_machdep_init();
+#endif
 	mutex_exit(&cpu_hatch_lock);
 
 	cpu_init_counter(ci);
